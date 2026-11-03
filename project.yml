@@ -56,6 +56,7 @@ targets:
         CFBundleVersion: "1"
         LSMinimumSystemVersion: "26.0"
         LSUIElement: true
+        NSCameraUsageDescription: 发现并读取通过 USB 连接的 GR IV 相机。
         NSLocalNetworkUsageDescription: 发现并连接局域网中的设备和共享。
         NSBonjourServices: ["_smb._tcp", "_adb-tls-pairing._tcp", "_adb-tls-connect._tcp"]
         CFBundleURLTypes:

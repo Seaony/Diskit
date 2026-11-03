@@ -95,6 +95,7 @@ public enum RemoteError: Error, Equatable, LocalizedError, Sendable {
     case .occupied: L("手机正被其它 adb 程序占用，请先执行 adb kill-server")
     case .tooLarge: L("设备不支持大于 4 GB 的文件")
     case .unsupported: L("设备不支持此操作")
+    case .posix(let code) where code == EROFS: L("此位置为只读，不能上传、创建目录或移动文件")
     case .posix(let code): String(format: L("远端操作失败（%d）"), code)
     }
   }

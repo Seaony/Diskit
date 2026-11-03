@@ -1,5 +1,6 @@
 import ADB
 import Core
+import RicohGR
 import SwiftUI
 
 struct PanelView: View {
@@ -23,12 +24,19 @@ struct PanelView: View {
       !model.connections.connections.contains { $0.params["guid"] == device.name }
     }
   }
+  private var discoveredCameras: [RicohDevice] {
+    model.ricohDiscovery.devices.filter { device in
+      !model.connections.connections.contains {
+        $0.kind == .ricohGR && $0.params["serial"] == device.serial
+      }
+    }
+  }
   private var contentHeight: CGFloat {
     min(
       422,
       CGFloat(
         model.connections.connections.count + discovered.count + discoveredUSB.count
-          + discoveredWiFi.count)
+          + discoveredWiFi.count + discoveredCameras.count)
         * 60
         + (model.connections.connections.isEmpty ? 210 : 100) + (discovered.isEmpty ? 0 : 32))
   }
@@ -51,8 +59,22 @@ struct PanelView: View {
           if let error = model.wirelessDiscovery.error {
             Text(error).font(.caption).foregroundStyle(.secondary)
           }
-          if !discovered.isEmpty || !discoveredUSB.isEmpty || !discoveredWiFi.isEmpty {
+          if !discovered.isEmpty || !discoveredUSB.isEmpty || !discoveredWiFi.isEmpty
+            || !discoveredCameras.isEmpty
+          {
             Text("已发现").font(.caption).foregroundStyle(.secondary)
+          }
+          ForEach(discoveredCameras) { device in
+            HStack {
+              Image(systemName: "camera").frame(width: 28, height: 28)
+              Text(device.name).lineLimit(1)
+              Spacer()
+              Button("添加") {
+                edit(
+                  Connection(kind: .ricohGR, name: device.name, params: ["serial": device.serial]))
+              }.controlSize(.small)
+            }.frame(height: 52).padding(.horizontal, 10).background(
+              .background, in: RoundedRectangle(cornerRadius: 10))
           }
           ForEach(discoveredWiFi) { device in
             HStack {
@@ -211,7 +233,7 @@ struct PanelView: View {
     return HStack(spacing: 10) {
       Image(
         systemName: (connection.kind == .androidUSB || connection.kind == .androidWiFi)
-          ? "smartphone" : "desktopcomputer"
+          ? "smartphone" : (connection.kind == .ricohGR ? "camera" : "desktopcomputer")
       )
       .foregroundStyle(.white).frame(width: 28, height: 28).background(
         connection.tint, in: RoundedRectangle(cornerRadius: 7))

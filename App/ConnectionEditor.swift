@@ -1,5 +1,6 @@
 import ADB
 import Core
+import RicohGR
 import SwiftUI
 
 struct ConnectionEditor: View {
@@ -26,12 +27,13 @@ struct ConnectionEditor: View {
             HStack {
               Text(kind.title)
               Spacer()
-              if kind != .smb && kind != .androidUSB && kind != .androidWiFi {
+              if kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR {
                 Text("后续提供").foregroundStyle(.secondary)
               }
               Image(systemName: "chevron.right")
             }.frame(maxWidth: .infinity)
-          }.disabled(kind != .smb && kind != .androidUSB && kind != .androidWiFi)
+          }.disabled(
+            kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR)
         }
       } else {
         Form {
@@ -46,6 +48,13 @@ struct ConnectionEditor: View {
             Picker("安卓设备", selection: parameter("serial")) {
               Text("请选择").tag("")
               ForEach(model.usbDiscovery.devices) { device in
+                Text(device.name + " · " + device.serial).tag(device.serial)
+              }
+            }
+          } else if draft.kind == .ricohGR {
+            Picker("GR IV 相机", selection: parameter("serial")) {
+              Text("请选择").tag("")
+              ForEach(model.ricohDiscovery.devices) { device in
                 Text(device.name + " · " + device.serial).tag(device.serial)
               }
             }
@@ -82,6 +91,8 @@ struct ConnectionEditor: View {
         }.disabled(busy)
         if draft.kind == .androidUSB {
           Text("首次连接请在手机上点允许 USB 调试，最多等待 60 秒。").font(.caption).foregroundStyle(.secondary)
+        } else if draft.kind == .ricohGR {
+          Text("USB 连接 GR IV，支持原图读取，以及相机允许的删除操作。").font(.caption).foregroundStyle(.secondary)
         } else if draft.kind == .androidWiFi {
           Text("在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。").font(.caption).foregroundStyle(
             .secondary)

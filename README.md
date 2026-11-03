@@ -23,7 +23,7 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
-后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR 和网盘待后续里程碑。
+后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；网盘待后续里程碑。
 
 阶段一只有 SMB 使用系统挂载；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
 
@@ -48,3 +48,9 @@ Windows 需开启文件和打印机共享；微软账户填邮箱与账户密码
 Android 11+ 手机打开无线调试和“使用配对码配对设备”。在添加窗口选择安卓 Wi-Fi、配对服务和六位码；已配对的连接可留空配对码直接测试。GUID 保存到 connections.json，端口不保存，每次按 GUID 重新发现。两端同机 USB 可用时优先 USB，选择结果记入 ADBTransport 日志。
 
 `kayoi-dev pair host:port 六位码` 只配对并打印 GUID；然后在 App 从已发现的连接服务添加并测试保存。Wi-Fi 文件命令和 USB 相同，使用各自连接 UUID。真实配对、端口切换和传输验收尚待用户完成。
+
+## GR IV USB
+
+通过 ImageCaptureCore 发现、打开和读取相机。目录根按真实存储类型分为“内置存储”和“microSD”，保留原始 DCIM 层级；容量来自相机的标准 PTP 元数据。JPG/DNG 分块读取，不做格式转换。只允许读取和相机支持的照片删除；上传、建目录、移动立即返回只读错误。
+
+Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号。当前没有 GR IV 真机结果，两个存储区、实际 PTP 返回布局和删除能力须按验收清单验证。

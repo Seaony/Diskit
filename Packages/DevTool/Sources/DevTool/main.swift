@@ -1,6 +1,7 @@
 import ADB
 import Core
 import Foundation
+import RicohGR
 import Synchronization
 
 private let help = """
@@ -94,6 +95,9 @@ func run(_ arguments: [String]) async throws {
   let command = args.removeFirst()
   if command == "devices" {
     for device in ADBUSB.devices() { print("androidUSB\t\(device.serial)\t\(device.name)") }
+    for device in try await RicohDiscovery.available() {
+      print("ricohGR\t\(device.serial)\t\(device.name)")
+    }
     return
   }
   if command == "pair" {
@@ -123,10 +127,15 @@ func run(_ arguments: [String]) async throws {
     "ls": 1, "stat": 1, "get": 2, "put": 2, "mkdir": 1, "rm": 1, "mv": 2, "df": 0, "cat": 1,
   ]
   guard required[command] == args.count else { throw RemoteError.invalidPath }
-  guard connection.kind == .androidUSB || connection.kind == .androidWiFi else {
-    throw ConnectionError.notImplemented
+  if connection.kind == .ricohGR && ["put", "mkdir", "mv"].contains(command) {
+    throw RemoteError.posix(EROFS)
   }
-  let provider = try await ADBProviderFactory.make(for: connection)
+  let provider: any RemoteFileProvider
+  switch connection.kind {
+  case .androidUSB, .androidWiFi: provider = try await ADBProviderFactory.make(for: connection)
+  case .ricohGR: provider = try await RicohProvider.make(serial: connection.params["serial"] ?? "")
+  default: throw ConnectionError.notImplemented
+  }
   do {
     try await provider.connect()
     switch command {
@@ -150,8 +159,9 @@ func run(_ arguments: [String]) async throws {
       let space = try await provider.spaceInfo()
       print("total=\(space.total) used=\(space.used) available=\(space.available)")
     case "cat":
-      var offset: Int64 = 0
-      for try await bytes in try await provider.read(RemotePath(args[0]), range: nil) {
+      let requestedRange = provider.capabilities.supportsRangeRead ? range : nil
+      var offset: Int64 = requestedRange?.lowerBound ?? 0
+      for try await bytes in try await provider.read(RemotePath(args[0]), range: requestedRange) {
         let next = offset + Int64(bytes.count)
         if let range {
           let lower = max(offset, range.lowerBound)

@@ -42,3 +42,11 @@ Copyright (C) 2016 The Android Open Source Project，Apache License 2.0。
 M3 对照同一固定 ADB 版本的 pairing_auth、pairing_connection、tls/tls_connection.cpp、crypto/x509_generator.cpp、daemon/mdns.cpp、proto/pairing.proto。
 SPAKE2 使用 BoringSSL；HKDF-SHA256 和 AES-128-GCM 使用 CryptoKit；证书结构用 DER 编码，RSA 签名由 Security 执行，未实现密码学原语。
 AOSP 的 exporter 标签及 SPAKE2 名字包含末尾 NUL，HKDF info 不包含末尾 NUL；帧长度是大端，PeerInfo 为 8192 字节。
+
+## GR IV 元数据
+
+PTP/MTP StorageInfo、DeviceInfo、ObjectInfo 字段顺序参考 AOSP frameworks/av/media/mtp 下对应实现（Apache-2.0）；只用公开 ImageCaptureCore API发送标准只读命令，没有引入第三方相机库。
+- https://android.googlesource.com/platform/frameworks/av/+/refs/heads/main/media/mtp/MtpStorageInfo.cpp
+- https://android.googlesource.com/platform/frameworks/av/+/refs/heads/main/media/mtp/MtpDeviceInfo.cpp
+- https://android.googlesource.com/platform/frameworks/av/+/refs/heads/main/media/mtp/MtpObjectInfo.cpp
+实际 ICC/GR 返回仍需要真机验证；测试样例是标准字段，不是 GR 抓包。

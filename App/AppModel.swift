@@ -4,6 +4,7 @@ import Core
 import Foundation
 import OSLog
 import Observation
+import RicohGR
 import UserNotifications
 
 @MainActor @Observable final class AppModel {
@@ -11,6 +12,7 @@ import UserNotifications
   let discovery = SMBDiscovery()
   let usbDiscovery = USBDiscovery()
   let wirelessDiscovery = WirelessDiscovery()
+  let ricohDiscovery = RicohDiscovery()
   var pairingSelection: String?
   var editing: Connection?
   var alert: String?
@@ -24,10 +26,13 @@ import UserNotifications
     connections.openInFinder = { NSWorkspace.shared.open($0) }
     connections.mountFailed = { [weak self] message in self?.reportMountFailure(message) }
     connections.testRemote = { [weak self] connection in
-      guard connection.kind == .androidUSB || connection.kind == .androidWiFi else {
-        throw ConnectionError.notImplemented
+      let provider: any RemoteFileProvider
+      switch connection.kind {
+      case .androidUSB, .androidWiFi: provider = try await ADBProviderFactory.make(for: connection)
+      case .ricohGR:
+        provider = try await RicohProvider.make(serial: connection.params["serial"] ?? "")
+      default: throw ConnectionError.notImplemented
       }
-      let provider = try await ADBProviderFactory.make(for: connection)
       do {
         try await provider.connect()
         let space = try await provider.spaceInfo()
@@ -46,6 +51,10 @@ import UserNotifications
     wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
     wirelessDiscovery.start()
     usbDiscovery.start()
+    ricohDiscovery.changed = { [weak self] devices in
+      self?.connections.ricohDevicesChanged(serials: Set(devices.map(\.serial)))
+    }
+    ricohDiscovery.start()
     discovery.start()
     for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
       observers.append(

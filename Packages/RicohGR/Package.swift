@@ -5,5 +5,8 @@ let package = Package(
   name: "RicohGR", platforms: [.macOS("26.0")],
   products: [.library(name: "RicohGR", targets: ["RicohGR"])],
   dependencies: [.package(path: "../Core")],
-  targets: [.target(name: "RicohGR", dependencies: [.product(name: "Core", package: "Core")])],
+  targets: [
+    .target(name: "RicohGR", dependencies: [.product(name: "Core", package: "Core")]),
+    .testTarget(name: "RicohGRTests", dependencies: ["RicohGR"]),
+  ],
   swiftLanguageModes: [.v6])

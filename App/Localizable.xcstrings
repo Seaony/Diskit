@@ -1768,6 +1768,74 @@
           }
         }
       }
+    },
+    "GR IV 相机": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GR IV 相机"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GR IV camera"
+          }
+        }
+      }
+    },
+    "USB 连接 GR IV，支持原图读取，以及相机允许的删除操作。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB 连接 GR IV，支持原图读取，以及相机允许的删除操作。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect your GR IV by USB to read original files and delete them if the camera allows it."
+          }
+        }
+      }
+    },
+    "此位置为只读，不能上传、创建目录或移动文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此位置为只读，不能上传、创建目录或移动文件"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location is read-only. Uploading, creating folders, and moving files are unavailable."
+          }
+        }
+      }
+    },
+    "连接的相机未确认是 GR IV": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接的相机未确认是 GR IV"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connected camera could not be confirmed as a GR IV"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

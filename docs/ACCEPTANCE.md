@@ -116,7 +116,32 @@ SDK 核查：`nw_framer_prepend_application_protocol` 明确支持握手后动�
 
 ## M4 GR IV USB
 
-未开始。3 条验收尚未执行。
+实现与自动检查通过；本机无相机，真机未测。
+
+| 标准 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 1. USB 发现 GR IV | 待用户验证 | ICDeviceBrowser 只发现，不打开会话；接受官方文档中的 RICOH GR 发现名，连接时读取 DeviceInfo 确认 GR IV。CLI devices 退出 0、stdout/stderr 均为空，当前无设备 |
+| 2. 两存储/DCIM、JPG/DNG 下载、删除或明确拒绝 | 待用户验证 | 14 项相机测试通过，涵盖真实字段映射、64 位容量、分块/范围读、删除刷新及 EACCES。ICC/GR 的实际 PTP data phase 布局、双存储暴露和删除能力均未实测 |
+| 3. put/mkdir/mv 立即只读且不访问相机 | 待用户验证 | Provider 单元测试在连接前后检查 EROFS 且假相机调用次数不变；CLI 在创建 Provider 前直接拒绝这三类命令。真实 CLI 操作待用户用已保存连接验证 |
+
+```text
+$ make test
+Test run with 16 tests in 0 suites passed after 0.043 seconds.
+Test run with 26 tests in 0 suites passed after 0.362 seconds.
+Test run with 14 tests in 0 suites passed after 0.008 seconds.
+$ make release
+** BUILD SUCCEEDED **
+Kayoi.app: valid on disk
+Kayoi.app: satisfies its Designated Requirement
+$ build/bin/kayoi-dev devices
+# stdout/stderr 均为空，退出码 0；当前 0 台设备
+```
+
+合计 56 项测试。两个子代理分别负责系统适配/Provider 和测试，主进程整合 App、CLI 与验证。
+
+实现依据：本机 ImageCaptureCore SDK 的 contents/ptpObjectHandle/requestReadData/requestDeleteFiles/requestSendPTPCommand。目录沿用 ICC 原始树，仅通过标准 PTP GetStorageIDs/GetStorageInfo/GetObjectInfo 读取缺少的真实元数据；不会用文件总大小伪造容量。GetDeviceInfo 用于连接时确认型号。未知存储类型或无法读取必要字段时明确报错，不猜。
+
+[RICOH 官方 FAQ](https://www.ricoh-imaging.co.jp/english/support/qa/gr-4/) 确认 Mac 使用 Image Capture、设备名为 RICOH GR；其 Windows 段注明不能从电脑删除。Mac 下的实际删除能力未获验证，因此仍按 PLAN.md 在相机拒绝时返回 EACCES，而不承诺一定能删。
 
 ## M5 阿里云盘
 
@@ -128,7 +153,7 @@ SDK 核查：`nw_framer_prepend_application_protocol` 明确支持握手后动�
 
 ## 待用户验证（按操作顺序）
 
-目前 M1–M3 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
+目前 M1–M4 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
 
 1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
@@ -165,9 +190,14 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 18. **USB 优先（M3-5）**：同机 Wi-Fi 可用时重新插上 USB，启动 `log stream --style compact --info --predicate 'subsystem == "com.seaony.Kayoi" AND category == "ADBTransport"'`，然后测试该 Wi-Fi 连接。应出现“连接方式：USB（优先于同机 Wi-Fi）”；拔出 USB 再测应出现“连接方式：Wi-Fi”。结束日志用 Ctrl+C。若 USB 被官方 adb 占用，先自行执行 adb kill-server。
 19. **CLI 配对（§3.2）**：可单独执行 `build/bin/kayoi-dev pair '手机IP:配对端口' '六位码'`，成功输出 GUID；该命令只配对，不自动新增保存连接。随后从 App 已发现的连接服务添加，留空配对码，测试并保存。不要混淆手机显示的配对端口和连接端口。
 
+20. **相机发现（M4-1）**：按理光官方 USB 步骤，先关闭相机，用数据线连接 Mac；相机会自动进入回放模式。先确认系统“图像捕捉”能看到 RICOH GR，再退出图像捕捉以避免并行占用。在 Kayoi 的已发现区添加并测试保存；执行 `build/bin/kayoi-dev devices`，记录相机名称和序列号。
+21. **两存储、下载与容量（M4-2）**：确保内置存储和 microSD 各有可用于测试的 JPG/DNG。用 GR 连接 UUID 运行 `ls UUID /`、`ls UUID /内置存储/DCIM`、`ls UUID /microSD/DCIM`，再按实际返回路径执行 `stat UUID '/实际照片路径'` 和 `get UUID '/实际照片路径' '/本地下载文件'`。用 `stat -f %z '/本地下载文件'` 比较大小；运行 `df UUID` 记录相机报告的容量。若实际未暴露两个存储或 PTP 元数据返回错误，请保留错误，不能把单存储结果当两存储通过。
+22. **删除或拒绝（M4-2）**：只选一张可删除的测试照片，运行 `rm UUID '/测试照片路径'`。成功时检查相机回放中也消失；若相机拒绝，应明确报权限错误而非假成功。不要用重要照片测试。
+23. **只读拒绝（M4-3）**：使用 GR UUID 运行 `put UUID '/任意本地测试文件' '/new.JPG'`、`mkdir UUID /new`、`mv UUID '/已有照片路径' '/renamed.JPG'`。三者应立即报“此位置为只读”，不应出现部分上传或相机文件变化。界面仍由用户手动验收。
+
 ## 未做与风险
 
-- M4–M6 尚未开始；M7、M8 按要求不做。
+- M5、M6 尚未开始；M7、M8 按要求不做。
 - Windows 网络、密码验证、临时挂载与推出尚无实测。假实现只证明应用流程，不证明系统 API 在目标共享上的行为。
 - 临时挂载点只用 `rmdir` 删除空目录；推出失败不会递归删除远端内容。若出现错误并留下临时挂载，请保留错误信息后用 Finder 推出对应卷。
 - 仅安装了已授权的 XcodeGen，无新增第三方库。未使用 Jev：本阶段是确定性的系统接口与编译检查。

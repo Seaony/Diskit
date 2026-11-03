@@ -294,3 +294,17 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try ConnectionRepository(location: f.location).load().first?.params == ["guid": guid])
   #expect(f.smb.calls.isEmpty)
 }
+
+@Test @MainActor func cameraRemovalClearsConnectionTestResult() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .ricohGR, name: "GR IV", params: ["serial": "camera"])
+  manager.ricohDevicesChanged(serials: ["camera"])
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  try await manager.save(connection, password: "")
+  manager.ricohDevicesChanged(serials: [])
+  #expect(manager.states[connection.id] == .disconnected)
+  #expect(f.smb.calls.isEmpty)
+  #expect(try manager.savedPassword(connection) == "")
+}

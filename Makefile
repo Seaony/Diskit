@@ -14,6 +14,7 @@ release: gen dev-tool
 test:
 	swift test --package-path Packages/Core
 	swift test --package-path Packages/ADB
+	swift test --package-path Packages/RicohGR
 
 dev-tool:
 	swift build --package-path Packages/DevTool -c release

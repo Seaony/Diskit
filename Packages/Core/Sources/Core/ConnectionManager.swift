@@ -19,6 +19,7 @@ public enum ConnectionState: Equatable, Sendable {
   private var busy: Set<UUID> = []
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
+  private var ricohSerials: Set<String>?
   public var mountFailed: ((String) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
   public var openInFinder: ((URL) -> Void)?
@@ -174,7 +175,19 @@ public enum ConnectionState: Equatable, Sendable {
     {
       return .disconnected
     }
+    if connection.kind == .ricohGR, let ricohSerials,
+      !ricohSerials.contains(connection.params["serial"] ?? "")
+    {
+      return .disconnected
+    }
     return result
+  }
+  public func ricohDevicesChanged(serials: Set<String>) {
+    ricohSerials = serials
+    for connection in connections
+    where connection.kind == .ricohGR && !serials.contains(connection.params["serial"] ?? "") {
+      states[connection.id] = .disconnected
+    }
   }
   public func wirelessGUIDsChanged(_ guids: Set<String>) {
     wifiGUIDs = guids
