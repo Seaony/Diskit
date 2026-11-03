@@ -6,6 +6,8 @@ import SwiftUI
   var body: some Scene {
     MenuBarExtra {
       PanelView(model: model)
+        .containerBackground(KayoiTheme.background, for: .window)
+        .tint(KayoiTheme.accent)
     } label: {
       Image(systemName: "externaldrive")
         .overlay(alignment: .bottomTrailing) {
@@ -16,11 +18,15 @@ import SwiftUI
     }.menuBarExtraStyle(.window)
     Window("添加或编辑位置", id: "connection") {
       ConnectionEditor(model: model).id(model.editing?.id)
-    }.defaultSize(width: 460, height: 480).windowResizability(.contentSize).defaultLaunchBehavior(
+        .containerBackground(KayoiTheme.background, for: .window)
+        .tint(KayoiTheme.accent)
+    }.defaultSize(width: 560, height: 500).windowResizability(.contentSize).defaultLaunchBehavior(
       .suppressed)
     Window("设置", id: "settings") {
       SettingsView(model: model)
-    }.defaultSize(width: 460, height: 320).windowResizability(.contentSize).defaultLaunchBehavior(
+        .containerBackground(KayoiTheme.background, for: .window)
+        .tint(KayoiTheme.accent)
+    }.defaultSize(width: 560, height: 560).windowResizability(.contentSize).defaultLaunchBehavior(
       .suppressed)
   }
 }

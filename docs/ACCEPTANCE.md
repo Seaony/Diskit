@@ -297,3 +297,36 @@ Kayoi.app: satisfies its Designated Requirement
 格式检查：Swift 文件已使用 `xcrun swift-format format`。最终 `swift-format lint` 有 17 条命名风格警告（API 字段 snake_case、L 本地化函数及测试名称），没有格式错误；未为消除命名警告重构已完成阶段。`git diff --check` 无输出。
 
 最终核对还修复了阿里云跨目录改名：目标目录已有原名但最终名空闲时，使用官方 move 的 new_name 参数，不修改原有同名文件。新增回归修前失败、修后通过；阿里云包 28 项通过，证据 `/tmp/kayoi-aliyun-move-red.log`、`/tmp/kayoi-aliyun-move-green.log`。真实账号按第 26 步补测 `/A/report.txt → /B/final.txt` 且 `/B/report.txt` 已存在的情形。
+
+## 中英文与系统外观细节（2026-11-03）
+
+本轮保留现有功能和系统跟随方式，没有新增语言/主题选择器，没有新增测试、UI 自动化或快照。
+
+- 通过：现有 `make test` 共 123 项，退出码 0（`/tmp/kayoi-ui-test.log`）。
+- 通过：`make release` 输出 `BUILD SUCCEEDED`，签名验证通过（`/tmp/kayoi-ui-release.log`）。
+- 通过：英文挂载数量使用 String Catalog 单复数；Release 的 en.lproj/Localizable.stringsdict 已包含 one/other 规则。
+- 已修改：行卡片和面板分别使用系统 controlBackgroundColor/windowBackgroundColor；长设备名可查看完整提示，操作按钮保持完整宽度；空状态覆盖手机、电脑、相机、网盘；取消支持 Escape，密钥指纹补充辅助功能标签。
+- 待用户验证：退出旧进程后重新启动 Release；分别在中文/英文应用语言下切换系统亮色/暗色，检查菜单栏面板、添加窗口、设置和扫码窗口。使用长连接名称，确认操作按钮可见、悬停能看完整名称；检查键盘 Escape 取消、错误提示可读。未把编译成功视为这四种组合的视觉验收通过。
+
+## 去除应用内玻璃样式（2026-11-03）
+
+用户要求不用液态玻璃，覆盖原 §5 默认 bordered 按钮外观：保留 Button 和既有操作，使用实色填充、细边框和按下状态；窗口容器及扫码弹层指定系统实色背景，表单开关使用 checkbox。保留此前中英文及系统深浅色适配，不修改系统透明度设置。
+
+- 通过：`make release` 退出码 0，`BUILD SUCCEEDED`，App 签名校验通过（`/tmp/kayoi-flat-release.log`）。
+- 通过：现有 `make test` 123 项通过（`/tmp/kayoi-flat-test.log`）；未新增测试。
+- 待用户验证：退出旧版后打开新版，在亮色和暗色分别检查面板、添加窗口、设置和扫码弹层。确认背景不透底、按钮无玻璃高光，并检查键盘焦点、禁用态和按下反馈。系统窗口边缘与弹出菜单的最终观感尚未实测，不把构建通过作为视觉通过。
+- 未提交、未推送。未运行 UI 自动化或快照测试。
+
+## 图标卡片与 SideMount 风格（2026-11-03）
+
+用户明确要求类型选择使用图标卡片并进入下一步，后续指定 SideMount 为主要视觉参考。参考官方配对页及双设备面板的实色背景、绿色主操作、低对比边框与文字层次；未复制其代码或图标资源。
+
+- 主要参考：https://sidemount.app/ 、https://sidemount.app/img/panel-pairing-dark.png 、https://sidemount.app/img/panel-two-phones-light.png 、https://sidemount.app/img/panel-two-phones-dark.png
+- 初步参考：https://www.panic.com/transmit/ 、https://culturedcode.com/things/features/ 。最终配色以用户指定的 SideMount 为主。
+- 类型选择：由五条长按钮改为三列图标卡片，选中标记与下一步；连接表单增加返回类型选择。均属用户本轮明确要求的选择流程。
+- 表单：基本信息、连接信息、连接选项分组；字段标签与输入框上下排列；内容滚动，底部固定操作区。设置页补标题及说明。
+- 源码尺寸：旧添加窗口宽460pt，现宽560pt；类型页高500pt，表单高620pt；卡片间距12pt、卡片高128pt、内容外边距24pt。以上为代码尺寸，未经实际截图测量。
+- 检查5处 / 修改5处 / 未改0处：类型选择、连接表单、设置、主面板、扫码页。前三处调整布局，后两处仅统一颜色及按钮。实际渲染验证仍缺5处，不能据源码检查认定视觉通过。
+- 通过：现有 `make test` 123项，退出码0（`/tmp/kayoi-cards-test.log`）；`make release` 与签名校验通过（`/tmp/kayoi-cards-release.log`）；`git diff --check` 无输出。
+- 待用户验证：电脑控制读取 Kayoi 窗口返回 timeoutReached，未取得新版界面截图。请退出旧版后重新打开 Release，检查“添加位置”卡片未选/选中/下一步/上一步，SMB、Android、GR及两种网盘表单，设置页；分别检查中文/英文、深色/浅色、键盘焦点与错误提示。未新增测试、UI自动化或快照测试。
+- 未提交、未推送。

@@ -47,13 +47,26 @@ struct SettingsView: View {
       }
       Section("ADB") {
         Text(fingerprint).font(.caption.monospaced()).textSelection(.enabled)
+          .fixedSize(horizontal: false, vertical: true).accessibilityLabel(
+            L("ADB 密钥指纹") + ": " + fingerprint)
         Button("重新生成密钥") { confirmKey = true }
         Text("若提示设备被占用，请先退出其它 adb 程序或执行 adb kill-server。").font(.caption).foregroundStyle(
           .secondary)
       }
       Section("日志") { Button("在 Finder 中显示日志") { model.showLogs() } }
       if let error { Text(error).foregroundStyle(.red) }
-    }.formStyle(.grouped).frame(width: 460, height: 470)
+    }.formStyle(.grouped).buttonStyle(FlatButtonStyle()).toggleStyle(.checkbox)
+      .scrollContentBackground(.hidden)
+      .background(KayoiTheme.background)
+      .safeAreaInset(edge: .top, spacing: 0) {
+        VStack(alignment: .leading, spacing: 6) {
+          Text("设置").font(.system(size: 23, weight: .semibold))
+          Text("管理启动、缓存与设备密钥").font(.subheadline).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity, alignment: .leading).padding(24)
+          .background(KayoiTheme.background)
+          .overlay(alignment: .bottom) { Divider() }
+      }
+      .frame(width: 560, height: 560)
       .onAppear {
         do { fingerprint = try ADBIdentity().fingerprint() } catch {
           self.error = error.localizedDescription

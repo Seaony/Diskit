@@ -30,7 +30,8 @@ struct QuarkLoginView: View {
             cookie.isEmpty || checking)
         }.padding(.top, 8)
       }
-    }.padding(20).onDisappear { validation?.cancel() }
+    }.buttonStyle(FlatButtonStyle()).padding(20)
+      .background(KayoiTheme.background).onDisappear { validation?.cancel() }
   }
   private func enqueue(_ value: String, manual: Bool) {
     pending = (value, manual)

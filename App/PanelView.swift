@@ -45,8 +45,11 @@ struct PanelView: View {
       HStack {
         Text("Kayoi").font(.title.bold())
         Spacer()
-        Text(String(format: L("%d 个已挂载"), model.connections.mountedCount)).font(.caption)
-          .padding(.horizontal, 8).padding(.vertical, 4).background(.quaternary, in: Capsule())
+        Text(String.localizedStringWithFormat(L("%d 个已挂载"), model.connections.mountedCount)).font(
+          .caption
+        )
+        .padding(.horizontal, 8).padding(.vertical, 4).background(
+          KayoiTheme.surface, in: Capsule())
       }.padding(16)
       ScrollView {
         VStack(alignment: .leading, spacing: 8) {
@@ -67,20 +70,20 @@ struct PanelView: View {
           ForEach(discoveredCameras) { device in
             HStack {
               Image(systemName: "camera").frame(width: 28, height: 28)
-              Text(device.name).lineLimit(1)
+              Text(device.name).lineLimit(1).help(device.name)
               Spacer()
               Button("添加") {
                 edit(
                   Connection(kind: .ricohGR, name: device.name, params: ["serial": device.serial]))
-              }.controlSize(.small)
+              }.controlSize(.small).fixedSize()
             }.frame(height: 52).padding(.horizontal, 10).background(
-              .background, in: RoundedRectangle(cornerRadius: 10))
+              KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10))
           }
           ForEach(discoveredWiFi) { device in
             HStack {
               Image(systemName: "wifi").frame(width: 28, height: 28)
               VStack(alignment: .leading) {
-                Text(device.name + L("（Wi-Fi）")).lineLimit(1)
+                Text(device.name + L("（Wi-Fi）")).lineLimit(1).help(device.name)
                 Text(device.type == .pairing ? L("配对服务") : L("无线调试")).font(.caption)
                   .foregroundStyle(.secondary)
               }
@@ -91,26 +94,27 @@ struct PanelView: View {
                   params: device.type == .connect ? ["guid": device.name] : [:])
                 edit(connection)
                 model.pairingSelection = device.type == .pairing ? device.id : nil
-              }.controlSize(.small)
+              }.controlSize(.small).fixedSize()
             }.frame(height: 52).padding(.horizontal, 10).background(
-              .background, in: RoundedRectangle(cornerRadius: 10))
+              KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10))
           }
           if !discoveredUSB.isEmpty {
             ForEach(discoveredUSB) { device in
               HStack {
                 Image(systemName: "smartphone").frame(width: 28, height: 28)
                 VStack(alignment: .leading) {
-                  Text(device.name)
-                  Text(device.serial).font(.caption).foregroundStyle(.secondary)
+                  Text(device.name).lineLimit(1).help(device.name)
+                  Text(device.serial).font(.caption).foregroundStyle(.secondary).lineLimit(1).help(
+                    device.serial)
                 }
                 Spacer()
                 Button("添加") {
                   edit(
                     Connection(
                       kind: .androidUSB, name: device.name, params: ["serial": device.serial]))
-                }.controlSize(.small)
+                }.controlSize(.small).fixedSize()
               }.frame(height: 52).padding(.horizontal, 10).background(
-                .background, in: RoundedRectangle(cornerRadius: 10))
+                KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10))
             }
           }
           if !discovered.isEmpty {
@@ -118,7 +122,7 @@ struct PanelView: View {
               HStack(spacing: 10) {
                 typeIcon(color: .blue)
                 VStack(alignment: .leading) {
-                  Text(device.name).lineLimit(1)
+                  Text(device.name).lineLimit(1).help(device.name)
                   Text(device.host ?? L("正在解析地址…")).font(.caption).foregroundStyle(.secondary)
                     .lineLimit(1)
                 }
@@ -126,9 +130,9 @@ struct PanelView: View {
                 Button("添加") {
                   edit(Connection(name: device.name, params: ["host": device.host ?? ""]))
                 }
-                .disabled(device.host == nil).controlSize(.small)
+                .disabled(device.host == nil).controlSize(.small).fixedSize()
               }.frame(height: 52).padding(.horizontal, 10).background(
-                .background, in: RoundedRectangle(cornerRadius: 10))
+                KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10))
             }
           }
           if model.connections.connections.isEmpty {
@@ -136,7 +140,8 @@ struct PanelView: View {
               Image(systemName: "externaldrive.badge.plus").font(.system(size: 36)).foregroundStyle(
                 .secondary)
               Text("还没有保存的位置").font(.headline)
-              Text("添加共享，让文件出现在 Finder 中").font(.caption).foregroundStyle(.secondary)
+              Text("连接手机、电脑、相机和网盘").font(.caption).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             }.frame(maxWidth: .infinity).padding(.vertical, 24)
           } else {
             Text("我的位置").font(.caption).foregroundStyle(.secondary).padding(.top, 4)
@@ -187,36 +192,38 @@ struct PanelView: View {
           Image(systemName: "power")
         }.help("退出").accessibilityLabel("退出")
       }.buttonStyle(.borderless).padding(12)
-    }.frame(width: 380)
-      .task {
-        model.start()
-        while !Task.isCancelled {
-          model.connections.refreshMounts()
-          do { try await Task.sleep(for: .seconds(30)) } catch { return }
-        }
+    }.buttonStyle(FlatButtonStyle()).frame(width: 380).background(
+      KayoiTheme.background
+    )
+    .task {
+      model.start()
+      while !Task.isCancelled {
+        model.connections.refreshMounts()
+        do { try await Task.sleep(for: .seconds(30)) } catch { return }
       }
-      .alert(
-        "操作失败",
-        isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })
-      ) {
-        Button("好") { model.alert = nil }
-      } message: {
-        Text(model.alert ?? "")
-      }
-      .confirmationDialog(
-        "删除连接？已挂载的共享会先推出。",
-        isPresented: Binding(get: { deleteTarget != nil }, set: { if !$0 { deleteTarget = nil } })
-      ) {
-        Button("删除连接", role: .destructive) {
-          guard let target = deleteTarget else { return }
-          deleteTarget = nil
-          Task {
-            do { try await model.connections.remove(target) } catch {
-              model.alert = error.localizedDescription
-            }
+    }
+    .alert(
+      "操作失败",
+      isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })
+    ) {
+      Button("好") { model.alert = nil }
+    } message: {
+      Text(model.alert ?? "")
+    }
+    .confirmationDialog(
+      "删除连接？已挂载的共享会先推出。",
+      isPresented: Binding(get: { deleteTarget != nil }, set: { if !$0 { deleteTarget = nil } })
+    ) {
+      Button("删除连接", role: .destructive) {
+        guard let target = deleteTarget else { return }
+        deleteTarget = nil
+        Task {
+          do { try await model.connections.remove(target) } catch {
+            model.alert = error.localizedDescription
           }
         }
       }
+    }
   }
   private func edit(_ connection: Connection?, reauthenticate: Bool = false) {
     model.forceLogin = reauthenticate
@@ -243,7 +250,7 @@ struct PanelView: View {
       .foregroundStyle(.white).frame(width: 28, height: 28).background(
         connection.tint, in: RoundedRectangle(cornerRadius: 7))
       VStack(alignment: .leading, spacing: 3) {
-        Text(connection.name).font(.body.weight(.medium)).lineLimit(1)
+        Text(connection.name).font(.body.weight(.medium)).lineLimit(1).help(connection.name)
         Text((connection.params["nickname"].map { $0 + " · " } ?? "") + subtitle(state)).font(
           .caption
         ).foregroundStyle(.secondary).lineLimit(1).help(
@@ -260,9 +267,9 @@ struct PanelView: View {
           Task { await model.connections.toggle(connection) }
         }
       }
-      .buttonStyle(.bordered).controlSize(.small).disabled(state == .connecting)
+      .buttonStyle(FlatButtonStyle()).controlSize(.small).fixedSize().disabled(state == .connecting)
     }.frame(height: 52).padding(.horizontal, 10).background(
-      .background, in: RoundedRectangle(cornerRadius: 10)
+      KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10)
     )
     .contextMenu {
       if case .mounted(let mounted) = state {
