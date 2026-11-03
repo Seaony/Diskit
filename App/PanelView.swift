@@ -218,7 +218,8 @@ struct PanelView: View {
         }
       }
   }
-  private func edit(_ connection: Connection?) {
+  private func edit(_ connection: Connection?, reauthenticate: Bool = false) {
+    model.forceLogin = reauthenticate
     model.pairingSelection = nil
     model.editing = connection
     openWindow(id: "connection")
@@ -233,18 +234,29 @@ struct PanelView: View {
     return HStack(spacing: 10) {
       Image(
         systemName: (connection.kind == .androidUSB || connection.kind == .androidWiFi)
-          ? "smartphone" : (connection.kind == .ricohGR ? "camera" : "desktopcomputer")
+          ? "smartphone"
+          : (connection.kind == .ricohGR
+            ? "camera" : (connection.kind == .aliyunDrive ? "icloud" : "desktopcomputer"))
       )
       .foregroundStyle(.white).frame(width: 28, height: 28).background(
         connection.tint, in: RoundedRectangle(cornerRadius: 7))
       VStack(alignment: .leading, spacing: 3) {
         Text(connection.name).font(.body.weight(.medium)).lineLimit(1)
-        Text(subtitle(state)).font(.caption).foregroundStyle(.secondary).lineLimit(1).help(
+        Text((connection.params["nickname"].map { $0 + " · " } ?? "") + subtitle(state)).font(
+          .caption
+        ).foregroundStyle(.secondary).lineLimit(1).help(
           subtitle(state))
       }
       Spacer(minLength: 0)
-      Button(connection.kind == .smb ? buttonTitle(state) : L("测试连接")) {
-        Task { await model.connections.toggle(connection) }
+      Button(
+        state == .needsLogin
+          ? L("重新登录") : (connection.kind == .smb ? buttonTitle(state) : L("测试连接"))
+      ) {
+        if state == .needsLogin {
+          edit(connection, reauthenticate: true)
+        } else {
+          Task { await model.connections.toggle(connection) }
+        }
       }
       .buttonStyle(.bordered).controlSize(.small).disabled(state == .connecting)
     }.frame(height: 52).padding(.horizontal, 10).background(
@@ -255,11 +267,15 @@ struct PanelView: View {
         Button("在 Finder 中打开") { NSWorkspace.shared.open(mounted.url) }
       }
       Button("编辑") { edit(connection) }
+      if connection.kind == .aliyunDrive {
+        Button("重新登录") { edit(connection, reauthenticate: true) }
+      }
       Button("删除连接", role: .destructive) { deleteTarget = connection }
     }
   }
   private func subtitle(_ state: ConnectionState) -> String {
     switch state {
+    case .needsLogin: L("需重新登录")
     case .disconnected: L("未连接")
     case .connecting: L("连接中…")
     case .failed(let error): error
@@ -275,6 +291,7 @@ struct PanelView: View {
   }
   private func buttonTitle(_ state: ConnectionState) -> String {
     switch state {
+    case .needsLogin: L("重新登录")
     case .tested: L("测试连接")
     case .mounted: L("推出")
     case .failed: L("重试")

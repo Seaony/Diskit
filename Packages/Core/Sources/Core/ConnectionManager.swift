@@ -6,6 +6,7 @@ public enum ConnectionState: Equatable, Sendable {
   case mounted(MountedShare)
   case tested(SpaceInfo)
   case failed(String)
+  case needsLogin
 }
 
 @MainActor @Observable public final class ConnectionManager {
@@ -113,6 +114,7 @@ public enum ConnectionState: Equatable, Sendable {
     defer { busy.remove(connection.id) }
     if let mount = smb.mounted(connection) { try await smb.unmount(mount.url) }
     try secrets.delete(connection.passwordKey)
+    if connection.kind == .aliyunDrive { try secrets.delete("\(connection.id.uuidString).oauth") }
     let cache = location.cacheDirectory.appending(path: connection.id.uuidString)
     if FileManager.default.fileExists(atPath: cache.path) {
       try FileManager.default.removeItem(at: cache)
@@ -164,7 +166,11 @@ public enum ConnectionState: Equatable, Sendable {
       }
     }
   }
+  public func requireLogin(_ id: UUID) {
+    if connections.contains(where: { $0.id == id }) { states[id] = .needsLogin }
+  }
   private func remoteState(_ connection: Connection, result: ConnectionState) -> ConnectionState {
+    if case .failed = result, states[connection.id] == .needsLogin { return .needsLogin }
     if connection.kind == .androidUSB, let usbSerials,
       !usbSerials.contains(connection.params["serial"] ?? "")
     {

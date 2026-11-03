@@ -145,7 +145,37 @@ $ build/bin/kayoi-dev devices
 
 ## M5 阿里云盘
 
-未开始。5 条验收尚未执行。
+实现与自动检查通过；client_id/client_secret 尚未申请，没有真实授权或网盘写操作。
+
+| 标准 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 1. 官方授权、回调、昵称和容量 | 待用户验证 | 接入 ASWebAuthenticationSession，校验回调 route/state/code；OAuth/token/account 假实现与回调测试通过。构建产物确认 client_id/client_secret 均未配置，redirect URI 为 kayoi://oauth/aliyun |
+| 2. >100分页、Range、>1GB分片及文件操作 | 待用户验证 | 单测覆盖101条分页、206/Content-Range、过期下载/上传链接重取、真实10MiB+17B两片数据、mkdir/move/trash；未上传真实 >1GB 文件或核对网页版 |
+| 3. 无效 access_token 自动恢复 | 待用户验证 | 401/AccessTokenInvalid 刷新后仅重试一次，刷新令牌先写入钥匙串；假实现通过，未改真实账号令牌 |
+| 4. 撤权后通知与重新登录状态 | 待用户验证 | 官方 PermissionDenied/刷新失败触发失效通知，App 显示重新登录；Core 测试确认错误不会覆盖重登状态。真实检测发生在下一次 App 请求时，未验证系统通知展示 |
+| 5. 分页、缓存失效、分片边界单元测试 | 通过 | AliyunDrive 27项测试（OAuth13、文件13、回调1）；覆盖0字节、整片、最后不足一片、完整字节顺序及complete大小校验 |
+
+```text
+$ make test
+Test run with 19 tests in 0 suites passed after 0.051 seconds.
+Test run with 26 tests in 0 suites passed after 0.301 seconds.
+Test run with 14 tests in 0 suites passed after 0.007 seconds.
+Test run with 27 tests in 0 suites passed after 0.073 seconds.
+$ make release
+** BUILD SUCCEEDED **
+Kayoi.app: valid on disk
+Kayoi.app: satisfies its Designated Requirement
+$ git check-ignore Config/Secrets.xcconfig
+Config/Secrets.xcconfig
+```
+
+共 86 项测试。HTTP 的 URLProtocol 测试证明真实 URLSession AsyncBytes 在响应头返回后继续按 64 KiB 输出，不先加载整文件。普通请求与完整下载流共用最多4并发；429优先按官方 x-retry-after 毫秒退避。
+
+配置：App 从本地 xcconfig 构建值授权；授权记录及客户端配置只存 `<UUID>.oauth` 钥匙串项，CLI 可用空配置恢复并刷新。connections.json 仅保存昵称、用户ID和通用连接字段，不存令牌。删除连接同时删对应钥匙串项。
+
+用户已批准并已修订 PLAN.md：同名替换先完成新上传，再回收旧文件；上传失败不回收旧文件；旧文件回收失败或结果未确认时明确报错，不擅自删除新文件或回滚。原目录多份同名则拒绝猜选目标。接口不支持原位覆盖，file_id 会改变；网络中断时不能保证服务端回收未执行。
+
+官方授权要求 style=folder；若返回 folder_id，Provider 将它作为根，绝不越过实际授权目录。跨目录且改名使用 move 后 update 两个官方调用，不承诺原子性。来源见 THIRD_PARTY_NOTICES.md。
 
 ## M6 夸克
 
@@ -153,7 +183,7 @@ $ build/bin/kayoi-dev devices
 
 ## 待用户验证（按操作顺序）
 
-目前 M1–M4 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
+目前 M1–M5 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
 
 1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
@@ -195,9 +225,15 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 22. **删除或拒绝（M4-2）**：只选一张可删除的测试照片，运行 `rm UUID '/测试照片路径'`。成功时检查相机回放中也消失；若相机拒绝，应明确报权限错误而非假成功。不要用重要照片测试。
 23. **只读拒绝（M4-3）**：使用 GR UUID 运行 `put UUID '/任意本地测试文件' '/new.JPG'`、`mkdir UUID /new`、`mv UUID '/已有照片路径' '/renamed.JPG'`。三者应立即报“此位置为只读”，不应出现部分上传或相机文件变化。界面仍由用户手动验收。
 
+24. **准备阿里云盘配置（M5-1）**：申请开放平台 client_id/client_secret，登记与 `ALIYUN_REDIRECT_URI` 完全一致的回调地址。填写不入库的 `Config/Secrets.xcconfig`，参考 example 中 `$()` 的 URL 写法；执行 `make test && make release` 后重启 App。不要把凭据提交到 Git 或发到聊天中。
+25. **授权和账号（M5-1）**：添加阿里云盘，测试并保存会打开官方授权页，按平台提示选择授权目录。完成后应自动回到 App，显示昵称与容量；若平台要求第三方应用权益，请按平台实际提示核实。
+26. **文件与范围读取（M5-2）**：用阿里云盘连接 UUID 对一个超过100项的目录执行 `ls`，核对网页数量；对视频运行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，预期片段1MiB。运行 `put` 上传一个 >1GB 测试文件并核对网页版大小，再验证 mkdir、mv、rm，删除项应进回收站。重复上传同名文件，确认新内容可见、旧项进回收站。
+27. **令牌刷新（M5-3）**：在“钥匙串访问”中定位 service=com.seaony.Kayoi、account=`<UUID>.oauth` 的测试账号记录，保留 refreshToken 和其他字段，只把 JSON 中 accessToken 改为无效值；用 App 测试或 CLI ls，应自动恢复。不要导出或展示完整凭据记录。
+28. **撤销授权（M5-4）**：在阿里云盘网页撤销测试应用授权，然后在 App 点击测试连接。应显示“重新登录”，并在已允许系统通知时收到通知；重新登录应重新走官方授权。没有请求时不承诺即时发现远端撤权。
+
 ## 未做与风险
 
-- M5、M6 尚未开始；M7、M8 按要求不做。
+- M6 尚未开始；M7、M8 按要求不做。
 - Windows 网络、密码验证、临时挂载与推出尚无实测。假实现只证明应用流程，不证明系统 API 在目标共享上的行为。
 - 临时挂载点只用 `rmdir` 删除空目录；推出失败不会递归删除远端内容。若出现错误并留下临时挂载，请保留错误信息后用 Finder 推出对应卷。
 - 仅安装了已授权的 XcodeGen，无新增第三方库。未使用 Jev：本阶段是确定性的系统接口与编译检查。

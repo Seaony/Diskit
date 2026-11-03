@@ -1,4 +1,5 @@
 import ADB
+import AliyunDrive
 import AppKit
 import Core
 import Foundation
@@ -14,6 +15,7 @@ import UserNotifications
   let wirelessDiscovery = WirelessDiscovery()
   let ricohDiscovery = RicohDiscovery()
   var pairingSelection: String?
+  var forceLogin = false
   var editing: Connection?
   var alert: String?
   private var started = false
@@ -31,6 +33,11 @@ import UserNotifications
       case .androidUSB, .androidWiFi: provider = try await ADBProviderFactory.make(for: connection)
       case .ricohGR:
         provider = try await RicohProvider.make(serial: connection.params["serial"] ?? "")
+      case .aliyunDrive:
+        provider = AliyunProvider(
+          session: AliyunSession(
+            secretKey: "\(connection.id.uuidString).oauth", configuration: Self.aliyunConfiguration)
+        )
       default: throw ConnectionError.notImplemented
       }
       do {
@@ -63,7 +70,44 @@ import UserNotifications
           Task { @MainActor in self?.connections.refreshMounts() }
         })
     }
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: AliyunSession.loginInvalidatedNotification, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let key = notification.userInfo?["secretKey"] as? String,
+          let id = UUID(uuidString: String(key.prefix(36)))
+        else { return }
+        Task { @MainActor in self?.loginExpired(id) }
+      })
     Task { await connections.autoMount() }
+  }
+  static var aliyunConfiguration: AliyunConfiguration {
+    let info = Bundle.main.infoDictionary ?? [:]
+    return AliyunConfiguration(
+      clientID: info["ALIYUN_CLIENT_ID"] as? String ?? "",
+      clientSecret: info["ALIYUN_CLIENT_SECRET"] as? String ?? "",
+      redirectURI: info["ALIYUN_REDIRECT_URI"] as? String ?? "")
+  }
+  func aliyunSession(for connection: Connection) -> AliyunSession {
+    AliyunSession(
+      secretKey: "\(connection.id.uuidString).oauth", configuration: Self.aliyunConfiguration)
+  }
+  private func loginExpired(_ id: UUID) {
+    guard let connection = connections.connections.first(where: { $0.id == id }),
+      connections.states[id] != .needsLogin
+    else { return }
+    connections.requireLogin(id)
+    Task {
+      let center = UNUserNotificationCenter.current()
+      guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else {
+        return
+      }
+      let content = UNMutableNotificationContent()
+      content.title = L("需重新登录")
+      content.body = connection.name
+      try? await center.add(
+        UNNotificationRequest(identifier: "login-" + id.uuidString, content: content, trigger: nil))
+    }
   }
   private func refreshWirelessAvailability(additional: Connection? = nil) {
     var guids = Set(wirelessDiscovery.devices.filter { $0.type == .connect }.map(\.name))

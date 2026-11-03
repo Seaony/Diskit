@@ -1,4 +1,5 @@
 import ADB
+import AliyunDrive
 import Core
 import Foundation
 import RicohGR
@@ -53,6 +54,9 @@ func upload(_ provider: any RemoteFileProvider, local: URL, remote: RemotePath) 
     let progress = Progress()
     if let adb = provider as? ADBProvider {
       await adb.onProgress { progress.report($0, total: $1) }
+    }
+    if let aliyun = provider as? AliyunProvider {
+      await aliyun.onProgress { progress.report($0, total: $1) }
     }
     try await provider.write(remote, from: local)
     progress.report(Int64(values.fileSize ?? 0), total: Int64(values.fileSize ?? 0), finished: true)
@@ -134,6 +138,10 @@ func run(_ arguments: [String]) async throws {
   switch connection.kind {
   case .androidUSB, .androidWiFi: provider = try await ADBProviderFactory.make(for: connection)
   case .ricohGR: provider = try await RicohProvider.make(serial: connection.params["serial"] ?? "")
+  case .aliyunDrive:
+    provider = AliyunProvider(
+      session: AliyunSession(
+        secretKey: "\(connection.id.uuidString).oauth", configuration: AliyunConfiguration()))
   default: throw ConnectionError.notImplemented
   }
   do {

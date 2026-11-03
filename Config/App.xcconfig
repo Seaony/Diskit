@@ -1,0 +1,4 @@
+ALIYUN_CLIENT_ID =
+ALIYUN_CLIENT_SECRET =
+ALIYUN_REDIRECT_URI = kayoi:/$()/oauth/aliyun
+#include? "Secrets.xcconfig"

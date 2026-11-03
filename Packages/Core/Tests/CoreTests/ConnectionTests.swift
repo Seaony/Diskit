@@ -308,3 +308,26 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(f.smb.calls.isEmpty)
   #expect(try manager.savedPassword(connection) == "")
 }
+
+@Test @MainActor func cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret()
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(
+    kind: .aliyunDrive, name: "网盘", params: ["nickname": "测试账号", "userID": "user"])
+  try f.secrets.write(Data("authorization".utf8), for: "\(connection.id.uuidString).oauth")
+  try f.secrets.write(Data("global-key".utf8), for: "adb.private-key")
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
+  try await manager.save(connection, password: "")
+  manager.testRemote = { _ in
+    manager.requireLogin(connection.id)
+    throw RemoteError.posix(EACCES)
+  }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .needsLogin)
+  try await manager.remove(connection)
+  #expect(try f.secrets.read("\(connection.id.uuidString).oauth") == nil)
+  #expect(try f.secrets.read("adb.private-key") == Data("global-key".utf8))
+}

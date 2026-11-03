@@ -23,7 +23,7 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
-后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；网盘待后续里程碑。
+后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；阿里云盘已接入；夸克待后续里程碑。
 
 阶段一只有 SMB 使用系统挂载；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
 
@@ -54,3 +54,11 @@ Android 11+ 手机打开无线调试和“使用配对码配对设备”。在�
 通过 ImageCaptureCore 发现、打开和读取相机。目录根按真实存储类型分为“内置存储”和“microSD”，保留原始 DCIM 层级；容量来自相机的标准 PTP 元数据。JPG/DNG 分块读取，不做格式转换。只允许读取和相机支持的照片删除；上传、建目录、移动立即返回只读错误。
 
 Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号。当前没有 GR IV 真机结果，两个存储区、实际 PTP 返回布局和删除能力须按验收清单验证。
+
+## 阿里云盘
+
+填写本地 `Config/Secrets.xcconfig` 并重新构建，回调地址需与平台登记一致。添加时通过官方 OAuth 页面授权；授权目录就是此连接的根。client_id/client_secret 尚未配置时会明确提示，不假装登录成功。
+
+令牌和刷新所需配置保存在 `<UUID>.oauth` 钥匙串记录，CLI 直接复用。用户信息、完整分页、Range、分片上传、目录/改名/移动和回收站接口均有假实现测试，实际账号行为尚待验收。
+
+官方接口不支持原位覆盖：经批准，同名写入先完成新文件再回收旧文件；失败会报告，可能暂时同名或回收结果未确认，file_id 会改变。已经多份同名时不猜选目标。跨目录改名也不是原子操作。

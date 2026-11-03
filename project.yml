@@ -13,6 +13,9 @@ packages:
     path: Packages/Quark
   RicohGR:
     path: Packages/RicohGR
+configFiles:
+  Debug: Config/App.xcconfig
+  Release: Config/App.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -52,6 +55,9 @@ targets:
       path: build/Info.plist
       properties:
         CFBundleDisplayName: Kayoi
+        ALIYUN_CLIENT_ID: $(ALIYUN_CLIENT_ID)
+        ALIYUN_CLIENT_SECRET: $(ALIYUN_CLIENT_SECRET)
+        ALIYUN_REDIRECT_URI: $(ALIYUN_REDIRECT_URI)
         CFBundleShortVersionString: "0.1.0"
         CFBundleVersion: "1"
         LSMinimumSystemVersion: "26.0"

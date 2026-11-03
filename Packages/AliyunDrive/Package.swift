@@ -5,5 +5,8 @@ let package = Package(
   name: "AliyunDrive", platforms: [.macOS("26.0")],
   products: [.library(name: "AliyunDrive", targets: ["AliyunDrive"])],
   dependencies: [.package(path: "../Core")],
-  targets: [.target(name: "AliyunDrive", dependencies: [.product(name: "Core", package: "Core")])],
+  targets: [
+    .target(name: "AliyunDrive", dependencies: [.product(name: "Core", package: "Core")]),
+    .testTarget(name: "AliyunDriveTests", dependencies: ["AliyunDrive"]),
+  ],
   swiftLanguageModes: [.v6])

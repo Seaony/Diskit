@@ -50,3 +50,13 @@ PTP/MTP StorageInfo、DeviceInfo、ObjectInfo 字段顺序参考 AOSP frameworks
 - https://android.googlesource.com/platform/frameworks/av/+/refs/heads/main/media/mtp/MtpDeviceInfo.cpp
 - https://android.googlesource.com/platform/frameworks/av/+/refs/heads/main/media/mtp/MtpObjectInfo.cpp
 实际 ICC/GR 返回仍需要真机验证；测试样例是标准字段，不是 GR 抓包。
+
+## 阿里云盘官方开放平台
+
+仅按官方接口实现，没有复制 SDK 代码：
+- OAuth：https://www.yuque.com/aliyundrive/zpfszx/efabcs
+- 账号和空间：https://www.yuque.com/aliyundrive/zpfszx/mbb50w
+- 上传：https://www.yuque.com/aliyundrive/zpfszx/ezlzok
+- 错误和限流：https://www.yuque.com/aliyundrive/zpfszx/rgg2p1qnsfdux61r
+- FAQ（不支持原位覆盖）：https://www.yuque.com/aliyundrive/zpfszx/zscu11
+官方 Android SDK仅用于交叉核对请求字段：https://github.com/alibaba/aliyunpan-android-sdk

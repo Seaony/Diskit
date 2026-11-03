@@ -1,4 +1,5 @@
 import ADB
+import AliyunDrive
 import Core
 import RicohGR
 import SwiftUI
@@ -14,6 +15,8 @@ struct ConnectionEditor: View {
   @State private var chosen = false
   @State private var pairingCode = ""
   @State private var pairingID = ""
+  @State private var webAuthorization: WebAuthorization?
+  @State private var saving: Task<Void, Never>?
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       Text(model.editing == nil ? L("添加位置") : L("编辑位置")).font(.title2.bold())
@@ -27,13 +30,16 @@ struct ConnectionEditor: View {
             HStack {
               Text(kind.title)
               Spacer()
-              if kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR {
+              if kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR
+                && kind != .aliyunDrive
+              {
                 Text("后续提供").foregroundStyle(.secondary)
               }
               Image(systemName: "chevron.right")
             }.frame(maxWidth: .infinity)
           }.disabled(
-            kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR)
+            kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR
+              && kind != .aliyunDrive)
         }
       } else {
         Form {
@@ -69,6 +75,9 @@ struct ConnectionEditor: View {
             if draft.params["guid"] != nil {
               Text("已配对时可留空，直接测试连接。").font(.caption).foregroundStyle(.secondary)
             }
+          } else if draft.kind == .aliyunDrive {
+            Text("保存时将打开阿里云盘官方授权页。").font(.caption).foregroundStyle(.secondary)
+            if let nickname = draft.params["nickname"] { LabeledContent("账号", value: nickname) }
           } else {
             TextField("主机 IP 或名称", text: parameter("host"))
             TextField("用户名", text: parameter("username"))
@@ -95,6 +104,9 @@ struct ConnectionEditor: View {
           Text("USB 连接 GR IV，支持原图读取，以及相机允许的删除操作。").font(.caption).foregroundStyle(.secondary)
         } else if draft.kind == .androidWiFi {
           Text("在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。").font(.caption).foregroundStyle(
+            .secondary)
+        } else if draft.kind == .aliyunDrive {
+          Text("需配置开放平台 client_id 和回调地址。第三方挂载权益可能由阿里云盘限制。").font(.caption).foregroundStyle(
             .secondary)
         } else {
           Text("Windows 需开启“文件和打印机共享”。微软账户请填邮箱和账户密码，不能使用 PIN。").font(.caption).foregroundStyle(
@@ -129,6 +141,10 @@ struct ConnectionEditor: View {
           }
         }
       }
+      .onDisappear {
+        saving?.cancel()
+        webAuthorization?.cancel()
+      }
       .onChange(of: draft.params["host"]) { shares = [] }
       .onChange(of: draft.params["username"]) { shares = [] }
   }
@@ -151,7 +167,7 @@ struct ConnectionEditor: View {
   private func save() {
     busy = true
     error = nil
-    Task { @MainActor in
+    saving = Task { @MainActor in
       defer { busy = false }
       do {
         if draft.kind == .androidWiFi && (!pairingCode.isEmpty || draft.params["guid"] == nil) {
@@ -162,7 +178,31 @@ struct ConnectionEditor: View {
           draft.params = ["guid": guid, "name": draft.name]
           pairingCode = ""
         }
+        if draft.kind == .aliyunDrive {
+          let session = model.aliyunSession(for: draft)
+          let hasToken = try await session.hasToken()
+          if model.forceLogin || !hasToken {
+            let state = UUID().uuidString
+            let url = try await session.authorizationURL(state: state)
+            guard
+              let redirect = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
+                .first(where: { $0.name == "redirect_uri" })?.value,
+              let window = NSApplication.shared.keyWindow
+            else { throw OAuthCallbackError.invalid }
+            let authorization = WebAuthorization(window: window)
+            webAuthorization = authorization
+            let callback = try await authorization.authorize(url)
+            let code = try OAuthCallback.code(from: callback, redirectURI: redirect, state: state)
+            try await session.exchange(code: code)
+          }
+          let account = try await session.account()
+          draft.params = ["nickname": account.nickname, "userID": account.userID]
+          if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            draft.name = account.nickname
+          }
+        }
         try await model.connections.save(draft, password: password)
+        model.forceLogin = false
         dismissWindow(id: "connection")
       } catch { self.error = error.localizedDescription }
     }
