@@ -4,7 +4,9 @@ public struct HTTPResponse: Sendable {
   public let status: Int
   public let headers: [String: String]
   public let body: Data
-  public init(status: Int, headers: [String: String] = [:], body: Data = Data()) {
+  public let url: URL?
+  public init(status: Int, headers: [String: String] = [:], body: Data = Data(), url: URL? = nil) {
+    self.url = url
     self.status = status
     self.headers = headers
     self.body = body
@@ -42,7 +44,9 @@ extension HTTPTransport {
 
 public struct URLSessionHTTPTransport: HTTPTransport {
   private let session: URLSession
-  public init() {
+  private let redirectDelegate: HTTPRedirectDelegate
+  public init(cookieDomain: String? = nil) {
+    redirectDelegate = HTTPRedirectDelegate(cookieDomain: cookieDomain)
     let configuration = URLSessionConfiguration.ephemeral
     configuration.timeoutIntervalForRequest = 60
     configuration.httpCookieStorage = nil
@@ -50,19 +54,24 @@ public struct URLSessionHTTPTransport: HTTPTransport {
     configuration.urlCache = nil
     session = URLSession(configuration: configuration)
   }
-  public init(session: URLSession) { self.session = session }
+  public init(session: URLSession, cookieDomain: String? = nil) {
+    self.session = session
+    redirectDelegate = HTTPRedirectDelegate(cookieDomain: cookieDomain)
+  }
   public func send(_ request: URLRequest) async throws -> HTTPResponse {
-    let (data, response) = try await session.data(for: request)
+    let (data, response) = try await session.data(for: request, delegate: redirectDelegate)
     return try Self.response(response, data: data)
   }
   public func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
     var request = request
     request.timeoutInterval = 60
     let session = session
+    let redirectDelegate = redirectDelegate
     let (bytes, response) = try await withThrowingTaskGroup(
       of: (URLSession.AsyncBytes, URLResponse).self
     ) { group in
-      group.addTask { [request] in try await session.bytes(for: request) }
+      group.addTask { [request] in try await session.bytes(for: request, delegate: redirectDelegate)
+      }
       group.addTask {
         try await Task.sleep(for: .seconds(30))
         throw URLError(.timedOut)
@@ -82,7 +91,7 @@ public struct URLSessionHTTPTransport: HTTPTransport {
     for (key, value) in http.allHeaderFields {
       headers[String(describing: key)] = String(describing: value)
     }
-    return HTTPResponse(status: http.statusCode, headers: headers, body: data)
+    return HTTPResponse(status: http.statusCode, headers: headers, body: data, url: http.url)
   }
 }
 
@@ -117,5 +126,51 @@ private actor HTTPByteCursor {
       task.cancel()
       throw error
     }
+  }
+}
+
+// 跳转不能扩大登录凭据或请求正文的发送范围。
+enum HTTPRedirectPolicy {
+  static func request(
+    _ request: URLRequest, from source: URL, originalMethod: String, cookieDomain: String?
+  ) -> URLRequest? {
+    guard let destination = request.url, destination.scheme?.lowercased() == "https" else {
+      return nil
+    }
+    let sameOrigin =
+      source.scheme?.lowercased() == destination.scheme?.lowercased()
+      && source.host?.lowercased() == destination.host?.lowercased()
+      && (source.port ?? 443) == (destination.port ?? 443)
+    if sameOrigin { return request }
+    guard ["GET", "HEAD"].contains(originalMethod.uppercased()) else { return nil }
+    var result = request
+    result.setValue(nil, forHTTPHeaderField: "Authorization")
+    func allowed(_ url: URL) -> Bool {
+      guard let cookieDomain, let host = url.host?.lowercased() else { return false }
+      return host == cookieDomain || host.hasSuffix("." + cookieDomain)
+    }
+    if !allowed(source) || !allowed(destination) {
+      result.setValue(nil, forHTTPHeaderField: "Cookie")
+    }
+    return result
+  }
+}
+
+private final class HTTPRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+  let cookieDomain: String?
+  init(cookieDomain: String?) { self.cookieDomain = cookieDomain }
+  func urlSession(
+    _ session: URLSession, task: URLSessionTask,
+    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+    completionHandler: @escaping @Sendable (URLRequest?) -> Void
+  ) {
+    guard let source = response.url else {
+      completionHandler(nil)
+      return
+    }
+    completionHandler(
+      HTTPRedirectPolicy.request(
+        request, from: source, originalMethod: task.originalRequest?.httpMethod ?? "GET",
+        cookieDomain: cookieDomain))
   }
 }

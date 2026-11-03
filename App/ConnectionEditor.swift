@@ -1,6 +1,7 @@
 import ADB
 import AliyunDrive
 import Core
+import Quark
 import RicohGR
 import SwiftUI
 
@@ -17,29 +18,25 @@ struct ConnectionEditor: View {
   @State private var pairingID = ""
   @State private var webAuthorization: WebAuthorization?
   @State private var saving: Task<Void, Never>?
+  @State private var showQuarkLogin = false
+  @State private var quarkSession: QuarkSession?
+  @State private var quarkContinuation: CheckedContinuation<QuarkAccount, Error>?
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       Text(model.editing == nil ? L("添加位置") : L("编辑位置")).font(.title2.bold())
       if !chosen {
         Text("选择位置类型").foregroundStyle(.secondary)
-        ForEach(ConnectionKind.allCases, id: \.self) { kind in
+        ForEach(ConnectionKind.allCases.filter { $0 != .androidWiFi }, id: \.self) { kind in
           Button {
             draft.kind = kind
             chosen = true
           } label: {
             HStack {
-              Text(kind.title)
+              Text(kind == .androidUSB ? L("安卓手机") : kind.title)
               Spacer()
-              if kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR
-                && kind != .aliyunDrive
-              {
-                Text("后续提供").foregroundStyle(.secondary)
-              }
               Image(systemName: "chevron.right")
             }.frame(maxWidth: .infinity)
-          }.disabled(
-            kind != .smb && kind != .androidUSB && kind != .androidWiFi && kind != .ricohGR
-              && kind != .aliyunDrive)
+          }
         }
       } else {
         Form {
@@ -49,6 +46,12 @@ struct ConnectionEditor: View {
             Text("绿色").tag("green")
             Text("橙色").tag("orange")
             Text("红色").tag("red")
+          }
+          if draft.kind == .androidUSB || draft.kind == .androidWiFi {
+            Picker("连接方式", selection: $draft.kind) {
+              Text("USB").tag(ConnectionKind.androidUSB)
+              Text("Wi-Fi").tag(ConnectionKind.androidWiFi)
+            }
           }
           if draft.kind == .androidUSB {
             Picker("安卓设备", selection: parameter("serial")) {
@@ -75,6 +78,9 @@ struct ConnectionEditor: View {
             if draft.params["guid"] != nil {
               Text("已配对时可留空，直接测试连接。").font(.caption).foregroundStyle(.secondary)
             }
+          } else if draft.kind == .quark {
+            Text("保存时打开夸克扫码登录，也可手动粘贴 Cookie。").font(.caption).foregroundStyle(.secondary)
+            if let nickname = draft.params["nickname"] { LabeledContent("账号", value: nickname) }
           } else if draft.kind == .aliyunDrive {
             Text("保存时将打开阿里云盘官方授权页。").font(.caption).foregroundStyle(.secondary)
             if let nickname = draft.params["nickname"] { LabeledContent("账号", value: nickname) }
@@ -105,6 +111,8 @@ struct ConnectionEditor: View {
         } else if draft.kind == .androidWiFi {
           Text("在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。").font(.caption).foregroundStyle(
             .secondary)
+        } else if draft.kind == .quark {
+          Text("非官方接口，可能随时失效").font(.caption).foregroundStyle(.secondary)
         } else if draft.kind == .aliyunDrive {
           Text("需配置开放平台 client_id 和回调地址。第三方挂载权益可能由阿里云盘限制。").font(.caption).foregroundStyle(
             .secondary)
@@ -137,13 +145,24 @@ struct ConnectionEditor: View {
         pairingID = model.pairingSelection ?? ""
         if let connection = model.editing, connection.kind == .smb {
           do { password = try model.connections.savedPassword(connection) } catch {
+            model.connections.reportOperationError(error)
             self.error = error.localizedDescription
           }
         }
       }
       .onDisappear {
+        finishQuark(.failure(CancellationError()))
         saving?.cancel()
         webAuthorization?.cancel()
+      }
+      .sheet(
+        isPresented: $showQuarkLogin, onDismiss: { finishQuark(.failure(CancellationError())) }
+      ) {
+        if let session = quarkSession {
+          QuarkLoginView(
+            session: session, onSuccess: { finishQuark(.success($0)) },
+            onCancel: { finishQuark(.failure(CancellationError())) })
+        }
       }
       .onChange(of: draft.params["host"]) { shares = [] }
       .onChange(of: draft.params["username"]) { shares = [] }
@@ -164,11 +183,26 @@ struct ConnectionEditor: View {
       } catch { self.error = error.localizedDescription }
     }
   }
+  private func loginQuark(_ session: QuarkSession) async throws -> QuarkAccount {
+    quarkSession = session
+    return try await withCheckedThrowingContinuation { continuation in
+      quarkContinuation = continuation
+      showQuarkLogin = true
+    }
+  }
+  private func finishQuark(_ result: Result<QuarkAccount, Error>) {
+    guard let continuation = quarkContinuation else { return }
+    quarkContinuation = nil
+    showQuarkLogin = false
+    quarkSession = nil
+    continuation.resume(with: result)
+  }
   private func save() {
     busy = true
     error = nil
     saving = Task { @MainActor in
       defer { busy = false }
+      var savingConnection = false
       do {
         if draft.kind == .androidWiFi && (!pairingCode.isEmpty || draft.params["guid"] == nil) {
           guard let device = model.wirelessDiscovery.devices.first(where: { $0.id == pairingID }),
@@ -201,10 +235,28 @@ struct ConnectionEditor: View {
             draft.name = account.nickname
           }
         }
+        if draft.kind == .quark {
+          let session = QuarkSession(secretKey: "\(draft.id.uuidString).cookie")
+          let hasCookie = try await session.hasCookie()
+          let account: QuarkAccount
+          if model.forceLogin || !hasCookie {
+            account = try await loginQuark(session)
+          } else {
+            account = try await session.account()
+          }
+          draft.params = ["nickname": account.nickname, "userID": account.userID]
+          if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            draft.name = account.nickname
+          }
+        }
+        savingConnection = true
         try await model.connections.save(draft, password: password)
         model.forceLogin = false
         dismissWindow(id: "connection")
-      } catch { self.error = error.localizedDescription }
+      } catch {
+        if !savingConnection { model.connections.reportOperationError(error) }
+        self.error = error.localizedDescription
+      }
     }
   }
 }

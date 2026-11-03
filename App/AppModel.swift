@@ -5,6 +5,7 @@ import Core
 import Foundation
 import OSLog
 import Observation
+import Quark
 import RicohGR
 import UserNotifications
 
@@ -26,6 +27,10 @@ import UserNotifications
     guard !started else { return }
     started = true
     connections.openInFinder = { NSWorkspace.shared.open($0) }
+    connections.operationFailed = { [weak self] message in
+      self?.logger.error("\(message, privacy: .public)")
+      self?.writeError(message)
+    }
     connections.mountFailed = { [weak self] message in self?.reportMountFailure(message) }
     connections.testRemote = { [weak self] connection in
       let provider: any RemoteFileProvider
@@ -38,6 +43,9 @@ import UserNotifications
           session: AliyunSession(
             secretKey: "\(connection.id.uuidString).oauth", configuration: Self.aliyunConfiguration)
         )
+      case .quark:
+        provider = QuarkProvider(
+          session: QuarkSession(secretKey: "\(connection.id.uuidString).cookie"))
       default: throw ConnectionError.notImplemented
       }
       do {
@@ -73,6 +81,15 @@ import UserNotifications
     observers.append(
       NotificationCenter.default.addObserver(
         forName: AliyunSession.loginInvalidatedNotification, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let key = notification.userInfo?["secretKey"] as? String,
+          let id = UUID(uuidString: String(key.prefix(36)))
+        else { return }
+        Task { @MainActor in self?.loginExpired(id) }
+      })
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: QuarkSession.loginInvalidatedNotification, object: nil, queue: .main
       ) { [weak self] notification in
         guard let key = notification.userInfo?["secretKey"] as? String,
           let id = UUID(uuidString: String(key.prefix(36)))
@@ -123,8 +140,6 @@ import UserNotifications
     connections.wirelessGUIDsChanged(guids)
   }
   func reportMountFailure(_ message: String) {
-    logger.error("挂载失败：\(message, privacy: .public)")
-    writeError(message)
     Task {
       let center = UNUserNotificationCenter.current()
       guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else {

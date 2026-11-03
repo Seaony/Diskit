@@ -21,6 +21,7 @@ public enum ConnectionState: Equatable, Sendable {
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
   private var ricohSerials: Set<String>?
+  public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
   public var openInFinder: ((URL) -> Void)?
@@ -45,59 +46,69 @@ public enum ConnectionState: Equatable, Sendable {
     return String(decoding: data, as: UTF8.self)
   }
   public func listShares(host: String, user: String, password: String) async throws -> [String] {
-    try await smb.shares(host: host, user: user, password: password)
-  }
-  public func save(_ connection: Connection, password: String) async throws {
-    guard loadError == nil else { throw ConnectionError.unsupportedVersion }
-    guard !busy.contains(connection.id) else { throw ConnectionError.busy }
-    guard !connection.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-      throw ConnectionError.invalidFields
-    }
-    busy.insert(connection.id)
-    defer { busy.remove(connection.id) }
-    var oldSecret: Data?
-    if connection.kind == .smb {
-      guard let host = connection.params["host"], !host.isEmpty,
-        let user = connection.params["username"], !user.isEmpty,
-        let share = connection.params["share"], !share.isEmpty
-      else { throw ConnectionError.invalidFields }
-      try await smb.test(connection, password: password)
-      oldSecret = try secrets.read(connection.passwordKey)
-      try secrets.write(Data(password.utf8), for: connection.passwordKey)
-    } else {
-      guard let testRemote else { throw ConnectionError.notImplemented }
-      states[connection.id] = .connecting
-      do {
-        states[connection.id] = remoteState(
-          connection, result: .tested(try await testRemote(connection)))
-      } catch {
-        states[connection.id] = remoteState(connection, result: .failed(error.localizedDescription))
-        throw error
-      }
-    }
-    var updated = connections
-    if let index = updated.firstIndex(where: { $0.id == connection.id }) {
-      var replacement = connection
-      replacement.order = updated[index].order
-      updated[index] = replacement
-    } else {
-      var added = connection
-      added.order = updated.count
-      updated.append(added)
-    }
-    do { try repository.save(updated) } catch {
-      if connection.kind == .smb {
-        if let oldSecret {
-          try secrets.write(oldSecret, for: connection.passwordKey)
-        } else {
-          try secrets.delete(connection.passwordKey)
-        }
-      }
+    do { return try await smb.shares(host: host, user: user, password: password) } catch {
+      reportOperationError(error)
       throw error
     }
-    connections = updated
-    refreshMounts()
   }
+  public func save(_ connection: Connection, password: String) async throws {
+    do {
+      guard loadError == nil else { throw ConnectionError.unsupportedVersion }
+      guard !busy.contains(connection.id) else { throw ConnectionError.busy }
+      guard !connection.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        throw ConnectionError.invalidFields
+      }
+      busy.insert(connection.id)
+      defer { busy.remove(connection.id) }
+      var oldSecret: Data?
+      if connection.kind == .smb {
+        guard let host = connection.params["host"], !host.isEmpty,
+          let user = connection.params["username"], !user.isEmpty,
+          let share = connection.params["share"], !share.isEmpty
+        else { throw ConnectionError.invalidFields }
+        try await smb.test(connection, password: password)
+        oldSecret = try secrets.read(connection.passwordKey)
+        try secrets.write(Data(password.utf8), for: connection.passwordKey)
+      } else {
+        guard let testRemote else { throw ConnectionError.notImplemented }
+        states[connection.id] = .connecting
+        do {
+          states[connection.id] = remoteState(
+            connection, result: .tested(try await testRemote(connection)))
+        } catch {
+          states[connection.id] = remoteState(
+            connection, result: .failed(error.localizedDescription))
+          throw error
+        }
+      }
+      var updated = connections
+      if let index = updated.firstIndex(where: { $0.id == connection.id }) {
+        var replacement = connection
+        replacement.order = updated[index].order
+        updated[index] = replacement
+      } else {
+        var added = connection
+        added.order = updated.count
+        updated.append(added)
+      }
+      do { try repository.save(updated) } catch {
+        if connection.kind == .smb {
+          if let oldSecret {
+            try secrets.write(oldSecret, for: connection.passwordKey)
+          } else {
+            try secrets.delete(connection.passwordKey)
+          }
+        }
+        throw error
+      }
+      connections = updated
+      refreshMounts()
+    } catch {
+      reportOperationError(error)
+      throw error
+    }
+  }
+
   public func reorder(_ id: UUID, before target: UUID) throws {
     guard let from = connections.firstIndex(where: { $0.id == id }), id != target else { return }
     var updated = connections
@@ -112,9 +123,15 @@ public enum ConnectionState: Equatable, Sendable {
     guard !busy.contains(connection.id) else { throw ConnectionError.busy }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
-    if let mount = smb.mounted(connection) { try await smb.unmount(mount.url) }
+    if let mount = smb.mounted(connection) {
+      do { try await smb.unmount(mount.url) } catch {
+        reportOperationError(error)
+        throw error
+      }
+    }
     try secrets.delete(connection.passwordKey)
     if connection.kind == .aliyunDrive { try secrets.delete("\(connection.id.uuidString).oauth") }
+    if connection.kind == .quark { try secrets.delete("\(connection.id.uuidString).cookie") }
     let cache = location.cacheDirectory.appending(path: connection.id.uuidString)
     if FileManager.default.fileExists(atPath: cache.path) {
       try FileManager.default.removeItem(at: cache)
@@ -136,6 +153,7 @@ public enum ConnectionState: Equatable, Sendable {
         states[connection.id] = remoteState(
           connection, result: .tested(try await testRemote(connection)))
       } catch {
+        reportOperationError(error)
         states[connection.id] = remoteState(connection, result: .failed(error.localizedDescription))
       }
       return
@@ -152,9 +170,30 @@ public enum ConnectionState: Equatable, Sendable {
         if connection.openInFinderAfterMount { openInFinder?(url) }
       }
     } catch {
+      reportOperationError(error)
       states[connection.id] = remoteState(connection, result: .failed(error.localizedDescription))
       if current == nil { mountFailed?(error.localizedDescription) }
     }
+  }
+  public func reportOperationError(_ error: Error) {
+    if error is CancellationError { return }
+    let message: String
+    if let error = error as? ConnectionError {
+      message = error.localizedDescription
+    } else if let error = error as? RemoteError {
+      message = error.localizedDescription
+    } else {
+      let failure = error as NSError
+      if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled { return }
+      if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorTimedOut {
+        message = ConnectionError.timeout.localizedDescription
+      } else if failure.domain == NSPOSIXErrorDomain, let code = Int32(exactly: failure.code) {
+        message = RemoteError.posix(code).localizedDescription
+      } else {
+        message = RemoteError.posix(EIO).localizedDescription
+      }
+    }
+    operationFailed?(message)
   }
   public func refreshMounts() {
     for connection in connections where connection.kind == .smb && !busy.contains(connection.id) {

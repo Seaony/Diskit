@@ -579,23 +579,6 @@
         }
       }
     },
-    "后续提供": {
-      "extractionState": "manual",
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "后续提供"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Coming later"
-          }
-        }
-      }
-    },
     "显示名称": {
       "extractionState": "manual",
       "localizations": {
@@ -2088,6 +2071,193 @@
           "stringUnit": {
             "state": "translated",
             "value": "The new file was uploaded, but recycling the old file failed or could not be confirmed. Check for duplicate files."
+          }
+        }
+      }
+    },
+    "安卓手机": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安卓手机"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Android phone"
+          }
+        }
+      }
+    },
+    "连接方式": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接方式"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection type"
+          }
+        }
+      }
+    },
+    "保存时打开夸克扫码登录，也可手动粘贴 Cookie。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存时打开夸克扫码登录，也可手动粘贴 Cookie。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving opens Quark QR sign-in. You can also paste a Cookie manually."
+          }
+        }
+      }
+    },
+    "扫码登录夸克网盘": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "扫码登录夸克网盘"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Quark with a QR Code"
+          }
+        }
+      }
+    },
+    "非官方接口，可能随时失效": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非官方接口，可能随时失效"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unofficial interface. It may stop working at any time"
+          }
+        }
+      }
+    },
+    "手动粘贴 Cookie": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动粘贴 Cookie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Cookie Manually"
+          }
+        }
+      }
+    },
+    "使用此 Cookie": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用此 Cookie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use This Cookie"
+          }
+        }
+      }
+    },
+    "正在验证账号…": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在验证账号…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying account…"
+          }
+        }
+      }
+    },
+    "请提供包含 __puus 和 __pus 的完整 Cookie": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请提供包含 __puus 和 __pus 的完整 Cookie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Provide a complete Cookie containing __puus and __pus"
+          }
+        }
+      }
+    },
+    "夸克网盘需重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夸克网盘需重新登录"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Quark Drive again"
+          }
+        }
+      }
+    },
+    "夸克网盘返回了无效的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夸克网盘返回了无效的数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quark Drive returned invalid data"
           }
         }
       }

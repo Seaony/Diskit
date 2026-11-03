@@ -63,7 +63,7 @@ public enum SMBAddress {
   private let location: any StorageLocation
   public init(location: any StorageLocation = LocalStorageLocation()) { self.location = location }
   public func test(_ connection: Connection, password: String) async throws {
-    let directory = location.cacheDirectory.appending(path: "ConnectionTests/" + UUID().uuidString)
+    let directory = location.connectionTestDirectory.appending(path: UUID().uuidString)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     // 只删除空挂载点，推出失败时绝不能递归删除远端内容。
     defer { _ = rmdir(directory.path) }

@@ -151,6 +151,25 @@ private func created(_ id: String = "new", url: String = "https://files.example/
   #expect(await http.replies.isEmpty)
 }
 
+@Test func aliyunCrossDirectoryRenameAvoidsOriginalNameCollision() async throws {
+  let old = file("original", "report.txt")
+  let (provider, http) = try setup([
+    list([file("a", "A", folder: true), file("b", "B", folder: true)]),
+    list([old]), list([file("existing", "report.txt")]),
+    FileReply("move", json: ["file_id": "original"]),
+  ])
+  try await provider.connect()
+  _ = try await provider.list(RemotePath("/"))
+  _ = try await provider.list(RemotePath("/A"))
+  try await provider.move(RemotePath("/A/report.txt"), to: RemotePath("/B/final.txt"))
+  let requests = await http.fileRequests()
+  let moved = try #require(requests.first { $0.url!.path.hasSuffix("/move") })
+  #expect(try body(moved)["new_name"] as? String == "final.txt")
+  #expect(try body(moved)["check_name_mode"] as? String == "refuse")
+  #expect(!requests.contains { $0.url!.path.hasSuffix("/update") })
+  #expect(await http.replies.isEmpty)
+}
+
 @Test func aliyunRangeSurvivesExpiredURLAndNeverSendsBearerToStorage() async throws {
   let record = file("video", "movie", size: 1024)
   let expiry = "2099-01-01T00:00:00Z"

@@ -6,7 +6,7 @@ let package = Package(
   products: [.executable(name: "kayoi-dev", targets: ["DevTool"])],
   dependencies: [
     .package(path: "../Core"), .package(path: "../ADB"), .package(path: "../RicohGR"),
-    .package(path: "../AliyunDrive"),
+    .package(path: "../AliyunDrive"), .package(path: "../Quark"),
   ],
   targets: [
     .executableTarget(
@@ -15,5 +15,6 @@ let package = Package(
         .product(name: "Core", package: "Core"), .product(name: "ADB", package: "ADB"),
         .product(name: "RicohGR", package: "RicohGR"),
         .product(name: "AliyunDrive", package: "AliyunDrive"),
+        .product(name: "Quark", package: "Quark"),
       ])
   ], swiftLanguageModes: [.v6])

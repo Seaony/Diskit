@@ -47,7 +47,7 @@ Kayoi.app: satisfies its Designated Requirement
 用户批准的 §6.3 修订：
 
 - 移除列共享命令的 `-A`，因为它只认证而不枚举共享。
-- 保存前用 NetFS 和填写的密码进行独立连接测试，在缓存目录下的随机路径短暂挂载并推出；不改变已有挂载。
+- 保存前用 NetFS 和填写的密码进行独立连接测试，在数据目录 ConnectionTests 下的随机路径短暂挂载并推出；不改变已有挂载。
 - `smbutil view -f` 通过独立终端输入密码，`-f` 避免直接复用现有会话，但其输出只用于列共享，不充当表单密码验证。
 
 依据：[Apple view.c](https://github.com/apple-oss-distributions/smb/blob/main/smbutil/view.c)、[Apple server.c](https://github.com/apple-oss-distributions/smb/blob/main/lib/smbclient/server.c)、本机 NetFS.h。没有复制 Apple 源代码。
@@ -93,7 +93,7 @@ $ build/bin/kayoi-dev devices
 
 | 标准 | 结果 | 证据与限制 |
 | --- | --- | --- |
-| 1. 无线调试自动发现 | 待用户验证 | NWBrowser 浏览 pairing/connect 两类服务，NetService 解析表单地址；服务本身广播 GUID，未保存时如实显示服务名，保存后显示用户名称；未实测局域网广播 |
+| 1. 无线调试自动发现 | 待用户验证 | 原标准要求手机名，当前只能显示服务名；用户已批准修订为首次显示 ADB 服务名，保存后使用自定义名称。实际局域网发现仍待真机验证。 |
 | 2. 配对码配对、手机显示本机 | 待用户验证 | SPAKE2、TLS exporter、HKDF、AES-GCM 和 PeerInfo 假实现互通通过；本机身份由 Security 创建，证书签名由系统信任检查验证通过；未与手机 TLS 互通 |
 | 3. Wi-Fi 文件操作及 >4 GB 哈希 | 待用户验证 | 复用 M2 同一 Provider/sync/shell；Network.framework TCP + STLS 动态插入 TLS 1.3 编译通过，无实际传输数据 |
 | 4. 端口变化后无需重新配对 | 待用户验证 | 测试用相同 GUID 的新端口替换旧服务，选择新端点；每次建立连接重新 NWBrowser 查当前服务，不保存端口 |
@@ -175,15 +175,30 @@ Config/Secrets.xcconfig
 
 用户已批准并已修订 PLAN.md：同名替换先完成新上传，再回收旧文件；上传失败不回收旧文件；旧文件回收失败或结果未确认时明确报错，不擅自删除新文件或回滚。原目录多份同名则拒绝猜选目标。接口不支持原位覆盖，file_id 会改变；网络中断时不能保证服务端回收未执行。
 
-官方授权要求 style=folder；若返回 folder_id，Provider 将它作为根，绝不越过实际授权目录。跨目录且改名使用 move 后 update 两个官方调用，不承诺原子性。来源见 THIRD_PARTY_NOTICES.md。
+官方授权要求 style=folder；若返回 folder_id，Provider 将它作为根，绝不越过实际授权目录。跨目录且改名通常使用 move 后 update 两个官方调用；目标目录已有原名时，move 传最终 new_name，避免合法目标名被原名冲突挡住。整体不承诺原子性。来源见 THIRD_PARTY_NOTICES.md。
 
 ## M6 夸克
 
-未开始。3 条验收尚未执行。
+M6 实现与自动验证完成。M3 首次名称差异已获用户批准修订；F18 错误日志缺口已补齐，最终 `make test` 已通过 123 项测试。真机与界面结果仍待用户验证，不宣称全部实测通过。
+
+| 验收 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 1. 扫码登录、账号与容量 | 待用户验证 | 非持久化 WKWebView 读取 Cookie，账号与容量验证成功后才保存；手动 Cookie 入口已接入。没有真实扫码结果 |
+| 2. 文件操作与 >100MB 上传 | 待用户验证 | 31 项 Quark 测试覆盖分页、Range、分片、哈希、上传完成、同名拒绝及 Cookie 生命周期；未进行真实上传 |
+| 3. 删除 Cookie 后通知且不崩溃 | 待用户验证 | 假实现覆盖缺 Cookie、失效通知和 EACCES；系统通知与 UI 尚未实测 |
+
+最终实际执行 `make test`（退出码 0），五包输出分别为 `24 / 26 / 14 / 28 / 31 tests passed`，合计 123 项通过。日志：`/tmp/kayoi-final-test.log`。
+`make release` 输出 `** BUILD SUCCEEDED **`，随后签名校验输出 `valid on disk`、`satisfies its Designated Requirement`。日志：`/tmp/kayoi-final-release.log`（退出码 0）；开发工具另经 `codesign --verify --strict --verbose=2 build/bin/kayoi-dev` 校验通过。这些结果只代表自动测试与构建，不代表真实接口通过。
+
+夸克仅参考 OpenList 接口行为，没有复制其代码。用户批准同名上传报错，旧文件不改动。账号接口 uid 字段尚缺真实响应确认；缺失时留空，没有从 Cookie 或昵称伪造 ID，因此 §7 用户 ID 的实际保存仍待核对。
+
+最终核对发现并补齐 F18 日志缺口：连接测试、保存、列共享、推出及前置配对/授权失败接入现有系统日志和七天文本日志。只记录已知错误文案或数字错误码，未知错误不记录原始描述、URL 或 userInfo；回归覆盖错误回调、不额外发送挂载通知及敏感内容过滤。实际系统日志和文件显示仍需用户手验。
+
+SMB 临时挂载点已移出可清理缓存目录，防止清缓存遍历到测试挂载；回归测试修改前失败、修改后通过（`/tmp/kayoi-cache-regression-before.log`、`/tmp/kayoi-cache-regression-after.log`）。此验证仅使用本地临时标记文件，没有真实远端删除操作。
 
 ## 待用户验证（按操作顺序）
 
-目前 M1–M5 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
+目前 M1–M6 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
 
 1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
@@ -231,12 +246,16 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 27. **令牌刷新（M5-3）**：在“钥匙串访问”中定位 service=com.seaony.Kayoi、account=`<UUID>.oauth` 的测试账号记录，保留 refreshToken 和其他字段，只把 JSON 中 accessToken 改为无效值；用 App 测试或 CLI ls，应自动恢复。不要导出或展示完整凭据记录。
 28. **撤销授权（M5-4）**：在阿里云盘网页撤销测试应用授权，然后在 App 点击测试连接。应显示“重新登录”，并在已允许系统通知时收到通知；重新登录应重新走官方授权。没有请求时不承诺即时发现远端撤权。
 
+29. **夸克登录（M6-1）**：添加夸克网盘，确认显示实验性提示，打开扫码页，用手机扫码；保存后核对昵称与容量。再验证手动粘贴 Cookie 入口；不要把 Cookie 发到聊天或提交 Git。检查配置中 userID 与真实账号响应是否一致，缺失时记录为未通过，不能用昵称替代。
+30. **夸克文件操作（M6-2）**：用该连接 UUID 执行 `ls UUID /`、`df UUID`；对视频执行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，核对 1 MiB。准备不重要且大于 100 MB 的新文件，依次执行 `mkdir UUID /KayoiAcceptance`、`put UUID '/本地文件' /KayoiAcceptance/upload.bin`、`get UUID /KayoiAcceptance/upload.bin '/本地下载文件'`，比较两端 SHA-256。重复 put 同一路径应报同名错误，旧文件内容不变；执行 `mv UUID /KayoiAcceptance/upload.bin /KayoiAcceptance/renamed.bin`、`rm UUID /KayoiAcceptance/renamed.bin`，逐步核对网页版及回收站。
+31. **夸克 Cookie 删除（M6-3）**：在钥匙串访问中仅删除测试连接 service=com.seaony.Kayoi、account=`<UUID>.cookie` 的记录，再在 App 点击测试连接；应提示重新登录，在允许通知时收到系统通知，App 不崩溃。重新扫码应恢复。没有发请求时不承诺即时发现失效。
+
 ## 未做与风险
 
-- M6 尚未开始；M7、M8 按要求不做。
+- M7、M8 按要求不做；因此只有 SMB 能挂载 Finder，其余类型使用连接测试和开发工具。
 - Windows 网络、密码验证、临时挂载与推出尚无实测。假实现只证明应用流程，不证明系统 API 在目标共享上的行为。
 - 临时挂载点只用 `rmdir` 删除空目录；推出失败不会递归删除远端内容。若出现错误并留下临时挂载，请保留错误信息后用 Finder 推出对应卷。
-- 仅安装了已授权的 XcodeGen，无新增第三方库。未使用 Jev：本阶段是确定性的系统接口与编译检查。
+- 仅安装了已授权的 XcodeGen，第三方代码仅使用已批准用途的 BoringSSL。未使用 Jev：本阶段是确定性的系统接口与编译检查。
 - UI 采用系统字体、控件和 SF Symbols，按 §5 实现；未跑 UI 自动化或快照。未启动本地开发服务。
 
 ## M0 命令输出摘录
@@ -265,3 +284,16 @@ Kayoi.app: satisfies its Designated Requirement
 `codesign -dv --verbose=2`：`Identifier=com.seaony.Kayoi`，`Format=app bundle with Mach-O universal (x86_64 arm64)`，`Authority=Apple Development: seaony@outlook.com (ZB4G2AWAU9)`。
 
 核对 diff：仅 M0 工程、包空壳、存储与测试、构建说明及验收记录；PLAN.md 原文原样纳入首次提交。未实现 M7/M8、未增加本期之外的产品行为。
+
+## 需求冲突与用户决定
+
+- smbutil 的 `-A` 只做认证而不列共享，已获批准去掉；保存前另用 NetFS 新会话验证所填密码，允许临时挂载后推出，已有挂载不动。
+- BoringSSL 用途经批准扩展到 Android 公钥编码 n0inv/rr；密钥生成、签名和 TLS 仍走系统框架。
+- 阿里云盘不支持原位覆盖，经批准改为新文件完成后回收旧文件；原目录多份同名报错。
+- 夸克同名上传经批准直接报错，不修改旧文件。
+- M3 未配对发现拿到的是 ADB 服务名，已获批准首次显示服务名、保存后用自定义名称，并修订 PLAN.md。此前将这个明确差异仅标为待用户验证不准确，现已纠正。
+- PLAN.md §6.6 同时要求扫码，又写“不提供手动粘贴 Cookie 以外的其它登录方式”，文字有冲突。实现遵循该段开头及 M6-1 明确要求：扫码为主，手动 Cookie 为备用入口；建议后续将否定句改为“不提供账号密码登录”。
+
+格式检查：Swift 文件已使用 `xcrun swift-format format`。最终 `swift-format lint` 有 17 条命名风格警告（API 字段 snake_case、L 本地化函数及测试名称），没有格式错误；未为消除命名警告重构已完成阶段。`git diff --check` 无输出。
+
+最终核对还修复了阿里云跨目录改名：目标目录已有原名但最终名空闲时，使用官方 move 的 new_name 参数，不修改原有同名文件。新增回归修前失败、修后通过；阿里云包 28 项通过，证据 `/tmp/kayoi-aliyun-move-red.log`、`/tmp/kayoi-aliyun-move-green.log`。真实账号按第 26 步补测 `/A/report.txt → /B/final.txt` 且 `/B/report.txt` 已存在的情形。

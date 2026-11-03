@@ -34,3 +34,17 @@ import Testing
   #expect(try store.read(key) == nil)
   try store.delete(key)
 }
+
+@Test func clearingCacheCannotReachConnectionTestContents() throws {
+  let home = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: home) }
+  let location = LocalStorageLocation(home: home)
+  let mountPoint = location.connectionTestDirectory.appending(path: "connection")
+  try FileManager.default.createDirectory(at: mountPoint, withIntermediateDirectories: true)
+  try FileManager.default.createDirectory(
+    at: location.cacheDirectory, withIntermediateDirectories: true)
+  let marker = mountPoint.appending(path: "remote-content")
+  try Data("keep".utf8).write(to: marker)
+  try FileManager.default.removeItem(at: location.cacheDirectory)
+  #expect(FileManager.default.fileExists(atPath: marker.path))
+}

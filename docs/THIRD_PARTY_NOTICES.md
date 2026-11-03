@@ -7,7 +7,7 @@
 - 许可证原文：`Packages/ADB/Vendor/BoringSSL/LICENSE`
 - 文件清单：同目录 `gen/sources.json`，编译清单 `SOURCES.txt`。
 - 只选取 crypto/bcm 的 C/C++ 源码、依赖头文件及生成文件；禁用汇编以统一 arm64/x86_64 构建。未构建 SSL/TLS 实现。
-- 调用范围：经用户批准，用于 Android 公钥编码的大整数运算；后续无线配对还会使用 SPAKE2。RSA 私钥生成、签名仍使用 Security，TLS 仍使用 Network.framework。
+- 调用范围：经用户批准，用于 Android 公钥编码的大整数运算；无线配对使用 SPAKE2。RSA 私钥生成、签名仍使用 Security，TLS 仍使用 Network.framework。
 
 ## AOSP ADB（Apache-2.0）
 
@@ -60,3 +60,13 @@ PTP/MTP StorageInfo、DeviceInfo、ObjectInfo 字段顺序参考 AOSP frameworks
 - 错误和限流：https://www.yuque.com/aliyundrive/zpfszx/rgg2p1qnsfdux61r
 - FAQ（不支持原位覆盖）：https://www.yuque.com/aliyundrive/zpfszx/zscu11
 官方 Android SDK仅用于交叉核对请求字段：https://github.com/alibaba/aliyunpan-android-sdk
+
+## 夸克网页接口（实验性）
+
+仅参考 OpenList 驱动的 HTTP 接口行为，没有复制其 AGPL-3.0 代码：
+- https://github.com/OpenListTeam/OpenList/tree/main/drivers/quark_uc
+- https://doc.oplist.org/guide/drivers/quark
+
+账号昵称和未登录响应交叉核对夸克公开网页脚本：
+https://g.alicdn.com/quark-cloud-drive/quark-cloud-drive-static-page/0.1.78/js/index.js
+用户 ID 字段仍需真实账号响应确认，不从 Cookie 或昵称生成替代值。上传流程使用服务端返回的 OSS 签名与回调，未引入第三方 SDK。

@@ -23,7 +23,7 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
-后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；阿里云盘已接入；夸克待后续里程碑。
+后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；阿里云盘已接入；夸克实验性接入已写入工作区，实际扫码和文件操作待用户验证。
 
 阶段一只有 SMB 使用系统挂载；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
 
@@ -62,3 +62,9 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 令牌和刷新所需配置保存在 `<UUID>.oauth` 钥匙串记录，CLI 直接复用。用户信息、完整分页、Range、分片上传、目录/改名/移动和回收站接口均有假实现测试，实际账号行为尚待验收。
 
 官方接口不支持原位覆盖：经批准，同名写入先完成新文件再回收旧文件；失败会报告，可能暂时同名或回收结果未确认，file_id 会改变。已经多份同名时不猜选目标。跨目录改名也不是原子操作。
+
+## 夸克网盘（实验性）
+
+添加时通过内嵌网页扫码，也可手动粘贴 Cookie；验证账号和容量成功后才存入登录钥匙串 `<UUID>.cookie`。非官方接口可能随时失效，实际账号字段、扫码与大文件传输仍待验收。
+
+同名上传直接报错，旧文件不改动。文件操作使用 kayoi-dev；Cookie 失效后需重新登录。不要将 Cookie 写进配置或提交到 Git。

@@ -227,7 +227,8 @@ public actor AliyunProvider: RemoteFileProvider {
     let destination = parent(of: to)
     let target = try await resolve(destination)
     guard target.isDirectory else { throw RemoteError.posix(ENOTDIR) }
-    let collisions = try await children(destination, fileID: target.fileID).filter {
+    let destinationFiles = try await children(destination, fileID: target.fileID)
+    let collisions = destinationFiles.filter {
       $0.name == basename(to) && $0.fileID != file.fileID
     }
     guard collisions.isEmpty else { throw RemoteError.posix(EEXIST) }
@@ -235,13 +236,21 @@ public actor AliyunProvider: RemoteFileProvider {
       invalidate(source)
       invalidate(destination)
     }
+    let renameDuringMove =
+      source != destination
+      && destinationFiles.contains {
+        $0.name == basename(from) && $0.fileID != file.fileID
+      }
     if source != destination {
+      var parameters: [String: Any] = [
+        "file_id": file.fileID, "to_parent_file_id": target.fileID, "check_name_mode": "refuse",
+      ]
+      if renameDuringMove { parameters["new_name"] = basename(to) }
       let result: AliyunMutation = try await rpc(
-        "move",
-        ["file_id": file.fileID, "to_parent_file_id": target.fileID, "check_name_mode": "refuse"])
+        "move", parameters)
       try await waitForTask(result.asyncTaskID)
     }
-    if basename(from) != basename(to) {
+    if basename(from) != basename(to), !renameDuringMove {
       let _: AliyunFile = try await rpc(
         "update", ["file_id": file.fileID, "name": basename(to), "check_name_mode": "refuse"])
     }

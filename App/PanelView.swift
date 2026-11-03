@@ -236,7 +236,9 @@ struct PanelView: View {
         systemName: (connection.kind == .androidUSB || connection.kind == .androidWiFi)
           ? "smartphone"
           : (connection.kind == .ricohGR
-            ? "camera" : (connection.kind == .aliyunDrive ? "icloud" : "desktopcomputer"))
+            ? "camera"
+            : ((connection.kind == .aliyunDrive || connection.kind == .quark)
+              ? "icloud" : "desktopcomputer"))
       )
       .foregroundStyle(.white).frame(width: 28, height: 28).background(
         connection.tint, in: RoundedRectangle(cornerRadius: 7))
@@ -267,7 +269,7 @@ struct PanelView: View {
         Button("在 Finder 中打开") { NSWorkspace.shared.open(mounted.url) }
       }
       Button("编辑") { edit(connection) }
-      if connection.kind == .aliyunDrive {
+      if connection.kind == .aliyunDrive || connection.kind == .quark {
         Button("重新登录") { edit(connection, reauthenticate: true) }
       }
       Button("删除连接", role: .destructive) { deleteTarget = connection }

@@ -85,3 +85,7 @@ public struct LoginKeychainStore: SecretStore {
     }
   }
 }
+
+extension StorageLocation {
+  var connectionTestDirectory: URL { dataDirectory.appending(path: "ConnectionTests") }
+}

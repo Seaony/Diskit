@@ -16,6 +16,7 @@ test:
 	swift test --package-path Packages/ADB
 	swift test --package-path Packages/RicohGR
 	swift test --package-path Packages/AliyunDrive
+	swift test --package-path Packages/Quark
 
 dev-tool:
 	swift build --package-path Packages/DevTool -c release

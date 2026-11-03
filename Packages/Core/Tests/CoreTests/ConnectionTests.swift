@@ -331,3 +331,84 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try f.secrets.read("\(connection.id.uuidString).oauth") == nil)
   #expect(try f.secrets.read("adb.private-key") == Data("global-key".utf8))
 }
+
+@Test @MainActor func deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .quark, name: "夸克", params: ["nickname": "测试账号"])
+  try f.secrets.write(Data("cookie".utf8), for: "\(connection.id.uuidString).cookie")
+  try f.secrets.write(Data("other-account".utf8), for: "another.cookie")
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
+  try await manager.save(connection, password: "")
+  try await manager.remove(connection)
+  #expect(try f.secrets.read("\(connection.id.uuidString).cookie") == nil)
+  #expect(try f.secrets.read("another.cookie") == Data("other-account".utf8))
+}
+
+@Test @MainActor func connectionFailuresLogOnceWithoutExtraMountNotifications() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var logged: [String] = []
+  var notified: [String] = []
+  manager.operationFailed = { logged.append($0) }
+  manager.mountFailed = { notified.append($0) }
+  let remote = Connection(kind: .androidUSB, name: "手机")
+  manager.testRemote = { _ in throw RemoteError.occupied }
+  await #expect(throws: RemoteError.occupied) { try await manager.save(remote, password: "") }
+  await manager.toggle(remote)
+  #expect(logged == Array(repeating: RemoteError.occupied.localizedDescription, count: 2))
+  #expect(notified.isEmpty)
+  let smb = sample()
+  f.smb.error = .authentication
+  await #expect(throws: ConnectionError.authentication) {
+    try await manager.save(smb, password: "secret")
+  }
+  await #expect(throws: ConnectionError.authentication) {
+    try await manager.listShares(host: "host", user: "user", password: "secret")
+  }
+  await manager.toggle(smb)
+  #expect(logged.count == 5)
+  #expect(notified.count == 1)
+  f.smb.error = nil
+  try await manager.save(smb, password: "secret")
+  await manager.toggle(smb)
+  f.smb.unmountError = .busy
+  await manager.toggle(smb)
+  await #expect(throws: ConnectionError.busy) { try await manager.remove(smb) }
+  #expect(logged.count == 7)
+  #expect(logged.suffix(2) == Array(repeating: ConnectionError.busy.localizedDescription, count: 2))
+  #expect(notified.count == 1)
+}
+
+@Test @MainActor func connectionLogsNeverIncludeUnknownErrorDetails() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var logged: [String] = []
+  manager.operationFailed = { logged.append($0) }
+  manager.testRemote = { _ in
+    throw NSError(
+      domain: NSURLErrorDomain, code: NSURLErrorTimedOut,
+      userInfo: [
+        NSLocalizedDescriptionKey:
+          "https://secret.example/?token=secret Cookie=secret password=secret"
+      ])
+  }
+  await manager.toggle(Connection(kind: .quark, name: "含敏感信息的名称"))
+  #expect(logged == [ConnectionError.timeout.localizedDescription])
+  manager.reportOperationError(
+    NSError(
+      domain: NSPOSIXErrorDomain, code: Int(EACCES),
+      userInfo: [NSLocalizedDescriptionKey: "token=secret"]))
+  manager.reportOperationError(
+    NSError(domain: "unknown", code: 99, userInfo: [NSLocalizedDescriptionKey: "Cookie=secret"]))
+  manager.reportOperationError(CancellationError())
+  #expect(
+    logged == [
+      ConnectionError.timeout.localizedDescription, RemoteError.posix(EACCES).localizedDescription,
+      RemoteError.posix(EIO).localizedDescription,
+    ])
+}

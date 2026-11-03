@@ -74,3 +74,33 @@ private final class HTTPFixture: URLProtocol, @unchecked Sendable {
   #expect(output == expected)
   #expect(sizes == [65_536, 65_536, 19_051])
 }
+
+@Test func HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() throws {
+  let source = URL(string: "https://drive-pc.quark.cn/file")!
+  var request = URLRequest(url: URL(string: "https://cdn.example.invalid/file")!)
+  request.setValue("test-cookie", forHTTPHeaderField: "Cookie")
+  request.setValue("test-authorization", forHTTPHeaderField: "Authorization")
+  let outside = try #require(
+    HTTPRedirectPolicy.request(
+      request, from: source, originalMethod: "GET", cookieDomain: "quark.cn"))
+  #expect(outside.value(forHTTPHeaderField: "Cookie") == nil)
+  #expect(outside.value(forHTTPHeaderField: "Authorization") == nil)
+  #expect(
+    HTTPRedirectPolicy.request(
+      request, from: source, originalMethod: "POST", cookieDomain: "quark.cn") == nil)
+  request.url = URL(string: "https://download.quark.cn/file")!
+  let inside = try #require(
+    HTTPRedirectPolicy.request(
+      request, from: source, originalMethod: "GET", cookieDomain: "quark.cn"))
+  #expect(inside.value(forHTTPHeaderField: "Cookie") == "test-cookie")
+  #expect(inside.value(forHTTPHeaderField: "Authorization") == nil)
+  request.url = URL(string: "https://quark.cn.attacker.invalid/file")!
+  #expect(
+    HTTPRedirectPolicy.request(
+      request, from: source, originalMethod: "GET", cookieDomain: "quark.cn")?.value(
+        forHTTPHeaderField: "Cookie") == nil)
+  request.url = URL(string: "http://drive-pc.quark.cn/file")!
+  #expect(
+    HTTPRedirectPolicy.request(
+      request, from: source, originalMethod: "GET", cookieDomain: "quark.cn") == nil)
+}

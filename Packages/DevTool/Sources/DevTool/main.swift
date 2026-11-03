@@ -2,6 +2,7 @@ import ADB
 import AliyunDrive
 import Core
 import Foundation
+import Quark
 import RicohGR
 import Synchronization
 
@@ -57,6 +58,9 @@ func upload(_ provider: any RemoteFileProvider, local: URL, remote: RemotePath) 
     }
     if let aliyun = provider as? AliyunProvider {
       await aliyun.onProgress { progress.report($0, total: $1) }
+    }
+    if let quark = provider as? QuarkProvider {
+      await quark.onProgress { progress.report($0, total: $1) }
     }
     try await provider.write(remote, from: local)
     progress.report(Int64(values.fileSize ?? 0), total: Int64(values.fileSize ?? 0), finished: true)
@@ -142,6 +146,8 @@ func run(_ arguments: [String]) async throws {
     provider = AliyunProvider(
       session: AliyunSession(
         secretKey: "\(connection.id.uuidString).oauth", configuration: AliyunConfiguration()))
+  case .quark:
+    provider = QuarkProvider(session: QuarkSession(secretKey: "\(connection.id.uuidString).cookie"))
   default: throw ConnectionError.notImplemented
   }
   do {
