@@ -1,0 +1,58 @@
+name: Kayoi
+options:
+  deploymentTarget:
+    macOS: "26.0"
+packages:
+  Core:
+    path: Packages/Core
+  ADB:
+    path: Packages/ADB
+  AliyunDrive:
+    path: Packages/AliyunDrive
+  Quark:
+    path: Packages/Quark
+  RicohGR:
+    path: Packages/RicohGR
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "Apple Development: seaony@outlook.com"
+    ENABLE_APP_SANDBOX: NO
+    ENABLE_HARDENED_RUNTIME: YES
+    COMBINE_HIDPI_IMAGES: YES
+targets:
+  Kayoi:
+    type: application
+    platform: macOS
+    sources: [App]
+    dependencies:
+      - package: Core
+      - package: ADB
+      - package: AliyunDrive
+      - package: Quark
+      - package: RicohGR
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: build/Info.plist
+      properties:
+        CFBundleDisplayName: Kayoi
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "26.0"
+        LSUIElement: true
+        NSLocalNetworkUsageDescription: 发现并连接局域网中的设备和共享。
+        NSBonjourServices: ["_smb._tcp", "_adb-tls-pairing._tcp", "_adb-tls-connect._tcp"]
+        CFBundleURLTypes:
+          - CFBundleURLName: com.seaony.Kayoi.oauth
+            CFBundleURLSchemes: [kayoi]
+schemes:
+  Kayoi:
+    build:
+      targets:
+        Kayoi: all
