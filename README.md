@@ -23,7 +23,7 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
-后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；无线调试、GR 和网盘待后续里程碑。
+后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR 和网盘待后续里程碑。
 
 阶段一只有 SMB 使用系统挂载；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
 
@@ -42,3 +42,9 @@ Windows 需开启文件和打印机共享；微软账户填邮箱与账户密码
 `build/bin/kayoi-dev devices` 列出发现设备。先在 App 保存连接，再把 connections.json 中的 UUID 传给 `ls/stat/get/put/mkdir/rm/mv/df/cat`，具体用法见 `--help`。get/put 支持递归目录，传输进度输出到 stderr。ADB 根路径映射 /sdcard；存在外置卡时根列表包含“SD 卡”。
 
 没有依赖外部 adb 可执行文件。与官方 adb 不能同时占用手机接口；仅在手动对照验收时交替使用。BoringSSL 版本与 AOSP 来源见第三方说明，测试公钥不含私钥。真实手机、4 GB 哈希和 USB 3 性能尚待验收。
+
+## 安卓无线调试
+
+Android 11+ 手机打开无线调试和“使用配对码配对设备”。在添加窗口选择安卓 Wi-Fi、配对服务和六位码；已配对的连接可留空配对码直接测试。GUID 保存到 connections.json，端口不保存，每次按 GUID 重新发现。两端同机 USB 可用时优先 USB，选择结果记入 ADBTransport 日志。
+
+`kayoi-dev pair host:port 六位码` 只配对并打印 GUID；然后在 App 从已发现的连接服务添加并测试保存。Wi-Fi 文件命令和 USB 相同，使用各自连接 UUID。真实配对、端口切换和传输验收尚待用户完成。

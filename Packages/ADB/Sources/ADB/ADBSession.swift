@@ -4,13 +4,18 @@ import Foundation
 public actor ADBSession {
   private let transport: any ADBTransport
   private let identity: ADBIdentity
+  private let initialConnectSent: Bool
   public private(set) var features: Set<String> = []
   private var version: UInt32 = 0x0100_0001
   private var maxPayload = 4096
   private var local: UInt32 = 0
   private var remote: UInt32?
   private var buffered = Data()
-  public init(transport: any ADBTransport, identity: ADBIdentity = ADBIdentity()) {
+  public init(
+    transport: any ADBTransport, identity: ADBIdentity = ADBIdentity(),
+    initialConnectSent: Bool = false
+  ) {
+    self.initialConnectSent = initialConnectSent
     self.transport = transport
     self.identity = identity
   }
@@ -42,10 +47,12 @@ public actor ADBSession {
     return try ADBMessage.decode(header + payload, skipChecksum: skip)
   }
   public func connect() async throws {
-    try await send(
-      ADBMessage(
-        .connect, 0x0100_0001, 1_048_576,
-        payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8)))
+    if !initialConnectSent {
+      try await send(
+        ADBMessage(
+          .connect, 0x0100_0001, 1_048_576,
+          payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8)))
+    }
     var signed = false
     var sentPublicKey = false
     let deadline = ContinuousClock.now.advanced(by: .seconds(60))

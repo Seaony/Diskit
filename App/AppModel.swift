@@ -10,6 +10,8 @@ import UserNotifications
   let connections = ConnectionManager(smb: SystemSMBService())
   let discovery = SMBDiscovery()
   let usbDiscovery = USBDiscovery()
+  let wirelessDiscovery = WirelessDiscovery()
+  var pairingSelection: String?
   var editing: Connection?
   var alert: String?
   private var started = false
@@ -21,13 +23,16 @@ import UserNotifications
     started = true
     connections.openInFinder = { NSWorkspace.shared.open($0) }
     connections.mountFailed = { [weak self] message in self?.reportMountFailure(message) }
-    connections.testRemote = { connection in
-      guard connection.kind == .androidUSB else { throw ConnectionError.notImplemented }
-      let provider = try ADBProvider.usb(serial: connection.params["serial"] ?? "")
+    connections.testRemote = { [weak self] connection in
+      guard connection.kind == .androidUSB || connection.kind == .androidWiFi else {
+        throw ConnectionError.notImplemented
+      }
+      let provider = try await ADBProviderFactory.make(for: connection)
       do {
         try await provider.connect()
         let space = try await provider.spaceInfo()
         await provider.disconnect()
+        self?.refreshWirelessAvailability(additional: connection)
         return space
       } catch {
         await provider.disconnect()
@@ -36,7 +41,10 @@ import UserNotifications
     }
     usbDiscovery.changed = { [weak self] devices in
       self?.connections.usbDevicesChanged(serials: Set(devices.map(\.serial)))
+      self?.refreshWirelessAvailability()
     }
+    wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
+    wirelessDiscovery.start()
     usbDiscovery.start()
     discovery.start()
     for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
@@ -47,6 +55,19 @@ import UserNotifications
         })
     }
     Task { await connections.autoMount() }
+  }
+  private func refreshWirelessAvailability(additional: Connection? = nil) {
+    var guids = Set(wirelessDiscovery.devices.filter { $0.type == .connect }.map(\.name))
+    let serials = Set(usbDiscovery.devices.map(\.serial))
+    for connection in connections.connections + (additional.map { [$0] } ?? [])
+    where connection.kind == .androidWiFi {
+      if let guid = connection.params["guid"],
+        let serial = WirelessSelection.serial(fromGUID: guid), serials.contains(serial)
+      {
+        guids.insert(guid)
+      }
+    }
+    connections.wirelessGUIDsChanged(guids)
   }
   func reportMountFailure(_ message: String) {
     logger.error("挂载失败：\(message, privacy: .public)")

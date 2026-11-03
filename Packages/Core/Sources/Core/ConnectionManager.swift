@@ -18,6 +18,7 @@ public enum ConnectionState: Equatable, Sendable {
   private let smb: any SMBServing
   private var busy: Set<UUID> = []
   private var usbSerials: Set<String>?
+  private var wifiGUIDs: Set<String>?
   public var mountFailed: ((String) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
   public var openInFinder: ((URL) -> Void)?
@@ -168,7 +169,19 @@ public enum ConnectionState: Equatable, Sendable {
     {
       return .disconnected
     }
+    if connection.kind == .androidWiFi, let wifiGUIDs,
+      !wifiGUIDs.contains(connection.params["guid"] ?? "")
+    {
+      return .disconnected
+    }
     return result
+  }
+  public func wirelessGUIDsChanged(_ guids: Set<String>) {
+    wifiGUIDs = guids
+    for connection in connections
+    where connection.kind == .androidWiFi && !guids.contains(connection.params["guid"] ?? "") {
+      states[connection.id] = .disconnected
+    }
   }
   public func usbDevicesChanged(serials: Set<String>) {
     usbSerials = serials

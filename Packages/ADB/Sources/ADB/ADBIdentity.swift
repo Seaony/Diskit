@@ -7,7 +7,7 @@ import Security
 public struct ADBIdentity: Sendable {
   private let store: any SecretStore
   public init(store: any SecretStore = LoginKeychainStore()) { self.store = store }
-  private func key(regenerate: Bool = false) throws -> SecKey {
+  func key(regenerate: Bool = false) throws -> SecKey {
     let attributes: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
       kSecAttrKeyClass as String: kSecAttrKeyClassPrivate, kSecAttrKeySizeInBits as String: 2048,
@@ -24,6 +24,7 @@ public struct ADBIdentity: Sendable {
     try store.write(bytes as Data, for: "adb.private-key")
     return key
   }
+  func securityKey() throws -> SecKey { try key() }
   public func regenerate() throws { _ = try key(regenerate: true) }
   public func sign(_ token: Data) throws -> Data {
     guard token.count == 20 else { throw RemoteError.protocolError }

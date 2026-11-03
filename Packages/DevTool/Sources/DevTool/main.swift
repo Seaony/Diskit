@@ -96,7 +96,13 @@ func run(_ arguments: [String]) async throws {
     for device in ADBUSB.devices() { print("androidUSB\t\(device.serial)\t\(device.name)") }
     return
   }
-  if command == "pair" { throw ConnectionError.notImplemented }
+  if command == "pair" {
+    guard args.count == 2, let address = URLComponents(string: "adb://" + args[0]),
+      let host = address.host, let rawPort = address.port, let port = UInt16(exactly: rawPort)
+    else { throw RemoteError.invalidPath }
+    print(try await ADBPairing.pair(host: host, port: port, code: args[1]))
+    return
+  }
   let recursive = args.contains("-r")
   args.removeAll { $0 == "-r" || $0 == "-a" }
   var range: Range<Int64>?
@@ -117,8 +123,10 @@ func run(_ arguments: [String]) async throws {
     "ls": 1, "stat": 1, "get": 2, "put": 2, "mkdir": 1, "rm": 1, "mv": 2, "df": 0, "cat": 1,
   ]
   guard required[command] == args.count else { throw RemoteError.invalidPath }
-  guard connection.kind == .androidUSB else { throw ConnectionError.notImplemented }
-  let provider = try ADBProvider.usb(serial: connection.params["serial"] ?? "")
+  guard connection.kind == .androidUSB || connection.kind == .androidWiFi else {
+    throw ConnectionError.notImplemented
+  }
+  let provider = try await ADBProviderFactory.make(for: connection)
   do {
     try await provider.connect()
     switch command {

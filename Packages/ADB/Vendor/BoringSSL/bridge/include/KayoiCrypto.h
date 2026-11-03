@@ -7,3 +7,5 @@ int kayoi_android_public_key(const uint8_t *der, size_t der_size, uint8_t *outpu
 #ifdef __cplusplus
 }
 #endif
+
+#include "KayoiSPAKE.h"

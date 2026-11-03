@@ -1564,6 +1564,210 @@
           }
         }
       }
+    },
+    "请输入 6 位配对码": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入 6 位配对码"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the 6-digit pairing code"
+          }
+        }
+      }
+    },
+    "配对码错误": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对码错误"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incorrect pairing code"
+          }
+        }
+      }
+    },
+    "手机返回了无效的配对数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机返回了无效的配对数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone returned invalid pairing data"
+          }
+        }
+      }
+    },
+    "无法发现无线调试设备，请检查本地网络权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法发现无线调试设备，请检查本地网络权限"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot discover wireless debugging devices. Check local network permissions"
+          }
+        }
+      }
+    },
+    "无线设备地址解析失败，请检查手机上的无线调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无线设备地址解析失败，请检查手机上的无线调试"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot resolve the wireless device. Check wireless debugging on your phone"
+          }
+        }
+      }
+    },
+    "（Wi-Fi）": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "（Wi-Fi）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " (Wi-Fi)"
+          }
+        }
+      }
+    },
+    "配对服务": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对服务"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing service"
+          }
+        }
+      }
+    },
+    "无线调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无线调试"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wireless debugging"
+          }
+        }
+      }
+    },
+    "配对设备": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对设备"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing device"
+          }
+        }
+      }
+    },
+    "六位配对码": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "六位配对码"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6-digit pairing code"
+          }
+        }
+      }
+    },
+    "已配对时可留空，直接测试连接。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已配对时可留空，直接测试连接。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If already paired, leave this blank and test the connection."
+          }
+        }
+      }
+    },
+    "在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable wireless debugging on your phone, then choose Pair device with pairing code. Keep your Mac and phone on the same local network."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

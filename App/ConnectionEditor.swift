@@ -1,3 +1,4 @@
+import ADB
 import Core
 import SwiftUI
 
@@ -10,6 +11,8 @@ struct ConnectionEditor: View {
   @State private var error: String?
   @State private var busy = false
   @State private var chosen = false
+  @State private var pairingCode = ""
+  @State private var pairingID = ""
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       Text(model.editing == nil ? L("添加位置") : L("编辑位置")).font(.title2.bold())
@@ -23,10 +26,12 @@ struct ConnectionEditor: View {
             HStack {
               Text(kind.title)
               Spacer()
-              if kind != .smb && kind != .androidUSB { Text("后续提供").foregroundStyle(.secondary) }
+              if kind != .smb && kind != .androidUSB && kind != .androidWiFi {
+                Text("后续提供").foregroundStyle(.secondary)
+              }
               Image(systemName: "chevron.right")
             }.frame(maxWidth: .infinity)
-          }.disabled(kind != .smb && kind != .androidUSB)
+          }.disabled(kind != .smb && kind != .androidUSB && kind != .androidWiFi)
         }
       } else {
         Form {
@@ -43,6 +48,17 @@ struct ConnectionEditor: View {
               ForEach(model.usbDiscovery.devices) { device in
                 Text(device.name + " · " + device.serial).tag(device.serial)
               }
+            }
+          } else if draft.kind == .androidWiFi {
+            Picker("配对设备", selection: $pairingID) {
+              Text("请选择").tag("")
+              ForEach(model.wirelessDiscovery.devices.filter { $0.type == .pairing }) { device in
+                Text(device.name).tag(device.id)
+              }
+            }
+            SecureField("六位配对码", text: $pairingCode)
+            if draft.params["guid"] != nil {
+              Text("已配对时可留空，直接测试连接。").font(.caption).foregroundStyle(.secondary)
             }
           } else {
             TextField("主机 IP 或名称", text: parameter("host"))
@@ -66,6 +82,9 @@ struct ConnectionEditor: View {
         }.disabled(busy)
         if draft.kind == .androidUSB {
           Text("首次连接请在手机上点允许 USB 调试，最多等待 60 秒。").font(.caption).foregroundStyle(.secondary)
+        } else if draft.kind == .androidWiFi {
+          Text("在手机上打开无线调试，再选择“使用配对码配对设备”。Mac 和手机需在同一局域网。").font(.caption).foregroundStyle(
+            .secondary)
         } else {
           Text("Windows 需开启“文件和打印机共享”。微软账户请填邮箱和账户密码，不能使用 PIN。").font(.caption).foregroundStyle(
             .secondary)
@@ -92,6 +111,7 @@ struct ConnectionEditor: View {
       .task {
         draft = model.editing ?? Connection()
         chosen = model.editing != nil
+        pairingID = model.pairingSelection ?? ""
         if let connection = model.editing, connection.kind == .smb {
           do { password = try model.connections.savedPassword(connection) } catch {
             self.error = error.localizedDescription
@@ -123,6 +143,14 @@ struct ConnectionEditor: View {
     Task { @MainActor in
       defer { busy = false }
       do {
+        if draft.kind == .androidWiFi && (!pairingCode.isEmpty || draft.params["guid"] == nil) {
+          guard let device = model.wirelessDiscovery.devices.first(where: { $0.id == pairingID }),
+            let host = device.host, let port = device.port
+          else { throw RemoteError.notConnected }
+          let guid = try await ADBPairing.pair(host: host, port: port, code: pairingCode)
+          draft.params = ["guid": guid, "name": draft.name]
+          pairingCode = ""
+        }
         try await model.connections.save(draft, password: password)
         dismissWindow(id: "connection")
       } catch { self.error = error.localizedDescription }

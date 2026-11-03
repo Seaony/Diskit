@@ -11,11 +11,24 @@ struct PanelView: View {
       !model.connections.connections.contains { $0.params["host"] == device.host }
     }
   }
+  private var discoveredUSB: [ADBDevice] {
+    model.usbDiscovery.devices.filter { device in
+      !model.connections.connections.contains {
+        $0.kind == .androidUSB && $0.params["serial"] == device.serial
+      }
+    }
+  }
+  private var discoveredWiFi: [WirelessDevice] {
+    model.wirelessDiscovery.devices.filter { device in
+      !model.connections.connections.contains { $0.params["guid"] == device.name }
+    }
+  }
   private var contentHeight: CGFloat {
     min(
       422,
       CGFloat(
-        model.connections.connections.count + discovered.count + model.usbDiscovery.devices.count)
+        model.connections.connections.count + discovered.count + discoveredUSB.count
+          + discoveredWiFi.count)
         * 60
         + (model.connections.connections.isEmpty ? 210 : 100) + (discovered.isEmpty ? 0 : 32))
   }
@@ -35,15 +48,33 @@ struct PanelView: View {
           if let error = model.discovery.error {
             Text(error).font(.caption).foregroundStyle(.secondary)
           }
-          if !model.usbDiscovery.devices.isEmpty {
+          if let error = model.wirelessDiscovery.error {
+            Text(error).font(.caption).foregroundStyle(.secondary)
+          }
+          if !discovered.isEmpty || !discoveredUSB.isEmpty || !discoveredWiFi.isEmpty {
             Text("已发现").font(.caption).foregroundStyle(.secondary)
-            ForEach(
-              model.usbDiscovery.devices.filter { device in
-                !model.connections.connections.contains {
-                  $0.kind == .androidUSB && $0.params["serial"] == device.serial
-                }
+          }
+          ForEach(discoveredWiFi) { device in
+            HStack {
+              Image(systemName: "wifi").frame(width: 28, height: 28)
+              VStack(alignment: .leading) {
+                Text(device.name + L("（Wi-Fi）")).lineLimit(1)
+                Text(device.type == .pairing ? L("配对服务") : L("无线调试")).font(.caption)
+                  .foregroundStyle(.secondary)
               }
-            ) { device in
+              Spacer()
+              Button("添加") {
+                let connection = Connection(
+                  kind: .androidWiFi, name: device.name,
+                  params: device.type == .connect ? ["guid": device.name] : [:])
+                edit(connection)
+                model.pairingSelection = device.type == .pairing ? device.id : nil
+              }.controlSize(.small)
+            }.frame(height: 52).padding(.horizontal, 10).background(
+              .background, in: RoundedRectangle(cornerRadius: 10))
+          }
+          if !discoveredUSB.isEmpty {
+            ForEach(discoveredUSB) { device in
               HStack {
                 Image(systemName: "smartphone").frame(width: 28, height: 28)
                 VStack(alignment: .leading) {
@@ -61,7 +92,6 @@ struct PanelView: View {
             }
           }
           if !discovered.isEmpty {
-            Text("已发现").font(.caption).foregroundStyle(.secondary)
             ForEach(discovered) { device in
               HStack(spacing: 10) {
                 typeIcon(color: .blue)
@@ -167,6 +197,7 @@ struct PanelView: View {
       }
   }
   private func edit(_ connection: Connection?) {
+    model.pairingSelection = nil
     model.editing = connection
     openWindow(id: "connection")
     NSApplication.shared.activate(ignoringOtherApps: true)
@@ -178,9 +209,12 @@ struct PanelView: View {
   private func row(_ connection: Connection) -> some View {
     let state = model.connections.states[connection.id] ?? .disconnected
     return HStack(spacing: 10) {
-      Image(systemName: connection.kind == .androidUSB ? "smartphone" : "desktopcomputer")
-        .foregroundStyle(.white).frame(width: 28, height: 28).background(
-          connection.tint, in: RoundedRectangle(cornerRadius: 7))
+      Image(
+        systemName: (connection.kind == .androidUSB || connection.kind == .androidWiFi)
+          ? "smartphone" : "desktopcomputer"
+      )
+      .foregroundStyle(.white).frame(width: 28, height: 28).background(
+        connection.tint, in: RoundedRectangle(cornerRadius: 7))
       VStack(alignment: .leading, spacing: 3) {
         Text(connection.name).font(.body.weight(.medium)).lineLimit(1)
         Text(subtitle(state)).font(.caption).foregroundStyle(.secondary).lineLimit(1).help(

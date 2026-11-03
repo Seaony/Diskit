@@ -269,3 +269,28 @@ private func sample(_ name: String = "Windows") -> Connection {
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 100, used: 20)))
 }
+
+@Test @MainActor func wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected()
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let guid = "adb-serial-Ab123Z"
+  let connection = Connection(kind: .androidWiFi, name: "无线手机", params: ["guid": guid])
+  manager.wirelessGUIDsChanged([guid])
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  try await manager.save(connection, password: "")
+  manager.testRemote = { _ in
+    manager.wirelessGUIDsChanged([])
+    throw RemoteError.notConnected
+  }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .disconnected)
+  manager.wirelessGUIDsChanged([guid])
+  manager.testRemote = { _ in SpaceInfo(total: 200, used: 20) }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 200, used: 20)))
+  #expect(try ConnectionRepository(location: f.location).load().first?.params == ["guid": guid])
+  #expect(f.smb.calls.isEmpty)
+}

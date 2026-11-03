@@ -258,6 +258,7 @@ let package = Package(
         "gen/crypto/err_data.cc",
         "crypto/fipsmodule/bcm.cc",
         "bridge/AndroidPublicKey.cc",
+        "bridge/SPAKE2.cc",
       ], publicHeadersPath: "bridge/include",
       cSettings: [.define("OPENSSL_NO_ASM"), .headerSearchPath("include")],
       cxxSettings: [.define("OPENSSL_NO_ASM"), .headerSearchPath("include")]),

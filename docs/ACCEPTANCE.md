@@ -89,7 +89,30 @@ $ build/bin/kayoi-dev devices
 
 ## M3 安卓 Wi-Fi
 
-未开始。6 条验收尚未执行。
+实现和自动检查通过；无安卓真机，以下均待用户验证。
+
+| 标准 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 1. 无线调试自动发现 | 待用户验证 | NWBrowser 浏览 pairing/connect 两类服务，NetService 解析表单地址；服务本身广播 GUID，未保存时如实显示服务名，保存后显示用户名称；未实测局域网广播 |
+| 2. 配对码配对、手机显示本机 | 待用户验证 | SPAKE2、TLS exporter、HKDF、AES-GCM 和 PeerInfo 假实现互通通过；本机身份由 Security 创建，证书签名由系统信任检查验证通过；未与手机 TLS 互通 |
+| 3. Wi-Fi 文件操作及 >4 GB 哈希 | 待用户验证 | 复用 M2 同一 Provider/sync/shell；Network.framework TCP + STLS 动态插入 TLS 1.3 编译通过，无实际传输数据 |
+| 4. 端口变化后无需重新配对 | 待用户验证 | 测试用相同 GUID 的新端口替换旧服务，选择新端点；每次建立连接重新 NWBrowser 查当前服务，不保存端口 |
+| 5. 同机 USB 优先 | 待用户验证 | 单测精确匹配关联 serial，排除其他 USB 手机；实际选择通过 os.Logger 的 ADBTransport 分类记录，暂无真机日志 |
+| 6. 错误配对码提示、可重试 | 待用户验证 | 错误配对码、错误 exporter、密文篡改均拒绝；单测检查“配对码错误”，表单任务结束恢复输入；未操作真实手机界面 |
+
+```text
+$ make test
+Test run with 15 tests in 0 suites passed
+Test run with 26 tests in 0 suites passed
+$ make release
+** BUILD SUCCEEDED **
+Kayoi.app: valid on disk
+Kayoi.app: satisfies its Designated Requirement
+```
+
+合计 41 项测试，命令退出码 0。M3 用两个子代理分别实现配对与发现，主进程负责 TLS/证书/界面/CLI 和整合验证。没有启动本地服务，没有 UI 自动化或快照测试。
+
+SDK 核查：`nw_framer_prepend_application_protocol` 明确支持握手后动态插入 TLS；`SecIdentityCreate` 可直接结合系统生成的私钥和自签证书；无需更换 §6.2 的技术路线。未扩大 BoringSSL 调用范围。
 
 ## M4 GR IV USB
 
@@ -105,7 +128,7 @@ $ build/bin/kayoi-dev devices
 
 ## 待用户验证（按操作顺序）
 
-目前 M1、M2 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
+目前 M1–M3 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
 
 1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
@@ -136,9 +159,15 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 13. **中断和冲突（M2-6/7）**：传输大文件时拔线，确认命令报错退出、App 不崩溃且显示未连接；重插后重新测试。随后由用户启动官方 adb 并保持其占用，尝试 Kayoi 测试连接和 CLI，确认“手机正被其它 adb 程序占用，请先执行 adb kill-server”提示；再执行 adb kill-server 后重试。
 14. **ADB 设置（§4.4）**：查看密钥指纹，重启后应保持不变。仅在愿意让全部手机重新授权时点击重新生成密钥并确认；之后手机应重新弹授权框。
 
+15. **无线发现与配对（M3-1/2/6）**：让 Mac 与 Android 11+ 手机处于同一局域网，手机打开“无线调试 → 使用配对码配对设备”。在 Kayoi 添加安卓 Wi-Fi，选择配对服务，先输入错误六位码，确认提示“配对码错误”且能重试；再输入正确码并保存。手机“已配对的设备”应出现本机名称。必要时允许 macOS 的本地网络权限。
+16. **无线文件操作（M3-3）**：拔掉 USB，使用 Wi-Fi 连接的 UUID 重复 M2 第 11、12 步，验证目录、中文/空格/emoji、大文件双向 SHA-256。不要沿用 USB 连接 UUID。
+17. **端口变化（M3-4）**：关闭再打开手机无线调试，记录手机显示的新连接端口；保持原连接 UUID，在 App 测试连接并用 CLI ls，不能要求重新配对。
+18. **USB 优先（M3-5）**：同机 Wi-Fi 可用时重新插上 USB，启动 `log stream --style compact --info --predicate 'subsystem == "com.seaony.Kayoi" AND category == "ADBTransport"'`，然后测试该 Wi-Fi 连接。应出现“连接方式：USB（优先于同机 Wi-Fi）”；拔出 USB 再测应出现“连接方式：Wi-Fi”。结束日志用 Ctrl+C。若 USB 被官方 adb 占用，先自行执行 adb kill-server。
+19. **CLI 配对（§3.2）**：可单独执行 `build/bin/kayoi-dev pair '手机IP:配对端口' '六位码'`，成功输出 GUID；该命令只配对，不自动新增保存连接。随后从 App 已发现的连接服务添加，留空配对码，测试并保存。不要混淆手机显示的配对端口和连接端口。
+
 ## 未做与风险
 
-- M3–M6 尚未开始；M7、M8 按要求不做。
+- M4–M6 尚未开始；M7、M8 按要求不做。
 - Windows 网络、密码验证、临时挂载与推出尚无实测。假实现只证明应用流程，不证明系统 API 在目标共享上的行为。
 - 临时挂载点只用 `rmdir` 删除空目录；推出失败不会递归删除远端内容。若出现错误并留下临时挂载，请保留错误信息后用 Finder 推出对应卷。
 - 仅安装了已授权的 XcodeGen，无新增第三方库。未使用 Jev：本阶段是确定性的系统接口与编译检查。

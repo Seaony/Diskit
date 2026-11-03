@@ -36,3 +36,9 @@ Copyright (C) 2016 The Android Open Source Project，Apache License 2.0。
 `Packages/ADB/Tests/ADBTests/Fixtures/` 中的公钥由本机已有官方 Android Platform-Tools 37.0.1-15733141 的 `adb keygen` 离线生成。
 同一个一次性密钥的 PKCS#1 公钥用系统 openssl 导出为 DER，测试把编码结果与官方 adbkey.pub 的 Base64 部分逐字节比较。
 临时私钥在生成后删除，不入库；没有启动 adb server，也没有连接真实设备。
+
+## AOSP 无线调试
+
+M3 对照同一固定 ADB 版本的 pairing_auth、pairing_connection、tls/tls_connection.cpp、crypto/x509_generator.cpp、daemon/mdns.cpp、proto/pairing.proto。
+SPAKE2 使用 BoringSSL；HKDF-SHA256 和 AES-128-GCM 使用 CryptoKit；证书结构用 DER 编码，RSA 签名由 Security 执行，未实现密码学原语。
+AOSP 的 exporter 标签及 SPAKE2 名字包含末尾 NUL，HKDF info 不包含末尾 NUL；帧长度是大端，PeerInfo 为 8192 字节。
