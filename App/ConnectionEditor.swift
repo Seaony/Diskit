@@ -1,0 +1,131 @@
+import Core
+import SwiftUI
+
+struct ConnectionEditor: View {
+  @Bindable var model: AppModel
+  @Environment(\.dismissWindow) private var dismissWindow
+  @State private var draft = Connection()
+  @State private var password = ""
+  @State private var shares: [String] = []
+  @State private var error: String?
+  @State private var busy = false
+  @State private var chosen = false
+  var body: some View {
+    VStack(alignment: .leading, spacing: 16) {
+      Text(model.editing == nil ? L("添加位置") : L("编辑位置")).font(.title2.bold())
+      if !chosen {
+        Text("选择位置类型").foregroundStyle(.secondary)
+        ForEach(ConnectionKind.allCases, id: \.self) { kind in
+          Button {
+            draft.kind = kind
+            chosen = true
+          } label: {
+            HStack {
+              Text(kind.title)
+              Spacer()
+              if kind != .smb { Text("后续提供").foregroundStyle(.secondary) }
+              Image(systemName: "chevron.right")
+            }.frame(maxWidth: .infinity)
+          }.disabled(kind != .smb)
+        }
+      } else {
+        Form {
+          TextField("显示名称", text: $draft.name)
+          Picker("图标颜色", selection: $draft.color) {
+            Text("蓝色").tag("blue")
+            Text("绿色").tag("green")
+            Text("橙色").tag("orange")
+            Text("红色").tag("red")
+          }
+          TextField("主机 IP 或名称", text: parameter("host"))
+          TextField("用户名", text: parameter("username"))
+          SecureField("密码", text: $password)
+          HStack {
+            TextField("共享名", text: parameter("share"))
+            Button("列出共享") { listShares() }.disabled(
+              busy || (draft.params["host"] ?? "").isEmpty
+                || (draft.params["username"] ?? "").isEmpty)
+          }
+          if !shares.isEmpty {
+            Picker("选择共享", selection: parameter("share")) {
+              Text("请选择").tag("")
+              ForEach(shares, id: \.self) { Text($0).tag($0) }
+            }
+          }
+          Toggle("打开 App 时自动挂载", isOn: $draft.autoMount)
+          Toggle("挂载后自动在 Finder 打开", isOn: $draft.openInFinderAfterMount)
+        }.disabled(busy)
+        Text("Windows 需开启“文件和打印机共享”。微软账户请填邮箱和账户密码，不能使用 PIN。").font(.caption).foregroundStyle(
+          .secondary)
+        Text("保存前会测试连接，成功后才保存。").font(.caption).foregroundStyle(.secondary)
+      }
+      if let error {
+        Text(error).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+          .textSelection(.enabled)
+      }
+      HStack {
+        if busy {
+          ProgressView().controlSize(.small)
+          Text("正在测试连接…").font(.caption)
+        }
+        Spacer()
+        Button("取消") { dismissWindow(id: "connection") }.disabled(busy)
+        if chosen {
+          Button("测试并保存") { save() }.buttonStyle(.borderedProminent).disabled(busy)
+            .keyboardShortcut(.defaultAction)
+        }
+      }
+    }.padding(24).frame(width: 460)
+      .task {
+        draft = model.editing ?? Connection()
+        chosen = model.editing != nil
+        if let connection = model.editing {
+          do { password = try model.connections.savedPassword(connection) } catch {
+            self.error = error.localizedDescription
+          }
+        }
+      }
+      .onChange(of: draft.params["host"]) { shares = [] }
+      .onChange(of: draft.params["username"]) { shares = [] }
+  }
+  private func parameter(_ key: String) -> Binding<String> {
+    Binding(get: { draft.params[key] ?? "" }, set: { draft.params[key] = $0 })
+  }
+  private func listShares() {
+    busy = true
+    error = nil
+    Task { @MainActor in
+      defer { busy = false }
+      do {
+        shares = try await model.connections.listShares(
+          host: draft.params["host"] ?? "", user: draft.params["username"] ?? "", password: password
+        )
+        if shares.isEmpty { error = L("没有可访问的文件共享") }
+      } catch { self.error = error.localizedDescription }
+    }
+  }
+  private func save() {
+    busy = true
+    error = nil
+    Task { @MainActor in
+      defer { busy = false }
+      do {
+        try await model.connections.save(draft, password: password)
+        dismissWindow(id: "connection")
+      } catch { self.error = error.localizedDescription }
+    }
+  }
+}
+
+extension ConnectionKind {
+  var title: String {
+    switch self {
+    case .androidUSB: L("安卓手机（USB）")
+    case .androidWiFi: L("安卓手机（Wi-Fi）")
+    case .smb: L("Windows 共享")
+    case .ricohGR: L("理光 GR IV")
+    case .aliyunDrive: L("阿里云盘")
+    case .quark: L("夸克网盘（实验性）")
+    }
+  }
+}

@@ -214,7 +214,8 @@ protocol RemoteFileProvider: Sendable {
 ### 6.3 Windows 电脑（SMB）
 
 - 发现：`NWBrowser` 浏览 `_smb._tcp`；Windows 默认不广播，表单里必须支持手动填 IP 或主机名。
-- 表单：主机、用户名、密码、共享名。「列出共享」按钮调用 `/usr/bin/smbutil view -A //user@host`（密码通过环境或交互方式传入，不出现在命令行参数里；以实际可行方式为准）解析共享列表供选择。
+- 表单：主机、用户名、密码、共享名。「列出共享」按钮调用 `/usr/bin/smbutil view //user@host`（密码通过环境或交互方式传入，不出现在命令行参数里；以实际可行方式为准）解析共享列表供选择。
+- 保存前连接测试：用 `NetFSMountURLAsync` 和填写的用户名、密码建立新会话，在独立临时路径挂载所选共享，验证后推出；不改动已有挂载。列出共享仍使用 `smbutil`，其结果不代替密码验证。
 - 挂载：`NetFSMountURLAsync`，URL `smb://host/share`，用户名密码从钥匙串取，挂载到系统默认位置（`/Volumes`）。推出：`NSWorkspace.unmountAndEjectDevice(at:)`。
 - 帮助文案写明：Windows 需开启「文件和打印机共享」；微软账户登录的电脑用户名填邮箱、密码填微软账户密码而不是 PIN。
 
