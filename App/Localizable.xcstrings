@@ -1309,6 +1309,261 @@
           }
         }
       }
+    },
+    "测试连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试连接"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test Connection"
+          }
+        }
+      }
+    },
+    "连接成功 · 可用 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接成功 · 可用 %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %@ available"
+          }
+        }
+      }
+    },
+    "安卓设备": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "安卓设备"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Android device"
+          }
+        }
+      }
+    },
+    "首次连接请在手机上点允许 USB 调试，最多等待 60 秒。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首次连接请在手机上点允许 USB 调试，最多等待 60 秒。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On first connection, allow USB debugging on your phone. Kayoi waits up to 60 seconds."
+          }
+        }
+      }
+    },
+    "重新生成密钥": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新生成密钥"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerate Key"
+          }
+        }
+      }
+    },
+    "若提示设备被占用，请先退出其它 adb 程序或执行 adb kill-server。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "若提示设备被占用，请先退出其它 adb 程序或执行 adb kill-server。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the device is busy, quit other adb programs or run adb kill-server."
+          }
+        }
+      }
+    },
+    "重新生成后，所有手机都需要重新授权。": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新生成后，所有手机都需要重新授权。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regenerating the key requires authorization again on every phone."
+          }
+        }
+      }
+    },
+    "路径无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径无效"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid path"
+          }
+        }
+      }
+    },
+    "设备已断开": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备已断开"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device disconnected"
+          }
+        }
+      }
+    },
+    "设备返回了无效的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备返回了无效的数据"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device returned invalid data"
+          }
+        }
+      }
+    },
+    "请在手机上点允许 USB 调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在手机上点允许 USB 调试"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow USB debugging on your phone"
+          }
+        }
+      }
+    },
+    "手机正被其它 adb 程序占用，请先执行 adb kill-server": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机正被其它 adb 程序占用，请先执行 adb kill-server"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another adb program is using this phone. Run adb kill-server first"
+          }
+        }
+      }
+    },
+    "设备不支持大于 4 GB 的文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备不支持大于 4 GB 的文件"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device does not support files larger than 4 GB"
+          }
+        }
+      }
+    },
+    "设备不支持此操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备不支持此操作"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device does not support this operation"
+          }
+        }
+      }
+    },
+    "远端操作失败（%d）": {
+      "extractionState": "manual",
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "远端操作失败（%d）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remote operation failed (%d)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -32,6 +32,12 @@ targets:
       - App
       - path: README.md
         buildPhase: resources
+      - path: docs/THIRD_PARTY_NOTICES.md
+        buildPhase: resources
+      - path: docs/licenses
+        buildPhase: resources
+      - path: Packages/ADB/Vendor/BoringSSL/LICENSE
+        buildPhase: resources
     dependencies:
       - package: Core
       - package: ADB

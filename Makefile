@@ -13,6 +13,7 @@ release: gen dev-tool
 
 test:
 	swift test --package-path Packages/Core
+	swift test --package-path Packages/ADB
 
 dev-tool:
 	swift build --package-path Packages/DevTool -c release

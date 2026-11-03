@@ -1,3 +1,4 @@
+import ADB
 import AppKit
 import Core
 import Foundation
@@ -8,6 +9,7 @@ import UserNotifications
 @MainActor @Observable final class AppModel {
   let connections = ConnectionManager(smb: SystemSMBService())
   let discovery = SMBDiscovery()
+  let usbDiscovery = USBDiscovery()
   var editing: Connection?
   var alert: String?
   private var started = false
@@ -19,6 +21,23 @@ import UserNotifications
     started = true
     connections.openInFinder = { NSWorkspace.shared.open($0) }
     connections.mountFailed = { [weak self] message in self?.reportMountFailure(message) }
+    connections.testRemote = { connection in
+      guard connection.kind == .androidUSB else { throw ConnectionError.notImplemented }
+      let provider = try ADBProvider.usb(serial: connection.params["serial"] ?? "")
+      do {
+        try await provider.connect()
+        let space = try await provider.spaceInfo()
+        await provider.disconnect()
+        return space
+      } catch {
+        await provider.disconnect()
+        throw error
+      }
+    }
+    usbDiscovery.changed = { [weak self] devices in
+      self?.connections.usbDevicesChanged(serials: Set(devices.map(\.serial)))
+    }
+    usbDiscovery.start()
     discovery.start()
     for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
       observers.append(

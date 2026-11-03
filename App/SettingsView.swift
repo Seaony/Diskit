@@ -1,3 +1,4 @@
+import ADB
 import Core
 import ServiceManagement
 import SwiftUI
@@ -9,6 +10,8 @@ struct SettingsView: View {
   @State private var loginNeedsApproval = false
   @State private var cacheBytes: Int64 = 0
   @State private var confirmClear = false
+  @State private var fingerprint = ""
+  @State private var confirmKey = false
   @State private var error: String?
   var body: some View {
     Form {
@@ -42,12 +45,29 @@ struct SettingsView: View {
         }
         Button("清空缓存") { confirmClear = true }
       }
+      Section("ADB") {
+        Text(fingerprint).font(.caption.monospaced()).textSelection(.enabled)
+        Button("重新生成密钥") { confirmKey = true }
+        Text("若提示设备被占用，请先退出其它 adb 程序或执行 adb kill-server。").font(.caption).foregroundStyle(
+          .secondary)
+      }
       Section("日志") { Button("在 Finder 中显示日志") { model.showLogs() } }
       if let error { Text(error).foregroundStyle(.red) }
-    }.formStyle(.grouped).frame(width: 460, height: 330)
+    }.formStyle(.grouped).frame(width: 460, height: 470)
       .onAppear {
+        do { fingerprint = try ADBIdentity().fingerprint() } catch {
+          self.error = error.localizedDescription
+        }
         refreshLogin()
         cacheBytes = model.cacheSize()
+      }
+      .confirmationDialog("重新生成后，所有手机都需要重新授权。", isPresented: $confirmKey) {
+        Button("重新生成密钥", role: .destructive) {
+          do {
+            try ADBIdentity().regenerate()
+            fingerprint = try ADBIdentity().fingerprint()
+          } catch { self.error = error.localizedDescription }
+        }
       }
       .confirmationDialog("清空缓存前需要推出全部卷，是否继续？", isPresented: $confirmClear) {
         Button("推出并清空缓存", role: .destructive) {

@@ -23,10 +23,10 @@ struct ConnectionEditor: View {
             HStack {
               Text(kind.title)
               Spacer()
-              if kind != .smb { Text("后续提供").foregroundStyle(.secondary) }
+              if kind != .smb && kind != .androidUSB { Text("后续提供").foregroundStyle(.secondary) }
               Image(systemName: "chevron.right")
             }.frame(maxWidth: .infinity)
-          }.disabled(kind != .smb)
+          }.disabled(kind != .smb && kind != .androidUSB)
         }
       } else {
         Form {
@@ -37,26 +37,39 @@ struct ConnectionEditor: View {
             Text("橙色").tag("orange")
             Text("红色").tag("red")
           }
-          TextField("主机 IP 或名称", text: parameter("host"))
-          TextField("用户名", text: parameter("username"))
-          SecureField("密码", text: $password)
-          HStack {
-            TextField("共享名", text: parameter("share"))
-            Button("列出共享") { listShares() }.disabled(
-              busy || (draft.params["host"] ?? "").isEmpty
-                || (draft.params["username"] ?? "").isEmpty)
-          }
-          if !shares.isEmpty {
-            Picker("选择共享", selection: parameter("share")) {
+          if draft.kind == .androidUSB {
+            Picker("安卓设备", selection: parameter("serial")) {
               Text("请选择").tag("")
-              ForEach(shares, id: \.self) { Text($0).tag($0) }
+              ForEach(model.usbDiscovery.devices) { device in
+                Text(device.name + " · " + device.serial).tag(device.serial)
+              }
+            }
+          } else {
+            TextField("主机 IP 或名称", text: parameter("host"))
+            TextField("用户名", text: parameter("username"))
+            SecureField("密码", text: $password)
+            HStack {
+              TextField("共享名", text: parameter("share"))
+              Button("列出共享") { listShares() }.disabled(
+                busy || (draft.params["host"] ?? "").isEmpty
+                  || (draft.params["username"] ?? "").isEmpty)
+            }
+            if !shares.isEmpty {
+              Picker("选择共享", selection: parameter("share")) {
+                Text("请选择").tag("")
+                ForEach(shares, id: \.self) { Text($0).tag($0) }
+              }
             }
           }
           Toggle("打开 App 时自动挂载", isOn: $draft.autoMount)
           Toggle("挂载后自动在 Finder 打开", isOn: $draft.openInFinderAfterMount)
         }.disabled(busy)
-        Text("Windows 需开启“文件和打印机共享”。微软账户请填邮箱和账户密码，不能使用 PIN。").font(.caption).foregroundStyle(
-          .secondary)
+        if draft.kind == .androidUSB {
+          Text("首次连接请在手机上点允许 USB 调试，最多等待 60 秒。").font(.caption).foregroundStyle(.secondary)
+        } else {
+          Text("Windows 需开启“文件和打印机共享”。微软账户请填邮箱和账户密码，不能使用 PIN。").font(.caption).foregroundStyle(
+            .secondary)
+        }
         Text("保存前会测试连接，成功后才保存。").font(.caption).foregroundStyle(.secondary)
       }
       if let error {
@@ -79,7 +92,7 @@ struct ConnectionEditor: View {
       .task {
         draft = model.editing ?? Connection()
         chosen = model.editing != nil
-        if let connection = model.editing {
+        if let connection = model.editing, connection.kind == .smb {
           do { password = try model.connections.savedPassword(connection) } catch {
             self.error = error.localizedDescription
           }

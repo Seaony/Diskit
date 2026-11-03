@@ -1,3 +1,4 @@
+import ADB
 import Core
 import SwiftUI
 
@@ -13,7 +14,9 @@ struct PanelView: View {
   private var contentHeight: CGFloat {
     min(
       422,
-      CGFloat(model.connections.connections.count + discovered.count) * 60
+      CGFloat(
+        model.connections.connections.count + discovered.count + model.usbDiscovery.devices.count)
+        * 60
         + (model.connections.connections.isEmpty ? 210 : 100) + (discovered.isEmpty ? 0 : 32))
   }
   var body: some View {
@@ -31,6 +34,31 @@ struct PanelView: View {
           }
           if let error = model.discovery.error {
             Text(error).font(.caption).foregroundStyle(.secondary)
+          }
+          if !model.usbDiscovery.devices.isEmpty {
+            Text("已发现").font(.caption).foregroundStyle(.secondary)
+            ForEach(
+              model.usbDiscovery.devices.filter { device in
+                !model.connections.connections.contains {
+                  $0.kind == .androidUSB && $0.params["serial"] == device.serial
+                }
+              }
+            ) { device in
+              HStack {
+                Image(systemName: "smartphone").frame(width: 28, height: 28)
+                VStack(alignment: .leading) {
+                  Text(device.name)
+                  Text(device.serial).font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("添加") {
+                  edit(
+                    Connection(
+                      kind: .androidUSB, name: device.name, params: ["serial": device.serial]))
+                }.controlSize(.small)
+              }.frame(height: 52).padding(.horizontal, 10).background(
+                .background, in: RoundedRectangle(cornerRadius: 10))
+            }
           }
           if !discovered.isEmpty {
             Text("已发现").font(.caption).foregroundStyle(.secondary)
@@ -150,15 +178,19 @@ struct PanelView: View {
   private func row(_ connection: Connection) -> some View {
     let state = model.connections.states[connection.id] ?? .disconnected
     return HStack(spacing: 10) {
-      typeIcon(color: connection.tint)
+      Image(systemName: connection.kind == .androidUSB ? "smartphone" : "desktopcomputer")
+        .foregroundStyle(.white).frame(width: 28, height: 28).background(
+          connection.tint, in: RoundedRectangle(cornerRadius: 7))
       VStack(alignment: .leading, spacing: 3) {
         Text(connection.name).font(.body.weight(.medium)).lineLimit(1)
         Text(subtitle(state)).font(.caption).foregroundStyle(.secondary).lineLimit(1).help(
           subtitle(state))
       }
       Spacer(minLength: 0)
-      Button(buttonTitle(state)) { Task { await model.connections.toggle(connection) } }
-        .buttonStyle(.bordered).controlSize(.small).disabled(state == .connecting)
+      Button(connection.kind == .smb ? buttonTitle(state) : L("测试连接")) {
+        Task { await model.connections.toggle(connection) }
+      }
+      .buttonStyle(.bordered).controlSize(.small).disabled(state == .connecting)
     }.frame(height: 52).padding(.horizontal, 10).background(
       .background, in: RoundedRectangle(cornerRadius: 10)
     )
@@ -175,6 +207,10 @@ struct PanelView: View {
     case .disconnected: L("未连接")
     case .connecting: L("连接中…")
     case .failed(let error): error
+    case .tested(let space):
+      String(
+        format: L("连接成功 · 可用 %@"),
+        ByteCountFormatter.string(fromByteCount: space.available, countStyle: .file))
     case .mounted(let mount):
       String(
         format: L("已挂载 · 可用 %@"),
@@ -183,6 +219,7 @@ struct PanelView: View {
   }
   private func buttonTitle(_ state: ConnectionState) -> String {
     switch state {
+    case .tested: L("测试连接")
     case .mounted: L("推出")
     case .failed: L("重试")
     case .connecting: L("连接中…")

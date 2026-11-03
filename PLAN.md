@@ -206,7 +206,7 @@ protocol RemoteFileProvider: Sendable {
 
 - 发现：`NWBrowser` 浏览 `_adb-tls-pairing._tcp`（配对）与 `_adb-tls-connect._tcp`（连接）。`Info.plist` 声明 `NSLocalNetworkUsageDescription` 和 `NSBonjourServices`。
 - 配对（每台手机一次）：用户在手机「无线调试 › 使用配对码配对设备」，在 App 里输入 6 位码。流程按 AOSP `pairing_auth` / `pairing_connection`：TLS 1.3 连接配对端口 → 用 TLS exporter 导出密钥材料（Network.framework 的 `sec_protocol_metadata_create_secret`）拼在配对码后作为口令 → SPAKE2 交换 → 用派生密钥 AES‑128‑GCM 加密交换 PeerInfo（本机 RSA 公钥）。
-- SPAKE2 使用 BoringSSL 的实现：把 BoringSSL 以 C target 方式 vendor 进 ADB 包（保留其许可证文件），**不手写任何密码学代码**。
+- SPAKE2 使用 BoringSSL 的实现：把 BoringSSL 以 C target 方式 vendor 进 ADB 包（保留其许可证文件），**不手写任何密码学代码**。经用户批准，BoringSSL 也用于 ADB Android 公钥编码所需的大整数运算；RSA 密钥生成和签名仍使用 Security。
 - 连接：TCP 连接 `_adb-tls-connect` 端口 → `CNXN` → 收到 `STLS` → 升级 TLS 1.3，用本机 RSA 密钥自签证书做客户端证书（Network.framework `sec_identity`）→ 后续与 USB 完全相同的 ADB 消息流。
 - 手机端口会变：每次挂载按保存的设备标识（配对时记录的 GUID）重新用 mDNS 找当前端口。
 - 同一台手机同时有 USB 和 Wi‑Fi 时，优先 USB（与 SideMount 一致）。
@@ -413,7 +413,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 
 ## 10. 工程约束（实现者必须遵守）
 
-- 优先用系统框架：FSKit、IOUSBHost、ImageCaptureCore、NetFS、Network.framework、CoreWLAN、CoreBluetooth、AuthenticationServices、WebKit、Security。第三方依赖只允许 BoringSSL（SPAKE2）和构建工具 XcodeGen，新增任何依赖先问。
+- 优先用系统框架：FSKit、IOUSBHost、ImageCaptureCore、NetFS、Network.framework、CoreWLAN、CoreBluetooth、AuthenticationServices、WebKit、Security。第三方依赖只允许 BoringSSL（SPAKE2、ADB Android 公钥编码）和构建工具 XcodeGen，新增任何依赖先问。
 - 不调用外部 `adb` 可执行文件，不要求用户装 Android Platform‑Tools（验收时用官方 adb 对照结果除外）。
 - 不手写密码学原语（RSA 签名用 Security 框架，TLS 用 Network.framework，SPAKE2 用 BoringSSL）。
 - 参考开源代码时注意许可证：AOSP（Apache‑2.0）可参考并注明出处；OpenList（AGPL‑3.0）只能看行为不能复制。

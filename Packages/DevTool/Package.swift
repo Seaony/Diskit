@@ -4,7 +4,11 @@ import PackageDescription
 let package = Package(
   name: "DevTool", platforms: [.macOS("26.0")],
   products: [.executable(name: "kayoi-dev", targets: ["DevTool"])],
-  dependencies: [.package(path: "../Core")],
+  dependencies: [.package(path: "../Core"), .package(path: "../ADB")],
   targets: [
-    .executableTarget(name: "DevTool", dependencies: [.product(name: "Core", package: "Core")])
+    .executableTarget(
+      name: "DevTool",
+      dependencies: [
+        .product(name: "Core", package: "Core"), .product(name: "ADB", package: "ADB"),
+      ])
   ], swiftLanguageModes: [.v6])

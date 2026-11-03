@@ -247,3 +247,25 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(f.smb.volumes[a.id] == volume)
   #expect(try manager.savedPassword(a) == "pass")
 }
+
+@Test @MainActor func nonSMBTestsNeverMountAndUnplugWinsOverLateResult() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .androidUSB, name: "手机", params: ["serial": "serial"])
+  manager.usbDevicesChanged(serials: ["serial"])
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  try await manager.save(connection, password: "")
+  #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 100, used: 20)))
+  #expect(f.smb.calls.isEmpty)
+  manager.testRemote = { _ in
+    manager.usbDevicesChanged(serials: [])
+    throw RemoteError.notConnected
+  }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .disconnected)
+  manager.usbDevicesChanged(serials: ["serial"])
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 100, used: 20)))
+}
