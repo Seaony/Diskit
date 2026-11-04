@@ -338,3 +338,64 @@ private actor OAuthStreamHTTP: HTTPTransport {
   await #expect(throws: AliyunError.rateLimited) { try await session.authorized(oauthRequest()) }
   #expect(await transport.requests.count == 3)
 }
+
+@Test(arguments: [0, 429, 500, 401])
+func oauthTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
+  let key = "transient-\(status).oauth"
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: key, expiry: 0)
+  let original = try secrets.read(key)
+  let transport = OAuthHTTP { request in
+    guard request.url?.path == "/oauth/access_token" else { throw RemoteError.protocolError }
+    if status == 0 { throw URLError(.notConnectedToInternet) }
+    return HTTPResponse(status: status, headers: ["Retry-After": "31"], body: Data("{}".utf8))
+  }
+  let session = AliyunSession(
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  do {
+    _ = try await session.authorized(oauthRequest())
+    Issue.record("刷新失败不应成功")
+  } catch { #expect((error as? AliyunError) != .loginRequired) }
+  #expect(try secrets.read(key) == original)
+  #expect(try await session.hasToken())
+}
+
+@Test func oauthExplicitInvalidGrantRequiresNewLogin() async throws {
+  let key = "invalid-grant.oauth"
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: key, expiry: 0)
+  let transport = OAuthHTTP { request in
+    guard request.url?.path == "/oauth/access_token" else { throw RemoteError.protocolError }
+    return HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8))
+  }
+  let session = AliyunSession(
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  await #expect(throws: AliyunError.loginRequired) {
+    _ = try await session.authorized(oauthRequest())
+  }
+  #expect(try oauthRecord(secrets, key: key).invalidated)
+}
+
+@Test func oauthRefreshRecoversAfterTemporaryFailureWithoutLogin() async throws {
+  let key = "refresh-recovery.oauth"
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: key, expiry: 0)
+  let attempts = Mutex(0)
+  let transport = OAuthHTTP { request in
+    if request.url?.path == "/test" { return HTTPResponse(status: 200) }
+    guard request.url?.path == "/oauth/access_token" else { throw RemoteError.protocolError }
+    let number = attempts.withLock {
+      $0 += 1
+      return $0
+    }
+    return number == 1 ? HTTPResponse(status: 500) : oauthToken()
+  }
+  let session = AliyunSession(
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  await #expect(throws: AliyunError.authorizationFailed(500)) {
+    _ = try await session.authorized(oauthRequest())
+  }
+  #expect(try await session.authorized(oauthRequest()).status == 200)
+  #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
+  #expect(attempts.withLock { $0 } == 2)
+}

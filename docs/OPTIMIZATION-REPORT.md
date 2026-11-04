@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 进行中，FIX-07 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -101,3 +101,11 @@
 - Core 的 `remoteTimestampKeepsFractionAndUsesUTCByDefault`、`remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput` 另外验证默认时区、显式时区优先和非法输入。所有预期均为固定 Unix 时间，不等待真实时间、不修改系统时区。
 
 - FIX-05 完整门禁通过：应用逻辑 9 项、包测试 261 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-05-gates.log`。
+
+## FIX-06：刷新失败保护（阿里云盘、PikPak 部分）
+
+- 修复审查 1D 的刷新异常一律作废登录：`AliyunOAuth.swift:256`、`PikPakSession.swift:262` 仅在明确的 loginRequired 错误时标记失效，其余错误原样返回，保持存储记录不变。刷新端点明确返回 `invalid_grant`（阿里亦保留已有 `RefreshTokenExpired` 处理）时才进入该分支；HTTP 状态本身不等于刷新令牌被拒绝。
+- 先失败后修复：`oauthTransientRefreshFailurePreservesLogin`、`pikPakTransientRefreshFailurePreservesLogin` 各覆盖断网、429、500、无明确拒绝原因的 401，原来四组全部改变凭据且 hasToken 为 false，修复后保持原字节和可重试状态。对应 `oauthExplicitInvalidGrantRequiresNewLogin`、`pikPakExplicitInvalidGrantRequiresNewLogin` 验证明确信息仍要求重新登录。证据：`docs/evidence/v0.2/FIX-06-aliyun-pikpak-regression.log`。
+- `oauthRefreshRecoversAfterTemporaryFailureWithoutLogin`、`pikPakRefreshRecoversAfterTemporaryFailureWithoutLogin` 实际完成 500 → 新令牌 → 请求成功的替身流程，确认下一次重试不需要再次登录。测试不等待重试时长，429 使用超过自动等待上限的响应头直接返回可重试错误。
+- 完整门禁通过：应用逻辑 9 项、包测试 267 项；发布构建和签名校验通过。证据 `docs/evidence/v0.2/FIX-06-aliyun-pikpak-gates.log`。
+- FIX-06 尚未整体通过：公共 OAuth 和天翼恢复路径仍待修复；跨进程并发刷新与密钥写入失败另由 FIX-07 处理。真实账号服务端错误码仍需账号验收，本轮未连接账号。

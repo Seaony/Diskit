@@ -253,8 +253,8 @@ public actor AliyunSession {
         self.didNotifyInvalidation = false
         return fresh
       } catch {
-        try self.invalidate()
-        throw AliyunError.loginRequired
+        if (error as? AliyunError) == .loginRequired { try self.invalidate() }
+        throw error
       }
     }
     refreshTask = task
@@ -295,6 +295,13 @@ public actor AliyunSession {
         try await backoff(response, attempt: retries)
         retries += 1
         continue
+      }
+      if grant == "refresh_token", response.status < 500,
+        let body = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+        let code = (body["error"] ?? body["code"]) as? String,
+        ["invalid_grant", "RefreshTokenExpired"].contains(code)
+      {
+        throw AliyunError.loginRequired
       }
       guard (200..<300).contains(response.status) else {
         throw AliyunError.authorizationFailed(response.status)

@@ -228,8 +228,14 @@ public actor PikPakSession {
       } catch {
         throw PikPakHTTP.transportError(error)
       }
-      guard (200..<300).contains(response.status) else {
+      if response.status < 500, response.status != 429,
+        let body = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+        body["error"] as? String == "invalid_grant"
+      {
         throw PikPakError.loginRequired
+      }
+      guard (200..<300).contains(response.status) else {
+        throw PikPakHTTP.map(status: response.status, body: response.body)
       }
       let token = try Self.decodeToken(response.body)
       let userID = token.subject ?? stored.userID
@@ -253,8 +259,8 @@ public actor PikPakSession {
       return fresh
     } catch {
       refreshTask = nil
-      try invalidate()
-      throw PikPakError.loginRequired
+      if (error as? PikPakError) == .loginRequired { try invalidate() }
+      throw error
     }
   }
 

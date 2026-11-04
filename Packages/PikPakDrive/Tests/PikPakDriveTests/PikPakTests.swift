@@ -400,3 +400,59 @@ private func withFile<Result>(
   #expect(
     !PikPakProvider.validContentRange("bytes 10-19/1000", requested: 10..<20, size: 1024))
 }
+
+@Test(arguments: [0, 429, 500, 401])
+func pikPakTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
+  let transport = FakePikPakHTTP { request in
+    guard request.url?.path == "/v1/auth/token" else { throw RemoteError.protocolError }
+    if status == 0 { throw URLError(.notConnectedToInternet) }
+    return HTTPResponse(status: status, body: Data("{}".utf8))
+  }
+  let (session, secrets) = try session(transport: transport)
+  let original = authorization(expiresAt: 0)
+  try secrets.write(original, for: "pikpak.test")
+  do {
+    _ = try await session.authorized(
+      URLRequest(url: URL(string: "https://api-drive.mypikpak.com/drive/v1/about")!))
+    Issue.record("刷新失败不应成功")
+  } catch { #expect((error as? PikPakError) != .loginRequired) }
+  #expect(try secrets.read("pikpak.test") == original)
+  #expect(try await session.hasToken())
+}
+
+@Test func pikPakExplicitInvalidGrantRequiresNewLogin() async throws {
+  let transport = FakePikPakHTTP { request in
+    guard request.url?.path == "/v1/auth/token" else { throw RemoteError.protocolError }
+    return HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8))
+  }
+  let (session, secrets) = try session(transport: transport)
+  try secrets.write(authorization(expiresAt: 0), for: "pikpak.test")
+  await #expect(throws: PikPakError.loginRequired) {
+    _ = try await session.authorized(
+      URLRequest(url: URL(string: "https://api-drive.mypikpak.com/drive/v1/about")!))
+  }
+  #expect(try await !session.hasToken())
+}
+
+@Test func pikPakRefreshRecoversAfterTemporaryFailureWithoutLogin() async throws {
+  let attempts = Mutex(0)
+  let transport = FakePikPakHTTP { request in
+    if request.url?.path == "/v1/auth/token" {
+      let number = attempts.withLock {
+        $0 += 1
+        return $0
+      }
+      if number == 1 { return HTTPResponse(status: 500) }
+    }
+    return try stub(request)
+  }
+  let (session, secrets) = try session(transport: transport)
+  try secrets.write(authorization(expiresAt: 0), for: "pikpak.test")
+  let request = URLRequest(url: URL(string: "https://api-drive.mypikpak.com/drive/v1/about")!)
+  await #expect(throws: RemoteError.http(500)) { _ = try await session.authorized(request) }
+  #expect(try await session.authorized(request).status == 200)
+  let stored = try JSONDecoder().decode(
+    StoredPikPakAuthorization.self, from: #require(try secrets.read("pikpak.test")))
+  #expect(stored.refreshToken == "fresh-refresh")
+  #expect(attempts.withLock { $0 } == 2)
+}
