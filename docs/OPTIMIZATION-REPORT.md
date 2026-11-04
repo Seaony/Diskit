@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01、FIX-02、FIX-03 已修复，FIX-04 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-04 已修复，FIX-05 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -85,3 +85,10 @@
 - 依据：[Microsoft 路径寻址与编码](https://learn.microsoft.com/en-us/graph/onedrive-addressing-driveitems)、[获取文件元数据](https://learn.microsoft.com/en-us/graph/api/driveitem-get?view=graph-rest-1.0)。未访问真实账号。跨目录移动的 `parentReference.path` 问题属于审查其余条目，尚未处理，不将本次编码修复当作移动全流程通过。
 
 - FIX-03 完整门禁通过：应用逻辑 9 项、包测试 252 项；发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-03-gates.log`。
+
+## FIX-04：天翼下载链接、加号与分页
+
+- 修复审查 1E 下载协议、文件名加号及分页截断：`TianyiProvider.swift:92` 只将 HTTP 升级为 HTTPS，已有 HTTPS 保持不变；`TianyiSession.swift:468`、`:557` 将查询和表单中的加号编码为 `%2B`；`TianyiProvider.swift:316` 起在服务报告仍有条目时继续翻页，未提供总数时继续到空页，声明仍有条目却返回空页则报错。
+- 失败回归：`rangeReadUsesShortLivedURLAndValidatesContentRange` 增加 HTTPS 输入，原先抛 invalidResponse；`signedRequestsPreservePlusInQueryAndFormValues` 原先观察到查询与正文均为 `a+b`；`partialPagesContinueUntilReportedCountIsComplete` 原先只返回三项中的第一项。修复后通过；新增 `missingPageFailsInsteadOfReturningPartialDirectory`、`pagesWithoutCountContinueUntilEmptyPage` 验证不静默返回部分目录。证据：`Packages/TianyiDrive/Tests/TianyiDriveTests/TianyiDriveTests.swift:233`、`:704`、`:720`、`:742`、`:761` 和 `docs/evidence/v0.2/FIX-04-regression.log`。
+- 分页 count 的历史定义参考[天翼开放平台文件列表文档](https://id.dlife.cn/html/api_detail_135.html)。当前个人/家庭接口的真实分页边界与签名下载链接仍待用户账号验收，不把替身结果作为线上通过。
+- 完整门禁通过：应用逻辑 9 项、包测试 256 项，发布构建及签名校验通过；证据 `docs/evidence/v0.2/FIX-04-gates.log`。

@@ -89,7 +89,7 @@ public actor TianyiProvider: RemoteFileProvider {
       var components = URLComponents(
         string: raw.replacingOccurrences(of: "&amp;", with: "&"))
     else { throw TianyiError.invalidResponse }
-    components.scheme = components.scheme?.replacingOccurrences(of: "http", with: "https")
+    if components.scheme?.lowercased() == "http" { components.scheme = "https" }
     guard components.scheme == "https", let url = components.url else {
       throw TianyiError.invalidResponse
     }
@@ -313,6 +313,7 @@ public actor TianyiProvider: RemoteFileProvider {
   private func children(_ path: RemotePath, folderID: String) async throws -> [TianyiNode] {
     var pageNumber = 1
     var nodes: [TianyiNode] = []
+    var expectedCount = 0
     while pageNumber <= 10_000 {
       try Task.checkCancellation()
       var query = [
@@ -338,8 +339,20 @@ public actor TianyiProvider: RemoteFileProvider {
       guard let page = list.fileListAO else { throw TianyiError.invalidResponse }
       let pageNodes =
         (page.folderList ?? []).map(\.node) + (page.fileList ?? []).map(\.node)
+      if let count = page.count {
+        guard count >= 0 else { throw TianyiError.invalidResponse }
+        expectedCount = max(expectedCount, count)
+      }
       nodes.append(contentsOf: pageNodes)
-      if pageNodes.count < session.configuration.pageSize { break }
+      if page.count != nil, pageNodes.count < session.configuration.pageSize,
+        nodes.count >= expectedCount
+      {
+        break
+      }
+      if pageNodes.isEmpty {
+        guard nodes.count >= expectedCount else { throw TianyiError.invalidResponse }
+        break
+      }
       pageNumber += 1
     }
     guard pageNumber <= 10_000 else { throw TianyiError.invalidResponse }

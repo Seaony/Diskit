@@ -230,7 +230,8 @@ private func form(_ request: URLRequest) -> [String: String] {
   }
 }
 
-@Test func rangeReadUsesShortLivedURLAndValidatesContentRange() async throws {
+@Test(arguments: ["http", "https"])
+func rangeReadUsesShortLivedURLAndValidatesContentRange(_ scheme: String) async throws {
   let downloadURL = URL(string: "https://download.189.cn/file?sig=one&part=two")!
   let http = FakeHTTP(
     reply: { request in
@@ -240,7 +241,7 @@ private func form(_ request: URLRequest) -> [String: String] {
       }
       if request.url?.path == "/file/getFileDownloadUrl.action" {
         return json([
-          "fileDownloadUrl": "http://download.189.cn/file?sig=one&amp;part=two"
+          "fileDownloadUrl": "\(scheme)://download.189.cn/file?sig=one&amp;part=two"
         ])
       }
       throw RemoteError.protocolError
@@ -698,4 +699,77 @@ private func form(_ request: URLRequest) -> [String: String] {
     try await provider.list(try RemotePath("/"))
   }
   #expect(try secrets.read("tianyi.test") == nil)
+}
+
+@Test func signedRequestsPreservePlusInQueryAndFormValues() async throws {
+  let http = FakeHTTP { request in
+    guard request.url?.path == "/file/createFolder.action" else { throw RemoteError.protocolError }
+    let encodedQuery = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!
+      .percentEncodedQuery!
+    #expect(encodedQuery.contains("folderName=a%2Bb"))
+    let body = String(decoding: request.httpBody!, as: UTF8.self)
+    #expect(body == "folderName=a%2Bb")
+    return json(["res_code": 0])
+  }
+  let (session, _) = try session(http)
+  _ = try await session.api(
+    path: "/file/createFolder.action", method: "POST",
+    query: [URLQueryItem(name: "folderName", value: "a+b")], form: ["folderName": "a+b"])
+}
+
+@Test func partialPagesContinueUntilReportedCountIsComplete() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return capacity() }
+    guard request.url?.path == "/file/listFiles.action",
+      let value = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?
+        .first(where: { $0.name == "pageNum" })?.value,
+      let page = Int(value), (1...3).contains(page)
+    else { throw RemoteError.protocolError }
+    return json([
+      "fileListAO": [
+        "count": 3, "folderList": [], "fileList": [node("id-\(page)", "file-\(page)")],
+      ]
+    ])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  let files = try await provider.list(RemotePath("/"))
+  #expect(files.map(\.name) == ["file-1", "file-2", "file-3"])
+  #expect(await http.requests.filter { $0.url?.path == "/file/listFiles.action" }.count == 3)
+}
+
+@Test func missingPageFailsInsteadOfReturningPartialDirectory() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return capacity() }
+    guard request.url?.path == "/file/listFiles.action" else { throw RemoteError.protocolError }
+    let page = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
+      $0.name == "pageNum"
+    }?.value
+    return json([
+      "fileListAO": ["count": 3, "folderList": [], "fileList": page == "1" ? [node("a", "a")] : []]
+    ])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  await #expect(throws: TianyiError.invalidResponse) {
+    _ = try await provider.list(RemotePath("/"))
+  }
+}
+
+@Test func pagesWithoutCountContinueUntilEmptyPage() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return capacity() }
+    guard request.url?.path == "/file/listFiles.action" else { throw RemoteError.protocolError }
+    let page = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
+      $0.name == "pageNum"
+    }?.value
+    return json(["fileListAO": ["folderList": [], "fileList": page == "1" ? [node("a", "a")] : []]])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).map(\.name) == ["a"])
+  #expect(await http.requests.filter { $0.url?.path == "/file/listFiles.action" }.count == 2)
 }

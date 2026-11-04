@@ -465,6 +465,8 @@ public actor TianyiSession {
       query
       + clientSuffix(configuration: configuration)
       + (encryptedParams.map { [URLQueryItem(name: "params", value: $0)] } ?? [])
+    components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(
+      of: "+", with: "%2B")
     guard let url = components.url else { throw TianyiError.invalidResponse }
     var request = URLRequest(url: url, timeoutInterval: 30)
     request.httpMethod = method.uppercased()
@@ -551,7 +553,8 @@ public actor TianyiSession {
     components.queryItems = values.keys.sorted().map {
       URLQueryItem(name: $0, value: values[$0])
     }
-    return Data((components.percentEncodedQuery ?? "").utf8)
+    return Data(
+      (components.percentEncodedQuery ?? "").replacingOccurrences(of: "+", with: "%2B").utf8)
   }
 
   private static func httpDate(_ date: Date = Date()) -> String {

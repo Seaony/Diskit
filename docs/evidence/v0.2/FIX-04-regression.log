@@ -1,0 +1,21 @@
+修复前三类失败
+􀟈  Test partialPagesContinueUntilReportedCountIsComplete() started.
+􀟈  Test signedRequestsPreservePlusInQueryAndFormValues() started.
+􀢄  Test signedRequestsPreservePlusInQueryAndFormValues() recorded an issue at TianyiDriveTests.swift:708:5: Expectation failed: (encodedQuery → "folderName=a+b&clientType=TELEPC&version=7.2.4.0&channelId=web_cloud.189.cn&rand=17803_1771109191").contains("folderName=a%2Bb")
+􀢄  Test signedRequestsPreservePlusInQueryAndFormValues() recorded an issue at TianyiDriveTests.swift:710:5: Expectation failed: (body → "folderName=a+b") == "folderName=a%2Bb"
+􀢄  Test signedRequestsPreservePlusInQueryAndFormValues() failed after 0.004 seconds with 2 issues.
+􀢄  Test partialPagesContinueUntilReportedCountIsComplete() recorded an issue at TianyiDriveTests.swift:730:3: Expectation failed: (files.map(\.name) → ["file-1"]) == ["file-1", "file-2", "file-3"]
+􀢄  Test partialPagesContinueUntilReportedCountIsComplete() recorded an issue at TianyiDriveTests.swift:731:3: Expectation failed: await http.requests.filter { $0.url?.path == "/file/listFiles.action" }.count == 3
+􀢄  Test partialPagesContinueUntilReportedCountIsComplete() failed after 0.007 seconds with 2 issues.
+􀢄  Test rangeReadUsesShortLivedURLAndValidatesContentRange(_:) recorded an issue with 1 argument scheme → "https" at TianyiDriveTests.swift:233:2: Caught error: .invalidResponse
+􀢄  Test run with 3 tests in 0 suites failed after 0.008 seconds with 5 issues.
+修复后包回归通过
+􀟈  Test signedRequestsPreservePlusInQueryAndFormValues() started.
+􀟈  Test pagesWithoutCountContinueUntilEmptyPage() started.
+􀟈  Test missingPageFailsInsteadOfReturningPartialDirectory() started.
+􀟈  Test partialPagesContinueUntilReportedCountIsComplete() started.
+􁁛  Test signedRequestsPreservePlusInQueryAndFormValues() passed after 0.006 seconds.
+􁁛  Test missingPageFailsInsteadOfReturningPartialDirectory() passed after 0.011 seconds.
+􁁛  Test pagesWithoutCountContinueUntilEmptyPage() passed after 0.012 seconds.
+􁁛  Test partialPagesContinueUntilReportedCountIsComplete() passed after 0.014 seconds.
+􁁛  Test run with 18 tests in 0 suites passed after 0.020 seconds.
