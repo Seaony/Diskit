@@ -5,9 +5,12 @@ import Foundation
 import Security
 
 public struct ADBIdentity: Sendable {
+  private static let keyLock = NSLock()
   private let store: any SecretStore
   public init(store: any SecretStore = LoginKeychainStore()) { self.store = store }
   func key(regenerate: Bool = false) throws -> SecKey {
+    Self.keyLock.lock()
+    defer { Self.keyLock.unlock() }
     let attributes: [String: Any] = [
       kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
       kSecAttrKeyClass as String: kSecAttrKeyClassPrivate, kSecAttrKeySizeInBits as String: 2048,
@@ -55,10 +58,14 @@ public struct ADBIdentity: Sendable {
     return encoded
   }
   public func publicKeyLine() throws -> Data {
-    let comment = "\(NSUserName())@\(ProcessInfo.processInfo.hostName)"
+    let comment = "kayoi@mac"
     return Data((try publicKeyData().base64EncodedString() + " " + comment + "\0").utf8)
   }
   public func fingerprint() throws -> String {
-    try SHA256.hash(data: publicKeyData()).map { String(format: "%02x", $0) }.joined(separator: ":")
+    Self.fingerprint(publicKeyData: try publicKeyData())
+  }
+  static func fingerprint(publicKeyData: Data) -> String {
+    // 与手机授权窗口的公钥摘要保持一致。
+    Insecure.MD5.hash(data: publicKeyData).map { String(format: "%02X", $0) }.joined(separator: ":")
   }
 }

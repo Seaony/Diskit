@@ -1,38 +1,21 @@
 import Core
 import Foundation
 import Network
-import Security
 
-private func networkDeadline<T: Sendable>(
-  _ connection: NWConnection, seconds: TimeInterval,
-  operation: @escaping @Sendable () async throws -> T
-) async throws -> T {
-  try await withThrowingTaskGroup(of: T.self) { group in
-    group.addTask {
-      try await withTaskCancellationHandler(operation: operation, onCancel: { connection.cancel() })
-    }
-    group.addTask {
-      try await Task.sleep(for: .seconds(seconds))
-      connection.cancel()
-      throw RemoteError.posix(ETIMEDOUT)
-    }
-    defer { group.cancelAll() }
-    guard let value = try await group.next() else { throw RemoteError.notConnected }
-    return value
-  }
+protocol ADBNetworkIO: Sendable {
+  func start(_ handler: @escaping @Sendable (NWConnection.State) -> Void)
+  func stopObservingState()
+  func receive(count: Int, completion: @escaping @Sendable (Data?, NWError?) -> Void)
+  func send(_ data: Data, completion: @escaping @Sendable (NWError?) -> Void)
+  func exportedSecret() -> Data?
+  func cancel()
 }
 
-final class ADBStartTLS: NWProtocolFramerImplementation {
-  static let label = "Kayoi ADB STLS"
-  static let definition = NWProtocolFramer.Definition(implementation: ADBStartTLS.self)
-  required init(framer: NWProtocolFramer.Instance) {}
-  func start(framer: NWProtocolFramer.Instance) -> NWProtocolFramer.StartResult {
-    let hello = ADBMessage(
+enum ADBStartTLSProtocol {
+  static var hello: Data {
+    ADBMessage(
       .connect, 0x0100_0001, 1_048_576,
-      payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8))
-    framer.writeOutput(data: hello.encoded())
-    framer.scheduleWakeup(wakeupTime: .milliseconds(15_000))
-    return .willMarkReady
+      payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8)).encoded()
   }
   static func response(to header: Data) throws -> Data {
     let packet = try ADBMessage.decode(header, skipChecksum: true)
@@ -41,133 +24,126 @@ final class ADBStartTLS: NWProtocolFramerImplementation {
     }
     return ADBMessage(.startTLS, 0x0100_0000).encoded()
   }
-  func handleInput(framer: NWProtocolFramer.Instance) -> Int {
-    var header: Data?
-    let parsed = framer.parseInput(minimumIncompleteLength: 24, maximumLength: 24) { bytes, _ in
-      guard let bytes, bytes.count >= 24 else { return 0 }
-      header = Data(bytes.prefix(24))
-      return 24
-    }
-    guard parsed, let header else { return 24 }
-    do {
-      guard let tls = framer.options["tls"] as? NWProtocolTLS.Options else {
-        throw RemoteError.protocolError
-      }
-      framer.writeOutput(data: try Self.response(to: header))
-      try framer.prependApplicationProtocol(options: tls)
-      framer.scheduleWakeup(wakeupTime: .forever)
-      framer.passThroughInput()
-      framer.passThroughOutput()
-      framer.markReady()
-    } catch { framer.markFailed(error: .posix(.EPROTO)) }
-    return 0
-  }
-  func handleOutput(
-    framer: NWProtocolFramer.Instance, message: NWProtocolFramer.Message, messageLength: Int,
-    isComplete: Bool
-  ) {
-    do { try framer.writeOutputNoCopy(length: messageLength) } catch {
-      framer.markFailed(error: .posix(.EIO))
-    }
-  }
-  func wakeup(framer: NWProtocolFramer.Instance) { framer.markFailed(error: .posix(.ETIMEDOUT)) }
-  func stop(framer: NWProtocolFramer.Instance) -> Bool { true }
-  func cleanup(framer: NWProtocolFramer.Instance) {}
 }
 
 public actor NetworkTransport: ADBTransport {
-  private let connection: NWConnection
-  private let queue = DispatchQueue(label: "com.seaony.Kayoi.adb.network")
+  private let io: any ADBNetworkIO
+  private let sleep: @Sendable (Duration) async throws -> Void
   public init(endpoint: NWEndpoint, startTLS: Bool, identity: ADBIdentity = ADBIdentity()) throws {
-    let tls = NWProtocolTLS.Options()
-    sec_protocol_options_set_min_tls_protocol_version(tls.securityProtocolOptions, .TLSv13)
-    sec_protocol_options_set_max_tls_protocol_version(tls.securityProtocolOptions, .TLSv13)
-    sec_protocol_options_set_local_identity(tls.securityProtocolOptions, try identity.tlsIdentity())
-    // AOSP 用配对码与 TLS exporter 认证配对通道，设备证书是自签名的。
-    sec_protocol_options_set_verify_block(
-      tls.securityProtocolOptions, { _, _, complete in complete(true) }, .global())
-    let tcp = NWProtocolTCP.Options()
-    tcp.noDelay = true
-    let parameters: NWParameters
-    if startTLS {
-      parameters = NWParameters(tls: nil, tcp: tcp)
-      let framer = NWProtocolFramer.Options(definition: ADBStartTLS.definition)
-      framer["tls"] = tls
-      parameters.defaultProtocolStack.applicationProtocols.insert(framer, at: 0)
-    } else {
-      parameters = NWParameters(tls: tls, tcp: tcp)
-    }
-    connection = NWConnection(to: endpoint, using: parameters)
+    io = try SystemADBNetworkIO(endpoint: endpoint, startTLS: startTLS, identity: identity)
+    sleep = { try await Task.sleep(for: $0) }
   }
+  init(
+    io: any ADBNetworkIO,
+    sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
+  ) {
+    self.io = io
+    self.sleep = sleep
+  }
+
   public func start() async throws {
-    let queue = queue
-    let connection = connection
-    try await networkDeadline(connection, seconds: 15) {
-      try await withCheckedThrowingContinuation {
-        (continuation: CheckedContinuation<Void, Error>) in
-        connection.stateUpdateHandler = { state in
-          switch state {
-          case .ready:
-            connection.stateUpdateHandler = nil
-            continuation.resume()
-          case .failed(let error):
-            connection.stateUpdateHandler = nil
-            continuation.resume(throwing: error)
-          case .cancelled:
-            connection.stateUpdateHandler = nil
-            continuation.resume(throwing: RemoteError.notConnected)
-          default: break
-          }
+    let io = io
+    let _: Void = try await operation(timeout: RemoteTimeout.deviceRequest) { complete in
+      io.start { state in
+        switch state {
+        case .ready:
+          io.stopObservingState()
+          complete(.success(()))
+        case .failed(let error), .waiting(let error):
+          io.stopObservingState()
+          complete(.failure(NetworkFailure.posix(error)))
+        case .cancelled:
+          io.stopObservingState()
+          complete(.failure(RemoteError.notConnected))
+        default: break
         }
-        connection.start(queue: queue)
       }
     }
   }
   public func read(count: Int, timeout: TimeInterval) async throws -> Data {
-    let connection = connection
-    return try await networkDeadline(connection, seconds: timeout) {
-      try await withCheckedThrowingContinuation { continuation in
-        connection.receive(minimumIncompleteLength: 1, maximumLength: count) { data, _, _, error in
-          if let error {
-            continuation.resume(throwing: error)
-          } else if let data, !data.isEmpty {
-            continuation.resume(returning: data)
-          } else {
-            continuation.resume(throwing: RemoteError.notConnected)
-          }
-        }
+    guard count > 0 else { throw RemoteError.invalidPath }
+    let io = io
+    return try await operation(timeout: timeout) { complete in
+      io.receive(count: count) { data, error in
+        if let error { complete(.failure(NetworkFailure.posix(error))) }
+        else if let data, !data.isEmpty {
+          complete(data.count <= count ? .success(data) : .failure(RemoteError.protocolError))
+        } else { complete(.failure(RemoteError.notConnected)) }
       }
     }
   }
   public func write(_ data: Data, timeout: TimeInterval) async throws {
-    let connection = connection
-    try await networkDeadline(connection, seconds: timeout) {
-      try await withCheckedThrowingContinuation {
-        (continuation: CheckedContinuation<Void, Error>) in
-        connection.send(
-          content: data,
-          completion: .contentProcessed { error in
-            if let error { continuation.resume(throwing: error) } else { continuation.resume() }
-          })
+    let io = io
+    let _: Void = try await operation(timeout: timeout) { complete in
+      io.send(data) { error in
+        if let error { complete(.failure(NetworkFailure.posix(error))) }
+        else { complete(.success(())) }
       }
     }
   }
   public func exporter() throws -> Data {
-    guard
-      let metadata = connection.metadata(definition: NWProtocolTLS.definition)
-        as? NWProtocolTLS.Metadata
-    else { throw RemoteError.protocolError }
-    let label = Array("adb-label\0".utf8)
-    let secret = label.withUnsafeBytes { bytes in
-      sec_protocol_metadata_create_secret(
-        metadata.securityProtocolMetadata, label.count,
-        bytes.baseAddress!.assumingMemoryBound(to: CChar.self), 64)
-    }
-    guard let secret else { throw RemoteError.protocolError }
-    var output = Data()
-    (secret as DispatchData).enumerateBytes { bytes, _, _ in output.append(bytes) }
-    guard output.count == 64 else { throw RemoteError.protocolError }
-    return output
+    guard let data = io.exportedSecret(), data.count == 64 else { throw RemoteError.protocolError }
+    return data
   }
-  public func close() async { connection.cancel() }
+  public func close() async { io.cancel() }
+
+  private func operation<Value: Sendable>(
+    timeout: TimeInterval,
+    register: @escaping @Sendable (@escaping ADBNetworkRequest<Value>.Completion) -> Void
+  ) async throws -> Value {
+    try Task.checkCancellation()
+    guard timeout > 0, timeout.isFinite else { throw RemoteError.posix(ETIMEDOUT) }
+    let io = io
+    let sleep = sleep
+    let request = ADBNetworkRequest<Value>(register: register, cancel: { io.cancel() })
+    return try await withThrowingTaskGroup(of: Value.self) { group in
+      group.addTask { try await request.run() }
+      group.addTask {
+        try await sleep(.seconds(timeout))
+        throw RemoteError.posix(ETIMEDOUT)
+      }
+      defer { group.cancelAll() }
+      guard let result = try await group.next() else { throw RemoteError.notConnected }
+      return result
+    }
+  }
+}
+
+// 排列注册、取消和回调，防止取消早到或状态重复时重复恢复。
+private final class ADBNetworkRequest<Value: Sendable>: @unchecked Sendable {
+  typealias Completion = @Sendable (Result<Value, Error>) -> Void
+  private let queue = DispatchQueue(label: "com.seaony.Kayoi.network.request")
+  private let register: @Sendable (@escaping Completion) -> Void
+  private let cancel: @Sendable () -> Void
+  private var continuation: CheckedContinuation<Value, Error>?
+  private var cancelled = false
+  private var finished = false
+  init(register: @escaping @Sendable (@escaping Completion) -> Void, cancel: @escaping @Sendable () -> Void) {
+    self.register = register
+    self.cancel = cancel
+  }
+  func run() async throws -> Value {
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        queue.async {
+          self.continuation = continuation
+          if self.cancelled { self.finish(.failure(CancellationError())); return }
+          self.register { result in self.queue.async { self.finish(result) } }
+        }
+      }
+    } onCancel: {
+      self.queue.async {
+        guard !self.finished else { return }
+        self.cancelled = true
+        self.cancel()
+        self.finish(.failure(CancellationError()))
+      }
+    }
+  }
+  private func finish(_ result: Result<Value, Error>) {
+    guard !finished, let continuation else { return }
+    finished = true
+    self.continuation = nil
+    continuation.resume(with: result)
+  }
 }

@@ -254,10 +254,17 @@ private func syncDone() -> Data {
     dent.append(Data(name.utf8))
     var done = Data("DONE".utf8)
     done.append(Data(repeating: 0, count: (v2 ? 76 : 20) - 4))
-    let transport = FakeTransport([
-      hello(v2 ? "ls_v2" : ""), .init(.okay, 11, 1), .init(.okay, 11, 1),
-      .init(.write, 11, 1, payload: dent + done), .init(.close, 11, 1),
-    ])
+    var messages = [hello(v2 ? "ls_v2" : "shell_v2")]
+    let local: UInt32 = v2 ? 1 : 2
+    if !v2 {
+      messages += [.init(.okay, 10, 1), .init(.write, 10, 1, payload: shellFrame(3, Data([0]))), .init(.close, 10, 1)]
+    }
+    messages += [.init(.okay, 11, local), .init(.okay, 11, local),
+                 .init(.write, 11, local, payload: dent + done), .init(.close, 11, local)]
+    if !v2 {
+      messages += [.init(.okay, 12, 3), .init(.write, 12, 3, payload: shellFrame(1, Data("12\n".utf8)) + shellFrame(3, Data([0]))), .init(.close, 12, 3)]
+    }
+    let transport = FakeTransport(messages)
     let provider = ADBProvider(
       session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
     try await provider.connect()
@@ -445,4 +452,19 @@ func ordinaryADBServiceErrorsAllowTheNextOperation(operation: String) async thro
   }
   #expect(await !transport.closed)
   #expect(try await provider.list(RemotePath("/")).isEmpty)
+}
+
+@Test(arguments: ["-1", String(Int64.max)])
+func adbCapacityRejectsNegativeAndOverflowingUsedBytes(used: String) async throws {
+  let output = Data("/dev/test 10 \(used) 0 100% /sdcard\n".utf8)
+  let transport = FakeTransport([
+    hello("shell_v2"), .init(.okay, 11, 1),
+    .init(.write, 11, 1, payload: shellFrame(3, Data([0]))), .init(.close, 11, 1),
+    .init(.okay, 12, 2),
+    .init(.write, 12, 2, payload: shellFrame(1, output) + shellFrame(3, Data([0]))),
+    .init(.close, 12, 2),
+  ])
+  let provider = ADBProvider(session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  await #expect(throws: RemoteError.protocolError) { _ = try await provider.spaceInfo() }
 }

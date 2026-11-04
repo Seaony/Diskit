@@ -1,61 +1,62 @@
+import Core
 import Foundation
-import IOKit
 import Observation
+
+public enum USBDiscoveryIssue: Sendable {
+  case permissionDenied, networkUnavailable, resolutionFailed, failed
+}
+
+@MainActor protocol USBDiscoverySource {
+  func start(changed: @escaping @MainActor () -> Void) throws
+  func devices() throws -> [ADBDevice]
+  func stop()
+}
 
 @MainActor @Observable public final class USBDiscovery {
   public private(set) var devices: [ADBDevice] = []
-  private var port: IONotificationPortRef?
-  private var added: io_iterator_t = 0
-  private var removed: io_iterator_t = 0
+  public private(set) var issue: USBDiscoveryIssue?
   public var changed: (([ADBDevice]) -> Void)?
-  public init() {}
+  private let source: any USBDiscoverySource
+  private var running = false
+  private var generation = 0
+  public convenience init() { self.init(source: SystemUSBMonitor()) }
+  init(source: any USBDiscoverySource) { self.source = source }
+  isolated deinit { source.stop() }
   public func start() {
-    guard port == nil else { return }
-    guard let port = IONotificationPortCreate(kIOMainPortDefault) else { return }
-    self.port = port
-    IONotificationPortSetDispatchQueue(port, .main)
-    let callback: IOServiceMatchingCallback = { context, iterator in
-      while true {
-        let service = IOIteratorNext(iterator)
-        if service == 0 { break }
-        IOObjectRelease(service)
+    guard !running else { return }
+    running = true
+    generation += 1
+    let current = generation
+    issue = nil
+    do {
+      try source.start { [weak self] in
+        guard let self, self.running, self.generation == current else { return }
+        self.scan()
       }
-      guard let context else { return }
-      MainActor.assumeIsolated {
-        Unmanaged<USBDiscovery>.fromOpaque(context).takeUnretainedValue().scan()
-      }
+      scan()
+    } catch {
+      stop()
+      issue = Self.classify(error)
     }
-    let pointer = Unmanaged.passUnretained(self).toOpaque()
-    func match() -> CFMutableDictionary {
-      let result = IOServiceMatching("IOUSBHostInterface") as NSMutableDictionary
-      result["bInterfaceClass"] = 0xff
-      result["bInterfaceSubClass"] = 0x42
-      result["bInterfaceProtocol"] = 1
-      return result
-    }
-    IOServiceAddMatchingNotification(
-      port, kIOFirstMatchNotification, match(), callback, pointer, &added)
-    IOServiceAddMatchingNotification(
-      port, kIOTerminatedNotification, match(), callback, pointer, &removed)
-    callback(pointer, added)
-    callback(pointer, removed)
   }
   private func scan() {
-    devices = ADBUSB.devices()
-    changed?(devices)
+    do {
+      devices = try source.devices()
+      issue = nil
+      changed?(devices)
+    } catch { issue = Self.classify(error) }
+  }
+  static func classify(_ error: Error) -> USBDiscoveryIssue {
+    let error = USBTransport.mappedError(error) as NSError
+    return error.code == Int(EACCES) || error.code == Int(EPERM) ? .permissionDenied : .failed
   }
   public func stop() {
-    if added != 0 {
-      IOObjectRelease(added)
-      added = 0
-    }
-    if removed != 0 {
-      IOObjectRelease(removed)
-      removed = 0
-    }
-    if let port {
-      IONotificationPortDestroy(port)
-      self.port = nil
-    }
+    guard running else { return }
+    running = false
+    generation += 1
+    source.stop()
+    devices = []
+    issue = nil
+    changed?(devices)
   }
 }

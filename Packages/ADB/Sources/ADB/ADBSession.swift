@@ -2,6 +2,7 @@ import Core
 import Foundation
 
 public actor ADBSession {
+  private let now: @Sendable () -> ContinuousClock.Instant
   private let transport: any ADBTransport
   private let identity: ADBIdentity
   private let initialConnectSent: Bool
@@ -12,42 +13,59 @@ public actor ADBSession {
   private var remote: UInt32?
   private var buffered = Data()
   private var transportFailed = false
+  private var serviceDeadline: ADBOperationDeadline?
   public init(
     transport: any ADBTransport, identity: ADBIdentity = ADBIdentity(),
     initialConnectSent: Bool = false
   ) {
+    self.init(transport: transport, identity: identity, initialConnectSent: initialConnectSent, now: { .now })
+  }
+  init(
+    transport: any ADBTransport, identity: ADBIdentity = ADBIdentity(),
+    initialConnectSent: Bool = false,
+    now: @escaping @Sendable () -> ContinuousClock.Instant
+  ) {
+    self.now = now
     self.initialConnectSent = initialConnectSent
     self.transport = transport
     self.identity = identity
   }
-  private func send(_ message: ADBMessage, timeout: TimeInterval = 15) async throws {
+  private func send(_ message: ADBMessage, deadline: ADBOperationDeadline) async throws {
     do {
       let encoded = message.encoded(
         skipChecksum: version >= 0x0100_0001 && message.command != .connect
           && message.command != .auth)
-      try await transport.write(Data(encoded.prefix(24)), timeout: timeout)
-      if !message.payload.isEmpty { try await transport.write(message.payload, timeout: timeout) }
+      try await transport.write(Data(encoded.prefix(24)), timeout: deadline.remaining())
+      if !message.payload.isEmpty {
+        try await transport.write(message.payload, timeout: deadline.remaining())
+        if message.command == .write { deadline.transferred(message.payload.count) }
+      }
     } catch {
       transportFailed = true
       throw error
     }
   }
-  private func receive(timeout: TimeInterval = 15) async throws -> ADBMessage {
+  private func receive(deadline: ADBOperationDeadline) async throws -> ADBMessage {
     do {
       var header = Data()
       while header.count < 24 {
-        let bytes = try await transport.read(count: 24 - header.count, timeout: timeout)
+        let bytes = try await transport.read(
+          count: 24 - header.count, timeout: deadline.remaining())
         guard !bytes.isEmpty else { throw RemoteError.notConnected }
         header.append(bytes)
       }
+      var commandReader = BinaryReader(header)
+      let receivedCommand = try commandReader.u32()
       var reader = BinaryReader(Data(header[12..<16]))
       let length = Int(try reader.u32())
       guard length <= 1_048_576 else { throw RemoteError.protocolError }
       var payload = Data()
       while payload.count < length {
-        let bytes = try await transport.read(count: length - payload.count, timeout: timeout)
+        let bytes = try await transport.read(
+          count: length - payload.count, timeout: deadline.remaining())
         guard !bytes.isEmpty else { throw RemoteError.notConnected }
         payload.append(bytes)
+        if receivedCommand == ADBCommand.write.rawValue { deadline.transferred(bytes.count) }
       }
       var fields = BinaryReader(header)
       let command = try fields.u32()
@@ -55,6 +73,7 @@ public actor ADBSession {
       let skip =
         command == ADBCommand.connect.rawValue
         ? announcedVersion >= 0x0100_0001 : version >= 0x0100_0001
+      _ = try deadline.remaining()
       return try ADBMessage.decode(header + payload, skipChecksum: skip)
     } catch {
       transportFailed = true
@@ -63,21 +82,21 @@ public actor ADBSession {
   }
   public func connect() async throws {
     guard !transportFailed else { throw RemoteError.notConnected }
+    let deadline = ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
     if !initialConnectSent {
       try await send(
         ADBMessage(
           .connect, 0x0100_0001, 1_048_576,
-          payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8)))
+          payload: Data("host::features=shell_v2,stat_v2,ls_v2,sendrecv_v2\0".utf8)),
+        deadline: deadline)
     }
     var signed = false
     var sentPublicKey = false
-    let deadline = ContinuousClock.now.advanced(by: .seconds(60))
     while true {
-      let remaining = ContinuousClock.now.duration(to: deadline)
-      let seconds =
-        Double(remaining.components.seconds) + Double(remaining.components.attoseconds) / 1e18
-      guard seconds > 0 else { throw RemoteError.unauthorized }
-      let message = try await receive(timeout: sentPublicKey ? seconds : min(15, seconds))
+      let message: ADBMessage
+      do { message = try await receive(deadline: deadline) } catch RemoteError.posix(ETIMEDOUT)
+        where sentPublicKey
+      { throw RemoteError.unauthorized }
       switch message.command {
       case .connect:
         guard message.arg1 > 0 else { throw RemoteError.protocolError }
@@ -92,10 +111,12 @@ public actor ADBSession {
         return
       case .auth where message.arg0 == 1:
         if !signed {
-          try await send(ADBMessage(.auth, 2, payload: identity.sign(message.payload)))
+          try await send(
+            ADBMessage(.auth, 2, payload: identity.sign(message.payload)), deadline: deadline)
           signed = true
         } else if !sentPublicKey {
-          try await send(ADBMessage(.auth, 3, payload: identity.publicKeyLine()))
+          try await send(
+            ADBMessage(.auth, 3, payload: identity.publicKeyLine()), deadline: deadline)
           sentPublicKey = true
         } else {
           throw RemoteError.unauthorized
@@ -106,10 +127,13 @@ public actor ADBSession {
   }
   public func open(_ service: String) async throws {
     guard remote == nil else { throw RemoteError.posix(EBUSY) }
+    let deadline = ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
+    serviceDeadline = deadline
     local &+= 1
     buffered.removeAll(keepingCapacity: true)
-    try await send(ADBMessage(.open, local, payload: Data((service + "\0").utf8)))
-    let reply = try await receive()
+    try await send(
+      ADBMessage(.open, local, payload: Data((service + "\0").utf8)), deadline: deadline)
+    let reply = try await receive(deadline: deadline)
     if reply.command == .close, reply.arg1 == local { throw RemoteError.posix(EACCES) }
     guard reply.command == .okay, reply.arg1 == local, reply.arg0 != 0 else {
       transportFailed = true
@@ -117,17 +141,17 @@ public actor ADBSession {
     }
     remote = reply.arg0
   }
-  private func accept(_ message: ADBMessage) async throws -> Data? {
+  private func accept(_ message: ADBMessage, deadline: ADBOperationDeadline) async throws -> Data? {
     guard let remote, message.arg0 == remote, message.arg1 == local else {
       transportFailed = true
       throw RemoteError.protocolError
     }
     switch message.command {
     case .write:
-      try await send(ADBMessage(.okay, local, remote))
+      try await send(ADBMessage(.okay, local, remote), deadline: deadline)
       return message.payload
     case .close:
-      try await send(ADBMessage(.close, local, remote))
+      try await send(ADBMessage(.close, local, remote), deadline: deadline)
       self.remote = nil
       return nil
     default:
@@ -135,26 +159,35 @@ public actor ADBSession {
       throw RemoteError.protocolError
     }
   }
-  public func write(_ bytes: Data, timeout: TimeInterval = 15) async throws {
+  public func write(_ bytes: Data, timeout: TimeInterval = RemoteTimeout.deviceRequest) async throws
+  {
     guard let remote else { throw RemoteError.notConnected }
+    let deadline = try operationDeadline(timeout: timeout)
     var offset = 0
     while offset < bytes.count {
       let end = min(offset + maxPayload, bytes.count)
       try await send(
         ADBMessage(.write, local, remote, payload: bytes.subdata(in: offset..<end)),
-        timeout: timeout)
+        deadline: deadline)
       while true {
-        let reply = try await receive(timeout: timeout)
+        let reply = try await receive(deadline: deadline)
         if reply.command == .okay, reply.arg0 == remote, reply.arg1 == local { break }
-        guard let bytes = try await accept(reply) else { throw RemoteError.notConnected }
+        guard let bytes = try await accept(reply, deadline: deadline) else {
+          throw RemoteError.notConnected
+        }
         buffered.append(bytes)
       }
       offset = end
     }
   }
-  public func readExactly(_ count: Int, timeout: TimeInterval = 15) async throws -> Data {
+  public func readExactly(_ count: Int, timeout: TimeInterval = RemoteTimeout.deviceRequest)
+    async throws -> Data
+  {
+    let deadline = try operationDeadline(timeout: timeout)
     while buffered.count < count {
-      guard remote != nil, let bytes = try await accept(receive(timeout: timeout)) else {
+      guard remote != nil,
+        let bytes = try await accept(receive(deadline: deadline), deadline: deadline)
+      else {
         throw RemoteError.notConnected
       }
       buffered.append(bytes)
@@ -163,20 +196,39 @@ public actor ADBSession {
     buffered.removeFirst(count)
     return result
   }
-  public func readChunk(timeout: TimeInterval = 15) async throws -> Data? {
+  public func readChunk(timeout: TimeInterval = RemoteTimeout.deviceRequest) async throws -> Data? {
+    let deadline = try operationDeadline(timeout: timeout)
     if !buffered.isEmpty {
       let value = buffered
       buffered = Data()
       return value
     }
     guard remote != nil else { return nil }
-    return try await accept(receive(timeout: timeout))
+    return try await accept(receive(deadline: deadline), deadline: deadline)
   }
   public func closeService() async throws {
     guard let remote else { return }
-    try await send(ADBMessage(.close, local, remote))
-    while self.remote != nil { _ = try await accept(receive()) }
+    let deadline =
+      serviceDeadline?.isTransfer == false
+      ? serviceDeadline! : ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
+    try await send(ADBMessage(.close, local, remote), deadline: deadline)
+    while self.remote != nil {
+      _ = try await accept(receive(deadline: deadline), deadline: deadline)
+    }
+    serviceDeadline = nil
     buffered.removeAll(keepingCapacity: true)
+  }
+  private func operationDeadline(timeout: TimeInterval) throws -> ADBOperationDeadline {
+    let transfer = timeout == RemoteTimeout.transferIdle
+    if let serviceDeadline, !transfer {
+      if timeout == RemoteTimeout.deviceRequest { return serviceDeadline }
+      let shortened = ADBOperationDeadline(timeout: min(timeout, try serviceDeadline.remaining()), now: now)
+      self.serviceDeadline = shortened
+      return shortened
+    }
+    let deadline = ADBOperationDeadline(timeout: timeout, isTransfer: transfer, now: now)
+    serviceDeadline = deadline
+    return deadline
   }
   func recoverAfterOperationError(_ error: Error) async -> Bool {
     guard !transportFailed, !(error is CancellationError) else {
@@ -195,6 +247,7 @@ public actor ADBSession {
     transportFailed = true
     await transport.close()
     remote = nil
+    serviceDeadline = nil
     buffered = Data()
   }
 }

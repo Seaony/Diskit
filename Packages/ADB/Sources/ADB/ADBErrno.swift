@@ -1,0 +1,97 @@
+import Darwin
+
+// ADB 返回 Linux 编号，不能直接当作 macOS 的 errno。
+enum ADBErrno {
+  static func darwin(_ code: UInt32) -> Int32 {
+    switch code {
+    case 1: EPERM
+    case 2: ENOENT
+    case 3: ESRCH
+    case 4: EINTR
+    case 5: EIO
+    case 6: ENXIO
+    case 7: E2BIG
+    case 8: ENOEXEC
+    case 9: EBADF
+    case 10: ECHILD
+    case 11: EAGAIN
+    case 12: ENOMEM
+    case 13: EACCES
+    case 14: EFAULT
+    case 15: ENOTBLK
+    case 16: EBUSY
+    case 17: EEXIST
+    case 18: EXDEV
+    case 19: ENODEV
+    case 20: ENOTDIR
+    case 21: EISDIR
+    case 22: EINVAL
+    case 23: ENFILE
+    case 24: EMFILE
+    case 25: ENOTTY
+    case 26: ETXTBSY
+    case 27: EFBIG
+    case 28: ENOSPC
+    case 29: ESPIPE
+    case 30: EROFS
+    case 31: EMLINK
+    case 32: EPIPE
+    case 33: EDOM
+    case 34: ERANGE
+    case 35: EDEADLK
+    case 36: ENAMETOOLONG
+    case 37: ENOLCK
+    case 38: ENOSYS
+    case 39: ENOTEMPTY
+    case 40: ELOOP
+    case 42: ENOMSG
+    case 43: EIDRM
+    case 60: ENOSTR
+    case 61: ENODATA
+    case 62: ETIME
+    case 63: ENOSR
+    case 66: EREMOTE
+    case 67: ENOLINK
+    case 71: EPROTO
+    case 72: EMULTIHOP
+    case 74: EBADMSG
+    case 75: EOVERFLOW
+    case 84: EILSEQ
+    case 87: EUSERS
+    case 88: ENOTSOCK
+    case 89: EDESTADDRREQ
+    case 90: EMSGSIZE
+    case 91: EPROTOTYPE
+    case 92: ENOPROTOOPT
+    case 93: EPROTONOSUPPORT
+    case 94: ESOCKTNOSUPPORT
+    case 95: EOPNOTSUPP
+    case 96: EPFNOSUPPORT
+    case 97: EAFNOSUPPORT
+    case 98: EADDRINUSE
+    case 99: EADDRNOTAVAIL
+    case 100: ENETDOWN
+    case 101: ENETUNREACH
+    case 102: ENETRESET
+    case 103: ECONNABORTED
+    case 104: ECONNRESET
+    case 105: ENOBUFS
+    case 106: EISCONN
+    case 107: ENOTCONN
+    case 108: ESHUTDOWN
+    case 109: ETOOMANYREFS
+    case 110: ETIMEDOUT
+    case 111: ECONNREFUSED
+    case 112: EHOSTDOWN
+    case 113: EHOSTUNREACH
+    case 114: EALREADY
+    case 115: EINPROGRESS
+    case 116: ESTALE
+    case 122: EDQUOT
+    case 125: ECANCELED
+    case 130: EOWNERDEAD
+    case 131: ENOTRECOVERABLE
+    default: EIO
+    }
+  }
+}

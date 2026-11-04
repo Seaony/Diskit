@@ -4,8 +4,17 @@ import CryptoKit
 import Foundation
 import Network
 
-public enum PairingError: Error, Equatable, LocalizedError, Sendable {
+public enum PairingError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
   case invalidCode, wrongCode, invalidPacket
+  public static var errorDomain: String { NSPOSIXErrorDomain }
+  public var errorCode: Int {
+    switch self {
+    case .invalidCode: Int(EINVAL)
+    case .wrongCode: Int(EACCES)
+    case .invalidPacket: Int(EIO)
+    }
+  }
+  public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
   public var errorDescription: String? {
     switch self {
     case .invalidCode: L("请输入 6 位配对码")
@@ -182,11 +191,11 @@ public enum ADBPairing {
     transport: any ADBTransport
   ) async throws {
     let header = try PairingHeader(kind: kind, length: payload.count)
-    try await transport.write(header.encoded + payload, timeout: 15)
+    try await transport.write(header.encoded + payload, timeout: RemoteTimeout.deviceRequest)
   }
   private static func readExactly(_ count: Int, transport: any ADBTransport) async throws -> Data {
     var result = Data()
-    let end = ContinuousClock.now.advanced(by: .seconds(15))
+    let end = ContinuousClock.now.advanced(by: .seconds(RemoteTimeout.deviceRequest))
     while result.count < count {
       let remaining = ContinuousClock.now.duration(to: end)
       let seconds =

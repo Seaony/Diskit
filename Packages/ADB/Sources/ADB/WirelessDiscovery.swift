@@ -32,11 +32,6 @@ public struct WirelessDevice: Identifiable, Equatable, Sendable {
   }
 }
 
-public enum WirelessRoute: Equatable, Sendable {
-  case usb(ADBDevice)
-  case wifi(WirelessDevice)
-}
-
 public enum WirelessSelection {
   // AOSP daemon/mdns.cpp 将整个持久化 GUID 用作连接服务名。
   public static func matches(guid: String, service: WirelessDevice) -> Bool {
@@ -57,117 +52,122 @@ public enum WirelessSelection {
     return String(guid[serialStart..<separator])
   }
 
-  public static func select(
-    guid: String, usbSerial: String?, usbDevices: [ADBDevice], services: [WirelessDevice]
-  ) -> WirelessRoute? {
-    if let usbSerial, !usbSerial.isEmpty,
-      let device = usbDevices.first(where: { $0.serial == usbSerial })
-    {
-      return .usb(device)
-    }
-    if let service = services.first(where: { matches(guid: guid, service: $0) }) {
-      return .wifi(service)
-    }
-    return nil
-  }
+}
+
+public enum WirelessDiscoveryIssue: Sendable {
+  case permissionDenied, networkUnavailable, resolutionFailed, failed
+}
+
+@MainActor
+protocol WirelessDiscoveryDriver: AnyObject {
+  func start(type: WirelessServiceType, snapshot: @escaping @MainActor ([WirelessDevice]) -> Void,
+             failure: @escaping @MainActor (NWError) -> Void)
+  func resolve(_ device: WirelessDevice,
+               completion: @escaping @MainActor (Result<(String?, Int), Error>) -> Void)
+  func stopResolution(_ id: String)
+  func stop()
 }
 
 @MainActor @Observable
-public final class WirelessDiscovery: NSObject,
-  @preconcurrency NetServiceDelegate
-{
+public final class WirelessDiscovery: NSObject, @preconcurrency NetServiceDelegate {
   public private(set) var devices: [WirelessDevice] = []
   public private(set) var error: String?
+  public private(set) var issue: WirelessDiscoveryIssue?
   public var changed: (([WirelessDevice]) -> Void)?
-  private var browsers: [WirelessServiceType: NWBrowser] = [:]
+  private let driver: any WirelessDiscoveryDriver
   private var snapshots: [WirelessServiceType: [WirelessDevice]] = [:]
-  private var services: [String: NetService] = [:]
+  private var resolving: [String: UUID] = [:]
+  private var resolved: [String: (String?, Int)] = [:]
   private var generation = 0
+  private var running = false
 
-  public override init() { super.init() }
+  public override convenience init() { self.init(driver: SystemWirelessDiscoveryDriver()) }
+  init(driver: any WirelessDiscoveryDriver) { self.driver = driver; super.init() }
 
   public func start() {
-    guard browsers.isEmpty else { return }
+    guard !running else { return }
+    running = true
     generation += 1
     let generation = generation
     error = nil
+    issue = nil
     for type in WirelessServiceType.allCases {
-      let browser = NWBrowser(for: .bonjour(type: type.rawValue, domain: nil), using: .tcp)
-      browser.browseResultsChangedHandler = { [weak self] results, _ in
-        Task { @MainActor in
-          guard let self, self.generation == generation else { return }
-          self.update(results, type: type)
-        }
-      }
-      browser.stateUpdateHandler = { [weak self] state in
-        if case .failed = state {
-          Task { @MainActor in
-            guard let self, self.generation == generation else { return }
-            self.error = L("无法发现无线调试设备，请检查本地网络权限")
-          }
-        }
-      }
-      browsers[type] = browser
-      browser.start(queue: .main)
+      driver.start(type: type, snapshot: { [weak self] devices in
+        guard let self, self.generation == generation else { return }
+        self.update(devices, type: type)
+      }, failure: { [weak self] failure in
+        guard let self, self.generation == generation else { return }
+        self.error = L("无法发现无线调试设备，请检查本地网络权限")
+        self.issue = Self.discoveryIssue(failure)
+      })
     }
   }
 
   public func stop() {
     generation += 1
-    for browser in browsers.values { browser.cancel() }
-    for service in services.values { service.stop() }
-    browsers.removeAll()
+    running = false
+    driver.stop()
     snapshots.removeAll()
-    services.removeAll()
+    resolving.removeAll()
+    resolved.removeAll()
     devices = []
     error = nil
+    issue = nil
     changed?(devices)
   }
 
-  private func update(_ results: Set<NWBrowser.Result>, type: WirelessServiceType) {
-    var current: [WirelessDevice] = []
-    for result in results {
-      guard case .service(let name, _, let domain, let interface) = result.endpoint else {
-        continue
-      }
-      var device = WirelessDevice(name: name, type: type, domain: domain, interface: interface)
-      if let service = services[device.id] {
-        device.host = service.hostName
-        device.port = UInt16(exactly: service.port).flatMap { $0 == 0 ? nil : $0 }
-      } else {
-        let service = NetService(domain: domain, type: type.rawValue, name: name)
-        services[device.id] = service
-        service.delegate = self
-        service.resolve(withTimeout: 15)
-      }
-      current.append(device)
-    }
-    snapshots[type] = current
+  private func update(_ devices: [WirelessDevice], type: WirelessServiceType) {
+    snapshots[type] = devices
     let liveIDs = Set(snapshots.values.flatMap { $0.map(\.id) })
-    for id in Array(services.keys) where !liveIDs.contains(id) {
-      services.removeValue(forKey: id)?.stop()
+    for id in Set(resolving.keys).subtracting(liveIDs) {
+      resolving.removeValue(forKey: id)
+      resolved.removeValue(forKey: id)
+      driver.stopResolution(id)
+    }
+    let generation = generation
+    for device in devices where resolving[device.id] == nil {
+      let resolution = UUID()
+      resolving[device.id] = resolution
+      driver.resolve(device) { [weak self] result in
+        guard let self, self.generation == generation, self.resolving[device.id] == resolution else { return }
+        switch result {
+        case .success(let address): self.resolved[device.id] = address
+        case .failure:
+          self.error = L("无线设备地址解析失败，请检查手机上的无线调试")
+          self.issue = .resolutionFailed
+        }
+        self.publish()
+      }
     }
     publish()
   }
 
   private func publish() {
-    devices = snapshots.values.flatMap { $0 }.sorted { $0.id < $1.id }
+    devices = snapshots.values.flatMap { $0 }.map { device in
+      var device = device
+      if let address = resolved[device.id] {
+        device.host = address.0
+        device.port = UInt16(exactly: address.1).flatMap { $0 == 0 ? nil : $0 }
+      }
+      return device
+    }.sorted { $0.id < $1.id }
     changed?(devices)
   }
 
   public func netServiceDidResolveAddress(_ sender: NetService) {
-    guard let id = services.first(where: { $0.value === sender })?.key else { return }
-    for type in WirelessServiceType.allCases {
-      guard let index = snapshots[type]?.firstIndex(where: { $0.id == id }) else { continue }
-      snapshots[type]?[index].host = sender.hostName
-      snapshots[type]?[index].port = UInt16(exactly: sender.port).flatMap { $0 == 0 ? nil : $0 }
-    }
-    publish()
+    (driver as? SystemWirelessDiscoveryDriver)?.netServiceDidResolveAddress(sender)
   }
 
   public func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
-    guard services.values.contains(where: { $0 === sender }) else { return }
-    error = L("无线设备地址解析失败，请检查手机上的无线调试")
+    (driver as? SystemWirelessDiscoveryDriver)?.netService(sender, didNotResolve: errorDict)
+  }
+
+  static func discoveryIssue(_ error: NWError) -> WirelessDiscoveryIssue {
+    switch error {
+    case .posix(.EACCES), .posix(.EPERM), .dns(-65570): return .permissionDenied
+    case .posix(.ENETDOWN), .posix(.ENETUNREACH), .posix(.ENOTCONN): return .networkUnavailable
+    default: return .failed
+    }
   }
 
   public nonisolated static func resolve(guid: String) async throws -> NWEndpoint {
@@ -176,49 +176,52 @@ public final class WirelessDiscovery: NSObject,
   }
 }
 
-// CLI 只等待 Bonjour 服务名，让 NWConnection 解析当下地址和端口。
-private actor WirelessResolver {
+@MainActor
+final class WirelessResolver {
   private let guid: String
-  private var browser: NWBrowser?
+  private let driver: any WirelessDiscoveryDriver
+  private let sleep: @Sendable () async throws -> Void
   private var continuation: CheckedContinuation<NWEndpoint, Error>?
   private var timeout: Task<Void, Never>?
+  private var generation = 0
 
-  init(guid: String) { self.guid = guid }
+  init(guid: String, driver: any WirelessDiscoveryDriver = SystemWirelessDiscoveryDriver(),
+       sleep: @escaping @Sendable () async throws -> Void = {
+         try await Task.sleep(for: .seconds(RemoteTimeout.deviceRequest))
+       }) {
+    self.guid = guid
+    self.driver = driver
+    self.sleep = sleep
+  }
 
   func run() async throws -> NWEndpoint {
+    guard !guid.isEmpty else { throw RemoteError.invalidPath }
+    guard continuation == nil else { throw RemoteError.posix(EBUSY) }
     try Task.checkCancellation()
+    generation += 1
+    let generation = generation
     return try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation { continuation in
         self.continuation = continuation
-        let browser = NWBrowser(
-          for: .bonjour(type: WirelessServiceType.connect.rawValue, domain: nil), using: .tcp)
-        browser.browseResultsChangedHandler = { results, _ in
-          Task { await self.received(results) }
-        }
-        browser.stateUpdateHandler = { state in
-          switch state {
-          case .failed(let error): Task { await self.finish(.failure(error)) }
-          case .cancelled: Task { await self.finish(.failure(CancellationError())) }
-          default: break
-          }
-        }
-        self.browser = browser
-        browser.start(queue: .global())
+        driver.start(type: .connect, snapshot: { [weak self] devices in
+          guard let self, self.generation == generation, let device = devices.first(where: { WirelessSelection.matches(guid: self.guid, service: $0) }) else { return }
+          self.finish(.success(device.endpoint))
+        }, failure: { [weak self] error in
+          guard let self, self.generation == generation else { return }
+          self.finish(.failure(error))
+        })
+        guard self.continuation != nil else { return }
         timeout = Task {
-          do { try await Task.sleep(for: .seconds(15)) } catch { return }
+          do { try await self.sleep() } catch { return }
+          guard self.generation == generation else { return }
           self.finish(.failure(RemoteError.posix(ETIMEDOUT)))
         }
       }
     } onCancel: {
-      Task { await self.finish(.failure(CancellationError())) }
-    }
-  }
-
-  private func received(_ results: Set<NWBrowser.Result>) {
-    for result in results {
-      guard case .service(let name, _, _, _) = result.endpoint, name == guid else { continue }
-      finish(.success(result.endpoint))
-      return
+      Task { @MainActor in
+        guard self.generation == generation else { return }
+        self.finish(.failure(CancellationError()))
+      }
     }
   }
 
@@ -227,8 +230,7 @@ private actor WirelessResolver {
     self.continuation = nil
     timeout?.cancel()
     timeout = nil
-    browser?.cancel()
-    browser = nil
+    driver.stop()
     continuation.resume(with: result)
   }
 }

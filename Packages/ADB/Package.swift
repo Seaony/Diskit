@@ -262,5 +262,5 @@ let package = Package(
       ], publicHeadersPath: "bridge/include",
       cSettings: [.define("OPENSSL_NO_ASM"), .headerSearchPath("include")],
       cxxSettings: [.define("OPENSSL_NO_ASM"), .headerSearchPath("include")]),
-    .testTarget(name: "ADBTests", dependencies: ["ADB"], resources: [.copy("Fixtures")]),
+    .testTarget(name: "ADBTests", dependencies: ["ADB", .product(name: "CoreTestSupport", package: "Core")], resources: [.copy("Fixtures")]),
   ], swiftLanguageModes: [.v6], cxxLanguageStandard: .cxx17)

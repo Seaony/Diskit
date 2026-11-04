@@ -32,36 +32,11 @@ import Testing
   }
 }
 
-@Test func wirelessSelectionUsesOnlyAssociatedUSBDevice() {
-  let guid = "adb-same-Ab12Cd"
-  let same = ADBDevice(serial: "same", name: "Same phone", registryID: 1)
-  let other = ADBDevice(serial: "other", name: "Other phone", registryID: 2)
-  let wifi = WirelessDevice(name: guid, type: .connect, host: "phone.local.", port: 37001)
-  #expect(
-    WirelessSelection.select(
-      guid: guid, usbSerial: "same", usbDevices: [other, same], services: [wifi]) == .usb(same))
-  #expect(
-    WirelessSelection.select(guid: guid, usbSerial: "same", usbDevices: [other], services: [wifi])
-      == .wifi(wifi))
-  #expect(
-    WirelessSelection.select(guid: guid, usbSerial: nil, usbDevices: [same], services: [wifi])
-      == .wifi(wifi))
-  #expect(
-    WirelessSelection.select(guid: guid, usbSerial: "same", usbDevices: [other], services: [])
-      == nil)
-}
-
 @Test func wirelessSelectionUsesNewPortAfterRediscovery() {
   let guid = "adb-same-Ab12Cd"
   let before = WirelessDevice(name: guid, type: .connect, host: "phone.local.", port: 37001)
   let after = WirelessDevice(name: guid, type: .connect, host: "phone.local.", port: 41234)
   #expect(before.id == after.id)
-  #expect(
-    WirelessSelection.select(guid: guid, usbSerial: nil, usbDevices: [], services: [before])
-      == .wifi(before))
-  #expect(
-    WirelessSelection.select(guid: guid, usbSerial: nil, usbDevices: [], services: [after])
-      == .wifi(after))
 }
 
 @Test @MainActor func stoppingWirelessDiscoveryClearsPublishedState() {

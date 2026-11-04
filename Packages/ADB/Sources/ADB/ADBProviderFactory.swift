@@ -5,23 +5,44 @@ import OSLog
 public enum ADBProviderFactory {
   private static let logger = Logger(subsystem: "com.seaony.Kayoi", category: "ADBTransport")
   public static func make(for connection: Connection) async throws -> ADBProvider {
-    let session = try await makeSession(for: connection)
-    return ADBProvider(session: session, reconnect: { try await makeSession(for: connection) })
+    try await make(
+      for: connection, devices: { ADBUSB.devices() },
+      usb: { try ADBProvider.usbSession(device: $0) }, wireless: wirelessSession)
   }
-  private static func makeSession(for connection: Connection) async throws -> ADBSession {
+
+  static func make(
+    for connection: Connection,
+    devices: @escaping @Sendable () -> [ADBDevice],
+    usb: @escaping @Sendable (ADBDevice) async throws -> ADBSession,
+    wireless: @escaping @Sendable (String) async throws -> ADBSession
+  ) async throws -> ADBProvider {
+    let create: @Sendable () async throws -> ADBSession = {
+      try await makeSession(for: connection, devices: devices(), usb: usb, wireless: wireless)
+    }
+    return try await ADBProvider(session: create(), reconnect: create)
+  }
+
+  private static func makeSession(
+    for connection: Connection, devices: [ADBDevice],
+    usb: @Sendable (ADBDevice) async throws -> ADBSession,
+    wireless: @Sendable (String) async throws -> ADBSession
+  ) async throws -> ADBSession {
     if connection.kind == .androidUSB {
       logger.info("连接方式：USB")
-      return try ADBProvider.usbSession(serial: connection.params["serial"] ?? "")
+      return try await usb(ADBUSB.select(params: connection.params, devices: devices))
     }
     guard connection.kind == .androidWiFi, let guid = connection.params["guid"], !guid.isEmpty
     else { throw RemoteError.invalidPath }
-    let usb = ADBUSB.devices()
     if let serial = WirelessSelection.serial(fromGUID: guid),
-      usb.contains(where: { $0.serial == serial })
+      let device = try? ADBUSB.select(params: ["serial": serial], devices: devices)
     {
       logger.info("连接方式：USB（优先于同机 Wi-Fi）")
-      return try ADBProvider.usbSession(serial: serial)
+      return try await usb(device)
     }
+    return try await wireless(guid)
+  }
+
+  private static func wirelessSession(guid: String) async throws -> ADBSession {
     let endpoint = try await WirelessDiscovery.resolve(guid: guid)
     logger.info("连接方式：Wi-Fi")
     let transport = try NetworkTransport(endpoint: endpoint, startTLS: true)
