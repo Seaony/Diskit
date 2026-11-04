@@ -45,6 +45,7 @@ struct PanelView: View {
   @State private var dragSource = PanelDraggingSource()
   @State private var dropTargetID: UUID?
   @State private var endDropTargeted = false
+  @State private var addHovering = false
   @State private var deleteTarget: Connection?
   @State private var actionError: PanelError?
   @State private var selection = PanelSelection()
@@ -162,8 +163,9 @@ struct PanelView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      header.gridProbe("header", area: "panel", edge: nil)
-      Divider()
+      if !model.connections.connections.isEmpty || statusTarget != nil {
+        header.gridProbe("header", area: "panel", edge: nil)
+      }
       ScrollViewReader { proxy in
         ScrollView {
           VStack(alignment: .leading, spacing: Space.md) {
@@ -175,15 +177,18 @@ struct PanelView: View {
             }
             if !discoveredItems.isEmpty {
               sectionTitle(L("已发现"))
-              ForEach(Array(discoveredItems.enumerated()), id: \.element.id) { index, item in
-                discoveryRow(item)
-                  .modifier(PanelArrival(index: index))
+              LazyVGrid(columns: cardColumns, spacing: Space.md) {
+                ForEach(Array(discoveredItems.enumerated()), id: \.element.id) { index, item in
+                  discoveryCard(item)
+                    .modifier(PanelArrival(index: index))
+                }
               }
             }
             if showsEmptyState {
               emptyState
             } else if !model.connections.connections.isEmpty {
               sectionTitle(L("我的位置"))
+              LazyVGrid(columns: cardColumns, spacing: Space.md) {
               ForEach(Array(model.connections.connections.enumerated()), id: \.element.id) {
                 index, connection in
                 SavedConnectionRow(
@@ -193,14 +198,13 @@ struct PanelView: View {
                   capabilities: model.providerCapabilities(for: connection),
                   isDemo: model.options.isDemo,
                   dragSource: dragSource,
-                  dropDisplacement: displacement(for: index),
-                  dropDelay: displacementDelay(for: index),
                   selected: selection.id == connection.id,
                   rowFocus: $focusedConnectionID,
                   canMoveUp: index > 0,
                   canMoveDown: index + 1 < model.connections.connections.count,
                   onSelect: { selection.select(connection.id, reveal: false); focusedConnectionID = connection.id },
                   onPrimary: { primaryAction(connection) },
+                  onActivate: { activate(connection) },
                   onEdit: { edit(connection) },
                   onReauthenticate: { edit(connection, reauthenticate: true) },
                   onMove: { offset in move(connection, offset: offset) },
@@ -211,13 +215,11 @@ struct PanelView: View {
                 ).id(connection.id)
                   .gridProbe("row-" + connection.id.uuidString, area: "panel-list")
               }
+              addCard
+              }
             }
-            if !showsEmptyState {
-              addButton
-                .overlay(alignment: .top) {
-                  if draggedID != nil && endDropTargeted { Rectangle().fill(KayoiTheme.primaryText.opacity(0.15)).frame(height: 1) }
-                }
-                .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
+            if !showsEmptyState && model.connections.connections.isEmpty {
+              LazyVGrid(columns: cardColumns, spacing: Space.md) { addCard }
             }
           }
           .padding(.horizontal, Space.margin)
@@ -237,7 +239,6 @@ struct PanelView: View {
           else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(request.connectionID, anchor: .center) } }
         }
       }
-      Divider()
       footer.gridProbe("footer", area: "panel", edge: nil)
     }
     .frame(width: 380)
@@ -265,16 +266,24 @@ struct PanelView: View {
       selection.select(ids.first, reveal: false)
     }
     .onKeyPress(.upArrow) {
-      moveSelection(-1)
+      moveSelection(-2)
       return .handled
     }
     .onKeyPress(.downArrow) {
+      moveSelection(2)
+      return .handled
+    }
+    .onKeyPress(.leftArrow) {
+      moveSelection(-1)
+      return .handled
+    }
+    .onKeyPress(.rightArrow) {
       moveSelection(1)
       return .handled
     }
     .onKeyPress(.return) {
       guard let connection = selectedConnection else { return .ignored }
-      primaryAction(connection)
+      activate(connection)
       return .handled
     }
     .onKeyPress(.delete) {
@@ -322,17 +331,9 @@ struct PanelView: View {
     }
   }
 
-  private func displacement(for index: Int) -> CGFloat {
-    guard !reduceMotion, draggedID != nil, let dropTargetID,
-      let target = model.connections.connections.firstIndex(where: { $0.id == dropTargetID }) else { return 0 }
-    let distance = abs(index - target)
-    return CGFloat((index < target ? -1.0 : 1.0) * 8 * pow(0.7, Double(distance)))
-  }
-
-  private func displacementDelay(for index: Int) -> Double {
-    guard let dropTargetID,
-      let target = model.connections.connections.firstIndex(where: { $0.id == dropTargetID }) else { return 0 }
-    return 0.024 * Double(abs(index - target))
+  // 两列卡片
+  private var cardColumns: [GridItem] {
+    [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)]
   }
 
   private var statusTarget: (id: UUID, label: String, symbol: String, color: Color, background: Color)? {
@@ -355,13 +356,9 @@ struct PanelView: View {
 
   private var header: some View {
     HStack {
-      VStack(alignment: .leading, spacing: Space.xs) {
-        Text(verbatim: "Kayoi").font(.title3.bold())
-        if !model.connections.connections.isEmpty {
-          Text(
-            LF("%d 个位置", model.connections.connections.count)
-          ).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-        }
+      if !model.connections.connections.isEmpty {
+        Text(LF("%d 个位置", model.connections.connections.count))
+          .font(.headline).foregroundStyle(KayoiTheme.primaryText)
       }
       Spacer()
       if let statusTarget {
@@ -378,8 +375,6 @@ struct PanelView: View {
 
   private var footer: some View {
     HStack(spacing: Space.md) {
-      Text(LF("Kayoi %@", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""))
-        .monospacedDigit().font(.caption).foregroundStyle(KayoiTheme.secondaryText)
       Spacer()
       Button {
         openWindow(id: "help")
@@ -419,17 +414,31 @@ struct PanelView: View {
     .frame(maxWidth: .infinity).padding(.vertical, Space.section)
   }
 
-  private var addButton: some View {
+  private var addCard: some View {
     Button {
       edit(nil)
     } label: {
-      Label(L("添加位置"), systemImage: "plus")
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, 40)
+      VStack(spacing: Space.sm) {
+        Image(systemName: "plus").font(.title3.weight(.medium)).foregroundStyle(KayoiTheme.accent)
+        Text(L("添加位置")).font(.subheadline.weight(.medium)).foregroundStyle(KayoiTheme.secondaryText)
+      }
+      .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92)
+      .background(addHovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+      // 拖到这里放到最后
+      .overlay(alignment: .leading) {
+        if draggedID != nil && endDropTargeted {
+          Capsule().fill(KayoiTheme.primaryText.opacity(0.3)).frame(width: 2).padding(.vertical, Space.sm)
+            .offset(x: -Space.sm + 1) // grid: ok 插入线落在两张卡片之间
+        }
+      }
+      .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
     }
     .buttonStyle(.plain)
+    .onHover { addHovering = $0 }
     .keyboardShortcut("n", modifiers: .command)
+    .help(L("添加位置 · ⌘N"))
     .accessibilityHint(L("添加手机、电脑、相机或网盘位置"))
+    .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
   }
 
   private func discoveryBanner(_ message: String, permissionDenied: Bool) -> some View {
@@ -450,29 +459,25 @@ struct PanelView: View {
       .padding(.top, Space.xs)
   }
 
-  private func discoveryRow(_ item: DiscoveredItem) -> some View {
-    HStack(spacing: Space.md) {
-      TypeIcon(kind: item.kind, color: "gray", size: 28)
-      VStack(alignment: .leading, spacing: Space.xs) {
-        Text(item.title).font(.body.weight(.medium)).lineLimit(1).help(item.title)
-        Text(item.subtitle).font(.caption).foregroundStyle(KayoiTheme.secondaryText).lineLimit(1)
-          .help(item.subtitle)
+  // 发现的设备：整张卡片点一下就是添加
+  private func discoveryCard(_ item: DiscoveredItem) -> some View {
+    Button {
+      guard let connection = item.connection else { return }
+      edit(connection)
+      model.pairingSelection = item.pairingSelection
+    } label: {
+      VStack(spacing: Space.sm) {
+        TypeIcon(kind: item.kind, color: "gray", size: 36)
+        Text(item.title).font(.body.weight(.medium)).lineLimit(1).truncationMode(.middle)
+          .foregroundStyle(KayoiTheme.primaryText)
       }
-      Spacer(minLength: 8)
-      Button(L("添加")) {
-        guard let connection = item.connection else { return }
-        edit(connection)
-        model.pairingSelection = item.pairingSelection
-      }
-      .fixedSize().disabled(item.connection == nil)
-      .accessibilityLabel(LF("添加“%@”", item.title))
+      .padding(Space.md)
+      .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92)
     }
-    .padding(.horizontal, Space.sm).padding(.vertical, Space.xs).frame(minHeight: 52)
-    .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
-    .overlay {
-      RoundedRectangle(cornerRadius: Radius.row, style: .continuous)
-        .strokeBorder(KayoiTheme.border, style: StrokeStyle(dash: [4, 3]))
-    }
+    .buttonStyle(PanelCardButtonStyle())
+    .disabled(item.connection == nil)
+    .help(LF("添加“%@”", item.title))
+    .accessibilityLabel(LF("添加“%@”", item.title))
   }
 
   private var selectedConnection: Connection? {
@@ -482,11 +487,13 @@ struct PanelView: View {
 
   private func handleInitialKey(_ code: UInt16) -> Bool {
     switch code {
-    case 126: moveSelection(-1)
-    case 125: moveSelection(1)
+    case 126: moveSelection(-2)
+    case 125: moveSelection(2)
+    case 123: moveSelection(-1)
+    case 124: moveSelection(1)
     case 36, 76:
       guard let selectedConnection else { return false }
-      primaryAction(selectedConnection)
+      activate(selectedConnection)
     case 51:
       guard let selectedConnection else { return false }
       deleteTarget = selectedConnection
@@ -505,9 +512,20 @@ struct PanelView: View {
       selection.id.flatMap { id in
         connections.firstIndex { $0.id == id }
       } ?? 0
+    // 上下换行时没有目标行就停在原地，不横跳到隔壁格子
+    if abs(offset) > 1 && !connections.indices.contains(current + offset) { return }
     let next = min(max(current + offset, 0), connections.count - 1)
     selection.select(connections[next].id, reveal: true)
     focusedConnectionID = connections[next].id
+  }
+
+  // 点卡片或回车：已挂载就在 Finder 打开，进行中或不可用时不动，其余执行主操作
+  private func activate(_ connection: Connection) {
+    switch model.connections.states[connection.id] ?? .disconnected {
+    case .mounted(let mounted): if !model.options.isDemo { NSWorkspace.shared.open(mounted.url) }
+    case .connecting, .awaitingAuthorization, .ejecting, .unavailable: break
+    default: primaryAction(connection)
+    }
   }
 
   private func primaryAction(_ connection: Connection) {
@@ -611,4 +629,22 @@ struct PanelView: View {
 
 extension Connection {
   var tint: Color { KayoiTheme.locationColor(color) }
+}
+
+// 面板卡片：只用底色区分静止、悬停、按下
+struct PanelCardButtonStyle: ButtonStyle {
+  @Environment(\.isFocused) private var isFocused
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hovering = false
+
+  func makeBody(configuration: Configuration) -> some View {
+    let shape = RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+    configuration.label
+      .background(configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape)
+      .overlay { if isFocused { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
+      .contentShape(shape)
+      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+      .onHover { hovering = $0 }
+  }
 }

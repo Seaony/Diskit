@@ -12,11 +12,12 @@ struct ConnectionCardStyle: ButtonStyle {
       .background(
         configuration.isPressed ? KayoiTheme.pressed : selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
       )
+      // 选中靠底色区分，只有键盘焦点才画焦点环
       .overlay {
-        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-          .strokeBorder(
-            focused ? KayoiTheme.focus : selected ? KayoiTheme.accent : KayoiTheme.border,
-            lineWidth: selected || focused ? 2 : 1)
+        if focused {
+          RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+            .strokeBorder(KayoiTheme.focus, lineWidth: 2)
+        }
       }
       .overlay(alignment: .topTrailing) {
         if selected {

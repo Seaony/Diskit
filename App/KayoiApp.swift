@@ -95,6 +95,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         }
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
+        .toolbar(removing: .title)
         .task { model.start() }
     }.defaultSize(width: 380, height: 560).windowResizability(.contentSize)
       .defaultLaunchBehavior(.suppressed)

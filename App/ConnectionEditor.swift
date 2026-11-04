@@ -17,21 +17,15 @@ struct ConnectionEditor: View {
     VStack(spacing: 0) {
       if editor.chosen {
         HStack(spacing: Space.md) {
-          TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 48)
-          VStack(alignment: .leading, spacing: Space.xs) {
-            Text(editor.draft.kind.title).font(.headline)
-            Text(editor.draft.kind.connectionCaption).font(.subheadline).foregroundStyle(
-              KayoiTheme.secondaryText)
-          }
+          TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 40)
+          Text(editor.draft.kind.title).font(.title3.weight(.semibold))
           Spacer(minLength: 0)
         }
-        .padding(Space.xl)
-        Divider()
+        .padding(.horizontal, Space.xl).padding(.top, Space.xl)
         ConnectionFormView(editor: editor).disabled(editor.busy)
       } else {
         ConnectionTypePicker(editor: editor)
       }
-      Divider()
       footer
     }
     .buttonStyle(FlatButtonStyle())

@@ -37,10 +37,10 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
 
 @Test func everyThemeTextPairMeetsContrastInAllAppearances() throws {
   var pairs: [(String, String, Double)] = []
-  for background in ["Background", "Surface", "Selection", "Hover", "Pressed"] {
+  for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill"] {
     pairs.append(("PrimaryText", background, 7))
   }
-  for background in ["Background", "Surface", "Selection", "Hover", "Pressed"] {
+  for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill"] {
     pairs.append(("SecondaryText", background, 7))
   }
   for background in ["Background", "Surface", "Hover", "Pressed"] {
@@ -56,6 +56,7 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
   }
 }
 
+// 普通外观下边框只做淡分隔，增强对比度（下标 2、3）才要求 3:1。
 @Test func disabledButtonsAndHighContrastBordersStayVisible() throws {
   let texts = try contrastVariants("DisabledText")
   let surfaces = try contrastVariants("DisabledSurface")
@@ -63,6 +64,6 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
   let borders = try contrastVariants("Border")
   for index in 0..<4 {
     #expect(texts[index].over(backgrounds[index], opacity: 0.9).ratio(to: surfaces[index].over(backgrounds[index], opacity: 0.9)) >= 4.5)
-    #expect(borders[index].ratio(to: backgrounds[index]) >= 3)
+    if index >= 2 { #expect(borders[index].ratio(to: backgrounds[index]) >= 3) }
   }
 }

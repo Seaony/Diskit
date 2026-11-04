@@ -27,12 +27,12 @@ private struct PanelRowPreview: View {
   var body: some View {
     SavedConnectionRow(
       connection: connection, state: state, errorDetail: nil, isDemo: true, dragSource: dragSource,
-      dropDisplacement: 0, dropDelay: 0, selected: focus == connection.id,
+      selected: focus == connection.id,
       rowFocus: $focus, canMoveUp: true, canMoveDown: true,
-      onSelect: { focus = connection.id }, onPrimary: {}, onEdit: {},
+      onSelect: { focus = connection.id }, onPrimary: {}, onActivate: {}, onEdit: {},
       onReauthenticate: {}, onMove: { _ in }, onDelete: {},
       draggedID: $draggedID, dropTargetID: $dropTargetID, onDrop: { _ in }
-    ).padding(Space.lg).frame(width: 380).background(KayoiTheme.background)
+    ).padding(Space.lg).frame(width: 180).background(KayoiTheme.background)
   }
 }
 

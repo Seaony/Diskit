@@ -10,14 +10,13 @@ struct SavedConnectionRow: View {
   var capabilities: ProviderCapabilities? = nil
   let isDemo: Bool
   let dragSource: PanelDraggingSource
-  let dropDisplacement: CGFloat
-  let dropDelay: Double
   let selected: Bool
   var rowFocus: FocusState<UUID?>.Binding
   let canMoveUp: Bool
   let canMoveDown: Bool
   let onSelect: () -> Void
   let onPrimary: () -> Void
+  let onActivate: () -> Void
   let onEdit: () -> Void
   let onReauthenticate: () -> Void
   let onMove: (Int) -> Void
@@ -28,90 +27,38 @@ struct SavedConnectionRow: View {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var hovering = false
   @FocusState private var focusedAction: Action?
-  private enum Action: Hashable { case primary, details, copyDetails }
+  private enum Action: Hashable { case copyDetails }
   @State private var showsError = false
 
   var body: some View {
-    HStack(spacing: Space.md) {
-      TypeIcon(kind: connection.kind, color: connection.color, size: 28)
-        .gridProbe("icon", area: "saved-" + connection.id.uuidString, edge: nil)
+    VStack(spacing: Space.sm) {
+      TypeIcon(kind: connection.kind, color: connection.color, size: 36)
+        .overlay(alignment: .bottomTrailing) { statusBadge.offset(x: 4, y: 4) } // grid: ok 角标压在图标右下角
         .overlay {
           PanelDragHandle(id: connection.id, name: connection.name, source: dragSource, draggedID: $draggedID)
         }
-        .help(L("拖动以调整顺序"))
-      VStack(alignment: .leading, spacing: Space.xs) {
-        HStack(spacing: Space.xs) {
-          Text(connection.name).font(.body).lineLimit(1).help(connection.name)
-          if ProviderAccess.isReadOnly(capabilities) {
-            Text(L("只读")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-              .fixedSize().help(L("这个位置只能读取"))
-          }
-        }
-        HStack(alignment: .top, spacing: Space.xs) {
-          if case .tested = state { Image(systemName: "checkmark.circle.fill") }
-          if case .mounted = state { Image(systemName: "circle.fill").imageScale(.small) }
-          Text(PanelCopy.subtitle(state, kind: connection.kind)).lineLimit(2)
-            .help(fullSubtitle)
-        }.font(.caption).foregroundStyle(statusColor)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .gridProbe("text", area: "saved-" + connection.id.uuidString, edge: nil)
-      .contentShape(Rectangle())
-      .onTapGesture {
-        onSelect()
-        if case .mounted(let mounted) = state { if !isDemo { NSWorkspace.shared.open(mounted.url) } }
-      }
-      if state == .connecting || state == .ejecting {
-        ProgressView().nativeProgressAppearance().controlSize(.mini).accessibilityLabel(PanelCopy.subtitle(state, kind: connection.kind))
-      }
-      if state != .ejecting {
-        Button(action: onPrimary) {
-          if state == .connecting {
-            Image(systemName: "xmark")
-          } else {
-            Text(PanelCopy.buttonTitle(state, kind: connection.kind))
-          }
-        }
-        .buttonStyle(FlatButtonStyle(focusOverride: focusedAction == .primary))
-        .focused($focusedAction, equals: .primary)
-        .fixedSize()
-        .disabled(state == .unavailable)
-        .help(state == .unavailable ? PanelCopy.subtitle(state, kind: connection.kind) : PanelCopy.buttonTitle(state, kind: connection.kind))
-        .accessibilityLabel(LF("%@“%@”", PanelCopy.buttonTitle(state, kind: connection.kind), connection.name))
-      }
-      if case .failed = state {
-        Button { showsError = true } label: { Image(systemName: "info.circle") }
-          .buttonStyle(FlatIconButtonStyle(focusOverride: focusedAction == .details))
-          .focused($focusedAction, equals: .details).help(L("查看错误详情"))
-          .accessibilityLabel(L("查看错误详情"))
-          .popover(isPresented: $showsError) {
-            VStack(alignment: .leading, spacing: Space.md) {
-              Text(L("无法连接")).font(.headline)
-              ScrollView { Text(fullSubtitle).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 220)
-              Text(ConnectionFailureAdvice.text(for: connection.kind))
-                .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-              Button(L("复制详细信息")) { copy(fullSubtitle) }
-                .buttonStyle(FlatButtonStyle(focusOverride: focusedAction == .copyDetails))
-                .focused($focusedAction, equals: .copyDetails)
-            }.padding(Space.lg).frame(width: 300).background(KayoiTheme.surface)
-          }
-      }
+        .gridProbe("icon", area: "saved-" + connection.id.uuidString, edge: nil)
+      Text(connection.name).font(.body.weight(.medium)).lineLimit(1).truncationMode(.middle)
+        .foregroundStyle(KayoiTheme.primaryText)
+        .gridProbe("text", area: "saved-" + connection.id.uuidString, edge: nil)
     }
-    .padding(.horizontal, Space.sm).padding(.vertical, Space.xs).frame(minHeight: 52)
-    .gridArea("saved-" + connection.id.uuidString, inset: Space.sm)
-    .background(hovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
-    .overlay { RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(selected ? KayoiTheme.focus : KayoiTheme.border, lineWidth: selected ? 2 : 1) }
-    .overlay(alignment: .top) {
+    .padding(Space.md)
+    .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92)
+    .gridArea("saved-" + connection.id.uuidString, inset: Space.md)
+    .background(cardFill, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    // 落点：目标卡片左侧一条细插入线
+    .overlay(alignment: .leading) {
       if draggedID != nil && dropTargetID == connection.id {
-        Rectangle().fill(KayoiTheme.primaryText.opacity(0.15)).frame(height: 1).padding(.horizontal, 8)
+        Capsule().fill(KayoiTheme.primaryText.opacity(0.3)).frame(width: 2).padding(.vertical, Space.sm)
+          .offset(x: -Space.sm + 1) // grid: ok 插入线落在两张卡片之间
       }
     }
-    .offset(y: dropDisplacement) // grid: ok 按下或拖动时的短暂位移
+    .popover(isPresented: $showsError) { errorDetails }
+    .help(hoverText)
+    .opacity(draggedID == connection.id ? 0.35 : 1)
     .scaleEffect(!reduceMotion && draggedID == connection.id ? 0.96 : 1)
-    .opacity(!reduceMotion && draggedID == connection.id ? 0 : 1)
-    .frame(height: draggedID == connection.id && !reduceMotion ? 0 : nil)
-    .clipped()
-    .animation(reduceMotion ? nil : .easeOut(duration: 0.12).delay(dropDelay), value: dropTargetID)
+    .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: dropTargetID)
+    .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: draggedID)
     .onHover { hovering = $0 }
     .onContinuousHover { phase in
       switch phase {
@@ -121,8 +68,8 @@ struct SavedConnectionRow: View {
     }
     .focusable().focusEffectDisabled()
     .focused(rowFocus, equals: connection.id)
-    .contentShape(RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
-    .onTapGesture(perform: onSelect)
+    .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+    .onTapGesture(perform: activate)
     .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: connection.id) { source, _ in onDrop(source) })
     .contextMenu {
       if ProviderAccess.isReadOnly(capabilities) {
@@ -133,10 +80,13 @@ struct SavedConnectionRow: View {
         Button(L("在 Finder 中打开")) { if !isDemo { NSWorkspace.shared.open(mounted.url) } }
         Button(L("推出"), action: onPrimary)
         Button(L("复制路径")) { copy(mounted.url.path) }
-      } else if state != .connecting && state != .awaitingAuthorization && state != .ejecting && state != .unavailable {
-        Button(L("测试连接"), action: onPrimary)
+      } else if state == .connecting || state == .awaitingAuthorization {
+        Button(L("取消"), action: onPrimary)
+      } else if state != .ejecting && state != .unavailable {
+        Button(PanelCopy.buttonTitle(state, kind: connection.kind), action: onPrimary)
       }
-      if connection.kind.isCloud { Button(L("重新登录"), action: onReauthenticate) }
+      if case .failed = state { Button(L("查看错误详情")) { showsError = true } }
+      if connection.kind.isCloud && state != .needsLogin { Button(L("重新登录"), action: onReauthenticate) }
       Divider()
       Button(L("编辑…"), action: onEdit)
       if canMoveUp { Button(L("上移")) { onMove(-1) } }
@@ -147,17 +97,65 @@ struct SavedConnectionRow: View {
     .accessibilityElement(children: .contain)
     .accessibilityLabel([connection.name, connection.kind.title, PanelCopy.subtitle(state, kind: connection.kind)].joined(separator: "，"))
     .accessibilityAddTraits(selected ? .isSelected : [])
+    .accessibilityAction { activate() }
+  }
+
+  // 状态角标：进行中转圈，其它用小圆点，未连接不显示
+  @ViewBuilder private var statusBadge: some View {
+    if state == .connecting || state == .awaitingAuthorization || state == .ejecting {
+      ProgressView().nativeProgressAppearance().controlSize(.mini)
+        .frame(width: 14, height: 14)
+        .background(cardFill, in: Circle())
+    } else if let color = badgeColor {
+      Circle().fill(color).frame(width: 10, height: 10)
+        .padding(2) // grid: ok 圆点外圈用卡片底色隔开图标
+        .background(cardFill, in: Circle())
+    }
+  }
+
+  private var badgeColor: Color? {
+    switch state {
+    case .mounted, .tested: KayoiTheme.accent
+    case .needsLogin: KayoiTheme.warning
+    case .failed: KayoiTheme.error
+    case .unavailable: KayoiTheme.secondaryText
+    default: nil
+    }
+  }
+
+  private func activate() {
+    onSelect()
+    onActivate()
+  }
+
+  private var hoverText: String {
+    let status = PanelCopy.subtitle(state, kind: connection.kind)
+    let hint: String? =
+      switch state {
+      case .mounted: L("点按在 Finder 中打开")
+      case .connecting, .awaitingAuthorization, .ejecting, .unavailable: nil
+      default: LF("点按：%@", PanelCopy.buttonTitle(state, kind: connection.kind))
+      }
+    return ([connection.name, status] + [hint].compactMap { $0 } + [L("拖动图标调整顺序")]).joined(separator: "\n")
+  }
+
+  private var cardFill: Color {
+    selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface
+  }
+
+  private var errorDetails: some View {
+    VStack(alignment: .leading, spacing: Space.md) {
+      Text(L("无法连接")).font(.headline)
+      ScrollView { Text(fullSubtitle).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 220)
+      Text(ConnectionFailureAdvice.text(for: connection.kind))
+        .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+      Button(L("复制详细信息")) { copy(fullSubtitle) }
+        .buttonStyle(FlatButtonStyle(focusOverride: focusedAction == .copyDetails))
+        .focused($focusedAction, equals: .copyDetails)
+    }.padding(Space.lg).frame(width: 300).background(KayoiTheme.surface)
   }
 
   private var fullSubtitle: String { errorDetail ?? PanelCopy.subtitle(state, kind: connection.kind) }
-  private var statusColor: Color {
-    switch state {
-    case .failed: KayoiTheme.error
-    case .needsLogin: KayoiTheme.warning
-    case .mounted: KayoiTheme.accent
-    default: KayoiTheme.secondaryText
-    }
-  }
   private func copy(_ value: String) {
     NSPasteboard.general.clearContents()
     NSPasteboard.general.setString(value, forType: .string)

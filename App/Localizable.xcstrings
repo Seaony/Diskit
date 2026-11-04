@@ -18,23 +18,6 @@
         }
       }
     },
-    "%@“%@”": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@ “%@”"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%@“%@”"
-          }
-        }
-      }
-    },
     "%@（%@）": {
       "localizations": {
         "en": {
@@ -404,22 +387,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kayoi"
-          }
-        }
-      }
-    },
-    "Kayoi %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi %@"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi %@"
           }
         }
       }
@@ -3752,22 +3719,6 @@
         }
       }
     },
-    "拖动以调整顺序": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Drag to reorder"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "拖动以调整顺序"
-          }
-        }
-      }
-    },
     "挂载": {
       "extractionState": "manual",
       "localizations": {
@@ -5010,23 +4961,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "浏览账号或分享链接"
-          }
-        }
-      }
-    },
-    "添加": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加"
           }
         }
       }
@@ -8160,6 +8094,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。"
+          }
+        }
+      }
+    },
+    "添加位置 · ⌘N": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Location · ⌘N"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加位置 · ⌘N"
+          }
+        }
+      }
+    },
+    "点按：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点按：%@"
+          }
+        }
+      }
+    },
+    "点按在 Finder 中打开": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click to open in Finder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点按在 Finder 中打开"
+          }
+        }
+      }
+    },
+    "拖动图标调整顺序": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag the icon to reorder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动图标调整顺序"
           }
         }
       }

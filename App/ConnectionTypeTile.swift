@@ -3,19 +3,18 @@ import SwiftUI
 
 struct ConnectionTypeTile: View {
   let kind: ConnectionKind
+  // 分组标题已写明“实验性”时不再逐个标
+  var marksExperimental = true
   var body: some View {
     VStack(spacing: Space.xs) {
       TypeIcon(kind: kind, size: 40)
       Text(kind.title).font(.body.weight(.medium)).lineLimit(1)
-      Text(ConnectionTypeCatalog.caption(kind)).font(.caption).foregroundStyle(
-        KayoiTheme.secondaryText
-      ).lineLimit(1)
     }
     .padding(.horizontal, Space.sm)
-    .frame(maxWidth: .infinity).frame(height: 96)
+    .frame(maxWidth: .infinity).frame(height: 88)
     .contentShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
     .overlay(alignment: .topTrailing) {
-      if kind.isExperimental || kind == .lanzou {
+      if (kind.isExperimental && marksExperimental) || kind == .lanzou {
         Text(kind == .lanzou ? L("只读") : L("实验性"))
           .font(.caption2).foregroundStyle(KayoiTheme.secondaryText)
           .padding(Space.xs).background(KayoiTheme.surface, in: Capsule())

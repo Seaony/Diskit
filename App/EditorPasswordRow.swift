@@ -17,7 +17,7 @@ struct EditorPasswordRow: View {
               SecureField(placeholder.isEmpty ? title : placeholder, text: $editor.password)
             }
           }
-          .textFieldStyle(.plain).labelsHidden().focused($focused).accessibilityLabel(title)
+          .textFieldStyle(.roundedBorder).labelsHidden().focused($focused).accessibilityLabel(title)
           Button {
             editor.passwordVisible.toggle()
           } label: {
@@ -25,14 +25,6 @@ struct EditorPasswordRow: View {
           }.buttonStyle(.plain)
             .help(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
             .accessibilityLabel(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
-        }
-        .padding(Space.sm)
-        .background(
-          KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
-        )
-        .overlay {
-          RoundedRectangle(cornerRadius: Radius.control, style: .continuous).stroke(
-            focused ? KayoiTheme.focus : KayoiTheme.border)
         }
         if let error = editor.fieldError("password") {
           Text(error).font(.caption).foregroundStyle(KayoiTheme.error)

@@ -32,12 +32,8 @@ struct ConnectionTypePicker: View {
       }
       .padding(Space.sm)
       .background(
-        KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+        KayoiTheme.controlFill, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
       )
-      .overlay {
-        RoundedRectangle(cornerRadius: Radius.control, style: .continuous).stroke(
-          focus == .search ? KayoiTheme.focus : KayoiTheme.border)
-      }
       .padding(.horizontal, Space.xl).padding(.top, Space.xl)
       ScrollView {
         VStack(alignment: .leading, spacing: Space.xl) {
@@ -54,7 +50,7 @@ struct ConnectionTypePicker: View {
                     editor.selectedKind = kind
                     focus = .grid
                   } label: {
-                    ConnectionTypeTile(kind: kind)
+                    ConnectionTypeTile(kind: kind, marksExperimental: group.title != L("实验性网盘"))
                       .gridProbe("type-" + kind.rawValue, area: "editor-types", edge: nil)
                   }
                   .buttonStyle(ConnectionCardStyle(

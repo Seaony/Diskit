@@ -21,7 +21,6 @@ struct PanelDiscoveryBanner: View {
     .padding(Space.md)
     .gridArea("discovery-banner-" + message, inset: Space.md)
     .background(KayoiTheme.warningBackground, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
-    .overlay { RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(KayoiTheme.warning) }
   }
 }
 
