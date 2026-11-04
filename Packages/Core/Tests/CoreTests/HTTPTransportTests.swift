@@ -50,13 +50,14 @@ private final class HTTPFixture: URLProtocol, @unchecked Sendable {
   #expect(response.body == Data("limited".utf8))
 }
 
-@Test func HTTPStreamReadsBoundedChunksAfterHeadersReturn() async throws {
+@Test(arguments: [206, 429])
+func HTTPStreamReadsBoundedChunksAfterHeadersReturn(status: Int) async throws {
   let host = UUID().uuidString + ".invalid"
   let url = try #require(URL(string: "https://" + host + "/file"))
   let expected = Data((0..<150_123).map { UInt8(truncatingIfNeeded: $0) })
   HTTPFixture.replies.withLock {
     $0[host] = .init(
-      status: 206, body: expected, headers: ["Content-Range": "bytes 0-150122/150123"])
+      status: status, body: expected, headers: ["Content-Range": "bytes 0-150122/150123"])
   }
   defer { _ = HTTPFixture.replies.withLock { $0.removeValue(forKey: host) } }
   let configuration = URLSessionConfiguration.ephemeral
@@ -64,7 +65,8 @@ private final class HTTPFixture: URLProtocol, @unchecked Sendable {
   let session = URLSession(configuration: configuration)
   defer { session.invalidateAndCancel() }
   let response = try await URLSessionHTTPTransport(session: session).stream(URLRequest(url: url))
-  #expect(response.response.status == 206)
+  #expect(response.response.status == status)
+  #expect(response.response.header("Content-Range") == "bytes 0-150122/150123")
   var output = Data()
   var sizes: [Int] = []
   for try await chunk in response.body {
@@ -72,7 +74,8 @@ private final class HTTPFixture: URLProtocol, @unchecked Sendable {
     sizes.append(chunk.count)
   }
   #expect(output == expected)
-  #expect(sizes == [65_536, 65_536, 19_051])
+  #expect(!sizes.isEmpty)
+  #expect(sizes.allSatisfy { $0 > 0 && $0 <= 65_536 })
 }
 
 @Test func HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() throws {

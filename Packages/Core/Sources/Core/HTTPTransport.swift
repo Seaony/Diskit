@@ -27,10 +27,17 @@ public struct HTTPStreamResponse: Sendable {
 
 public protocol HTTPTransport: Sendable {
   func send(_ request: URLRequest) async throws -> HTTPResponse
+  func upload(_ request: URLRequest) async throws -> HTTPResponse
   func stream(_ request: URLRequest) async throws -> HTTPStreamResponse
 }
 
 extension HTTPTransport {
+  public func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    var request = request
+    request.timeoutInterval = RemoteTimeout.transferIdle
+    return try await send(request)
+  }
+
   public func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
     let response = try await send(request)
     return HTTPStreamResponse(
@@ -48,7 +55,7 @@ public final class URLSessionHTTPTransport: HTTPTransport {
   public init(cookieDomain: String? = nil) {
     redirectDelegate = HTTPRedirectDelegate(cookieDomain: cookieDomain)
     let configuration = URLSessionConfiguration.ephemeral
-    configuration.timeoutIntervalForRequest = 60
+    configuration.timeoutIntervalForRequest = RemoteTimeout.cloudRequest
     configuration.httpCookieStorage = nil
     configuration.httpShouldSetCookies = false
     configuration.urlCache = nil
@@ -59,73 +66,47 @@ public final class URLSessionHTTPTransport: HTTPTransport {
     redirectDelegate = HTTPRedirectDelegate(cookieDomain: cookieDomain)
   }
   public func send(_ request: URLRequest) async throws -> HTTPResponse {
-    let (data, response) = try await session.data(for: request, delegate: redirectDelegate)
-    return try Self.response(response, data: data)
+    try await perform(
+      request, deadline: HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest)),
+      upload: false)
+  }
+  public func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    try await perform(
+      request, deadline: HTTPProgressDeadline(interval: .seconds(RemoteTimeout.transferIdle)),
+      upload: true)
+  }
+  func perform(
+    _ original: URLRequest, deadline: HTTPProgressDeadline, upload: Bool
+  ) async throws -> HTTPResponse {
+    var request = original
+    request.timeoutInterval = upload ? RemoteTimeout.transferIdle : RemoteTimeout.cloudRequest
+    let session = session
+    let delegate = upload
+      ? HTTPRedirectDelegate(cookieDomain: redirectDelegate.cookieDomain, progress: { deadline.recordProgress() })
+      : redirectDelegate
+    return try await deadline.run { [request] in
+      let (data, response) = try await session.data(for: request, delegate: delegate)
+      return try Self.response(response, data: data)
+    }
   }
   public func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
-    var request = request
-    request.timeoutInterval = 60
-    let session = session
-    let redirectDelegate = redirectDelegate
-    let (bytes, response) = try await withThrowingTaskGroup(
-      of: (URLSession.AsyncBytes, URLResponse).self
-    ) { group in
-      group.addTask { [request] in try await session.bytes(for: request, delegate: redirectDelegate)
-      }
-      group.addTask {
-        try await Task.sleep(for: .seconds(30))
-        throw URLError(.timedOut)
-      }
-      defer { group.cancelAll() }
-      guard let value = try await group.next() else { throw URLError(.cancelled) }
-      return value
-    }
-    let metadata = try Self.response(response, data: Data())
-    let cursor = HTTPByteCursor(bytes)
-    return HTTPStreamResponse(
-      response: metadata, body: AsyncThrowingStream(unfolding: { try await cursor.next() }))
+    try await stream(request, clock: .continuous)
   }
-  private static func response(_ response: URLResponse, data: Data) throws -> HTTPResponse {
+  func stream(_ original: URLRequest, clock: DeadlineClock) async throws -> HTTPStreamResponse {
+    var request = original
+    request.timeoutInterval = RemoteTimeout.transferIdle
+    let stream = HTTPDataStream(clock: clock)
+    stream.start(session: session, request: request, cookieDomain: redirectDelegate.cookieDomain)
+    let response = try await stream.response()
+    return HTTPStreamResponse(response: response, body: AsyncThrowingStream(unfolding: { try await stream.next() }))
+  }
+  static func response(_ response: URLResponse, data: Data) throws -> HTTPResponse {
     guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
     var headers: [String: String] = [:]
     for (key, value) in http.allHeaderFields {
       headers[String(describing: key)] = String(describing: value)
     }
     return HTTPResponse(status: http.statusCode, headers: headers, body: data, url: http.url)
-  }
-}
-
-private actor HTTPByteCursor {
-  private var iterator: URLSession.AsyncBytes.Iterator?
-  private let task: URLSessionDataTask
-  private var finished = false
-  init(_ bytes: URLSession.AsyncBytes) {
-    task = bytes.task
-    iterator = bytes.makeAsyncIterator()
-  }
-  deinit { task.cancel() }
-  func next() async throws -> Data? {
-    if finished { return nil }
-    guard var current = iterator else { throw URLError(.cannotLoadFromNetwork) }
-    iterator = nil
-    defer { if !finished { iterator = current } }
-    do {
-      try Task.checkCancellation()
-      var chunk = Data()
-      chunk.reserveCapacity(65_536)
-      while chunk.count < 65_536 {
-        guard let byte = try await current.next() else {
-          finished = true
-          break
-        }
-        chunk.append(byte)
-      }
-      return chunk.isEmpty ? nil : chunk
-    } catch {
-      finished = true
-      task.cancel()
-      throw error
-    }
   }
 }
 
@@ -164,7 +145,17 @@ enum HTTPRedirectPolicy {
 
 private final class HTTPRedirectDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   let cookieDomain: String?
-  init(cookieDomain: String?) { self.cookieDomain = cookieDomain }
+  private let progress: (@Sendable () -> Void)?
+  init(cookieDomain: String?, progress: (@Sendable () -> Void)? = nil) {
+    self.cookieDomain = cookieDomain
+    self.progress = progress
+  }
+  func urlSession(
+    _ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64,
+    totalBytesSent: Int64, totalBytesExpectedToSend: Int64
+  ) {
+    if bytesSent > 0 { progress?() }
+  }
   func urlSession(
     _ session: URLSession, task: URLSessionTask,
     willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,

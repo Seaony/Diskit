@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Foundation
 import Synchronization
 import Testing
@@ -117,4 +118,37 @@ func pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete: Bool) async thro
   firstBase.fails.withLock { $0 = false }
   let nested = RecoverableSecretStore(base: first)
   #expect(try nested.read("account") == Data("first".utf8))
+}
+
+@Test func refreshWaitTimeoutPreservesPendingCredentialAndOwnerLock() async throws {
+  let base = FailingSecretStore()
+  let store = RecoverableSecretStore(base: base)
+  let url = store.refreshLockLocation(for: "account")
+  defer { try? FileManager.default.removeItem(at: url) }
+  try base.write(Data("old".utf8), for: "account")
+  let owner = try await store.acquireRefreshLock(for: "account")
+  base.fails.withLock { $0 = true }
+  #expect(throws: CocoaError.self) { try store.write(Data("rotated".utf8), for: "account") }
+  store.releaseRefreshLock(owner, for: "account")
+  let clock = ManualTestClock()
+  let waiting = Task {
+    try await CredentialRefreshLock.acquire(
+      at: url, deadline: clock.now.advanced(by: .seconds(30)), clock: clock.deadlineClock)
+  }
+  defer { waiting.cancel() }
+  await clock.waitForSleepRequests(1)
+  clock.advance(by: .seconds(30))
+  do {
+    let waiter = try await waiting.value
+    waiter.release()
+    Issue.record("等待失败保存的凭据时应超时")
+  } catch let error as POSIXError {
+    #expect(error.code == .ETIMEDOUT)
+  }
+  #expect(try probeLockInChild(url) == 7)
+  #expect(try base.read("account") == Data("old".utf8))
+  base.fails.withLock { $0 = false }
+  #expect(try store.read("account") == Data("rotated".utf8))
+  #expect(try probeLockInChild(url) == 0)
+  try store.delete("account")
 }

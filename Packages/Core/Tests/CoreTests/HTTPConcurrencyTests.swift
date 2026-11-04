@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Foundation
 import Testing
 
@@ -32,19 +33,21 @@ private actor LimitedTransportProbe: HTTPTransport {
   var first: HTTPConcurrencyLimit? = .shared(for: key)
   #expect(first === HTTPConcurrencyLimit.shared(for: key))
   #expect(first !== HTTPConcurrencyLimit.shared(for: key + "other"))
-  weak var released = first
+  weak let released = first
   first = nil
   #expect(released == nil)
 }
 
 @Test func cancelledHTTPWaiterDoesNotConsumeAllowance() async throws {
-  let limit = HTTPConcurrencyLimit()
+  let limit = HTTPConcurrencyLimit(clock: ManualTestClock().deadlineClock)
   for _ in 0..<4 { try await limit.acquire() }
+  let queued = TestEvent()
+  await limit.observeQueue { if $0 == 1 { queued.signal() } }
   let waiter = Task {
     try await limit.acquire()
     await limit.release()
   }
-  await Task.yield()
+  try await queued.wait()
   waiter.cancel()
   await #expect(throws: CancellationError.self) { try await waiter.value }
   for _ in 0..<4 { await limit.release() }
@@ -59,7 +62,8 @@ private actor LimitedTransportProbe: HTTPTransport {
 @Test(arguments: [false, true])
 func httpAllowanceSurvivesResponseAndStreamErrors(stream: Bool) async throws {
   let probe = LimitedTransportProbe(failure: true)
-  let transport = LimitedHTTPTransport(probe, limit: HTTPConcurrencyLimit())
+  let transport = LimitedHTTPTransport(
+    probe, limit: HTTPConcurrencyLimit(clock: ManualTestClock().deadlineClock))
   let request = URLRequest(url: URL(string: "https://example.invalid")!)
   for _ in 0..<8 {
     await #expect(throws: URLError.self) {
@@ -77,23 +81,22 @@ func httpAllowanceSurvivesResponseAndStreamErrors(stream: Bool) async throws {
 @Test(arguments: [false, true])
 func httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard: Bool) async throws {
   let probe = LimitedTransportProbe()
-  let transport = LimitedHTTPTransport(probe, limit: HTTPConcurrencyLimit())
+  let limit = HTTPConcurrencyLimit(clock: ManualTestClock().deadlineClock)
+  let queued = TestEvent()
+  await limit.observeQueue { if $0 == 1 { queued.signal() } }
+  let transport = LimitedHTTPTransport(probe, limit: limit)
   let request = URLRequest(url: URL(string: "https://example.invalid")!)
   var responses: [HTTPStreamResponse] = []
   for _ in 0..<4 { responses.append(try await transport.stream(request)) }
   let fifth = Task { try await transport.send(request) }
   defer { fifth.cancel() }
-  try await Task.sleep(for: .milliseconds(20))
+  try await queued.wait()
   #expect(await probe.calls == 4)
   if discard {
     responses.removeLast()
   } else {
     for try await _ in responses[0].body {}
   }
-  for _ in 0..<200 {
-    if await probe.calls == 5 { break }
-    try await Task.sleep(for: .milliseconds(1))
-  }
-  try #require(await probe.calls == 5)
   #expect(try await fifth.value.status == 200)
+  #expect(await probe.calls == 5)
 }

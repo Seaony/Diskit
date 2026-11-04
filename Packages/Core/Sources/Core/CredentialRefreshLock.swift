@@ -18,6 +18,15 @@ public final class CredentialRefreshLock: Sendable {
   public static func acquire(
     at url: URL, onWait: (@Sendable () throws -> Void)? = nil
   ) async throws -> CredentialRefreshLock {
+    try await acquire(
+      at: url, deadline: .now.advanced(by: .seconds(RemoteTimeout.cloudRequest)), onWait: onWait)
+  }
+
+  static func acquire(
+    at url: URL, deadline: ContinuousClock.Instant,
+    clock: DeadlineClock = .continuous,
+    onWait: (@Sendable () throws -> Void)? = nil
+  ) async throws -> CredentialRefreshLock {
     try Task.checkCancellation()
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
@@ -26,15 +35,19 @@ public final class CredentialRefreshLock: Sendable {
     guard fd >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
     let lease = CredentialRefreshLock(descriptor: fd)
     do {
-      while flock(fd, LOCK_EX | LOCK_NB) != 0 {
+      while true {
+        try Task.checkCancellation()
+        guard clock.now() < deadline else { throw POSIXError(.ETIMEDOUT) }
+        if flock(fd, LOCK_EX | LOCK_NB) == 0 { break }
         let code = errno
         guard code == EWOULDBLOCK || code == EINTR else {
           throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
         }
         try onWait?()
-        try await Task.sleep(for: .milliseconds(10))
+        try await clock.sleepUntil(min(deadline, clock.now().advanced(by: .milliseconds(10))))
       }
       try Task.checkCancellation()
+      guard clock.now() < deadline else { throw POSIXError(.ETIMEDOUT) }
       return lease
     } catch {
       lease.release()

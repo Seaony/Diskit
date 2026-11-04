@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Foundation
 import Testing
 
@@ -34,10 +35,16 @@ func probeLockInChild(_ url: URL) throws -> Int32 {
   let url = CredentialRefreshLock.location(directory: directory, namespace: "test", key: "account")
   let lease = try await CredentialRefreshLock.acquire(at: url)
   defer { lease.release() }
-  let waiting = Task { try await CredentialRefreshLock.acquire(at: url) }
+  let clock = ManualTestClock()
+  let waiting = Task {
+    try await CredentialRefreshLock.acquire(
+      at: url, deadline: clock.now.advanced(by: .seconds(30)), clock: clock.deadlineClock)
+  }
+  await clock.waitForSleepRequests(1)
   waiting.cancel()
   await #expect(throws: CancellationError.self) { _ = try await waiting.value }
   #expect(try probeLockInChild(url) == 7)
+  #expect(clock.pendingSleepCount == 0)
 }
 
 @Test func credentialRefreshLockRejectsSymlink() async throws {
@@ -67,4 +74,63 @@ func probeLockInChild(_ url: URL) throws -> Int32 {
   #expect(
     login.refreshLockLocation(for: "account")
       != LoginKeychainStore(service: "other.service").refreshLockLocation(for: "account"))
+}
+
+@Test func credentialRefreshWaitStopsAtDeadline() async throws {
+  let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let url = directory.appending(path: "account.lock")
+  let owner = try await CredentialRefreshLock.acquire(at: url)
+  defer { owner.release() }
+  let clock = ManualTestClock()
+  let waitingTask = Task {
+    try await CredentialRefreshLock.acquire(
+      at: url, deadline: clock.now.advanced(by: .seconds(30)), clock: clock.deadlineClock)
+  }
+  defer { waitingTask.cancel() }
+  await clock.waitForSleepRequests(1)
+  clock.advance(by: .seconds(30))
+  do {
+    let waiting = try await waitingTask.value
+    waiting.release()
+    Issue.record("等待超过截止时间仍获得了刷新锁")
+  } catch let error as POSIXError {
+    #expect(error.code == .ETIMEDOUT)
+    #expect(try probeLockInChild(url) == 7)
+  }
+}
+
+@Test func expiredRefreshDeadlineCannotAcquireFreeLock() async throws {
+  let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let url = directory.appending(path: "account.lock")
+  let clock = ManualTestClock()
+  do {
+    let lease = try await CredentialRefreshLock.acquire(
+      at: url, deadline: clock.now.advanced(by: .seconds(-1)), clock: clock.deadlineClock)
+    lease.release()
+    Issue.record("已过期的请求不应取得刷新锁")
+  } catch let error as POSIXError {
+    #expect(error.code == .ETIMEDOUT)
+  }
+}
+
+@Test func refreshLockReleasedBeforeDeadlineCanBeReacquired() async throws {
+  let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let url = directory.appending(path: "account.lock")
+  let owner = try await CredentialRefreshLock.acquire(at: url)
+  defer { owner.release() }
+  let clock = ManualTestClock()
+  let waiting = Task {
+    try await CredentialRefreshLock.acquire(
+      at: url, deadline: clock.now.advanced(by: .seconds(30)), clock: clock.deadlineClock)
+  }
+  defer { waiting.cancel() }
+  await clock.waitForSleepRequests(1)
+  owner.release()
+  clock.advance(by: .milliseconds(10))
+  let next = try await waiting.value
+  defer { next.release() }
+  #expect(try probeLockInChild(url) == 7)
 }

@@ -6,8 +6,16 @@ public actor HTTPConcurrencyLimit {
   private static let sharedLimits = Mutex<[String: WeakLimit]>([:])
   private var active = 0
   private var waiting: [(UUID, CheckedContinuation<Void, Error>)] = []
+  private let clock: DeadlineClock
+  private var queueObserver: (@Sendable (Int) -> Void)?
 
-  public init() {}
+  public init() { clock = .continuous }
+  init(clock: DeadlineClock) { self.clock = clock }
+
+  func observeQueue(_ observer: @escaping @Sendable (Int) -> Void) {
+    queueObserver = observer
+    observer(waiting.count)
+  }
 
   public static func shared(for account: String) -> HTTPConcurrencyLimit {
     sharedLimits.withLock { limits in
@@ -19,13 +27,23 @@ public actor HTTPConcurrencyLimit {
     }
   }
 
-  func acquire() async throws {
+  func acquire(
+    deadline requestedDeadline: ContinuousClock.Instant? = nil
+  ) async throws {
+    let deadline =
+      requestedDeadline ?? clock.now().advanced(by: .seconds(RemoteTimeout.cloudRequest))
     try Task.checkCancellation()
+    guard clock.now() < deadline else { throw URLError(.timedOut) }
     if active < 4 {
       active += 1
       return
     }
     let id = UUID()
+    let timeout = Task {
+      do { try await clock.sleepUntil(deadline) } catch { return }
+      expire(id)
+    }
+    defer { timeout.cancel() }
     try await withTaskCancellationHandler {
       try await withCheckedThrowingContinuation {
         (continuation: CheckedContinuation<Void, Error>) in
@@ -33,6 +51,7 @@ public actor HTTPConcurrencyLimit {
           continuation.resume(throwing: CancellationError())
         } else {
           waiting.append((id, continuation))
+          queueObserver?(waiting.count)
         }
       }
     } onCancel: {
@@ -42,15 +61,27 @@ public actor HTTPConcurrencyLimit {
       release()
       throw CancellationError()
     }
+    if clock.now() >= deadline {
+      release()
+      throw URLError(.timedOut)
+    }
+  }
+
+  private func expire(_ id: UUID) {
+    guard let index = waiting.firstIndex(where: { $0.0 == id }) else { return }
+    waiting.remove(at: index).1.resume(throwing: URLError(.timedOut))
+    queueObserver?(waiting.count)
   }
 
   private func cancel(_ id: UUID) {
     guard let index = waiting.firstIndex(where: { $0.0 == id }) else { return }
     waiting.remove(at: index).1.resume(throwing: CancellationError())
+    queueObserver?(waiting.count)
   }
 
   func release() {
     if waiting.isEmpty { active -= 1 } else { waiting.removeFirst().1.resume() }
+    queueObserver?(waiting.count)
   }
 }
 
@@ -85,6 +116,19 @@ public struct LimitedHTTPTransport: HTTPTransport {
       return HTTPStreamResponse(
         response: response.response,
         body: AsyncThrowingStream(unfolding: { try await cursor.next() }))
+    } catch {
+      await limit.release()
+      throw error
+    }
+  }
+
+  public func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    try await limit.acquire()
+    do {
+      try Task.checkCancellation()
+      let response = try await base.upload(request)
+      await limit.release()
+      return response
     } catch {
       await limit.release()
       throw error
