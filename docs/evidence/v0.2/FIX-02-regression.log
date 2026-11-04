@@ -1,0 +1,20 @@
+修复前：五项测试中的四项失败
+􀢄  Test dropboxProfileDecodesDocumentedDisplayName() recorded an issue at DropboxRequestTests.swift:64:2: Caught error: DecodingError.keyNotFound: Key 'displayName' not found in keyed decoding container. Path: name. Debug description: No value associated with key CodingKeys(stringValue: "displayName", intValue: nil) ("displayName").
+􀢄  Test dropboxProfileDecodesDocumentedDisplayName() failed after 0.003 seconds with 1 issue.
+􀢄  Test dropboxContentHeadersRoundTripUnicodeAndDEL() recorded an issue at DropboxRequestTests.swift:99:2: Caught error: .protocolError
+􀢄  Test dropboxContentHeadersRoundTripUnicodeAndDEL() failed after 0.003 seconds with 1 issue.
+􀢄  Test dropboxRootUsesEmptyPath() recorded an issue at DropboxRequestTests.swift:70:2: Caught error: .http(400)
+􀢄  Test dropboxMissingDestinationAllowsMove() recorded an issue at DropboxRequestTests.swift:76:2: Caught error: .posix(5)
+􀢄  Test dropboxRootUsesEmptyPath() failed after 0.003 seconds with 1 issue.
+􀢄  Test dropboxMissingDestinationAllowsMove() failed after 0.003 seconds with 1 issue.
+􁁛  Test dropboxUnknownLookupFailureNeverMoves() passed after 0.003 seconds.
+􀢄  Test run with 5 tests in 0 suites failed after 0.003 seconds with 4 issues.
+修复后：CloudDrive 全包通过
+􁁛  Test dropboxProfileDecodesDocumentedDisplayName() passed after 0.005 seconds.
+􁁛  Test dropboxUnknownLookupFailureNeverMoves() passed after 0.005 seconds.
+􁁛  Test dropboxMissingDestinationAllowsMove() passed after 0.005 seconds.
+􁁛  Test dropboxRootUsesEmptyPath() passed after 0.005 seconds.
+􁁛  Test dropboxFollowsCursorAndRejectsMissingRange() passed after 0.005 seconds.
+􁁛  Test dropboxContentHeadersRoundTripUnicodeAndDEL() passed after 0.006 seconds.
+􁁛  Test dropboxUploadSessionHandlesLastPartialChunk() passed after 0.009 seconds.
+􁁛  Test run with 42 tests in 0 suites passed after 1.067 seconds.

@@ -257,11 +257,15 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
   private func contentRequest(endpoint: String, argument: [String: Any]) -> URLRequest {
     var request = URLRequest(url: URL(string: endpoint)!, timeoutInterval: 60)
     let data = try! JSONSerialization.data(withJSONObject: argument)
-    request.setValue(String(decoding: data, as: UTF8.self), forHTTPHeaderField: "Dropbox-API-Arg")
+    // 请求头只保留 ASCII，表情按 UTF-16 代理对转义，避免文件名损坏。
+    let header = String(decoding: data, as: UTF8.self).utf16.map { unit in
+      unit < 127 ? String(UnicodeScalar(unit)!) : String(format: "\\u%04x", unit)
+    }.joined()
+    request.setValue(header, forHTTPHeaderField: "Dropbox-API-Arg")
     return request
   }
 
-  private func dropboxPath(_ path: RemotePath) -> String { path.value }
+  private func dropboxPath(_ path: RemotePath) -> String { path.value == "/" ? "" : path.value }
   private func parent(_ path: RemotePath) -> RemotePath {
     let parts = path.value.split(separator: "/").dropLast()
     return try! RemotePath(parts.isEmpty ? "/" : "/" + parts.joined(separator: "/"))
@@ -282,6 +286,15 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
   private func check(_ response: HTTPResponse, allowing: Set<Int> = [200]) throws {
     if allowing.contains(response.status) { return }
     if response.status == 401 { throw OAuthDriveError.loginRequired }
+    if response.status == 409,
+      let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+      let error = object["error"] as? [String: Any],
+      let tag = error[".tag"] as? String,
+      ["path", "from_lookup", "to_lookup"].contains(tag),
+      let lookup = error[tag] as? [String: Any], lookup[".tag"] as? String == "not_found"
+    {
+      throw RemoteError.posix(ENOENT)
+    }
     throw CloudDriveSupport.mapHTTP(response) ?? OAuthDriveError.invalidResponse
   }
 }
@@ -306,7 +319,10 @@ private struct DropboxSpace: Decodable {
 }
 
 private struct DropboxProfile: Decodable {
-  struct Name: Decodable { let displayName: String }
+  struct Name: Decodable {
+    let displayName: String
+    enum CodingKeys: String, CodingKey { case displayName = "display_name" }
+  }
   let accountID: String
   let name: Name
   let profilePhotoURL: String?

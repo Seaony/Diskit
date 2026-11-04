@@ -68,3 +68,12 @@
 - 依据：[Google about.get](https://developers.google.com/workspace/drive/api/reference/rest/v3/about/get) 与 [About 结构](https://developers.google.com/workspace/drive/api/reference/rest/v3/about)。未登录或连接真实账号。无限容量未给 limit 的显示问题仍归审查 1C 容量条目处理，本项不宣称 Google 全流程验收完成。
 
 - FIX-01 完整门禁通过：应用逻辑 9 项、包测试 246 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-01-gates.log`。
+
+## FIX-02：Dropbox 昵称、路径和请求头
+
+- 修复（审查 1C 严重第 3–6 条）：`Packages/CloudDrive/Sources/CloudDrive/DropboxProvider.swift:322` 显式解码 `display_name`；`:268` 将根目录转换为空字符串；`:286` 解析结构化 `path/not_found` 并映射 ENOENT；`:257` 对内容上传和下载的请求头统一转义 DEL 与全部非 ASCII UTF-16 单元，保留表情代理对。
+- 先失败后修复：`dropboxProfileDecodesDocumentedDisplayName`、`dropboxRootUsesEmptyPath`、`dropboxMissingDestinationAllowsMove`、`dropboxContentHeadersRoundTripUnicodeAndDEL` 分别失败于缺失字段、400、EIO、非法头，修复后均通过；`dropboxUnknownLookupFailureNeverMoves` 从始至终确认未知错误不能被当成不存在。证据：`Packages/CloudDrive/Tests/CloudDriveTests/DropboxRequestTests.swift:77` 起五项测试、`docs/evidence/v0.2/FIX-02-regression.log`。
+- 审查指出的旧测试需要澄清：`OfficialDriveProvidersTests.swift:593` 给的是 `{"error":{}}`，不是明确的 `path/not_found`；保留其 EIO 断言可防止未知错误触发写操作。新测试补上官方结构的“目标不存在后成功移动”路径，没有把所有 409 都当成不存在。
+- 依据：[官方账号结构](https://github.com/dropbox/dropbox-api-spec/blob/main/users.stone)、[官方文件接口结构](https://github.com/dropbox/dropbox-api-spec/blob/main/files.stone)、[请求头 JSON 编码要求](https://docs.dropboxapi.com/dropbox-api/docs/technical-reference/json-encoding)。只使用本地替身，真实账号授权、文件操作和回收站结果仍待用户验收。
+
+- FIX-02 完整门禁通过：应用逻辑 9 项、包测试 251 项；发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-02-gates.log`。
