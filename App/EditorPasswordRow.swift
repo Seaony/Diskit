@@ -22,7 +22,7 @@ struct EditorPasswordRow: View {
             editor.passwordVisible.toggle()
           } label: {
             Image(systemName: editor.passwordVisible ? "eye.slash" : "eye")
-          }.buttonStyle(.plain)
+          }.buttonStyle(.plain).pointerStyle(.link)
             .help(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
             .accessibilityLabel(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
         }

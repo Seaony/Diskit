@@ -35,23 +35,25 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
   }
 }
 
+// 普通外观按 WCAG AA（正文 4.5:1），增强对比度外观（下标 2、3）按 AAA（7:1）。
+// 强调色当文字只用于选中项名称和链接，普通外观按 3:1。
 @Test func everyThemeTextPairMeetsContrastInAllAppearances() throws {
-  var pairs: [(String, String, Double)] = []
-  for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill"] {
-    pairs.append(("PrimaryText", background, 7))
+  var pairs: [(String, String, Double, Double)] = []
+  for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill", "Field"] {
+    pairs.append(("PrimaryText", background, 4.5, 7))
+    pairs.append(("SecondaryText", background, 4.5, 7))
   }
-  for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill"] {
-    pairs.append(("SecondaryText", background, 7))
+  for background in ["Background", "Surface", "Hover", "ErrorBackground", "ErrorHover"] {
+    pairs.append(("Error", background, 4.5, 7))
   }
-  for background in ["Background", "Surface", "Hover", "Pressed"] {
-    pairs.append(("Error", background, 7))
-    pairs.append(("Warning", background, 7))
+  for background in ["Background", "Surface", "Hover", "WarningBackground", "WarningHover"] {
+    pairs.append(("Warning", background, 4.5, 7))
   }
-  pairs += [("Error", "ErrorBackground", 7), ("Error", "Surface", 7), ("Warning", "WarningBackground", 7), ("Warning", "Surface", 7), ("Accent", "Background", 7), ("Accent", "Surface", 7), ("DisabledText", "DisabledSurface", 7)]
-  for background in ["Accent", "ActionHover", "ActionPressed"] { pairs.append(("ActionText", background, 4.5)) }
-  for (foreground, background, minimum) in pairs {
-    for (text, surface) in zip(try contrastVariants(foreground), try contrastVariants(background)) {
-      #expect(text.ratio(to: surface) >= minimum, "\(foreground) / \(background)")
+  pairs += [("Accent", "Background", 3, 4.5), ("Accent", "Surface", 3, 4.5), ("Accent", "Selection", 3, 4.5), ("DisabledText", "DisabledSurface", 4.5, 7)]
+  for background in ["Accent", "ActionHover", "ActionPressed"] { pairs.append(("ActionText", background, 4.5, 4.5)) }
+  for (foreground, background, normal, high) in pairs {
+    for (index, (text, surface)) in zip(try contrastVariants(foreground), try contrastVariants(background)).enumerated() {
+      #expect(text.ratio(to: surface) >= (index >= 2 ? high : normal), "\(foreground) / \(background) #\(index)")
     }
   }
 }

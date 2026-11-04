@@ -34,129 +34,6 @@
         }
       }
     },
-    "%d 个位置": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d location"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d locations"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个位置"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个位置"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%d 个已挂载": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d mounted location"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d mounted locations"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个已挂载"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个已挂载"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%d 个需要处理": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d location needs attention"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d locations need attention"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个需要处理"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%d 个需要处理"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "115 网盘": {
       "extractionState": "manual",
       "localizations": {
@@ -3439,22 +3316,6 @@
         }
       }
     },
-    "我的位置": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My Locations"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我的位置"
-          }
-        }
-      }
-    },
     "我的安卓手机": {
       "extractionState": "manual",
       "localizations": {
@@ -3836,22 +3697,6 @@
         }
       }
     },
-    "插上手机、打开无线调试，或添加网络共享和网盘": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect a phone, enable Wireless Debugging, or add a network share or cloud drive."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "插上手机、打开无线调试，或添加网络共享和网盘"
-          }
-        }
-      }
-    },
     "搜索类型或问题": {
       "localizations": {
         "en": {
@@ -4044,22 +3889,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法读取位置列表"
-          }
-        }
-      }
-    },
-    "无法连接": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn’t Connect"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法连接"
           }
         }
       }
@@ -4405,22 +4234,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "构建 %@"
-          }
-        }
-      }
-    },
-    "查看错误详情": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "View Error Details"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "查看错误详情"
           }
         }
       }
@@ -5043,23 +4856,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "添加位置后点击登录，在服务商自己的页面选择账号并完成授权。"
-          }
-        }
-      }
-    },
-    "添加手机、电脑、相机或网盘位置": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a phone, computer, camera, or cloud location"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加手机、电脑、相机或网盘位置"
           }
         }
       }
@@ -6920,23 +6716,6 @@
         }
       }
     },
-    "还没有保存的位置": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No saved locations"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "还没有保存的位置"
-          }
-        }
-      }
-    },
     "还没有可用的更新信息": {
       "localizations": {
         "en": {
@@ -8065,23 +7844,6 @@
         }
       }
     },
-    "这个位置只能读取": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This location is read-only"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这个位置只能读取"
-          }
-        }
-      }
-    },
     "对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。": {
       "localizations": {
         "en": {
@@ -8115,53 +7877,172 @@
         }
       }
     },
-    "点按：%@": {
+    "%@ 可用": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click: %@"
+            "value": "%@ available"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点按：%@"
+            "value": "%@ 可用"
           }
         }
       }
     },
-    "点按在 Finder 中打开": {
+    "出错": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click to open in Finder"
+            "value": "Error"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点按在 Finder 中打开"
+            "value": "出错"
           }
         }
       }
     },
-    "拖动图标调整顺序": {
+    "列表": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Drag the icon to reorder"
+            "value": "List"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "拖动图标调整顺序"
+            "value": "列表"
+          }
+        }
+      }
+    },
+    "卡片": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cards"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卡片"
+          }
+        }
+      }
+    },
+    "复制错误信息": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy Error Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制错误信息"
+          }
+        }
+      }
+    },
+    "实验": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "实验"
+          }
+        }
+      }
+    },
+    "接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect phones, cameras, network shares, or cloud drives, then use them right in Finder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。"
+          }
+        }
+      }
+    },
+    "等待手机授权": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for phone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待手机授权"
+          }
+        }
+      }
+    },
+    "还没有位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Locations Yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有位置"
+          }
+        }
+      }
+    },
+    "重新登录…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In Again…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新登录…"
           }
         }
       }

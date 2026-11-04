@@ -54,6 +54,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
   var body: some Scene {
     MenuBarExtra {
       PanelView(model: model)
+        .background(StatusItemCentering())
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
     } label: {

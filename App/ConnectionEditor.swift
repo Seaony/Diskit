@@ -17,11 +17,15 @@ struct ConnectionEditor: View {
     VStack(spacing: 0) {
       if editor.chosen {
         HStack(spacing: Space.md) {
-          TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 40)
-          Text(editor.draft.kind.title).font(.title3.weight(.semibold))
+          TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 44)
+          VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
+            Text(editor.draft.kind.title).font(.system(size: 17, weight: .semibold))
+            Text(ConnectionTypeCatalog.caption(editor.draft.kind)).font(.system(size: 12))
+              .foregroundStyle(KayoiTheme.secondaryText)
+          }
           Spacer(minLength: 0)
         }
-        .padding(.horizontal, Space.xl).padding(.top, Space.xl)
+        .padding(.horizontal, 28).padding(.top, Space.sm) // grid: ok 设计稿第二步左右 28
         ConnectionFormView(editor: editor).disabled(editor.busy)
       } else {
         ConnectionTypePicker(editor: editor)
@@ -92,7 +96,7 @@ struct ConnectionEditor: View {
         } else {
           Button(L("下一步")) { editor.chooseSelected() }
             .buttonStyle(FlatButtonStyle(prominent: true))
-            .disabled(editor.selectedKind == nil).keyboardShortcut(.defaultAction)
+            .disabled(editor.selectedKind == nil && editor.selectedDiscovery == nil).keyboardShortcut(.defaultAction)
         }
       }.gridProbe("footer-actions", area: "editor-footer")
     }.padding(Space.xl).gridArea("editor-footer", inset: Space.xl)

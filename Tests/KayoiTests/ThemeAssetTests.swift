@@ -4,7 +4,7 @@ import Testing
 @Test func themeAssetsHaveOpaqueLightDarkAndHighContrastVariants() throws {
   let root = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
     .deletingLastPathComponent().appending(path: "App/Assets.xcassets")
-  for name in ["Background", "Surface", "Border", "ControlFill", "Accent", "Selection", "ActionText"] {
+  for name in ["Background", "Surface", "Border", "ControlFill", "Field", "TertiaryText", "Accent", "Selection", "ActionText", "ErrorHover", "WarningHover", "StatusGreen", "StatusBlue", "StatusAmber", "StatusRed", "StatusGrey"] {
     let data = try Data(contentsOf: root.appending(path: "\(name).colorset/Contents.json"))
     let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     let colors = try #require(object["colors"] as? [[String: Any]])

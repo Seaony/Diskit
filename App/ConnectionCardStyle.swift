@@ -8,24 +8,17 @@ struct ConnectionCardStyle: ButtonStyle {
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   func makeBody(configuration: Configuration) -> some View {
-    configuration.label
+    let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
+    return configuration.label
       .background(
-        configuration.isPressed ? KayoiTheme.pressed : selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
+        configuration.isPressed ? KayoiTheme.pressed : selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape
       )
-      // 选中靠底色区分，只有键盘焦点才画焦点环
+      // 0.5pt 淡细边；只有键盘焦点才画焦点环
       .overlay {
-        if focused {
-          RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-            .strokeBorder(KayoiTheme.focus, lineWidth: 2)
-        }
+        shape.strokeBorder(focused ? KayoiTheme.focus : KayoiTheme.border, lineWidth: focused ? 2 : 0.5)
       }
-      .overlay(alignment: .topTrailing) {
-        if selected {
-          Image(systemName: "checkmark.circle.fill").foregroundStyle(KayoiTheme.accent)
-            .padding(Space.md).accessibilityHidden(true)
-        }
-      }
-      .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+      .contentShape(shape)
+      .pointerStyle(.link)
       .offset(y: configuration.isPressed && !reduceMotion ? 1 : 0) // grid: ok 按下或拖动时的短暂位移
       .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
       .onHover { hovering = $0 }
@@ -79,17 +72,6 @@ extension ConnectionKind {
       L("实验性")
     case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox:
       L("官方授权")
-    }
-  }
-  var sortOrder: Int {
-    switch self {
-    case .androidUSB, .androidWiFi: 0
-    case .smb, .webdav, .webdavHTTPS, .nfs: 1
-    case .ricohGR, .cameraUSB: 2
-    case .aliyunDrive, .quark, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-      .dropbox, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
-      3
-    case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2: 4
     }
   }
   var accentColor: Color { iconColor }

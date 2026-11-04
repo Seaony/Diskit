@@ -2,8 +2,6 @@ import SwiftUI
 
 struct FlatButtonStyle: ButtonStyle {
   var prominent = false
-  // 卡片里的小按钮
-  var compact = false
   var focusOverride: Bool? = nil
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.isFocused) private var isFocused
@@ -12,19 +10,20 @@ struct FlatButtonStyle: ButtonStyle {
 
   func makeBody(configuration: Configuration) -> some View {
     let focused = ControlFocus.isFocused(inherited: isFocused, explicit: focusOverride)
-    let shape = RoundedRectangle(cornerRadius: compact ? Radius.tile : Radius.control, style: .continuous)
+    let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
     return configuration.label
-      .font(compact ? .subheadline.weight(.medium) : .body.weight(.medium))
-      .padding(.horizontal, compact ? Space.sm : Space.md)
-      .padding(.vertical, compact ? 3 : Space.xs) // grid: ok 小按钮高度 22
+      .font(.system(size: 13, weight: .medium))
+      .padding(.horizontal, 14) // grid: ok 设计稿按钮左右 14
+      .frame(minHeight: 28)
       .foregroundStyle(foreground(configuration))
       .background(background(configuration), in: shape)
       // 悬停和按下只在底色上叠一层浅色，不加描边
       .overlay { shape.fill(KayoiTheme.primaryText.opacity(overlayOpacity(configuration))) }
       .overlay {
-        shape.strokeBorder(focused ? KayoiTheme.focus : prominent ? .clear : KayoiTheme.border, lineWidth: focused ? 2 : 0.5)
+        shape.strokeBorder(focused ? KayoiTheme.focus : .clear, lineWidth: 2)
       }
       .contentShape(shape)
+      .pointerStyle(isEnabled ? .link : nil)
       .offset(y: configuration.isPressed && isEnabled && !reduceMotion ? 1 : 0) // grid: ok 按下或拖动时的短暂位移
       .onHover { hovering = $0 }
       .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)

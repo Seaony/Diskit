@@ -20,13 +20,6 @@ struct MenuBarStatusIcon: View {
     Image(systemName: status.symbol(pulse: pulse))
       .renderingMode(.template)
       .frame(width: 20, height: 20)
-      .overlay(alignment: .bottomTrailing) {
-        if status.attention > 0 {
-          Circle().fill(KayoiTheme.warning).frame(width: 4, height: 4)
-        } else if status.mounted > 0 {
-          Circle().fill(KayoiTheme.accent).frame(width: 4, height: 4)
-        }
-      }
       .transaction { $0.animation = nil }
       .task(id: shouldPulse) {
         if pulse { pulse = false }

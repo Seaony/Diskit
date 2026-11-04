@@ -77,3 +77,42 @@ import Testing
   editor.load()
   #expect(editor.isEditing)
 }
+
+@MainActor @Test func choosingDiscoveredDeviceCarriesItsPrefilledFields() {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let editor = ConnectionEditorModel(model: model)
+  let found = Connection(kind: .smb, name: "客厅 NAS", params: ["host": "nas.local", "bonjourID": "nas"])
+  editor.selectedDiscovery = DiscoveredItem(
+    id: "smb:nas", kind: .smb, title: "客厅 NAS", subtitle: "局域网", connection: found, pairingSelection: nil)
+  #expect(editor.selectedKind == nil)
+  editor.chooseSelected()
+  #expect(editor.chosen)
+  #expect(editor.draft.kind == .smb)
+  #expect(editor.draft.name == "客厅 NAS")
+  #expect(editor.draft.params["host"] == "nas.local")
+  #expect(!editor.isEditing)
+}
+
+@MainActor @Test func choosingKindAfterDiscoveredDeviceReplacesIt() {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let editor = ConnectionEditorModel(model: model)
+  let found = Connection(kind: .smb, name: "客厅 NAS", params: ["host": "nas.local"])
+  editor.selectedDiscovery = DiscoveredItem(
+    id: "smb:nas", kind: .smb, title: "客厅 NAS", subtitle: "局域网", connection: found, pairingSelection: nil)
+  editor.moveSelection(1)
+  #expect(editor.selectedDiscovery == nil)
+  editor.selectedKind = .webdav
+  editor.chooseSelected()
+  #expect(editor.draft.kind == .webdavHTTPS)
+  #expect(editor.draft.params["host"] == nil)
+}
+
+@MainActor @Test func choosingDiscoveredDeviceDropsPreviousGuestLogin() {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let editor = ConnectionEditorModel(model: model)
+  editor.choose(.smb)
+  editor.guestLogin = true
+  editor.showTypes()
+  editor.chooseDiscovered(Connection(kind: .smb, name: "书房 NAS", params: ["host": "b.local"]), pairing: nil)
+  #expect(!editor.guestLogin)
+}

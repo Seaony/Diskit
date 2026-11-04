@@ -6,9 +6,20 @@ struct ConnectionTypePicker: View {
   @FocusState private var focus: Focus?
   private enum Focus { case search, grid }
   private var groups: [ConnectionTypeGroup] { ConnectionTypeCatalog.matching(editor.search) }
+  private var discovered: [DiscoveredItem] {
+    let query = editor.search.trimmingCharacters(in: .whitespaces).lowercased()
+    return editor.model.discoveredItems.filter {
+      query.isEmpty || ($0.title + " " + $0.subtitle + " " + $0.kind.title).lowercased().contains(query)
+    }
+  }
+
+  private func groupTitle(_ title: String) -> some View {
+    Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(KayoiTheme.secondaryText)
+      .padding(.horizontal, Space.xs)
+  }
 
   var body: some View {
-    VStack(spacing: Space.lg) {
+    VStack(spacing: 0) {
       HStack(spacing: Space.sm) {
         Image(systemName: "magnifyingglass").foregroundStyle(KayoiTheme.secondaryText)
           .accessibilityHidden(true)
@@ -27,30 +38,54 @@ struct ConnectionTypePicker: View {
           } label: {
             Image(systemName: "xmark.circle.fill")
           }
-          .buttonStyle(.plain).help(L("清除搜索")).accessibilityLabel(L("清除搜索"))
+          .buttonStyle(.plain).pointerStyle(.link).help(L("清除搜索")).accessibilityLabel(L("清除搜索"))
         }
       }
-      .padding(Space.sm)
+      .padding(.horizontal, 10).frame(height: 32) // grid: ok 设计稿搜索框高 32
       .background(
-        KayoiTheme.controlFill, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+        KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
       )
-      .padding(.horizontal, Space.xl).padding(.top, Space.xl)
+      .padding(.horizontal, Space.xxl).padding(.top, Space.xs)
       ScrollView {
-        VStack(alignment: .leading, spacing: Space.xl) {
+        VStack(alignment: .leading, spacing: Space.lg) {
+          // 已发现的设备排在最前，选中后第二步带上预填信息
+          if !discovered.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+              groupTitle(L("已发现"))
+              LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 4), spacing: Space.sm) {
+                ForEach(discovered) { item in
+                  Button {
+                    editor.selectedDiscovery = item
+                  } label: {
+                    ConnectionTypeTile(kind: item.kind, title: item.title, selected: editor.selectedDiscovery?.id == item.id)
+                  }
+                  .buttonStyle(ConnectionCardStyle(selected: editor.selectedDiscovery?.id == item.id))
+                  .simultaneousGesture(TapGesture(count: 2).onEnded {
+                    editor.selectedDiscovery = item
+                    editor.chooseSelected()
+                  })
+                  .disabled(item.connection == nil)
+                  .help(item.title + " · " + item.subtitle)
+                  .accessibilityLabel(LF("添加“%@”", item.title)).accessibilityValue(item.subtitle)
+                  .accessibilityAddTraits(editor.selectedDiscovery?.id == item.id ? .isSelected : [])
+                }
+              }
+            }
+          }
           ForEach(groups) { group in
             VStack(alignment: .leading, spacing: Space.sm) {
-              Text(group.title).font(.subheadline.weight(.semibold)).foregroundStyle(
-                KayoiTheme.secondaryText)
+              groupTitle(group.title)
               LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 4),
                 spacing: Space.sm
               ) {
                 ForEach(group.kinds, id: \.self) { kind in
                   Button {
+                    editor.selectedDiscovery = nil
                     editor.selectedKind = kind
                     focus = .grid
                   } label: {
-                    ConnectionTypeTile(kind: kind, marksExperimental: group.title != L("实验性网盘"))
+                    ConnectionTypeTile(kind: kind, marksExperimental: group.title == L("实验性网盘"), selected: editor.selectedKind == kind)
                       .gridProbe("type-" + kind.rawValue, area: "editor-types", edge: nil)
                   }
                   .buttonStyle(ConnectionCardStyle(
@@ -66,13 +101,13 @@ struct ConnectionTypePicker: View {
               }
             }
           }
-          if groups.isEmpty {
+          if groups.isEmpty && discovered.isEmpty {
             ContentUnavailableView(
               L("没有匹配的位置类型"), systemImage: "magnifyingglass", description: Text(L("换个关键词试试"))
             )
             .frame(maxWidth: .infinity).padding(.vertical, Space.xl)
           }
-        }.padding(.horizontal, Space.xl).padding(.bottom, Space.xl)
+        }.padding(.horizontal, Space.xxl).padding(.top, 14).padding(.bottom, Space.sm) // grid: ok 设计稿搜索框下 14
           .gridArea("editor-types", inset: Space.xl)
       }
       .focusable().focusEffectDisabled().focused($focus, equals: .grid)
@@ -90,7 +125,10 @@ struct ConnectionTypePicker: View {
         return .handled
       }
     }
-    .onChange(of: editor.search) { _, _ in editor.selectedKind = groups.flatMap(\.kinds).first }
+    .onChange(of: editor.search) { _, _ in
+      editor.selectedDiscovery = nil
+      editor.selectedKind = groups.flatMap(\.kinds).first
+    }
     .task { focus = .search }
   }
 }

@@ -22,3 +22,9 @@ import Testing
   let mounted = MenuBarStatusSummary(states: [.mounted(MountedShare(url: URL(filePath: "/tmp/demo")))])
   #expect(mounted.symbol(pulse: false) == "externaldrive.fill")
 }
+
+@Test func menuBarShowsExclamationBadgeWhenSomethingNeedsAttention() {
+  #expect(MenuBarStatusSummary(states: [.needsLogin]).symbol(pulse: false) == "externaldrive.badge.exclamationmark")
+  let mountedProblem = MenuBarStatusSummary(states: [.failed("x"), .mounted(MountedShare(url: URL(filePath: "/tmp/demo")))])
+  #expect(mountedProblem.symbol(pulse: true) == "externaldrive.fill.badge.exclamationmark")
+}

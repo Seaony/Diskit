@@ -2,8 +2,9 @@ import Core
 import Foundation
 
 enum PanelCopy {
-  static func showsEmptyState(savedCount: Int, discoveredCount: Int) -> Bool {
-    savedCount == 0 && discoveredCount == 0
+  // 面板只列已保存的位置；已发现的设备在添加窗口里。读不到列表时显示错误而不是空状态
+  static func showsEmptyState(savedCount: Int, hasLoadError: Bool) -> Bool {
+    savedCount == 0 && !hasLoadError
   }
 
   static func subtitle(_ state: ConnectionState, kind: ConnectionKind) -> String {
@@ -24,6 +25,32 @@ enum PanelCopy {
     case .mounted(let mount): SpaceSummary.mounted(mount.availableBytes)
     }
   }
+  // 卡片名称下的一行小字：有容量就只写容量，其余写简短状态
+  static func cardCaption(_ state: ConnectionState, kind: ConnectionKind) -> String {
+    if let available = availableBytes(state) { return LF("%@ 可用", ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) }
+    switch state {
+    case .failed: return L("出错")
+    case .awaitingAuthorization: return L("等待手机授权")
+    case .tested: return L("已连接")
+    default: return subtitle(state, kind: kind)
+    }
+  }
+
+  // 列表行的小字：有容量写容量，出错时带上原因
+  static func listCaption(_ state: ConnectionState, kind: ConnectionKind, detail: String?) -> String {
+    if let available = availableBytes(state) { return LF("%@ 可用", ByteCountFormatter.string(fromByteCount: available, countStyle: .file)) }
+    if case .failed = state, let detail { return LF("无法连接：%@", detail) }
+    return subtitle(state, kind: kind)
+  }
+
+  private static func availableBytes(_ state: ConnectionState) -> Int64? {
+    switch state {
+    case .mounted(let mount): mount.availableBytes
+    case .tested(let space): space.available
+    default: nil
+    }
+  }
+
   static func buttonTitle(_ state: ConnectionState, kind: ConnectionKind) -> String {
     switch state {
     case .needsLogin: L("重新登录")

@@ -3,21 +3,24 @@ import SwiftUI
 
 struct ConnectionTypeTile: View {
   let kind: ConnectionKind
-  // 分组标题已写明“实验性”时不再逐个标
-  var marksExperimental = true
+  // 已发现的设备显示设备名，类型显示类型名
+  var title: String? = nil
+  // 实验性网盘分组里右上角标“实验”
+  var marksExperimental = false
+  var selected = false
   var body: some View {
-    VStack(spacing: Space.xs) {
-      TypeIcon(kind: kind, size: 40)
-      Text(kind.title).font(.body.weight(.medium)).lineLimit(1)
+    VStack(spacing: Space.sm) {
+      TypeIcon(kind: kind, size: 34)
+      Text(title ?? kind.title).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+        .foregroundStyle(selected ? KayoiTheme.accent : KayoiTheme.primaryText)
     }
-    .padding(.horizontal, Space.sm)
-    .frame(maxWidth: .infinity).frame(height: 88)
-    .contentShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
+    .padding(.horizontal, 10) // grid: ok 设计稿格子左右 10
+    .frame(maxWidth: .infinity).frame(height: 84)
+    .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     .overlay(alignment: .topTrailing) {
-      if (kind.isExperimental && marksExperimental) || kind == .lanzou {
-        Text(kind == .lanzou ? L("只读") : L("实验性"))
-          .font(.caption2).foregroundStyle(KayoiTheme.secondaryText)
-          .padding(Space.xs).background(KayoiTheme.surface, in: Capsule())
+      if marksExperimental {
+        Text(L("实验")).font(.system(size: 10)).foregroundStyle(KayoiTheme.tertiaryText)
+          .padding(.top, 6).padding(.trailing, Space.sm) // grid: ok 设计稿角标位置
       }
     }
   }
@@ -42,7 +45,7 @@ struct ConnectionTypeTile: View {
 #Preview("类型格子 · 选中 · 浅色") {
   Button {
   } label: {
-    ConnectionTypeTile(kind: .smb)
+    ConnectionTypeTile(kind: .smb, selected: true)
   }.buttonStyle(ConnectionCardStyle(selected: true)).frame(width: 136).padding()
     .preferredColorScheme(.light)
 }
@@ -50,7 +53,7 @@ struct ConnectionTypeTile: View {
 #Preview("类型格子 · 选中 · 深色") {
   Button {
   } label: {
-    ConnectionTypeTile(kind: .smb)
+    ConnectionTypeTile(kind: .quark, marksExperimental: true, selected: true)
   }.buttonStyle(ConnectionCardStyle(selected: true)).frame(width: 136).padding()
     .preferredColorScheme(.dark)
 }

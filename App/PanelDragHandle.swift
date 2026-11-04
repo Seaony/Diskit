@@ -36,32 +36,47 @@ import UniformTypeIdentifiers
 
 struct PanelDragHandle: NSViewRepresentable {
   let id: UUID
-  let name: String
   let source: PanelDraggingSource
   @Binding var draggedID: UUID?
+  var toolTip: String? = nil
+  // 没拖动就松手时弹出的菜单，右键也用它
+  var menu: (() -> NSMenu)? = nil
+  var clicked: () -> Void = {}
 
   func makeNSView(context: Context) -> DragView { DragView() }
   func updateNSView(_ view: DragView, context: Context) {
     view.identifierValue = id
-    view.title = name
     view.source = source
     view.changed = { draggedID = $0 }
+    view.toolTip = toolTip
+    view.menuProvider = menu
+    view.clicked = clicked
   }
 
   final class DragView: NSView {
     var identifierValue = UUID()
-    var title = ""
     var source: PanelDraggingSource?
     var changed: ((UUID?) -> Void)?
+    var menuProvider: (() -> NSMenu)?
+    var clicked: (() -> Void)?
     private var initialPoint: NSPoint?
-    override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
+    override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
+    override func menu(for event: NSEvent) -> NSMenu? {
+      clicked?()
+      return menuProvider?()
+    }
     override func mouseDown(with event: NSEvent) {
       initialPoint = event.locationInWindow
       NSCursor.closedHand.set()
     }
     override func mouseUp(with event: NSEvent) {
+      let wasClick = initialPoint != nil
       initialPoint = nil
-      NSCursor.openHand.set()
+      NSCursor.pointingHand.set()
+      guard wasClick else { return }
+      clicked?()
+      // 菜单从卡片左下角往下弹
+      if let menu = menuProvider?() { menu.popUp(positioning: nil, at: NSPoint(x: 0, y: isFlipped ? bounds.height + 6 : -6), in: self) }
     }
     override func mouseDragged(with event: NSEvent) {
       guard let initialPoint,
@@ -70,15 +85,14 @@ struct PanelDragHandle: NSViewRepresentable {
       else { return }
       self.initialPoint = nil
       let item = NSDraggingItem(pasteboardWriter: identifierValue.uuidString as NSString)
-      let title = self.title
-      let label = NSImage(size: NSSize(width: 240, height: 44), flipped: false) { rect in
-        NSColor.windowBackgroundColor.setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8).fill()
-        (title as NSString).draw(in: rect.insetBy(dx: 12, dy: 12), withAttributes: [.font: NSFont.preferredFont(forTextStyle: .body), .foregroundColor: NSColor.labelColor])
-        return true
+      // 拖动时跟着指针的是卡片本身的截图
+      let frame = convert(bounds, to: host)
+      let image = NSImage(size: frame.size)
+      if let rep = host.bitmapImageRepForCachingDisplay(in: frame) {
+        host.cacheDisplay(in: frame, to: rep)
+        image.addRepresentation(rep)
       }
-      let origin = host.convert(NSPoint.zero, from: self)
-      item.setDraggingFrame(NSRect(origin: origin, size: NSSize(width: 240, height: 44)), contents: label)
+      item.setDraggingFrame(frame, contents: image)
       guard source.prepare(identifierValue, changed: changed) else { return }
       let session = host.beginDraggingSession(with: [item], event: event, source: source)
       session.animatesToStartingPositionsOnCancelOrFail = true

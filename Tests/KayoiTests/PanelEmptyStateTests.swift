@@ -1,11 +1,10 @@
 import Testing
 
-@Test func discoveredLocationsUseCompactAddInsteadOfLargeEmptyState() {
-  #expect(!PanelCopy.showsEmptyState(savedCount: 0, discoveredCount: 5))
+@Test func emptyStateShowsOnlyWhenNoSavedLocations() {
+  #expect(PanelCopy.showsEmptyState(savedCount: 0, hasLoadError: false))
+  #expect(!PanelCopy.showsEmptyState(savedCount: 1, hasLoadError: false))
 }
 
-@Test func largeEmptyStateRequiresBothSavedAndDiscoveredListsToBeEmpty() {
-  #expect(PanelCopy.showsEmptyState(savedCount: 0, discoveredCount: 0))
-  #expect(!PanelCopy.showsEmptyState(savedCount: 1, discoveredCount: 0))
-  #expect(!PanelCopy.showsEmptyState(savedCount: 1, discoveredCount: 5))
+@Test func loadErrorReplacesEmptyState() {
+  #expect(!PanelCopy.showsEmptyState(savedCount: 0, hasLoadError: true))
 }

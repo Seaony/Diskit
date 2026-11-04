@@ -23,16 +23,14 @@ struct ConnectionFormView: View {
               Button {
                 editor.draft.color = name
               } label: {
-                Circle().fill(KayoiTheme.locationColor(name)).frame(width: 24, height: 24)
+                // 选中色用同色外圈标出，不加勾
+                Circle().fill(KayoiTheme.locationColor(name)).frame(width: 18, height: 18)
+                  .padding(3) // grid: ok 色块与外圈间隙
                   .overlay {
-                    if editor.draft.color == name {
-                      Image(systemName: "checkmark").font(.caption.weight(.bold)).foregroundStyle(
-                        KayoiTheme.primaryText
-                      ).padding(Space.xs).background(KayoiTheme.surface, in: Circle())
-                    }
+                    Circle().strokeBorder(editor.draft.color == name ? KayoiTheme.locationColor(name) : .clear, lineWidth: 2)
                   }
-                  .padding(Space.xs).contentShape(Circle())
-              }.buttonStyle(.plain).help(EditorPreparation.colorName(name)).accessibilityLabel(
+                  .contentShape(Circle())
+              }.buttonStyle(.plain).pointerStyle(.link).help(EditorPreparation.colorName(name)).accessibilityLabel(
                 EditorPreparation.colorName(name)
               )
               .accessibilityAddTraits(editor.draft.color == name ? .isSelected : [])

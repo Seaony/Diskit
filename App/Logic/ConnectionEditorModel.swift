@@ -39,7 +39,13 @@ import TianyiDrive
   var saving: Task<Void, Never>?
   var pairingTask: Task<Void, Never>?
   var shareTask: Task<Void, Never>?
-  var selectedKind: ConnectionKind?
+  var selectedKind: ConnectionKind? {
+    didSet { if selectedKind != nil { selectedDiscovery = nil } }
+  }
+  // 第一步选中的“已发现”设备，和 selectedKind 二选一
+  var selectedDiscovery: DiscoveredItem? {
+    didSet { if selectedDiscovery != nil { selectedKind = nil } }
+  }
   var search = ""
   var stage: String?
   var passwordVisible = false
@@ -126,6 +132,10 @@ import TianyiDrive
     return LF("还需要填写：%@", missingFields.map(EditorValidation.label).joined(separator: L("、")))
   }
   func chooseSelected() {
+    if let item = selectedDiscovery, let connection = item.connection {
+      chooseDiscovered(connection, pairing: item.pairingSelection)
+      return
+    }
     if let kind = selectedKind ?? ConnectionTypeCatalog.matching(search).flatMap(\.kinds).first {
       choose(kind)
     }
@@ -187,6 +197,27 @@ import TianyiDrive
     }
     if kind == .androidUSB { autoSelectDevice() }
     applyObjectStorageDefaults(for: kind, previousKind: previousKind)
+    chosen = true
+    error = nil
+    touchedFields.removeAll()
+  }
+
+  // 从“已发现”进入第二步：带上发现时预填的地址、序列号等
+  func chooseDiscovered(_ connection: Connection, pairing: String?) {
+    model.discardUnsavedSessions(for: draft)
+    password = ""
+    shares = []
+    accountSpace = nil
+    manualLogin = false
+    pairingCode = ""
+    model.forceLogin = false
+    // 不沿用上一个位置的访客模式
+    guestLogin = connection.params["guest"] == "true"
+    var discovered = connection
+    discovered.id = draft.id
+    draft = discovered
+    pairingID = pairing ?? ""
+    if discovered.kind == .androidUSB { autoSelectDevice() }
     chosen = true
     error = nil
     touchedFields.removeAll()

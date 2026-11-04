@@ -12,22 +12,6 @@ private struct PanelError: Identifiable {
   let message: String
 }
 
-private struct DiscoveredItem: Identifiable {
-  let id: String
-  let kind: ConnectionKind
-  let title: String
-  let subtitle: String
-  let connection: Connection?
-  let pairingSelection: String?
-}
-
-private struct MergedWirelessDevice {
-  let key: String
-  let pairing: WirelessDevice?
-  let connect: WirelessDevice?
-  var serviceName: String { connect?.name ?? pairing?.name ?? key }
-}
-
 private struct ScrollContentHeightKey: PreferenceKey {
   static let defaultValue: CGFloat = 0
   static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
@@ -45,97 +29,12 @@ struct PanelView: View {
   @State private var dragSource = PanelDraggingSource()
   @State private var dropTargetID: UUID?
   @State private var endDropTargeted = false
-  @State private var addHovering = false
+  @AppStorage("panelLayout") private var layout = PanelLayout.grid.rawValue
   @State private var deleteTarget: Connection?
   @State private var actionError: PanelError?
   @State private var selection = PanelSelection()
   @State private var scrollHeight: CGFloat = 240
   @FocusState private var focusedConnectionID: UUID?
-
-  private var mergedWirelessDevices: [MergedWirelessDevice] {
-    let grouped = Dictionary(grouping: model.wirelessDevices) { device in
-      WirelessSelection.serial(fromGUID: device.name) ?? device.name
-    }
-    return grouped.map { key, devices in
-      MergedWirelessDevice(
-        key: key,
-        pairing: devices.first { $0.type == .pairing },
-        connect: devices.first { $0.type == .connect })
-    }.sorted { $0.key.localizedStandardCompare($1.key) == .orderedAscending }
-  }
-
-  private var discoveredItems: [DiscoveredItem] {
-    var items: [DiscoveredItem] = []
-
-    for camera in model.ricohDevices
-    where !PanelDiscoveryIdentity.isSavedDevice(model.connections.connections, kinds: [.ricohGR, .cameraUSB], id: camera.id, serial: camera.serial, serialIsUnique: model.ricohDevices.filter { $0.serial == camera.serial }.count == 1) {
-      items.append(
-        DiscoveredItem(
-          id: "camera:" + camera.id, kind: .ricohGR, title: camera.name,
-          subtitle: L("USB 相机"),
-          connection: Connection(
-            kind: .ricohGR, name: camera.name, params: ["deviceID": camera.id, "serial": camera.serial]),
-          pairingSelection: nil))
-    }
-
-    for camera in model.cameraUSBDevices
-    where !model.ricohDevices.contains(where: { PanelDiscoveryIdentity.sameCamera(id: camera.id, serial: camera.serial, otherID: $0.id, otherSerial: $0.serial) }) && !PanelDiscoveryIdentity.isSavedDevice(model.connections.connections, kinds: [.ricohGR, .cameraUSB], id: camera.id, serial: camera.serial, serialIsUnique: model.cameraUSBDevices.filter { $0.serial == camera.serial }.count == 1) {
-      items.append(
-        DiscoveredItem(
-          id: "camera-usb:" + camera.id, kind: .cameraUSB, title: camera.name,
-          subtitle: L("USB 相机"),
-          connection: Connection(
-            kind: .cameraUSB, name: camera.name, params: ["deviceID": camera.id, "serial": camera.serial]),
-          pairingSelection: nil))
-    }
-
-    for device in model.usbDevices
-    where !PanelDiscoveryIdentity.isSavedDevice(model.connections.connections, kinds: [.androidUSB], id: device.id, serial: device.serial, serialIsUnique: model.usbDevices.filter { $0.serial == device.serial }.count == 1) {
-      items.append(
-        DiscoveredItem(
-          id: "usb:" + device.id, kind: .androidUSB, title: device.name,
-          subtitle: "USB · " + device.name,
-          connection: Connection(
-            kind: .androidUSB, name: device.name, params: device.connectionParameters(in: model.usbDevices)),
-          pairingSelection: nil))
-    }
-
-    for device in mergedWirelessDevices where !isSaved(device) {
-      let connect = device.connect
-      let pairing = device.pairing
-      let title =
-        WirelessSelection.serial(fromGUID: device.serviceName).map {
-          LF("安卓手机 · %@", $0)
-        }
-        ?? device.serviceName
-      let modes =
-        [pairing == nil ? nil : L("可配对"), connect == nil ? nil : L("可连接")]
-        .compactMap { $0 }.joined(separator: L(" · "))
-      let connection = Connection(
-        kind: .androidWiFi, name: title,
-        params: connect.map { ["guid": $0.name] } ?? [:])
-      items.append(
-        DiscoveredItem(
-          id: "wifi:" + device.key, kind: .androidWiFi, title: title, subtitle: L("Wi‑Fi 无线调试") + " · " + modes,
-          connection: connection, pairingSelection: pairing?.id))
-    }
-
-    for device in model.smbDevices
-    where !PanelDiscoveryIdentity.isSavedSMB(model.connections.connections, id: device.id, host: device.host) {
-      items.append(
-        DiscoveredItem(
-          id: "smb:" + device.id, kind: .smb, title: device.name,
-          subtitle: L("局域网") + " · " + (device.host ?? device.name),
-          connection: Connection(kind: .smb, name: device.name, params: ["bonjourID": device.id].merging(device.host.map { ["host": $0] } ?? [:]) { _, new in new }), pairingSelection: nil))
-    }
-
-    return items.sorted { lhs, rhs in
-      if lhs.kind == rhs.kind {
-        return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
-      }
-      return lhs.kind.sortOrder < rhs.kind.sortOrder
-    }
-  }
 
   private var discoveryErrors: [(message: String, permissionDenied: Bool)] {
     if let error = model.options.demoDiscoveryError {
@@ -150,95 +49,62 @@ struct PanelView: View {
     ].compactMap { $0 }
   }
 
-  private var showsEmptyState: Bool {
-    PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, discoveredCount: discoveredItems.count)
-  }
-
-  private var attentionCount: Int {
-    model.connections.states.values.filter {
-      if case .failed = $0 { return true }
-      return $0 == .needsLogin
-    }.count
-  }
+  private var isEmpty: Bool { model.connections.connections.isEmpty }
+  private var isGrid: Bool { layout != PanelLayout.list.rawValue }
+  // 网格三列，列表一列；上下键按列数跳
+  private var columnCount: Int { isGrid ? 3 : 1 }
 
   var body: some View {
     VStack(spacing: 0) {
-      if !model.connections.connections.isEmpty || statusTarget != nil {
-        header.gridProbe("header", area: "panel", edge: nil)
-      }
-      ScrollViewReader { proxy in
-        ScrollView {
-          VStack(alignment: .leading, spacing: Space.md) {
-            if let error = model.demoSetupError ?? model.connections.loadError {
-              errorBanner(error, title: L("无法读取位置列表"))
-            }
-            ForEach(discoveryErrors, id: \.message) { error in
-              discoveryBanner(error.message, permissionDenied: error.permissionDenied)
-            }
-            if !discoveredItems.isEmpty {
-              sectionTitle(L("已发现"))
-              LazyVGrid(columns: cardColumns, spacing: Space.md) {
-                ForEach(Array(discoveredItems.enumerated()), id: \.element.id) { index, item in
-                  discoveryCard(item)
-                    .modifier(PanelArrival(index: index))
+      header.gridProbe("header", area: "panel", edge: nil)
+      if PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, hasLoadError: (model.demoSetupError ?? model.connections.loadError) != nil) {
+        ForEach(discoveryErrors, id: \.message) { error in
+          discoveryBanner(error.message, permissionDenied: error.permissionDenied)
+        }.padding(.horizontal, Space.lg)
+        emptyState
+      } else {
+        ScrollViewReader { proxy in
+          ScrollView {
+            VStack(alignment: .leading, spacing: Space.sm) {
+              if let error = model.demoSetupError ?? model.connections.loadError {
+                errorBanner(error, title: L("无法读取位置列表"))
+              }
+              ForEach(discoveryErrors, id: \.message) { error in
+                discoveryBanner(error.message, permissionDenied: error.permissionDenied)
+              }
+              if isGrid {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 3), spacing: Space.sm) {
+                  cards
                 }
+              } else {
+                VStack(spacing: 0) { cards }
+                  .padding(Space.xs)
+                  .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                  .overlay { RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
               }
             }
-            if showsEmptyState {
-              emptyState
-            } else if !model.connections.connections.isEmpty {
-              sectionTitle(L("我的位置"))
-              LazyVGrid(columns: cardColumns, spacing: Space.md) {
-              ForEach(Array(model.connections.connections.enumerated()), id: \.element.id) {
-                index, connection in
-                SavedConnectionRow(
-                  connection: connection,
-                  state: model.connections.states[connection.id] ?? .disconnected,
-                  errorDetail: model.connections.detailedErrors[connection.id],
-                  capabilities: model.providerCapabilities(for: connection),
-                  isDemo: model.options.isDemo,
-                  dragSource: dragSource,
-                  selected: selection.id == connection.id,
-                  rowFocus: $focusedConnectionID,
-                  canMoveUp: index > 0,
-                  canMoveDown: index + 1 < model.connections.connections.count,
-                  onSelect: { selection.select(connection.id, reveal: false); focusedConnectionID = connection.id },
-                  onPrimary: { primaryAction(connection) },
-                  onActivate: { activate(connection) },
-                  onEdit: { edit(connection) },
-                  onReauthenticate: { edit(connection, reauthenticate: true) },
-                  onMove: { offset in move(connection, offset: offset) },
-                  onDelete: { deleteTarget = connection },
-                  draggedID: $draggedID,
-                  dropTargetID: $dropTargetID,
-                  onDrop: { draggedID in move(draggedID, before: connection.id) }
-                ).id(connection.id)
-                  .gridProbe("row-" + connection.id.uuidString, area: "panel-list")
+            .padding(.horizontal, Space.lg)
+            .padding(.bottom, Space.md)
+            // 拖到卡片之外的空白处，放到最后
+            .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
+            .gridArea("panel-list", inset: Space.lg)
+            .background {
+              GeometryReader { geometry in
+                Color.clear.preference(
+                  key: ScrollContentHeightKey.self, value: geometry.size.height)
               }
-              addCard
-              }
-            }
-            if !showsEmptyState && model.connections.connections.isEmpty {
-              LazyVGrid(columns: cardColumns, spacing: Space.md) { addCard }
             }
           }
-          .padding(.horizontal, Space.margin)
-          .padding(.vertical, Space.md)
-          .gridArea("panel-list", inset: Space.margin)
-          .background {
-            GeometryReader { geometry in
-              Color.clear.preference(
-                key: ScrollContentHeightKey.self, value: geometry.size.height)
-            }
+          .frame(height: min(max(scrollHeight, 60), 468))
+          .onChange(of: selection.scrollRequest) { _, request in
+            guard let request else { return }
+            if reduceMotion { proxy.scrollTo(request.connectionID, anchor: .center) }
+            else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(request.connectionID, anchor: .center) } }
           }
-        }
-        .frame(height: min(max(scrollHeight, 120), 432))
-        .onChange(of: selection.scrollRequest) { _, request in
-          guard let request else { return }
-          if reduceMotion { proxy.scrollTo(request.connectionID, anchor: .center) }
-          else { withAnimation(.easeOut(duration: 0.12)) { proxy.scrollTo(request.connectionID, anchor: .center) } }
         }
       }
+      // 底栏上方一条浅分隔线
+      Rectangle().fill(KayoiTheme.border).frame(height: 0.5)
       footer.gridProbe("footer", area: "panel", edge: nil)
     }
     .frame(width: 380)
@@ -251,6 +117,7 @@ struct PanelView: View {
     .onChange(of: draggedID) { _, id in
       if id == nil { dropTargetID = nil; endDropTargeted = false }
     }
+    .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: layout)
     .onPreferenceChange(ScrollContentHeightKey.self) { scrollHeight = $0 }
     .background(PanelVisibilityObserver(visible: $panelVisible))
     .background(PanelKeyboardAnchor(handle: handleInitialKey))
@@ -266,18 +133,20 @@ struct PanelView: View {
       selection.select(ids.first, reveal: false)
     }
     .onKeyPress(.upArrow) {
-      moveSelection(-2)
+      moveSelection(-columnCount)
       return .handled
     }
     .onKeyPress(.downArrow) {
-      moveSelection(2)
+      moveSelection(columnCount)
       return .handled
     }
     .onKeyPress(.leftArrow) {
+      guard isGrid else { return .ignored }
       moveSelection(-1)
       return .handled
     }
     .onKeyPress(.rightArrow) {
+      guard isGrid else { return .ignored }
       moveSelection(1)
       return .handled
     }
@@ -331,51 +200,89 @@ struct PanelView: View {
     }
   }
 
-  // 两列卡片
-  private var cardColumns: [GridItem] {
-    [GridItem(.flexible(), spacing: Space.md), GridItem(.flexible(), spacing: Space.md)]
+  private var cards: some View {
+    ForEach(Array(model.connections.connections.enumerated()), id: \.element.id) { index, connection in
+      SavedConnectionRow(
+        connection: connection,
+        state: model.connections.states[connection.id] ?? .disconnected,
+        errorDetail: model.connections.detailedErrors[connection.id],
+        capabilities: model.providerCapabilities(for: connection),
+        isDemo: model.options.isDemo,
+        layout: isGrid ? .grid : .list,
+        showsDivider: index > 0,
+        dragSource: dragSource,
+        selected: selection.id == connection.id && focusedConnectionID != nil,
+        rowFocus: $focusedConnectionID,
+        canMoveUp: index > 0,
+        canMoveDown: index + 1 < model.connections.connections.count,
+        onSelect: { selection.select(connection.id, reveal: false) },
+        onPrimary: { primaryAction(connection) },
+        onActivate: { activate(connection) },
+        onEdit: { edit(connection) },
+        onReauthenticate: { edit(connection, reauthenticate: true) },
+        onMove: { offset in move(connection, offset: offset) },
+        onDelete: { deleteTarget = connection },
+        draggedID: $draggedID,
+        dropTargetID: $dropTargetID,
+        onDrop: { draggedID in move(draggedID, before: connection.id) }
+      ).id(connection.id)
+        .gridProbe("row-" + connection.id.uuidString, area: "panel-list")
+    }
   }
 
-  private var statusTarget: (id: UUID, label: String, symbol: String, color: Color, background: Color)? {
-    let connections = model.connections.connections
-    if let connection = connections.first(where: {
-      let state = model.connections.states[$0.id]
-      if case .some(.failed) = state { return true }
-      return state == .needsLogin
-    }) {
-      return (connection.id, LF("%d 个需要处理", attentionCount), "exclamationmark.circle.fill", KayoiTheme.error, KayoiTheme.errorBackground)
-    }
-    if let connection = connections.first(where: { model.connections.states[$0.id] == .connecting || model.connections.states[$0.id] == .awaitingAuthorization }) {
-      return (connection.id, L("正在连接…"), "arrow.triangle.2.circlepath", KayoiTheme.secondaryText, KayoiTheme.hover)
-    }
-    if let connection = connections.first(where: { if case .some(.mounted) = model.connections.states[$0.id] { return true }; return false }) {
-      return (connection.id, LF("%d 个已挂载", model.connections.mountedCount), "checkmark.circle.fill", KayoiTheme.accent, KayoiTheme.selection)
-    }
-    return nil
-  }
-
+  // 顶栏：标题、卡片/列表切换、添加
   private var header: some View {
-    HStack {
-      if !model.connections.connections.isEmpty {
-        Text(LF("%d 个位置", model.connections.connections.count))
-          .font(.headline).foregroundStyle(KayoiTheme.primaryText)
+    HStack(spacing: Space.sm) {
+      // 左边是 logo 和产品名
+      HStack(spacing: 10) { // grid: ok logo 与产品名间距 10
+        Image("BrandLogo").resizable().interpolation(.high)
+          .frame(width: 20, height: 20)
+          .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+          .accessibilityHidden(true)
+        Text(verbatim: "Kayoi").font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(KayoiTheme.primaryText)
       }
-      Spacer()
-      if let statusTarget {
-        Button { selection.select(statusTarget.id, reveal: true) } label: {
-          Label(statusTarget.label, systemImage: statusTarget.symbol)
-            .font(.caption.weight(.medium)).monospacedDigit()
-            .foregroundStyle(statusTarget.color)
-            .padding(.horizontal, Space.sm).padding(.vertical, Space.xs)
-            .background(statusTarget.background, in: Capsule())
-        }.buttonStyle(.plain)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .accessibilityElement(children: .combine)
+      if !isEmpty {
+        HStack(spacing: 2) { // grid: ok 分段按钮间隔 2
+          layoutButton(.grid, symbol: "square.grid.2x2.fill", label: L("卡片"))
+          layoutButton(.list, symbol: "rectangle.grid.1x2.fill", label: L("列表"))
+        }
+        .padding(2) // grid: ok 分段外框 2
+        .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
+        Button { edit(nil) } label: {
+          Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(KayoiTheme.actionText)
+            .frame(width: 26, height: 26)
+            .background(KayoiTheme.accent, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).pointerStyle(.link)
+        .keyboardShortcut("n", modifiers: .command)
+        .help(L("添加位置 · ⌘N")).accessibilityLabel(L("添加位置"))
       }
-    }.padding(.horizontal, Space.margin).padding(.vertical, Space.md)
+    }
+    .padding(.horizontal, Space.lg).padding(.top, Space.md).padding(.bottom, 10) // grid: ok 顶栏下边距 10
+  }
+
+  private func layoutButton(_ value: PanelLayout, symbol: String, label: String) -> some View {
+    let active = (layout == value.rawValue) || (value == .grid && isGrid)
+    return Button { layout = value.rawValue } label: {
+      Image(systemName: symbol).font(.system(size: 12))
+        .foregroundStyle(active ? KayoiTheme.primaryText : KayoiTheme.secondaryText)
+        .frame(width: 26, height: 22)
+        .background(active ? KayoiTheme.segmentSelected : .clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain).pointerStyle(.link)
+    .help(label).accessibilityLabel(label)
+    .accessibilityAddTraits(active ? .isSelected : [])
   }
 
   private var footer: some View {
-    HStack(spacing: Space.md) {
-      Spacer()
+    HStack(spacing: 2) { // grid: ok 底栏图标间隔 2
       Button {
         openWindow(id: "help")
         NSApplication.shared.activate(ignoringOtherApps: true)
@@ -391,54 +298,36 @@ struct PanelView: View {
       }
       .keyboardShortcut(",", modifiers: .command)
       .help(L("设置 · ⌘,")).accessibilityLabel(L("打开设置"))
+      Spacer()
       Button(action: requestQuit) {
         Image(systemName: "power")
       }
       .keyboardShortcut("q", modifiers: .command)
       .help(L("退出 · ⌘Q")).accessibilityLabel(L("退出 Kayoi"))
-    }.buttonStyle(FlatIconButtonStyle()).padding(.horizontal, Space.margin).padding(.vertical, Space.sm)
+    }.buttonStyle(FlatIconButtonStyle()).padding(.horizontal, Space.md).padding(.top, 6).padding(.bottom, Space.sm) // grid: ok 底栏图标自带内边距，外边距 12 视觉上与卡片对齐
   }
 
   private var emptyState: some View {
-    VStack(spacing: Space.lg) {
-      EmptyLocationIcon(size: 64)
-      VStack(spacing: Space.xs) {
-        Text(L("还没有保存的位置")).font(.headline)
-        Text(L("插上手机、打开无线调试，或添加网络共享和网盘"))
-          .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-          .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+    VStack(spacing: 14) { // grid: ok 设计稿空状态间距
+      HStack(alignment: .bottom, spacing: 0) {
+        TypeIcon(kind: .androidUSB, color: "green", size: 52)
+          .rotationEffect(.degrees(-10)).offset(x: 10, y: 4) // grid: ok 插图错落
+        TypeIcon(kind: .aliyunDrive, color: "blue", size: 60).zIndex(1)
+        TypeIcon(kind: .smb, color: "orange", size: 52)
+          .rotationEffect(.degrees(10)).offset(x: -10, y: 4) // grid: ok 插图错落
       }
-      Button(L("添加位置")) { edit(nil) }
+      .padding(.bottom, 10) // grid: ok 插图与标题间距
+      Text(L("还没有位置")).font(.system(size: 15, weight: .semibold)).foregroundStyle(KayoiTheme.primaryText)
+      Text(L("接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。"))
+        .font(.system(size: 12.5)).foregroundStyle(KayoiTheme.secondaryText)
+        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+      Button { edit(nil) } label: { Label(L("添加位置"), systemImage: "plus") }
         .buttonStyle(FlatButtonStyle(prominent: true))
+        .keyboardShortcut("n", modifiers: .command)
+        .padding(.top, 6) // grid: ok 按钮与说明间距
     }
-    .frame(maxWidth: .infinity).padding(.vertical, Space.section)
-  }
-
-  private var addCard: some View {
-    Button {
-      edit(nil)
-    } label: {
-      VStack(spacing: Space.sm) {
-        Image(systemName: "plus").font(.title3.weight(.medium)).foregroundStyle(KayoiTheme.accent)
-        Text(L("添加位置")).font(.subheadline.weight(.medium)).foregroundStyle(KayoiTheme.secondaryText)
-      }
-      .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92)
-      .background(addHovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-      // 拖到这里放到最后
-      .overlay(alignment: .leading) {
-        if draggedID != nil && endDropTargeted {
-          Capsule().fill(KayoiTheme.primaryText.opacity(0.3)).frame(width: 2).padding(.vertical, Space.sm)
-            .offset(x: -Space.sm + 1) // grid: ok 插入线落在两张卡片之间
-        }
-      }
-      .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-    }
-    .buttonStyle(.plain)
-    .onHover { addHovering = $0 }
-    .keyboardShortcut("n", modifiers: .command)
-    .help(L("添加位置 · ⌘N"))
-    .accessibilityHint(L("添加手机、电脑、相机或网盘位置"))
-    .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
+    .padding(.horizontal, 40).padding(.bottom, Space.xxl)
+    .frame(maxWidth: .infinity).frame(height: 340)
   }
 
   private func discoveryBanner(_ message: String, permissionDenied: Bool) -> some View {
@@ -454,32 +343,6 @@ struct PanelView: View {
     PanelFailureBanner(title: title, message: error)
   }
 
-  private func sectionTitle(_ title: String) -> some View {
-    Text(title).font(.caption.weight(.medium)).foregroundStyle(KayoiTheme.secondaryText)
-      .padding(.top, Space.xs)
-  }
-
-  // 发现的设备：整张卡片点一下就是添加
-  private func discoveryCard(_ item: DiscoveredItem) -> some View {
-    Button {
-      guard let connection = item.connection else { return }
-      edit(connection)
-      model.pairingSelection = item.pairingSelection
-    } label: {
-      VStack(spacing: Space.sm) {
-        TypeIcon(kind: item.kind, color: "gray", size: 36)
-        Text(item.title).font(.body.weight(.medium)).lineLimit(1).truncationMode(.middle)
-          .foregroundStyle(KayoiTheme.primaryText)
-      }
-      .padding(Space.md)
-      .frame(maxWidth: .infinity, minHeight: 92, maxHeight: 92)
-    }
-    .buttonStyle(PanelCardButtonStyle())
-    .disabled(item.connection == nil)
-    .help(LF("添加“%@”", item.title))
-    .accessibilityLabel(LF("添加“%@”", item.title))
-  }
-
   private var selectedConnection: Connection? {
     guard let id = selection.id else { return nil }
     return model.connections.connections.first { $0.id == id }
@@ -487,10 +350,10 @@ struct PanelView: View {
 
   private func handleInitialKey(_ code: UInt16) -> Bool {
     switch code {
-    case 126: moveSelection(-2)
-    case 125: moveSelection(2)
-    case 123: moveSelection(-1)
-    case 124: moveSelection(1)
+    case 126: moveSelection(-columnCount)
+    case 125: moveSelection(columnCount)
+    case 123: if isGrid { moveSelection(-1) } else { return false }
+    case 124: if isGrid { moveSelection(1) } else { return false }
     case 36, 76:
       guard let selectedConnection else { return false }
       activate(selectedConnection)
@@ -614,37 +477,8 @@ struct PanelView: View {
     NSApplication.shared.terminate(nil)
   }
 
-  private func isSaved(_ device: MergedWirelessDevice) -> Bool {
-    model.connections.connections.contains { connection in
-      guard connection.kind == .androidWiFi, let guid = connection.params["guid"] else {
-        return false
-      }
-      if guid == device.serviceName { return true }
-      let services = [device.pairing, device.connect].compactMap { $0 }
-      return services.contains { WirelessSelection.matches(guid: guid, service: $0) }
-        || WirelessSelection.serial(fromGUID: guid) == device.key
-    }
-  }
 }
 
 extension Connection {
   var tint: Color { KayoiTheme.locationColor(color) }
-}
-
-// 面板卡片：只用底色区分静止、悬停、按下
-struct PanelCardButtonStyle: ButtonStyle {
-  @Environment(\.isFocused) private var isFocused
-  @Environment(\.accessibilityReduceMotion) private var reduceMotion
-  @State private var hovering = false
-
-  func makeBody(configuration: Configuration) -> some View {
-    let shape = RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
-    configuration.label
-      .background(configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape)
-      .overlay { if isFocused { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
-      .contentShape(shape)
-      .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
-      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
-      .onHover { hovering = $0 }
-  }
 }
