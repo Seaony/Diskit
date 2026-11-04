@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 和应用层会话复用待处理；FIX-18 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -328,3 +328,14 @@
 - 已检查同类路径：move 在复制前已有 pathExists 检查目标对象及后代，继续保留；分片 PUT 仅写未发布分片，不用目标对象 HEAD 阻挡每个分片。无真实设备、账号或存储请求，回归证据 `docs/evidence/v0.2/FIX-16-safety-regression.log`。
 - 限制：对于忽略条件头的服务，HEAD 与随后写入之间仍有外部并发窗口；本实现满足写前检查，不声称跨进程/服务端原子拒绝覆盖。实际服务的条件请求支持、分片中止结果另待用户验收。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 346 项，发布构建与签名校验通过；证据 `docs/evidence/v0.2/FIX-16-safety-gates.log`。FIX-16 三部分本地验收通过，真实服务与并发边界按上述限制另待用户验收。
+
+
+## FIX-17：共享请求额度与 S3 接入（部分）
+
+- `Packages/Core/Sources/Core/HTTPConcurrencyLimit.swift:22` 将同一额度组限制为最多四个请求，排队取消会移除等待者，获得额度后发现取消则归还。`:12` 的账号注册表使用弱引用，不把已经无人使用的额度对象永久保留；不同账号互不共用。
+- `LimitedHTTPTransport`（`:57`）对完整请求在返回或错误时归还额度；流式响应通过 `LimitedHTTPCursor`（`:95`）持有到读完、读取错误或响应被丢弃，不在收到响应头时提早放行第五个下载，也不创建脱离消费速度的无限缓存任务。
+- `Packages/S3Drive/Sources/S3Drive/S3Provider.swift:127` 将全部请求接入同一包装层，账号范围为规范化主机、有效端口和访问标识，不按桶拆分；密钥不进入注册键，不输出账号标识。多个 provider 即使持有不同底层 transport，也共享该账号额度。
+- `s3AccountLimitsRequestsAcrossProviders`（`ConcurrencyTests.swift:21`）发起十六个并行容量请求，分别覆盖单 provider、同账号两个桶、等价端点写法三组。原实现前两组超过四个；初版共享键也在主机大小写/显式 443/尾斜杠组失败，修正后全部通过，并检查未退化成串行、十六次请求全部完成。
+- Core 回归：`sharedHTTPAllowanceHasAccountIdentityAndReleasesUnusedEntries`（`HTTPConcurrencyTests.swift:30`）验证身份与回收；`cancelledHTTPWaiterDoesNotConsumeAllowance`（`:40`）验证取消后继续使用；`httpAllowanceSurvivesResponseAndStreamErrors`（`:60`）验证连续八次完整请求/流读取失败不漏额度；`httpStreamHoldsAllowanceUntilFinishedOrDiscarded`（`:78`）确认四个未消费流会阻挡第五个请求，读完或丢弃其中一个后第五个继续。
+- 所有传输均为内存替身，无真实账号或网络请求。证据 `docs/evidence/v0.2/FIX-17-s3-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 351 项，发布构建及签名校验通过，证据 `docs/evidence/v0.2/FIX-17-s3-gates.log`。
+- FIX-17 尚未整体通过：CloudDrive 的授权及直传路径还未接入；AppModel 每次创建会话的问题仍需修复。本组共享的是请求额度，不把它冒称为应用层已经复用会话；跨进程刷新锁与本进程请求额度是不同约束。

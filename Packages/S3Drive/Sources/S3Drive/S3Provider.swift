@@ -124,7 +124,10 @@ public actor S3Provider: RemoteFileProvider {
     multipartThreshold: Int64 = 64 * 1024 * 1024, partSize: Int64 = 16 * 1024 * 1024
   ) {
     self.configuration = configuration
-    self.transport = transport
+    let host = configuration.endpoint.host?.lowercased() ?? ""
+    let port = configuration.endpoint.port ?? 443
+    let account = "s3:\(host):\(port)|\(configuration.accessKey)"
+    self.transport = LimitedHTTPTransport(transport, limit: .shared(for: account))
     self.multipartThreshold = multipartThreshold
     self.partSize = partSize
   }

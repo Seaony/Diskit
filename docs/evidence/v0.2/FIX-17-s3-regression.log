@@ -1,0 +1,311 @@
+原实现失败：swift test --package-path Packages/S3Drive --filter s3AccountLimitsRequestsAcrossProviders；退出 1。
+Building for debugging...
+[Planning deferred tasks]
+[4 / 26]
+[6 / 15] S3DriveTests-product
+[8 / 17] S3DriveTests-product
+[14 / 16] S3DriveTests-product
+Build complete! (1.16秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3AccountLimitsRequestsAcrossProviders(separateProviders:) started.
+􀟈  Test case passing 1 argument separateProviders → true to s3AccountLimitsRequestsAcrossProviders(separateProviders:) started.
+􀟈  Test case passing 1 argument separateProviders → false to s3AccountLimitsRequestsAcrossProviders(separateProviders:) started.
+􀢄  Test s3AccountLimitsRequestsAcrossProviders(separateProviders:) recorded an issue with 1 argument separateProviders → true at ConcurrencyTests.swift:41:3: Expectation failed: await transport.maximum <= 4
+􀄵  await transport.maximum <= 4 → <not evaluated>
+􀢄  Test s3AccountLimitsRequestsAcrossProviders(separateProviders:) recorded an issue with 1 argument separateProviders → false at ConcurrencyTests.swift:41:3: Expectation failed: await transport.maximum <= 4
+􀄵  await transport.maximum <= 4 → <not evaluated>
+􀢄  Test s3AccountLimitsRequestsAcrossProviders(separateProviders:) with 2 test cases failed after 0.039 seconds with 2 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.039 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)
+
+端点别名失败：同一命令；退出 1。
+Building for debugging...
+[1 / 4] S3Drive
+[2 / 5] S3DriveTests-product
+[4 / 7] S3DriveTests-product
+[10 / 12] S3DriveTests-product
+Build complete! (0.92秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument configurationVariant → 1 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument configurationVariant → 2 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument configurationVariant → 0 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀢄  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) recorded an issue with 1 argument configurationVariant → 2 at ConcurrencyTests.swift:44:3: Expectation failed: await transport.maximum <= 4
+􀄵  await transport.maximum <= 4 → <not evaluated>
+􀢄  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) with 3 test cases failed after 0.145 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.145 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)
+
+修复后：swift test --package-path Packages/S3Drive；退出 0。
+Building for debugging...
+[2 / 6] S3Drive
+[3 / 7] S3Drive
+[7 / 10] S3Drive
+[10 / 11] S3DriveTests-product
+Build complete! (1.30秒)
+Test Suite 'All tests' started at 2026-11-04 18:32:30.855.
+Test Suite 'All tests' passed at 2026-11-04 18:32:30.855.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test multipartConditionalConflictReuploadsOnce() started.
+􀟈  Test statInfersDirectoryWithoutTrailingSlash() started.
+􀟈  Test s3MultipartChecksAgainBeforePublishing() started.
+􀟈  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() started.
+􀟈  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test xmlAndHTTPErrorsMapToRemoteErrors() started.
+􀟈  Test s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test servicePresetsUseOfficialAddressing() started.
+􀟈  Test conditionalPutRetryChecksForNewObject() started.
+􀟈  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() started.
+􀟈  Test case passing 1 argument pathStyle → true to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument pathStyle → false to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test multipartThresholdAndLastPartBoundaries() started.
+􀟈  Test signedVirtualHostRequestPercentEncodesPathOnce() started.
+􀟈  Test case passing 1 argument example → 0 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument example → 1 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test truncatedPageWithoutTokenFails() started.
+􀟈  Test s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() started.
+􀟈  Test rangeRequiresMatchingContentRange() started.
+􀟈  Test case passing 1 argument example → 2 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 3 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test recursiveRemoveDeletesEveryNestedObject() started.
+􀟈  Test case passing 1 argument operation → "empty" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument configurationVariant → 0 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument configurationVariant → 2 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument configurationVariant → 1 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123Z" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "empty" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument status → 403 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument status → 500 to s3PreflightFailureNeverWrites(status:) started.
+􁁛  Test servicePresetsUseOfficialAddressing() passed after 0.005 seconds.
+􁁛  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) with 4 test cases passed after 0.006 seconds.
+􁁛  Test s3ObjectDatesPreserveMilliseconds(_:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test s3PreflightFailureNeverWrites(status:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test truncatedPageWithoutTokenFails() passed after 0.006 seconds.
+􁁛  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) with 4 test cases passed after 0.007 seconds.
+􁁛  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() passed after 0.007 seconds.
+􁁛  Test statInfersDirectoryWithoutTrailingSlash() passed after 0.008 seconds.
+􁁛  Test rangeRequiresMatchingContentRange() passed after 0.007 seconds.
+􁁛  Test signedVirtualHostRequestPercentEncodesPathOnce() passed after 0.008 seconds.
+􁁛  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() passed after 0.008 seconds.
+􁁛  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test conditionalPutRetryChecksForNewObject() passed after 0.008 seconds.
+􁁛  Test s3MultipartChecksAgainBeforePublishing() passed after 0.010 seconds.
+􁁛  Test s3MissingObjectIsWrittenWithConditions(operation:) with 4 test cases passed after 0.010 seconds.
+􁁛  Test recursiveRemoveDeletesEveryNestedObject() passed after 0.010 seconds.
+􁁛  Test xmlAndHTTPErrorsMapToRemoteErrors() passed after 0.012 seconds.
+􁁛  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() passed after 0.013 seconds.
+􁁛  Test multipartConditionalConflictReuploadsOnce() passed after 0.016 seconds.
+􁁛  Test multipartThresholdAndLastPartBoundaries() passed after 0.022 seconds.
+􁁛  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) with 3 test cases passed after 0.147 seconds.
+􁁛  Test run with 21 tests in 0 suites passed after 0.147 seconds.
+
+额度生命周期：swift test --package-path Packages/Core；退出 0。
+Building for debugging...
+[Planning deferred tasks]
+[8 / 29] Core
+[10 / 31] Core
+[16 / 27] Core
+[18 / 27] CoreTests-product
+[28 / 37] CoreTests-product
+[32 / 36] CoreTests-product
+/Users/seaony/code/Kayoi/Packages/Core/Tests/CoreTests/HTTPConcurrencyTests.swift:35:12: warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
+ 33 |   #expect(first === HTTPConcurrencyLimit.shared(for: key))
+ 34 |   #expect(first !== HTTPConcurrencyLimit.shared(for: key + "other"))
+ 35 |   weak var released = first
+    |            `- warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
+ 36 |   first = nil
+ 37 |   #expect(released == nil)
+
+[#VariableNeverMutated]: <https://docs.swift.org/compiler/documentation/diagnostics/variable-never-mutated>
+[#WeakMutability]: <https://docs.swift.org/compiler/documentation/diagnostics/weak-mutability>
+[34 / 36] CoreTests-product
+Build complete! (2.64秒)
+Test Suite 'All tests' started at 2026-11-04 18:31:00.744.
+Test Suite 'All tests' passed at 2026-11-04 18:31:00.745.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test mountTableMatchesWebDAVAndRawNFS() started.
+􀟈  Test genericCameraRemovalClearsConnectionTestResult() started.
+􀟈  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() started.
+􀟈  Test systemMountURLsCoverSMBWebDAVAndNFS() started.
+􀟈  Test failedSecretWriteRemainsPendingUntilSaved() started.
+􀟈  Test credentialRefreshLockWaitCanBeCancelled() started.
+􀟈  Test mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test futureConfigIsNotOverwritten() started.
+􀟈  Test failedWriteIsSharedBetweenStoreWrappers() started.
+􀟈  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() started.
+􀟈  Test configurationLifecycle() started.
+􀟈  Test webDAVParticipatesInSaveMountAndAutoMount() started.
+􀟈  Test removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test smbURLKeepsCredentialsOutOfMountURL() started.
+􀟈  Test startupMountsOnlyEnabledUnMountedConnections() started.
+􀟈  Test httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard:) started.
+􀟈  Test deliveredMountIsNotEjectedByLaterFailure() started.
+􀟈  Test cameraRemovalClearsConnectionTestResult() started.
+􀟈  Test credentialRefreshLockRejectsSymlink() started.
+􀟈  Test cancelledHTTPWaiterDoesNotConsumeAllowance() started.
+􀟈  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() started.
+􀟈  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() started.
+􀟈  Test mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() started.
+􀟈  Test memorySecretLifecycle() started.
+􀟈  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() started.
+􀟈  Test connectionFailuresLogOnceWithoutExtraMountNotifications() started.
+􀟈  Test unauthorizedCloudErrorsAskForLogin() started.
+􀟈  Test testingExistingConnectionDoesNotUnmountIt() started.
+􀟈  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() started.
+􀟈  Test mountFailureCanRetryAndReportsOnce() started.
+􀟈  Test sharedHTTPAllowanceHasAccountIdentityAndReleasesUnusedEntries() started.
+􀟈  Test deletingOfficialCloudRemovesItsOAuthToken() started.
+􀟈  Test failedUnmountKeepsConnectionAndSecret() started.
+􀟈  Test clearingCacheCannotReachConnectionTestContents() started.
+􀟈  Test editSortAndRestartPreserveConfiguration() started.
+􀟈  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test connectionLogsNeverIncludeUnknownErrorDetails() started.
+􀟈  Test mountTableDecodesExactlyOnceAndPreservesPathCase() started.
+􀟈  Test lateMountCleanupFailureDoesNotSkipOtherMounts() started.
+􀟈  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() started.
+􀟈  Test credentialRefreshLockExcludesOtherProcessesAndReleases() started.
+􀟈  Test HTTPTransportPreservesErrorStatusAndHeaders() started.
+􀟈  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() started.
+􀟈  Test removalUnmountsAndDeletesSecretsAndCache() started.
+􀟈  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() started.
+􀟈  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() started.
+􀟈  Test mountTableMatchesUppercaseSavedScheme() started.
+􀟈  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test webDriveAuthenticationFailureAsksForLogin() started.
+􀟈  Test rejectsMissingShareAndInvalidFields() started.
+􀟈  Test credentialRefreshLockIdentityMatchesStorageScope() started.
+􀟈  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() started.
+􀟈  Test editingOnlyMountedNameKeepsVolume() started.
+􀟈  Test httpAllowanceSurvivesResponseAndStreamErrors(stream:) started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test memorySecretsAreIsolatedBetweenRuns() started.
+􀟈  Test case passing 1 argument cancelled → false to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test case passing 1 argument cancelled → true to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test rejectsWrongPasswordBeforeSaving() started.
+􀟈  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() started.
+􀟈  Test case passing 1 argument discard → false to httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard:) started.
+􀟈  Test case passing 1 argument kind → .ucDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .quark to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument discard → true to httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .baiduDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .smb to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive115 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive123 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .googleDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument scheme → "smb" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument scheme → "SMB" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument kind → .dropbox to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .pikPak to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .tianyiDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument delete → false to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test case passing 1 argument delete → true to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123Z" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123+00:00" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 1 argument stream → false to httpAllowanceSurvivesResponseAndStreamErrors(stream:) started.
+􀟈  Test case passing 1 argument stream → true to httpAllowanceSurvivesResponseAndStreamErrors(stream:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􁁛  Test mountTableMatchesWebDAVAndRawNFS() passed after 0.003 seconds.
+􁁛  Test systemMountURLsCoverSMBWebDAVAndNFS() passed after 0.003 seconds.
+􁁛  Test mountTableMatchesEncodedChineseShare(scheme:) with 2 test cases passed after 0.003 seconds.
+􁁛  Test mountTableMatchesCanonicalUnicode(name:) with 2 test cases passed after 0.003 seconds.
+􁁛  Test memorySecretLifecycle() passed after 0.003 seconds.
+􁁛  Test smbURLKeepsCredentialsOutOfMountURL() passed after 0.003 seconds.
+􁁛  Test sharedHTTPAllowanceHasAccountIdentityAndReleasesUnusedEntries() passed after 0.003 seconds.
+􁁛  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) with 3 test cases passed after 0.003 seconds.
+􁁛  Test mountTableDecodesExactlyOnceAndPreservesPathCase() passed after 0.003 seconds.
+􁁛  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() passed after 0.003 seconds.
+􁁛  Test credentialRefreshLockRejectsSymlink() passed after 0.003 seconds.
+􁁛  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() passed after 0.003 seconds.
+􁁛  Test mountTableMatchesUppercaseSavedScheme() passed after 0.003 seconds.
+􁁛  Test clearingCacheCannotReachConnectionTestContents() passed after 0.003 seconds.
+􁁛  Test credentialRefreshLockIdentityMatchesStorageScope() passed after 0.003 seconds.
+􁁛  Test configurationLifecycle() passed after 0.003 seconds.
+􁁛  Test memorySecretsAreIsolatedBetweenRuns() passed after 0.003 seconds.
+􁁛  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() passed after 0.003 seconds.
+􁁛  Test genericCameraRemovalClearsConnectionTestResult() passed after 0.003 seconds.
+􁁛  Test unauthorizedCloudErrorsAskForLogin() passed after 0.003 seconds.
+􁁛  Test httpAllowanceSurvivesResponseAndStreamErrors(stream:) with 2 test cases passed after 0.003 seconds.
+􁁛  Test cancelledHTTPWaiterDoesNotConsumeAllowance() passed after 0.003 seconds.
+􁁛  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() passed after 0.004 seconds.
+􁁛  Test failedWriteIsSharedBetweenStoreWrappers() passed after 0.005 seconds.
+􁁛  Test failedSecretWriteRemainsPendingUntilSaved() passed after 0.005 seconds.
+􁁛  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() passed after 0.005 seconds.
+􁁛  Test HTTPTransportPreservesErrorStatusAndHeaders() passed after 0.006 seconds.
+􁁛  Test webDAVParticipatesInSaveMountAndAutoMount() passed after 0.008 seconds.
+􁁛  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test startupMountsOnlyEnabledUnMountedConnections() passed after 0.009 seconds.
+􁁛  Test deliveredMountIsNotEjectedByLaterFailure() passed after 0.009 seconds.
+􁁛  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() passed after 0.019 seconds.
+􁁛  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() passed after 0.024 seconds.
+􁁛  Test httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard:) with 2 test cases passed after 0.027 seconds.
+􁁛  Test credentialRefreshLockWaitCanBeCancelled() passed after 0.027 seconds.
+􁁛  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() passed after 0.028 seconds.
+􁁛  Test cameraRemovalClearsConnectionTestResult() passed after 0.030 seconds.
+􁁛  Test mountFailureCanRetryAndReportsOnce() passed after 0.030 seconds.
+􁁛  Test deletingOfficialCloudRemovesItsOAuthToken() passed after 0.033 seconds.
+􁁛  Test editSortAndRestartPreserveConfiguration() passed after 0.035 seconds.
+􁁛  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) with 2 test cases passed after 0.037 seconds.
+􁁛  Test connectionLogsNeverIncludeUnknownErrorDetails() passed after 0.037 seconds.
+􁁛  Test removalUnmountsAndDeletesSecretsAndCache() passed after 0.038 seconds.
+􁁛  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() passed after 0.039 seconds.
+􁁛  Test webDriveAuthenticationFailureAsksForLogin() passed after 0.043 seconds.
+􁁛  Test editingOnlyMountedNameKeepsVolume() passed after 0.047 seconds.
+􁁛  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() passed after 0.049 seconds.
+􁁛  Test credentialRefreshLockExcludesOtherProcessesAndReleases() passed after 0.051 seconds.
+􁁛  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() passed after 0.052 seconds.
+􁁛  Test futureConfigIsNotOverwritten() passed after 0.052 seconds.
+􁁛  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() passed after 0.058 seconds.
+􁁛  Test testingExistingConnectionDoesNotUnmountIt() passed after 0.060 seconds.
+􁁛  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() passed after 0.063 seconds.
+􁁛  Test removalSaveFailurePreservesCredentialsAndCache(kind:) with 12 test cases passed after 0.063 seconds.
+􁁛  Test failedUnmountKeepsConnectionAndSecret() passed after 0.063 seconds.
+􁁛  Test lateMountCleanupFailureDoesNotSkipOtherMounts() passed after 0.063 seconds.
+􁁛  Test rejectsWrongPasswordBeforeSaving() passed after 0.064 seconds.
+􁁛  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() passed after 0.065 seconds.
+􁁛  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) with 8 test cases passed after 0.065 seconds.
+􁁛  Test rejectsMissingShareAndInvalidFields() passed after 0.065 seconds.
+􁁛  Test connectionFailuresLogOnceWithoutExtraMountNotifications() passed after 0.066 seconds.
+􁁛  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) with 2 test cases passed after 0.077 seconds.
+􁁛  Test run with 62 tests in 0 suites passed after 0.077 seconds.
