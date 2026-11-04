@@ -9,10 +9,16 @@ private final class FakeTransport: HTTPTransport, Sendable {
   let responses: Mutex<[HTTPResponse]>
   let streams: Mutex<[HTTPStreamResponse]>
   let requests = Mutex<[URLRequest]>([])
+  let uploadRequests = Mutex<[URLRequest]>([])
 
   init(_ responses: [HTTPResponse] = [], streams: [HTTPStreamResponse] = []) {
     self.responses = Mutex(responses)
     self.streams = Mutex(streams)
+  }
+
+  func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    uploadRequests.withLock { $0.append(request) }
+    return try await send(request)
   }
 
   func send(_ request: URLRequest) async throws -> HTTPResponse {
@@ -43,7 +49,7 @@ private func provider(
     configuration: S3Configuration(
       endpoint: URL(string: "https://s3.example.com")!, region: "us-east-1", bucket: "photos",
       accessKey: "AKIDEXAMPLE", secretKey: "secret", pathStyle: pathStyle),
-    transport: transport, multipartThreshold: threshold, partSize: partSize)
+    transport: transport, multipartThreshold: threshold, partSize: partSize, retrySleep: { _ in })
 }
 
 private func stream(_ status: Int, headers: [String: String] = [:]) -> HTTPStreamResponse {
@@ -299,6 +305,7 @@ private func encodedPath(_ request: URLRequest) -> String? {
   try await empty.connect()
   try await empty.write(try RemotePath("/empty.bin"), from: emptyFile)
   #expect(emptyTransport.requests.withLock { $0 }.count == 2)
+  #expect(emptyTransport.uploadRequests.withLock { $0.count } == 1)
 
   let (directDirectory, directFile) = try makeFile(partSize - 1)
   defer { try? FileManager.default.removeItem(at: directDirectory) }
@@ -308,6 +315,7 @@ private func encodedPath(_ request: URLRequest) -> String? {
   try await direct.connect()
   try await direct.write(try RemotePath("/direct.bin"), from: directFile)
   #expect(directTransport.requests.withLock { $0 }.count == 2)
+  #expect(directTransport.uploadRequests.withLock { $0.count } == 1)
 
   let (multipartDirectory, multipartFile) = try makeFile(partSize * 2 + 1)
   defer { try? FileManager.default.removeItem(at: multipartDirectory) }
@@ -330,6 +338,7 @@ private func encodedPath(_ request: URLRequest) -> String? {
   try await multipart.write(try RemotePath("/large.bin"), from: multipartFile)
   let requests = multipartTransport.requests.withLock { $0 }
   #expect(requests.count == 7)
+  #expect(multipartTransport.uploadRequests.withLock { $0.count } == 3)
   #expect(requests[2].httpBody?.count == partSize)
   #expect(requests[3].httpBody?.count == partSize)
   #expect(requests[4].httpBody?.count == 1)
@@ -386,7 +395,7 @@ private func encodedPath(_ request: URLRequest) -> String? {
 
 @Test func xmlAndHTTPErrorsMapToRemoteErrors() async throws {
   func mappedError(_ response: HTTPResponse) async throws -> RemoteError? {
-    let transport = FakeTransport([response])
+    let transport = FakeTransport(Array(repeating: response, count: 4))
     let s3 = provider(transport)
     try await s3.connect()
     do {

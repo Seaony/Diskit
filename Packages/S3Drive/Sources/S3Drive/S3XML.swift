@@ -56,14 +56,14 @@ final class S3ListParser: NSObject, XMLParserDelegate {
   ) {
     let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
     switch elementName {
-    case "Key" where stack.dropLast().last == "Contents": objectKey = value
+    case "Key" where stack.dropLast().last == "Contents": objectKey = text
     case "Size" where stack.dropLast().last == "Contents": objectSize = Int64(value) ?? -1
     case "LastModified" where stack.dropLast().last == "Contents":
       objectDate =
         RemoteTimestamp.parse(value)
         ?? Date(timeIntervalSince1970: 0)
-    case "Prefix" where stack.dropLast().last == "CommonPrefixes": prefixes.append(value)
-    case "NextContinuationToken": nextToken = value.isEmpty ? nil : value
+    case "Prefix" where stack.dropLast().last == "CommonPrefixes": prefixes.append(text)
+    case "NextContinuationToken": nextToken = text.isEmpty ? nil : text
     case "IsTruncated": isTruncated = value.lowercased() == "true"
     case "Contents":
       if !objectKey.isEmpty, objectSize >= 0 {
@@ -81,7 +81,7 @@ enum S3MultipartParser {
     let parser = XMLParser(data: data)
     let delegate = SingleValueDelegate(target: name)
     parser.delegate = delegate
-    _ = parser.parse()
+    guard parser.parse() else { return nil }
     return delegate.value
   }
 
@@ -121,6 +121,10 @@ private final class SingleValueDelegate: NSObject, XMLParserDelegate {
   private var text = ""
   init(target: String) { self.target = target }
   func parser(
+    _ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+    qualifiedName qName: String?, attributes: [String: String] = [:]
+  ) { text = "" }
+  func parser(
     _ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?,
     qualifiedName qName: String?
   ) {
@@ -151,4 +155,56 @@ private final class S3ErrorDelegate: NSObject, XMLParserDelegate {
 
 enum RemoteErrorParser: Error {
   case invalid
+}
+
+final class S3TagParser: NSObject, XMLParserDelegate {
+  private var stack: [String] = []
+  private var text = ""
+  private var key: String?
+  private var value: String?
+  private var tags: [URLQueryItem] = []
+  private var valid = true
+  private var sawTagSet = false
+
+  static func parse(_ data: Data) throws -> [URLQueryItem] {
+    let delegate = S3TagParser()
+    let parser = XMLParser(data: data)
+    parser.delegate = delegate
+    guard parser.parse(), delegate.valid, delegate.sawTagSet else {
+      throw RemoteError.protocolError
+    }
+    return delegate.tags
+  }
+
+  func parser(
+    _ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?,
+    qualifiedName qName: String?, attributes: [String: String] = [:]
+  ) {
+    stack.append(elementName)
+    text = ""
+    if elementName == "TagSet", stack == ["Tagging", "TagSet"] { sawTagSet = true }
+    if elementName == "Tag" {
+      key = nil
+      value = nil
+    }
+  }
+
+  func parser(_ parser: XMLParser, foundCharacters string: String) { text += string }
+
+  func parser(
+    _ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?,
+    qualifiedName qName: String?
+  ) {
+    if stack == ["Tagging", "TagSet", "Tag", "Key"] { key = text }
+    if stack == ["Tagging", "TagSet", "Tag", "Value"] { value = text }
+    if stack == ["Tagging", "TagSet", "Tag"] {
+      if let key, !key.isEmpty, let value {
+        tags.append(URLQueryItem(name: key, value: value))
+      } else {
+        valid = false
+      }
+    }
+    _ = stack.popLast()
+    text = ""
+  }
 }

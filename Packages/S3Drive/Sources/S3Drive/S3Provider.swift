@@ -121,13 +121,19 @@ public actor S3Provider: RemoteFileProvider {
 
   public init(
     configuration: S3Configuration, transport: any HTTPTransport = URLSessionHTTPTransport(),
-    multipartThreshold: Int64 = 64 * 1024 * 1024, partSize: Int64 = 16 * 1024 * 1024
+    multipartThreshold: Int64 = 64 * 1024 * 1024, partSize: Int64 = 16 * 1024 * 1024,
+    retrySleep: @escaping @Sendable (Duration) async throws -> Void = {
+      try await Task.sleep(for: $0)
+    }
   ) {
     self.configuration = configuration
     let host = configuration.endpoint.host?.lowercased() ?? ""
     let port = configuration.endpoint.port ?? 443
     let account = "s3:\(host):\(port)|\(configuration.accessKey)"
-    self.transport = LimitedHTTPTransport(transport, limit: .shared(for: account))
+    self.transport = DiagnosticHTTPTransport(
+      S3RetryTransport(
+        base: LimitedHTTPTransport(transport, limit: .shared(for: account)), sleep: retrySleep),
+      category: .s3Drive)
     self.multipartThreshold = multipartThreshold
     self.partSize = partSize
   }
@@ -152,7 +158,7 @@ public actor S3Provider: RemoteFileProvider {
     try ensureConnected()
     let request = try signedRequest(method: "HEAD", path: "")
     try check(try await transport.send(request), allowing: [200])
-    return SpaceInfo(total: 0, used: 0)
+    return SpaceInfo(total: nil, used: nil)
   }
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
@@ -188,11 +194,10 @@ public actor S3Provider: RemoteFileProvider {
       return try item(
         key: key, size: object.size, date: object.modified, directory: false)
     }
-    let children = try await listAll(prefix: key + "/", delimiter: nil).objects
-    guard !children.isEmpty else { throw RemoteError.posix(ENOENT) }
-    return try item(
-      key: key, size: 0, date: children.map(\.modified).max() ?? .distantPast,
-      directory: true)
+    guard let child = try await firstObject(prefix: key + "/") else {
+      throw RemoteError.posix(ENOENT)
+    }
+    return try item(key: key, size: 0, date: child.modified, directory: true)
   }
 
   public func read(
@@ -209,6 +214,12 @@ public actor S3Provider: RemoteFileProvider {
     }
     let request = try signedRequest(method: "GET", path: key, headers: headers)
     let stream = try await transport.stream(request)
+    if let range, stream.response.status == 416,
+      let header = stream.response.header("Content-Range"), header.hasPrefix("bytes */"),
+      let total = Int64(header.dropFirst(8)), total >= 0, range.lowerBound >= total
+    {
+      return AsyncThrowingStream { $0.finish() }
+    }
     try check(stream.response, allowing: range == nil ? [200] : [206])
     if let range,
       !Self.validContentRange(stream.response.header("Content-Range"), requested: range)
@@ -219,6 +230,7 @@ public actor S3Provider: RemoteFileProvider {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
@@ -233,14 +245,14 @@ public actor S3Provider: RemoteFileProvider {
       progress?(size, size)
       return
     }
-    try await multipartWrite(key: key, localFile: localFile, size: size)
+    try await multipartWrite(key: key, localFile: localFile, size: size, progress: progress)
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
     try ensureConnected()
     guard path.value != "/" else { return }
     let key = objectKey(path, directory: true)
-    try await putConditionally(key: key, body: Data())
+    try await putConditionally(key: key, body: Data(), upload: false)
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -259,6 +271,7 @@ public actor S3Provider: RemoteFileProvider {
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
@@ -274,13 +287,17 @@ public actor S3Provider: RemoteFileProvider {
     if try await pathExists(key: targetKey) { throw RemoteError.posix(EEXIST) }
 
     var copiedKeys: [String] = []
+    var sourceETags: [String: String] = [:]
     do {
       if sourceExact != nil, sourceChildren.isEmpty {
-        try await copy(sourceKey: sourceKey, destinationKey: targetKey)
+        sourceETags[sourceKey] = try await copy(
+          sourceKey: sourceKey, destinationKey: targetKey, source: sourceExact!, progress: progress)
         copiedKeys.append(targetKey)
       } else {
         if sourceExact != nil {
-          try await copy(sourceKey: sourceKey, destinationKey: targetKey)
+          sourceETags[sourceKey] = try await copy(
+            sourceKey: sourceKey, destinationKey: targetKey, source: sourceExact!,
+            progress: progress)
           copiedKeys.append(targetKey)
         }
         for object in sourceChildren {
@@ -289,24 +306,46 @@ public actor S3Provider: RemoteFileProvider {
           }
           let suffix = object.key.dropFirst(sourceKey.count)
           let destination = targetKey + String(suffix)
-          try await copy(sourceKey: object.key, destinationKey: destination)
+          let source = S3ObjectInfo(
+            key: object.key, size: object.size, modified: object.modified, headers: [:])
+          sourceETags[object.key] = try await copy(
+            sourceKey: object.key, destinationKey: destination, source: source, progress: progress)
           copiedKeys.append(destination)
         }
       }
     } catch {
       let provider = self
       let cleanup = Task.detached {
-        try? await provider.deleteObjects(copiedKeys)
+        try await provider.deleteObjects(copiedKeys)
       }
-      await cleanup.value
+      do { try await cleanup.value } catch let cleanupError {
+        throw S3CopyCleanupError(underlyingError: error, cleanupError: cleanupError)
+      }
       throw error
     }
     var keys = sourceChildren.map(\.key)
     if sourceExact != nil { keys.append(sourceKey) }
-    try await deleteObjects(keys)
+    try await deleteObjects(keys, conditions: sourceETags)
   }
 
-  private func copy(sourceKey: String, destinationKey: String) async throws {
+  private func copy(
+    sourceKey: String, destinationKey: String, source: S3ObjectInfo,
+    progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws
+    -> String?
+  {
+    if source.size > 5 * 1024 * 1024 * 1024 {
+      let metadata: S3ObjectInfo
+      if source.headers.isEmpty {
+        guard let current = try await headObject(sourceKey) else { throw RemoteError.posix(ENOENT) }
+        metadata = current
+      } else {
+        metadata = source
+      }
+      try await multipartCopy(
+        sourceKey: sourceKey, destinationKey: destinationKey, source: metadata, progress: progress)
+      return metadata.headers.first { $0.key.lowercased() == "etag" }?.value
+    }
     for attempt in 0..<2 {
       let request = try signedRequest(
         method: "PUT", path: destinationKey,
@@ -320,11 +359,94 @@ public actor S3Provider: RemoteFileProvider {
         throw RemoteError.posix(EEXIST)
       }
       try check(response, allowing: [200])
-      return
+      return source.headers.first { $0.key.lowercased() == "etag" }?.value
+    }
+    throw RemoteError.posix(EEXIST)
+  }
+
+  private func multipartCopy(
+    sourceKey: String, destinationKey: String, source: S3ObjectInfo,
+    progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
+    let chunk: Int64 = 5 * 1024 * 1024 * 1024
+    guard source.size > 0, (source.size - 1) / chunk + 1 <= 10_000 else {
+      throw RemoteError.posix(EFBIG)
+    }
+    guard let etag = source.headers.first(where: { $0.key.lowercased() == "etag" })?.value,
+      !etag.isEmpty
+    else { throw RemoteError.protocolError }
+    let metadataNames: Set<String> = [
+      "content-type", "content-encoding", "content-disposition", "content-language",
+      "cache-control", "expires", "x-amz-website-redirect-location",
+    ]
+    var metadata = source.headers.filter {
+      metadataNames.contains($0.key.lowercased()) || $0.key.lowercased().hasPrefix("x-amz-meta-")
+    }
+    let tagging = try await transport.send(
+      try signedRequest(
+        method: "GET", path: sourceKey, query: [URLQueryItem(name: "tagging", value: "")]))
+    try check(tagging, allowing: [200])
+    let tags = try S3TagParser.parse(tagging.body)
+    if !tags.isEmpty { metadata["x-amz-tagging"] = Self.canonicalQuery(tags) }
+    let initiation = try await transport.send(
+      try signedRequest(
+        method: "POST", path: destinationKey, headers: metadata,
+        query: [URLQueryItem(name: "uploads", value: "")]))
+    try check(initiation, allowing: [200])
+    guard let uploadID = S3MultipartParser.value(named: "UploadId", in: initiation.body),
+      !uploadID.isEmpty
+    else { throw RemoteError.protocolError }
+    do {
+      var offset: Int64 = 0
+      var etags: [(Int, String)] = []
+      while offset < source.size {
+        try Task.checkCancellation()
+        let length = min(chunk, source.size - offset)
+        let number = etags.count + 1
+        let response = try await transport.send(
+          try signedRequest(
+            method: "PUT", path: destinationKey,
+            headers: [
+              "x-amz-copy-source": Self.encodePath("/\(configuration.bucket)/\(sourceKey)"),
+              "x-amz-copy-source-if-match": etag,
+              "x-amz-copy-source-range": "bytes=\(offset)-\(offset + length - 1)",
+            ],
+            query: [
+              URLQueryItem(name: "uploadId", value: uploadID),
+              URLQueryItem(name: "partNumber", value: String(number)),
+            ]))
+        try check(response, allowing: [200])
+        guard let partETag = S3MultipartParser.value(named: "ETag", in: response.body),
+          !partETag.isEmpty
+        else { throw RemoteError.protocolError }
+        etags.append((number, partETag))
+        offset += length
+        progress?(offset, source.size)
+      }
+      // 发布前再次检查，兼容忽略条件头的对象存储。
+      try await ensureMissingObject(destinationKey)
+      let completed = try await transport.send(
+        try signedRequest(
+          method: "POST", path: destinationKey, headers: ["if-none-match": "*"],
+          body: S3MultipartParser.complete(etags: etags),
+          query: [URLQueryItem(name: "uploadId", value: uploadID)]))
+      try check(completed, allowing: [200])
+    } catch {
+      let request = try signedRequest(
+        method: "DELETE", path: destinationKey,
+        query: [URLQueryItem(name: "uploadId", value: uploadID)])
+      let transport = transport
+      let cleanup = Task.detached { try await transport.send(request) }
+      do { try check(try await cleanup.value, allowing: [200, 204, 404]) } catch let cleanupError {
+        throw S3CopyCleanupError(underlyingError: error, cleanupError: cleanupError)
+      }
+      throw error
     }
   }
 
-  private func multipartWrite(key: String, localFile: URL, size: Int64) async throws {
+  private func multipartWrite(
+    key: String, localFile: URL, size: Int64, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
     guard partSize >= 5 * 1_024 * 1_024, partSize <= 5 * 1_024 * 1_024 * 1_024 else {
       throw RemoteError.posix(EINVAL)
     }
@@ -333,7 +455,7 @@ public actor S3Provider: RemoteFileProvider {
     }
     for attempt in 0..<2 {
       do {
-        try await multipartAttempt(key: key, localFile: localFile, size: size)
+        try await multipartAttempt(key: key, localFile: localFile, size: size, progress: progress)
         return
       } catch S3AttemptError.conditionalConflict {
         if attempt == 1 { throw RemoteError.posix(EEXIST) }
@@ -341,7 +463,9 @@ public actor S3Provider: RemoteFileProvider {
     }
   }
 
-  private func multipartAttempt(key: String, localFile: URL, size: Int64) async throws {
+  private func multipartAttempt(
+    key: String, localFile: URL, size: Int64, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
     try await ensureMissingObject(key)
     let initiated = try await transport.send(
       try signedRequest(
@@ -370,7 +494,7 @@ public actor S3Provider: RemoteFileProvider {
             URLQueryItem(name: "partNumber", value: String(number)),
             URLQueryItem(name: "uploadId", value: uploadID),
           ])
-        let response = try await transport.send(request)
+        let response = try await transport.upload(request)
         try check(response, allowing: [200])
         guard let etag = response.header("ETag"), !etag.isEmpty else {
           throw RemoteError.protocolError
@@ -403,12 +527,12 @@ public actor S3Provider: RemoteFileProvider {
     }
   }
 
-  private func putConditionally(key: String, body: Data) async throws {
+  private func putConditionally(key: String, body: Data, upload: Bool = true) async throws {
     for attempt in 0..<2 {
       try await ensureMissingObject(key)
       let request = try signedRequest(
         method: "PUT", path: key, headers: ["if-none-match": "*"], body: body)
-      let response = try await transport.send(request)
+      let response = try await (upload ? transport.upload(request) : transport.send(request))
       if Self.isConditionalConflict(response) {
         if attempt == 0 { continue }
         throw RemoteError.posix(EEXIST)
@@ -426,7 +550,7 @@ public actor S3Provider: RemoteFileProvider {
       let size = Int64(response.header("Content-Length") ?? "0") ?? 0
       let modified =
         response.header("Last-Modified").flatMap(Self.parseHTTPDate) ?? .distantPast
-      return S3ObjectInfo(key: key, size: size, modified: modified)
+      return S3ObjectInfo(key: key, size: size, modified: modified, headers: response.headers)
     case 404:
       return nil
     default:
@@ -441,7 +565,7 @@ public actor S3Provider: RemoteFileProvider {
 
   private func pathExists(key: String) async throws -> Bool {
     if try await headObject(key) != nil { return true }
-    return try await !listAll(prefix: key + "/", delimiter: nil).objects.isEmpty
+    return try await firstObject(prefix: key + "/") != nil
   }
 
   private func listAll(prefix: String, delimiter: String?) async throws -> S3ListResult {
@@ -473,12 +597,43 @@ public actor S3Provider: RemoteFileProvider {
     return S3ListResult(objects: objects, prefixes: prefixes)
   }
 
-  private func deleteObjects(_ keys: [String]) async throws {
+  private func deleteObjects(_ keys: [String], conditions: [String: String] = [:]) async throws {
     var seen = Set<String>()
-    for key in keys where seen.insert(key).inserted {
-      let request = try signedRequest(method: "DELETE", path: key)
-      try check(try await transport.send(request), allowing: [200, 204])
+    let unique = keys.filter { seen.insert($0).inserted }
+    var deleted: [String] = []
+    for (index, key) in unique.enumerated() {
+      do {
+        try Task.checkCancellation()
+        let headers = conditions[key].map { ["if-match": $0] } ?? [:]
+        let request = try signedRequest(method: "DELETE", path: key, headers: headers)
+        try check(try await transport.send(request), allowing: [200, 204])
+        deleted.append(key)
+      } catch {
+        guard unique.count > 1 else { throw error }
+        throw S3PartialDeletionError(
+          deletedKeys: deleted, uncertainKey: key,
+          unattemptedKeys: Array(unique.dropFirst(index + 1)), underlyingError: error)
+      }
     }
+  }
+
+  private func firstObject(prefix: String) async throws -> S3ListObject? {
+    let request = try signedRequest(
+      method: "GET", path: "",
+      query: [
+        URLQueryItem(name: "list-type", value: "2"),
+        URLQueryItem(name: "prefix", value: prefix),
+        URLQueryItem(name: "max-keys", value: "1"),
+      ])
+    let response = try await transport.send(request)
+    try check(response, allowing: [200])
+    let page = try S3ListParser.parse(response.body)
+    guard let object = page.objects.first else {
+      if page.isTruncated { throw RemoteError.protocolError }
+      return nil
+    }
+    guard object.key.hasPrefix(prefix) else { throw RemoteError.protocolError }
+    return object
   }
 
   func signedRequest(
@@ -520,7 +675,7 @@ public actor S3Provider: RemoteFileProvider {
     components.percentEncodedPath = encodedPath
     components.percentEncodedQuery = query.isEmpty ? nil : encodedQuery
     guard let url = components.url else { throw RemoteError.protocolError }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.httpMethod = method
     request.httpBody = body.isEmpty ? nil : body
     for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
@@ -617,11 +772,12 @@ public actor S3Provider: RemoteFileProvider {
     guard let header, header.hasPrefix("bytes ") else { return false }
     let pieces = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
     guard pieces.count == 2, let total = Int64(pieces[1]),
-      total > requested.upperBound - 1
+      requested.lowerBound >= 0, requested.upperBound > requested.lowerBound,
+      total > requested.lowerBound
     else { return false }
     let bounds = pieces[0].split(separator: "-", omittingEmptySubsequences: false)
     return bounds.count == 2 && Int64(bounds[0]) == requested.lowerBound
-      && Int64(bounds[1]) == requested.upperBound - 1
+      && Int64(bounds[1]) == min(requested.upperBound, total) - 1
   }
 
   private static func amzDate(_ date: Date) -> String {
@@ -677,6 +833,7 @@ private struct S3ObjectInfo {
   let key: String
   let size: Int64
   let modified: Date
+  let headers: [String: String]
 }
 
 private struct S3ListResult {
