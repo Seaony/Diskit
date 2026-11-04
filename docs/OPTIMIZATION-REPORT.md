@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：未开始。
+2. 不可用类型及数据安全：进行中；FIX-01、FIX-02、FIX-03 已修复，FIX-04 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -77,3 +77,11 @@
 - 依据：[官方账号结构](https://github.com/dropbox/dropbox-api-spec/blob/main/users.stone)、[官方文件接口结构](https://github.com/dropbox/dropbox-api-spec/blob/main/files.stone)、[请求头 JSON 编码要求](https://docs.dropboxapi.com/dropbox-api/docs/technical-reference/json-encoding)。只使用本地替身，真实账号授权、文件操作和回收站结果仍待用户验收。
 
 - FIX-02 完整门禁通过：应用逻辑 9 项、包测试 251 项；发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-02-gates.log`。
+
+## FIX-03：OneDrive 路径构造
+
+- 修复审查 1C 重复编码问题，并核实修正同一构造器中缺少 `/v1.0`、根路径斜线的问题；无操作后缀的文件元数据地址采用官方文档形式，内容和子目录操作保留 `:/content`、`:/children` 分隔。源码：`Packages/CloudDrive/Sources/CloudDrive/OneDriveProvider.swift` 的 `itemURL`、`endpoint`、`encodedPath`。
+- `oneDrivePathsEncodeEachSegmentOnce` 以六组独立输入检查中文、空格、加号、井号、表情和字面 `%20`；替身按官方完整地址匹配，未登记地址返回 404。验证连接、元数据路径往返、子目录和下载地址，且文件名不能变成 query 或 fragment。证据：`Packages/CloudDrive/Tests/CloudDriveTests/OneDrivePathTests.swift:43`、`docs/evidence/v0.2/FIX-03-regression.log`，修复前各组失败、最终 CloudDrive 43 项通过。
+- 依据：[Microsoft 路径寻址与编码](https://learn.microsoft.com/en-us/graph/onedrive-addressing-driveitems)、[获取文件元数据](https://learn.microsoft.com/en-us/graph/api/driveitem-get?view=graph-rest-1.0)。未访问真实账号。跨目录移动的 `parentReference.path` 问题属于审查其余条目，尚未处理，不将本次编码修复当作移动全流程通过。
+
+- FIX-03 完整门禁通过：应用逻辑 9 项、包测试 252 项；发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-03-gates.log`。

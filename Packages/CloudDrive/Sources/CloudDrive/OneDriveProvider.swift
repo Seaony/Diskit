@@ -250,7 +250,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func itemURL(_ path: RemotePath, suffix: String = "") throws -> URL {
-    try endpoint("/me/drive/root:\(encodedPath(path)):\(suffix)")
+    try endpoint("/me/drive/root:\(encodedPath(path))" + (suffix.isEmpty ? "" : ":" + suffix))
   }
 
   private func endpoint(_ value: String) throws -> URL {
@@ -258,9 +258,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     var components = URLComponents()
     components.scheme = "https"
     components.host = "graph.microsoft.com"
-    components.percentEncodedPath =
-      String(parts[0]).addingPercentEncoding(
-        withAllowedCharacters: CharacterSet.urlPathAllowed) ?? ""
+    components.percentEncodedPath = "/v1.0" + String(parts[0])
     if parts.count == 2 {
       components.percentEncodedQuery = String(parts[1])
     }
@@ -269,9 +267,12 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func encodedPath(_ path: RemotePath) -> String {
-    path.value.split(separator: "/").map {
-      String($0).addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
-    }.joined(separator: "/")
+    let allowed = CharacterSet(
+      charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+    return "/"
+      + path.value.split(separator: "/").map {
+        String($0).addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+      }.joined(separator: "/")
   }
 
   private func parent(_ path: RemotePath) -> RemotePath {

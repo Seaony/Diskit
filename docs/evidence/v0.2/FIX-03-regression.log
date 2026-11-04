@@ -1,0 +1,30 @@
+修复前版本入口失败
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a+b", "a%2Bb"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["😀", "%F0%9F%98%80"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a#b", "a%23b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["中文", "%E4%B8%AD%E6%96%87"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a b", "a%20b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a%20b", "a%2520b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases failed after 0.003 seconds with 6 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 6 issues.
+修复版本后路径仍失败
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["中文", "%E4%B8%AD%E6%96%87"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a#b", "a%23b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a%20b", "a%2520b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["😀", "%F0%9F%98%80"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a b", "a%20b"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a+b", "a%2Bb"] at OneDrivePathTests.swift:38:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases failed after 0.003 seconds with 6 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 6 issues.
+文件地址按官方格式校验失败
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["中文", "%E4%B8%AD%E6%96%87"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a%20b", "a%2520b"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a b", "a%20b"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a#b", "a%23b"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["😀", "%F0%9F%98%80"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) recorded an issue with 1 argument sample → ["a+b", "a%2Bb"] at OneDrivePathTests.swift:43:2: Caught error: .posix(2)
+􀢄  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases failed after 0.003 seconds with 6 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 6 issues.
+最终包回归
+􁁛  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases passed after 0.006 seconds.
+􁁛  Test run with 43 tests in 0 suites passed after 1.027 seconds.
