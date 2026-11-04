@@ -729,17 +729,5 @@ private enum PanelCopy {
 }
 
 extension Connection {
-  var tint: Color {
-    switch color {
-    case "green": Color(red: 0.16, green: 0.66, blue: 0.45)
-    case "orange": Color(red: 0.93, green: 0.52, blue: 0.18)
-    case "red": Color(red: 0.86, green: 0.26, blue: 0.28)
-    case "purple": Color(red: 0.56, green: 0.36, blue: 0.78)
-    case "pink": Color(red: 0.88, green: 0.35, blue: 0.59)
-    case "teal": Color(red: 0.12, green: 0.59, blue: 0.62)
-    case "indigo": Color(red: 0.35, green: 0.38, blue: 0.78)
-    case "gray": Color(red: 0.44, green: 0.48, blue: 0.50)
-    default: Color(red: 0.18, green: 0.46, blue: 0.83)
-    }
-  }
+  var tint: Color { KayoiTheme.locationColor(color) }
 }

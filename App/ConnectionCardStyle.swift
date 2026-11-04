@@ -4,14 +4,15 @@ import SwiftUI
 struct ConnectionCardStyle: ButtonStyle {
   let selected: Bool
   @State private var hovering = false
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .background(
-        selected ? KayoiTheme.selection : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 12)
+        configuration.isPressed ? KayoiTheme.pressed : selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
       )
       .overlay {
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
           .strokeBorder(
             selected
               ? KayoiTheme.accent
@@ -21,15 +22,12 @@ struct ConnectionCardStyle: ButtonStyle {
       .overlay(alignment: .topTrailing) {
         if selected {
           Image(systemName: "checkmark.circle.fill").foregroundStyle(KayoiTheme.accent)
-            .padding(10).accessibilityHidden(true)
+            .padding(Space.md).accessibilityHidden(true)
         }
       }
-      .overlay {
-        if configuration.isPressed {
-          RoundedRectangle(cornerRadius: 12).fill(.primary.opacity(0.08))
-        }
-      }
-      .contentShape(RoundedRectangle(cornerRadius: 12))
+      .contentShape(RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+      .offset(y: configuration.isPressed && !reduceMotion ? 1 : 0) // grid: ok 按下或拖动时的短暂位移
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
       .onHover { hovering = $0 }
   }
 }
@@ -53,18 +51,17 @@ extension ConnectionKind {
     }
   }
   var iconColor: Color {
+    let name: String
     switch self {
-    case .androidUSB, .androidWiFi: .green
-    case .smb: .blue
-    case .ricohGR, .cameraUSB: .primary
-    case .aliyunDrive: .orange
-    case .quark, .ucDrive: .blue
-    case .webdav, .webdavHTTPS, .nfs: .teal
-    case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2: .orange
-    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .tianyiDrive,
-      .mobileCloud, .thunderDrive, .pikPak, .lanzou:
-      .purple
+    case .androidUSB, .androidWiFi: name = "green"
+    case .smb: name = "blue"
+    case .ricohGR, .cameraUSB: name = "gray"
+    case .webdav, .webdavHTTPS, .nfs: name = "teal"
+    case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2, .aliyunDrive: name = "orange"
+    case .quark, .ucDrive: name = "blue"
+    default: name = "purple"
     }
+    return KayoiTheme.locationColor(name)
   }
   var connectionCaption: String {
     switch self {

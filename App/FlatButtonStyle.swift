@@ -3,33 +3,40 @@ import SwiftUI
 struct FlatButtonStyle: ButtonStyle {
   var prominent = false
   @Environment(\.isEnabled) private var isEnabled
+  @Environment(\.isFocused) private var isFocused
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  @State private var hovering = false
 
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
-      .font(.system(size: 13, weight: .semibold))
-      .padding(.horizontal, 14)
-      .padding(.vertical, 8)
+      .font(.body.weight(.semibold))
+      .padding(.horizontal, Space.md)
+      .padding(.vertical, Space.xs)
       .foregroundStyle(foreground(configuration))
-      .background(
-        prominent && isEnabled ? KayoiTheme.accent : KayoiTheme.surface,
-        in: RoundedRectangle(cornerRadius: 8)
-      )
+      .background(background(configuration), in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
       .overlay {
-        RoundedRectangle(cornerRadius: 8)
-          .strokeBorder(KayoiTheme.border, lineWidth: 1)
+        RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+          .strokeBorder(ControlFocus.isFocused(inherited: isFocused, explicit: focusOverride) ? KayoiTheme.focus : KayoiTheme.border, lineWidth: ControlFocus.isFocused(inherited: isFocused, explicit: focusOverride) ? 2 : 1)
       }
-      .overlay {
-        if configuration.isPressed && isEnabled {
-          RoundedRectangle(cornerRadius: 8).fill(.primary.opacity(0.12))
-        }
-      }
-      .contentShape(RoundedRectangle(cornerRadius: 8))
+      .contentShape(RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
+      .offset(y: configuration.isPressed && isEnabled && !reduceMotion ? 1 : 0) // grid: ok 按下或拖动时的短暂位移
+      .opacity(isEnabled ? 1 : 0.9)
+      .onHover { hovering = $0 }
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+      .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: hovering)
+  }
+
+  private func background(_ configuration: Configuration) -> Color {
+    guard isEnabled else { return KayoiTheme.disabledSurface }
+    if prominent {
+      return configuration.isPressed ? KayoiTheme.actionPressed : hovering ? KayoiTheme.actionHover : KayoiTheme.accent
+    }
+    return configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.hover : KayoiTheme.surface
   }
 
   private func foreground(_ configuration: Configuration) -> Color {
-    if !isEnabled { return Color(nsColor: .disabledControlTextColor) }
+    if !isEnabled { return KayoiTheme.disabledText }
     if prominent { return KayoiTheme.actionText }
-    if configuration.role == .destructive { return .red }
-    return .primary
+    return configuration.role == .destructive ? KayoiTheme.error : KayoiTheme.primaryText
   }
 }
