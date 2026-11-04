@@ -135,9 +135,9 @@ public actor ADBProvider: RemoteFileProvider {
     sdPath = nil
     await session.disconnect()
   }
-  private func operationFailed(_ error: Error) async {
+  private func operationFailed(_ error: Error, releaseBusy: Bool = true) async {
     let reusable = await session.recoverAfterOperationError(error)
-    busy = false
+    if releaseBusy { busy = false }
     if !reusable {
       connected = false
       needsNewSession = true
@@ -258,10 +258,13 @@ public actor ADBProvider: RemoteFileProvider {
     defer { busy = false }
     let file = try FileHandle(forReadingFrom: localFile)
     defer { try? file.close() }
+    let destination = mapped(path)
+    let temporary = URL(filePath: destination).deletingLastPathComponent()
+      .appending(path: ".kayoi-upload-" + UUID().uuidString + ".tmp").path
     do {
       try await session.open("sync:")
       try await session.write(
-        ADBSync.request(v2 ? "SND2" : "SEND", mapped(path) + (v2 ? "" : ",33206")))
+        ADBSync.request(v2 ? "SND2" : "SEND", temporary + (v2 ? "" : ",33206")))
       if v2 {
         var setup = Data()
         setup.appendLE(ADBSync.id("SND2"))
@@ -290,8 +293,16 @@ public actor ADBProvider: RemoteFileProvider {
       if id == ADBSync.id("FAIL") { throw try await ADBSync.failure(session, length: length) }
       guard id == ADBSync.id("OKAY") else { throw RemoteError.protocolError }
       try await session.closeService()
+      try Task.checkCancellation()
+      _ = try await executeShell(
+        "mv -T -- " + ADBShell.quote(temporary) + " " + ADBShell.quote(destination))
     } catch {
-      await operationFailed(error)
+      await operationFailed(error, releaseBusy: false)
+      if connected {
+        do { _ = try await executeShell("rm -f -- " + ADBShell.quote(temporary)) } catch {
+          await operationFailed(error, releaseBusy: false)
+        }
+      }
       throw error
     }
   }
@@ -332,12 +343,18 @@ public actor ADBProvider: RemoteFileProvider {
   private func shell(_ command: String) async throws -> Data {
     try begin()
     defer { busy = false }
-    guard await session.features.contains("shell_v2") else { throw RemoteError.unsupported }
-    do {
+    do { return try await executeShell(command) } catch {
+      await operationFailed(error)
+      throw error
+    }
+  }
+
+  private func executeShell(_ command: String) async throws -> Data {
+    var output = Data()
+    var errorOutput = Data()
+    var exitCode: UInt8?
+    if await session.features.contains("shell_v2") {
       try await session.open("shell,v2,raw:" + command)
-      var output = Data()
-      var errorOutput = Data()
-      var exitCode: UInt8?
       while exitCode == nil {
         let id = try await session.readExactly(1).first!
         var header = BinaryReader(try await session.readExactly(4))
@@ -351,23 +368,39 @@ public actor ADBProvider: RemoteFileProvider {
         default: throw RemoteError.protocolError
         }
       }
-      try await session.closeService()
-      guard exitCode == 0 else {
-        let error = String(decoding: errorOutput, as: UTF8.self)
-        if error.trimmingCharacters(in: .whitespacesAndNewlines) == "File exists" {
-          throw RemoteError.posix(EEXIST)
-        }
-        if error.contains("Permission denied") { throw RemoteError.posix(EACCES) }
-        if error.contains("No such file") { throw RemoteError.posix(ENOENT) }
-        if error.contains("No space") { throw RemoteError.posix(ENOSPC) }
-        throw RemoteError.posix(EIO)
+    } else {
+      let marker = "KAYOI_STATUS_" + UUID().uuidString + ":"
+      let wrapped =
+        "(\n" + command + "\n) 2>&1; kayoi_status=$?; printf '\\n" + marker
+        + "%s\\n' \"$kayoi_status\""
+      try await session.open("shell:" + wrapped)
+      while let chunk = try await session.readChunk() {
+        output.append(chunk)
+        guard output.count <= 1_048_576 else { throw RemoteError.protocolError }
       }
-      return output
-    } catch {
-      await operationFailed(error)
-      throw error
+      guard let footer = output.range(of: Data(("\n" + marker).utf8), options: .backwards),
+        let status = UInt8(
+          String(decoding: output[footer.upperBound...], as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines))
+      else { throw RemoteError.protocolError }
+      output = Data(output[..<footer.lowerBound])
+      errorOutput = output
+      exitCode = status
     }
+    try await session.closeService()
+    guard exitCode == 0 else {
+      let error = String(decoding: errorOutput, as: UTF8.self)
+      if error.trimmingCharacters(in: .whitespacesAndNewlines) == "File exists" {
+        throw RemoteError.posix(EEXIST)
+      }
+      if error.contains("Permission denied") { throw RemoteError.posix(EACCES) }
+      if error.contains("No such file") { throw RemoteError.posix(ENOENT) }
+      if error.contains("No space") { throw RemoteError.posix(ENOSPC) }
+      throw RemoteError.posix(EIO)
+    }
+    return output
   }
+
 }
 
 private actor ADBReadCursor {

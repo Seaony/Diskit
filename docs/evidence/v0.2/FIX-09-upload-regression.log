@@ -1,0 +1,26 @@
+修复前：swift test --package-path Packages/ADB --filter adbFailedUploadKeepsOriginal|adbUploadPublishesOnlyAfterCompletion；退出 1。
+􀢄  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) recorded an issue with 2 arguments modern → false, contents → "" at UploadSafetyTests.swift:51:21: Expectation failed: events.firstIndex { $0.hasPrefix("shell:") && $0.contains("mv -T --") } → nil
+􀢄  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) recorded an issue with 2 arguments modern → true, contents → "" at UploadSafetyTests.swift:51:21: Expectation failed: events.firstIndex { $0.hasPrefix("shell:") && $0.contains("mv -T --") } → nil
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "interrupt" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "interrupt" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "interrupt" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "interrupt" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "commit" at UploadSafetyTests.swift:20:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) recorded an issue with 2 arguments modern → false, contents → "replacement" at UploadSafetyTests.swift:51:21: Expectation failed: events.firstIndex { $0.hasPrefix("shell:") && $0.contains("mv -T --") } → nil
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "commit" at UploadSafetyTests.swift:20:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "commit" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) recorded an issue with 2 arguments modern → true, contents → "replacement" at UploadSafetyTests.swift:51:21: Expectation failed: events.firstIndex { $0.hasPrefix("shell:") && $0.contains("mv -T --") } → nil
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "commit" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "commit" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "server" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "server" at UploadSafetyTests.swift:23:3: Expectation failed: try Data(contentsOf: target) == Data("original".utf8)
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "commit" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → true, failure → "server" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test adbFailedUploadKeepsOriginal(modern:failure:) recorded an issue with 2 arguments modern → false, failure → "server" at UploadSafetyTests.swift:24:3: Expectation failed: await transport.uploadedPaths.allSatisfy { $0 != "/sdcard/target" }
+􀢄  Test run with 2 tests in 0 suites failed after 0.004 seconds with 18 issues.
+修复后：swift test --package-path Packages/ADB；退出 0。最终收紧的具体错误类型与已发送数据断言另见完整门禁记录。
+􁁛  Test adbCancellationBeforePublishKeepsOriginal() passed after 0.016 seconds.
+􁁛  Test adbUploadNeverMovesTemporaryFileInsideTargetDirectory(modern:) with 2 test cases passed after 0.018 seconds.
+􁁛  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) with 4 test cases passed after 0.018 seconds.
+􁁛  Test adbFailedUploadKeepsOriginal(modern:failure:) with 6 test cases passed after 0.080 seconds.
+􁁛  Test run with 35 tests in 0 suites passed after 0.372 seconds.

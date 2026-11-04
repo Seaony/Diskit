@@ -219,8 +219,12 @@ private func syncDone() -> Data {
   var okay = Data("OKAY".utf8)
   okay.appendLE(0)
   let transport = FakeTransport([
-    hello(), .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1),
-    .init(.okay, 11, 1), .init(.write, 11, 1, payload: okay), .init(.close, 11, 1),
+    hello("shell_v2,sendrecv_v2"), .init(.okay, 11, 1),
+    .init(.write, 11, 1, payload: shellFrame(3, Data([0]))), .init(.close, 11, 1),
+    .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2),
+    .init(.okay, 12, 2), .init(.write, 12, 2, payload: okay), .init(.close, 12, 2),
+    .init(.okay, 13, 3), .init(.write, 13, 3, payload: shellFrame(3, Data([0]))),
+    .init(.close, 13, 3),
   ])
   let provider = ADBProvider(
     session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
@@ -395,11 +399,16 @@ func ordinaryADBServiceErrorsAllowTheNextOperation(operation: String) async thro
     ]
     nextLocal = 3
   case "write":
-    messages += [
-      .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1),
-      .init(.okay, 11, 1),
-      .init(.write, 11, 1, payload: failure), .init(.close, 11, 1),
+    messages = [
+      hello("shell_v2,sendrecv_v2,ls_v2"), .init(.okay, 11, 1),
+      .init(.write, 11, 1, payload: shellFrame(3, Data([0]))), .init(.close, 11, 1),
+      .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2),
+      .init(.okay, 12, 2),
+      .init(.write, 12, 2, payload: failure), .init(.close, 12, 2),
+      .init(.okay, 13, 3), .init(.write, 13, 3, payload: shellFrame(3, Data([0]))),
+      .init(.close, 13, 3),
     ]
+    nextLocal = 4
   case "shell", "shell-unknown":
     messages = [
       hello("shell_v2,ls_v2"), .init(.okay, 11, 1),
