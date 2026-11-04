@@ -97,6 +97,13 @@ public enum ConnectionState: Equatable, Sendable {
           throw ConnectionError.invalidFields
         }
         try await smb.test(connection, password: password)
+        if let previous = connections.first(where: { $0.id == connection.id }),
+          previous.kind.usesSystemMount, let mounted = smb.mounted(previous),
+          try SystemMountAddress.url(for: previous) != SystemMountAddress.url(for: connection)
+        {
+          try await smb.unmount(mounted.url)
+          states[connection.id] = .disconnected
+        }
         oldSecret = try secrets.read(connection.passwordKey)
         try secrets.write(Data(password.utf8), for: connection.passwordKey)
       } else {

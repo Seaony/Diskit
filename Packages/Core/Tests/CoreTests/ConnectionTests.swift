@@ -27,6 +27,8 @@ private final class MemorySecrets: SecretStore, Sendable {
   var unmountError: ConnectionError?
   var volumes: [UUID: MountedShare] = [:]
   var calls: [String] = []
+  var mountedAddresses: [UUID: URL] = [:]
+  var onUnmount: ((URL) throws -> Void)?
   func shares(host: String, user: String, password: String) async throws -> [String] {
     calls.append("shares")
     if let error { throw error }
@@ -46,14 +48,24 @@ private final class MemorySecrets: SecretStore, Sendable {
     let value = MountedShare(
       url: URL(fileURLWithPath: "/Volumes/" + connection.id.uuidString), availableBytes: 12345)
     volumes[connection.id] = value
+    mountedAddresses[connection.id] = try? SystemMountAddress.url(for: connection)
     return value.url
   }
   func unmount(_ url: URL) async throws {
     calls.append("unmount")
+    try onUnmount?(url)
     if let unmountError { throw unmountError }
     volumes = volumes.filter { $0.value.url != url }
+    mountedAddresses = mountedAddresses.filter { volumes[$0.key] != nil }
   }
-  func mounted(_ connection: Connection) -> MountedShare? { volumes[connection.id] }
+  func mounted(_ connection: Connection) -> MountedShare? {
+    if let address = mountedAddresses[connection.id],
+      address != (try? SystemMountAddress.url(for: connection))
+    {
+      return nil
+    }
+    return volumes[connection.id]
+  }
 }
 
 private func sample(_ name: String = "Windows") -> Connection {
@@ -637,4 +649,105 @@ private func sample(_ name: String = "Windows") -> Connection {
   f.secrets.failDeletes.withLock { $0 = false }
   try await manager.remove(connection)
   #expect(try f.secrets.read(connection.passwordKey) == nil)
+}
+
+private func mountedEditConnection(_ kind: ConnectionKind) -> Connection {
+  switch kind {
+  case .smb: return sample()
+  case .webdav, .webdavHTTPS:
+    return Connection(
+      kind: kind, name: "WebDAV",
+      params: [
+        "url": "\(kind == .webdav ? "http" : "https")://192.0.2.10/share", "username": "user",
+      ])
+  default:
+    return Connection(kind: .nfs, name: "NFS", params: ["host": "192.0.2.10", "path": "/share"])
+  }
+}
+
+@Test(arguments: [ConnectionKind.smb, .webdav, .webdavHTTPS, .nfs], [false, true])
+@MainActor func editingMountedAddressEjectsBeforeSaving(kind: ConnectionKind, ejectFails: Bool)
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let original = mountedEditConnection(kind)
+  try await manager.save(original, password: "old")
+  await manager.toggle(original)
+  let volume = try #require(f.smb.volumes[original.id])
+  var unexpected = 0
+  manager.unexpectedDisconnect = { _ in unexpected += 1 }
+  f.smb.onUnmount = { (url: URL) throws -> Void in
+    #expect(url == volume.url)
+    #expect(try ConnectionRepository(location: f.location).load().first?.params == original.params)
+    #expect(try manager.savedPassword(original) == "old")
+  }
+  if ejectFails { f.smb.unmountError = .busy }
+  var edited = original
+  edited.params = edited.params.mapValues {
+    $0.replacingOccurrences(of: "192.0.2.10", with: "192.0.2.20")
+  }
+  if ejectFails {
+    await #expect(throws: ConnectionError.busy) { try await manager.save(edited, password: "new") }
+    #expect(manager.connections.first?.params == original.params)
+    #expect(try ConnectionRepository(location: f.location).load().first?.params == original.params)
+    #expect(try manager.savedPassword(original) == "old")
+    #expect(f.smb.volumes[original.id] != nil)
+  } else {
+    try await manager.save(edited, password: "new")
+    #expect(f.smb.volumes[original.id] == nil)
+    #expect(manager.states[original.id] == .disconnected)
+    #expect(try ConnectionRepository(location: f.location).load().first?.params == edited.params)
+    #expect(try manager.savedPassword(edited) == "new")
+  }
+  #expect(f.smb.calls == ["test", "mount", "test", "unmount"])
+  manager.refreshMounts()
+  #expect(unexpected == 0)
+}
+
+@Test @MainActor func editingOnlyMountedNameKeepsVolume() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var connection = sample()
+  try await manager.save(connection, password: "old")
+  await manager.toggle(connection)
+  connection.name = "新名称"
+  connection.color = "red"
+  try await manager.save(connection, password: "old")
+  #expect(f.smb.volumes[connection.id] != nil)
+  #expect(!f.smb.calls.contains("unmount"))
+}
+
+@Test @MainActor func mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice()
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let original = sample()
+  try await manager.save(original, password: "old")
+  await manager.toggle(original)
+  var unexpected = 0
+  manager.unexpectedDisconnect = { _ in unexpected += 1 }
+  let config = f.location.dataDirectory.appending(path: "connections.json")
+  let backup = f.location.dataDirectory.appending(path: "saved.json")
+  f.smb.onUnmount = { _ in
+    try FileManager.default.moveItem(at: config, to: backup)
+    try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
+    try Data().write(to: config.appending(path: "block-write"))
+  }
+  var edited = original
+  edited.params["host"] = "192.0.2.20"
+  await #expect(throws: CocoaError.self) { try await manager.save(edited, password: "new") }
+  #expect(manager.connections.first?.params == original.params)
+  #expect(try manager.savedPassword(original) == "old")
+  #expect(f.smb.volumes[original.id] == nil)
+  #expect(manager.states[original.id] == .disconnected)
+  manager.refreshMounts()
+  #expect(unexpected == 0)
+  try FileManager.default.removeItem(at: config)
+  try FileManager.default.moveItem(at: backup, to: config)
+  #expect(try ConnectionRepository(location: f.location).load().first?.params == original.params)
 }
