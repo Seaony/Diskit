@@ -4,6 +4,7 @@ import CameraUSB
 import Core
 import RicohGR
 import SwiftUI
+import UniformTypeIdentifiers
 
 private struct PanelError: Identifiable {
   let id = UUID()
@@ -40,6 +41,10 @@ struct PanelView: View {
   @Environment(\.openSettings) private var showSettings
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var panelVisible = false
+  @State private var draggedID: UUID?
+  @State private var dragSource = PanelDraggingSource()
+  @State private var dropTargetID: UUID?
+  @State private var endDropTargeted = false
   @State private var deleteTarget: Connection?
   @State private var actionError: PanelError?
   @State private var selection = PanelSelection()
@@ -196,6 +201,8 @@ struct PanelView: View {
                   onReauthenticate: { edit(connection, reauthenticate: true) },
                   onMove: { offset in move(connection, offset: offset) },
                   onDelete: { deleteTarget = connection },
+                  draggedID: $draggedID,
+                  dropTargetID: $dropTargetID,
                   onDrop: { draggedID in move(draggedID, before: connection.id) }
                 ).id(connection.id)
                   .gridProbe("row-" + connection.id.uuidString, area: "panel-list")
@@ -236,6 +243,9 @@ struct PanelView: View {
     .background(KayoiTheme.background)
     .buttonStyle(FlatButtonStyle())
     .onDisappear { panelVisible = false }
+    .onChange(of: draggedID) { _, id in
+      if id == nil { dropTargetID = nil; endDropTargeted = false }
+    }
     .onPreferenceChange(ScrollContentHeightKey.self) { scrollHeight = $0 }
     .background(PanelVisibilityObserver(visible: $panelVisible))
     .background(PanelKeyboardAnchor(handle: handleInitialKey))
@@ -308,6 +318,18 @@ struct PanelView: View {
     }
   }
 
+  private func displacement(for index: Int) -> CGFloat {
+    guard !reduceMotion, draggedID != nil, let dropTargetID,
+      let target = model.connections.connections.firstIndex(where: { $0.id == dropTargetID }) else { return 0 }
+    let distance = abs(index - target)
+    return CGFloat((index < target ? -1.0 : 1.0) * 8 * pow(0.7, Double(distance)))
+  }
+
+  private func displacementDelay(for index: Int) -> Double {
+    guard let dropTargetID,
+      let target = model.connections.connections.firstIndex(where: { $0.id == dropTargetID }) else { return 0 }
+    return 0.024 * Double(abs(index - target))
+  }
 
   private var statusTarget: (id: UUID, label: String, symbol: String, color: Color, background: Color)? {
     let connections = model.connections.connections
@@ -498,19 +520,29 @@ struct PanelView: View {
     }
   }
 
-  private func move(_ source: UUID, before target: UUID) {
-    do { try model.connections.reorder(source, before: target) } catch {
+  private func move(_ source: UUID, before target: UUID?) {
+    let ids = model.connections.connections.map(\.id)
+    guard let index = ids.firstIndex(of: source) else { return }
+    let previousNext = ids.dropFirst(index + 1).first
+    guard target != source, target != previousNext else { return }
+    do {
+      try model.connections.reorder(source, before: target)
+      model.undoManager.registerUndo(withTarget: model.connections) { _ in
+        MainActor.assumeIsolated { move(source, before: previousNext) }
+      }
+      model.undoManager.setActionName(L("调整位置顺序"))
+    } catch {
       actionError = PanelError(title: L("调整位置顺序失败"), message: HumanError.detail(error))
     }
   }
 
   private func move(_ connection: Connection, offset: Int) {
-    do {
-      try model.connections.move(connection.id, offset: offset)
-      selectedConnectionID = connection.id
-    } catch {
-      actionError = PanelError(title: L("调整位置顺序失败"), message: HumanError.detail(error))
-    }
+    let ids = model.connections.connections.map(\.id)
+    guard let index = ids.firstIndex(of: connection.id) else { return }
+    let destination = min(max(index + offset, 0), ids.count - 1)
+    let target = offset < 0 ? ids[destination] : ids.dropFirst(destination + 1).first
+    move(connection.id, before: target)
+    selection.select(connection.id, reveal: true)
   }
 
   private var deleteTitle: String {

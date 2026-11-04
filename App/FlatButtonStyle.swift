@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FlatButtonStyle: ButtonStyle {
   var prominent = false
+  var focusOverride: Bool? = nil
   @Environment(\.isEnabled) private var isEnabled
   @Environment(\.isFocused) private var isFocused
   @Environment(\.accessibilityReduceMotion) private var reduceMotion

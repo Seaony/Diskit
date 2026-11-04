@@ -9920,6 +9920,22 @@
         }
       }
     },
+    "拖动以调整顺序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to reorder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拖动以调整顺序"
+          }
+        }
+      }
+    },
     "授权完成后返回 Kayoi，确认账号信息，再测试并保存位置。": {
       "localizations": {
         "en": {
@@ -10097,6 +10113,22 @@
         }
       }
     },
+    "无法连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t Connect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法连接"
+          }
+        }
+      }
+    },
     "无法连接：%@": {
       "localizations": {
         "en": {
@@ -10221,6 +10253,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "构建 %@"
+          }
+        }
+      }
+    },
+    "查看错误详情": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View Error Details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看错误详情"
           }
         }
       }
@@ -11601,6 +11649,22 @@
         }
       }
     },
+    "调整位置顺序": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reorder Locations"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "调整位置顺序"
+          }
+        }
+      }
+    },
     "账号": {
       "localizations": {
         "en": {
@@ -11677,6 +11741,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "还需要填写：%@"
+          }
+        }
+      }
+    },
+    "这个位置只能读取": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location is read-only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个位置只能读取"
           }
         }
       }
