@@ -70,3 +70,53 @@ PTP/MTP StorageInfo、DeviceInfo、ObjectInfo 字段顺序参考 AOSP frameworks
 账号昵称和未登录响应交叉核对夸克公开网页脚本：
 https://g.alicdn.com/quark-cloud-drive/quark-cloud-drive-static-page/0.1.78/js/index.js
 用户 ID 字段仍需真实账号响应确认，不从 Cookie 或昵称生成替代值。上传流程使用服务端返回的 OSS 签名与回调，未引入第三方 SDK。
+
+## rclone（MIT）
+
+- 来源：https://github.com/rclone/rclone
+- 核对版本：`9751d168bcb5266063738ca964711eae71fe2caa`
+- 范围：只参考百度、115、123 和国际网盘驱动的接口行为与错误分类，没有复制代码。
+- 许可证：MIT，https://github.com/rclone/rclone/blob/master/COPYING
+
+## 官方网盘接口
+
+仅按各平台公开接口实现，没有复制 SDK 源码：
+
+- 百度网盘开放平台：https://pan.baidu.com/union/doc/
+- 115 开放平台：https://open.115.com/doc/
+- 123 云盘开放平台：https://www.yuque.com/123pan/developer
+- Microsoft Graph 文件接口：https://learn.microsoft.com/graph/api/resources/onedrive
+- Google Drive API：https://developers.google.com/workspace/drive/api/reference/rest/v3
+- Dropbox API：https://www.dropbox.com/developers/documentation/http/documentation
+
+## 实验性网页网盘
+
+这些实现只参考公开网页和开源驱动的 HTTP 行为，没有复制驱动源码。
+
+- 天翼云盘：
+  - 官方能力开放页：https://cloud.189.cn/web/open
+  - OpenList `drivers/189pc` 仅用于核对个人云、家庭云、上传和会话行为，不复制 AGPL-3.0 代码：https://github.com/OpenListTeam/OpenList/tree/main/drivers/189pc
+  - `suileyan/xpmibackup_sly`（MIT）仅用于核对登录跳转和会话失效行为：https://github.com/suileyan/xpmibackup_sly
+- 中国移动云盘：
+  - 官方网页：https://yun.139.com/w/
+  - `Taizong547/YunpanTingshu`（MIT，commit `3ba2078ac7a86ca54c0d4b0975b0224b5e3cc71c`）仅用于交叉核对签名、路由和列表行为：https://github.com/Taizong547/YunpanTingshu
+- 迅雷云盘：
+  - 官方网页：https://pan.xunlei.com/
+  - 接口行为按当前官方网页脚本核对。上传脚本确认会转入阿里云、腾讯云、华为云或火山云 SDK 分片流程；Kayoi 只请求并处理 `PROVIDER_ALIYUN`。
+  - 官方 SDK：https://github.com/aliyun/alibabacloud-oss-swift-sdk-v2
+  - 固定版本：`0.4.0`，commit `335c1777bf3c4aa86d7212c03e515de53b192418`。
+  - 许可证：Apache-2.0，副本为 `docs/licenses/Apache-2.0.txt`。
+  - 使用范围：基础 `AlibabaCloudOSS` product 的 OSS multipart、STS 签名和 CRC64 校验；未引入 `AlibabaCloudOSSExtension`，未复制 SDK 源码。
+  - SDK 通过 SwiftPM 解析 `swift-crypto` `3.15.1`、`swift-asn1` `1.7.4`（Apache-2.0）和 `XMLCoder` `0.18.2`（MIT）。基础 product 构建使用 Swift Crypto；XMLCoder 由上游包声明为 Extension 依赖。固定版本见 `Packages/ChinaWebDrive/Package.resolved`，XMLCoder 许可证副本为 `docs/licenses/XMLCoder-MIT.txt`。
+  - 凭据去向：迅雷登录令牌只发给 `api-pan.xunlei.com`；阿里云临时 Access Key 只允许发往 `*.aliyuncs.com` HTTPS endpoint，不会附到迅雷 CDN 下载请求。
+- PikPak：
+  - 官方登录与网页入口：https://mypikpak.com/
+  - 网页 API 域名为 https://user.mypikpak.com 和 https://api-drive.mypikpak.com。实现未复制第三方驱动代码。
+  - rclone 的 PikPak 驱动（MIT）仅用于核对接口行为，未复制代码：https://github.com/rclone/rclone/tree/master/backend/pikpak
+- 蓝奏云：
+  - 公开分享入口：https://pan.lanzoui.com/
+  - OpenList 与 AList 的蓝奏云驱动仅用于核对分享页、密码参数、分页和下载行为，不复制 AGPL-3.0 代码：https://github.com/OpenListTeam/OpenList/tree/main/drivers
+
+## 相机
+
+相机扩展只使用 macOS 的 ImageCaptureCore、IOKit 和 Foundation。PTP 字段布局继续参考 AOSP `frameworks/av/media/mtp`（Apache-2.0）；没有引入第三方相机库。

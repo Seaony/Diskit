@@ -244,7 +244,7 @@ private func auth() -> Reply {
     Reply("/objects/key", status: 500, bytes: Data()),
   ])
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(throws: RemoteError.http(500)) {
     try await provider.write(RemotePath("/new"), from: url)
   }
   #expect(await http.files().allSatisfy { !$0.url!.path.hasSuffix("/finish") })

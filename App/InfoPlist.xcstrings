@@ -24,13 +24,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "发现并读取通过 USB 连接的 GR IV 相机。"
+            "value": "发现并读取通过 USB 连接的相机。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discover and read your GR IV camera connected over USB."
+            "value": "Discover and read cameras connected over USB."
           }
         }
       }

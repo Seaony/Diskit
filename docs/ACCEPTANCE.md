@@ -1,6 +1,6 @@
 # 验收记录
 
-日期：2026-11-03。环境：macOS 26.5.2（25F84）、Xcode 26.6（17F113）、Swift 6.3.3、XcodeGen 2.46.0。
+日期：起始 2026-11-03，最后更新 2026-11-04。环境：macOS 26.5.2（25F84）、Xcode 26.6（17F113）、Swift 6.3.3、XcodeGen 2.46.0。
 只记录实际运行的结果；界面与外部设备不由单元测试替代。
 
 ## M0 工程骨架
@@ -196,9 +196,111 @@ M6 实现与自动验证完成。M3 首次名称差异已获用户批准修订�
 
 SMB 临时挂载点已移出可清理缓存目录，防止清缓存遍历到测试挂载；回归测试修改前失败、修改后通过（`/tmp/kayoi-cache-regression-before.log`、`/tmp/kayoi-cache-regression-after.log`）。此验证仅使用本地临时标记文件，没有真实远端删除操作。
 
+## B3 官方开放平台网盘
+
+B3 实现与自动检查完成；本地六组 client ID/secret 与百度 App ID 均为空，所以真实授权和远端文件操作全部待用户验证。
+
+| 验收项 | 结果 | 证据 |
+| --- | --- | --- |
+| 六个 Provider、能力声明和 App 接入 | 通过（自动检查） | 百度、115、123、OneDrive、Google Drive、Dropbox 均实现 `RemoteFileProvider`；App 与 `kayoi-dev` 已接入。`make build` 退出码 0 |
+| 授权、令牌和刷新 | 通过（假实现） | 覆盖授权 URL、state、code 换取、401 刷新并只重试一次、115 独立 refresh URL、123 HTTP 200 业务鉴权刷新、瞬时刷新失败保留 refresh token、登录失效通知 |
+| 分页与 Range | 通过（假实现） | 覆盖百度/115/123 分页、OneDrive nextLink、Google pageToken、Dropbox cursor；六种 Range 请求和错误响应状态检查 |
+| 上传分片边界 | 通过（假实现） | 百度 4 MiB+1、115 2 MiB 自定义边界、123 服务端 sliceSize、OneDrive 320 KiB、Google 8 MiB、Dropbox 8 MiB；另测 Google 小文件 multipart |
+| 同名与删除语义 | 通过（假实现） | 六个平台同名写入拒绝且不改旧文件；123 完成轮询 60 次后超时；删除接口分别使用删入回收站、trash、trashed 或 delete_v2 |
+| 错误、限流和配置缺失 | 通过（假实现） | HTTP 状态保留原始码用于详情；429/503 按 Retry-After 重试；配额、权限、空间不足、多份同名和普通用户文案已映射；缺凭据不显示 client_id 等开发字段 |
+
+```text
+$ swift test --package-path Packages/CloudDrive
+Test run with 35 tests in 0 suites passed
+$ make build
+** BUILD SUCCEEDED **
+```
+
+日志：`/tmp/kayoi-clouddrive-pkce2.log`、`/tmp/kayoi-polish-debug-current2.log`。35 项只证明假接口行为，不代表真实平台接口可用。官方接口来源和 rclone MIT 参考记录在 `docs/THIRD_PARTY_NOTICES.md`。
+
+## B1 系统原生挂载
+
+B1 的 SMB、WebDAV 和 NFS 路由已完成；真实 NetFS 服务仍需用户验证。
+
+| 验收项 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| SMB 改名和旧配置兼容 | 通过 | 界面名称改为“SMB 共享”，连接类型仍为原 `.smb` 和原参数，旧 `connections.json` 无需迁移 |
+| HTTP/HTTPS WebDAV 与预设 | 通过（代码和假实现） | 自定义、坚果云、Nextcloud、群晖预设；HTTP 显示明文传输警告；用户名、密码和完整 URL 接入 NetFS |
+| NFS | 通过（代码和假实现） | 服务器地址与导出路径组成 `nfs://host/path`；挂载表按实际 `host:path` 来源匹配 |
+| NetFS 本机 WebDAV 实测 | 部分通过，待用户验证 | 同一临时 Basic Auth 服务用 `/sbin/mount_webdav` 直接挂载时 `mount_status=0`，能看到 `hello.txt` 并成功推出；`NetFSMountURLAsync` 对同一服务返回 `authentication`。未尝试降低验收或改成其它实现 |
+| 自动挂载、推出、密码测试 | 通过（假实现） | Core 29 项中覆盖 WebDAV 保存、自动挂载、错误密码拒绝、测试挂载不影响已有挂载、推出失败保留配置 |
+
+NetFS 依据本机 macOS 26.5 SDK `NetFS.h`。NFS 当前没有可用导出服务器，不能宣称真实挂载通过。
+
+## B2 对象存储
+
+B2 实现与自动检查完成，真实云账号、权限和网络行为待用户验证。
+
+| 验收项 | 结果 | 证据 |
+| --- | --- | --- |
+| 七种服务和寻址预设 | 通过（假实现） | AWS S3、Cloudflare R2、阿里云 OSS、腾讯云 COS、七牛 Kodo、MinIO、Backblaze B2；endpoint、region、virtual-hosted/path-style 均覆盖 |
+| SigV4 和请求编码 | 通过（假实现） | 使用 CryptoKit；路径只编码一次；host 与签名头测试通过 |
+| 目录、递归删除与移动 | 通过（假实现） | 无尾斜杠目录推断、跨页 `CommonPrefixes`、递归复制后删除、非空目录拒绝 |
+| multipart 与未完成分页 | 通过（假实现） | 分片阈值和最后一片、`If-None-Match: *` 在 complete 阶段、409 竞态重传、缺少 next token 明确失败 |
+| Range 和错误映射 | 通过（假实现） | 校验 206 与 `Content-Range`；XML ErrorCode、429/503/504/507 和条件冲突映射到 POSIX |
+
+```text
+$ swift test --package-path Packages/S3Drive
+Test run with 12 tests in 0 suites passed
+```
+
+日志：`/tmp/kayoi-polish-debug-current2.log` 及本轮 `swift test` 输出。12 项只证明假接口行为。
+
+## B4 实验性网页网盘
+
+B4 的六个平台已接入；所有真实账号行为待用户验证。迅雷已接入官方阿里云 OSS Swift SDK，真实上传仍需账号验证。
+
+| 验收项 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| 夸克同源 UC | 通过（假实现） | Quark 参数化 `.quark/.uc`，独立域名、Cookie 过滤、API 域和 UA；Quark 32 项通过 |
+| 天翼个人云/家庭云 | 通过（假实现） | SSON Cookie、会话、个人/家庭独立凭据、家庭选择、分页、Range、上传、目录/移动/删除；TianyiDrive 14 项通过 |
+| 移动云盘 | 通过（假实现） | 手机号、网页 token、用户域容量、签名、分页、Range、分批上传、同名拒绝、目录/移动/删除；ChinaWebDrive 24 项中包含对应覆盖 |
+| 迅雷云盘 | 通过（假实现） | 浏览、分页、Range、新建目录、移动、删除和阿里云 OSS multipart 通过假实现；创建任务只请求 `PROVIDER_ALIYUN`，SDK 启用 CRC64 与禁止覆盖，同名拒绝、非法厂商 endpoint 拒绝和失败清理均有覆盖 |
+| PikPak | 通过（假实现） | 账号密码登录、token 持久化、分页、Range、分片、同名拒绝、错误映射；10 项通过 |
+| 蓝奏云 | 通过（假实现，只读） | 账号 Cookie 与公开分享、密码、分页、Range、风控与错误映射；写操作立即 `EROFS`；5 项通过 |
+
+```text
+$ swift test --package-path Packages/Quark
+Test run with 32 tests in 0 suites passed
+$ swift test --package-path Packages/TianyiDrive
+Test run with 14 tests in 0 suites passed
+$ swift test --package-path Packages/ChinaWebDrive
+Test run with 24 tests in 0 suites passed
+$ swift test --package-path Packages/PikPakDrive
+Test run with 10 tests in 0 suites passed
+$ swift test --package-path Packages/LanzouDrive
+Test run with 5 tests in 0 suites passed
+```
+
+迅雷接入官方 `alibabacloud-oss-swift-sdk-v2` `0.4.0`，没有复制 OpenList/AList 代码；来源与传递依赖见 `docs/THIRD_PARTY_NOTICES.md`。假实现不能替代真实迅雷账号、STS 和 multipart 验收。
+
+## B5 通用 USB 相机
+
+B5 实现与自动检查完成；没有真实相机，设备兼容性和删除能力待用户验证。
+
+| 验收项 | 结果 | 证据与限制 |
+| --- | --- | --- |
+| ImageCaptureCore 本地 USB 发现 | 通过（假实现） | 仅接受 `productKind == Camera`，过滤 iPhone/iPad；插入、更新和移除通知覆盖 |
+| 存储、DCIM 和 Range 读取 | 通过（假实现） | 真实存储列表与原始 DCIM 层级映射；Range 不返回额外字节；短读报错 |
+| 写操作和删除 | 通过（假实现） | put/mkdir/move 在连接前即 `EROFS`；删除只在设备能力允许时尝试，拒绝时映射 `EACCES` |
+| App、CLI 和类型入口 | 通过（代码） | 自动发现、`kayoi-dev devices`、添加类型卡片、表单和删除确认均接入；本轮修复了卡片遗漏和切换类型后沿用旧默认名的问题 |
+| 真机品牌兼容 | 待用户验证 | 只用模拟对象测试；富士、索尼、佳能、尼康、理光等实际 PTP/MTP 元数据与删除能力未验证 |
+
+```text
+$ swift test --package-path Packages/CameraUSB
+Test run with 12 tests in 0 suites passed
+$ swift test --package-path Packages/RicohGR
+Test run with 14 tests in 0 suites passed
+```
+
 ## 待用户验证（按操作顺序）
 
-目前 M1–M6 有待测项目，M0 无待测项。请使用一个专门的测试共享和不重要的文件。
+目前 M1–M6、B1–B5 都有待测项目，M0 无待测项。请使用专门的测试共享、账号和不重要的文件。
 
 1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
@@ -226,7 +328,7 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 每步等 kayoi-dev 退出后，用官方 adb shell ls 检查手机结果。官方 adb 会启动自己的 server，检查完应执行 adb kill-server 再运行下一条 kayoi-dev，避免同时占用。不要在上述命令中使用重要目录。
 
 12. **大文件哈希和速度（M2-4/5）**：选择一个大于 4 GB 的本地测试文件，记录 `stat -f %z '/本地大文件'` 和 `shasum -a 256 '/本地大文件'`。用 `put` 上传到专门测试目录，再用 `get` 下载到另一个本地文件，比较 SHA-256；退出 kayoi-dev 后用官方 `adb shell sha256sum '/sdcard/测试大文件'` 对照手机哈希。再用 USB 3 线和支持 USB 3 的手机 `get` 一个 1 GB 文件，记录 CLI 最终平均 MB/s、手机型号和线缆信息，目标 ≥20 MB/s。当前没有任何实测数值。
-13. **中断和冲突（M2-6/7）**：传输大文件时拔线，确认命令报错退出、App 不崩溃且显示未连接；重插后重新测试。随后由用户启动官方 adb 并保持其占用，尝试 Kayoi 测试连接和 CLI，确认“手机正被其它 adb 程序占用，请先执行 adb kill-server”提示；再执行 adb kill-server 后重试。
+13. **中断和冲突（M2-6/7）**：传输大文件时拔线，确认命令报错退出、App 不崩溃且显示未连接；重插后重新测试。随后由用户启动官方 adb 并保持其占用，尝试 Kayoi 测试连接和 CLI，应提示“手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi”；退出占用工具后重试。
 14. **ADB 设置（§4.4）**：查看密钥指纹，重启后应保持不变。仅在愿意让全部手机重新授权时点击重新生成密钥并确认；之后手机应重新弹授权框。
 
 15. **无线发现与配对（M3-1/2/6）**：让 Mac 与 Android 11+ 手机处于同一局域网，手机打开“无线调试 → 使用配对码配对设备”。在 Kayoi 添加安卓 Wi-Fi，选择配对服务，先输入错误六位码，确认提示“配对码错误”且能重试；再输入正确码并保存。手机“已配对的设备”应出现本机名称。必要时允许 macOS 的本地网络权限。
@@ -237,7 +339,6 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 
 20. **相机发现（M4-1）**：按理光官方 USB 步骤，先关闭相机，用数据线连接 Mac；相机会自动进入回放模式。先确认系统“图像捕捉”能看到 RICOH GR，再退出图像捕捉以避免并行占用。在 Kayoi 的已发现区添加并测试保存；执行 `build/bin/kayoi-dev devices`，记录相机名称和序列号。
 21. **两存储、下载与容量（M4-2）**：确保内置存储和 microSD 各有可用于测试的 JPG/DNG。用 GR 连接 UUID 运行 `ls UUID /`、`ls UUID /内置存储/DCIM`、`ls UUID /microSD/DCIM`，再按实际返回路径执行 `stat UUID '/实际照片路径'` 和 `get UUID '/实际照片路径' '/本地下载文件'`。用 `stat -f %z '/本地下载文件'` 比较大小；运行 `df UUID` 记录相机报告的容量。若实际未暴露两个存储或 PTP 元数据返回错误，请保留错误，不能把单存储结果当两存储通过。
-22. **删除或拒绝（M4-2）**：只选一张可删除的测试照片，运行 `rm UUID '/测试照片路径'`。成功时检查相机回放中也消失；若相机拒绝，应明确报权限错误而非假成功。不要用重要照片测试。
 23. **只读拒绝（M4-3）**：使用 GR UUID 运行 `put UUID '/任意本地测试文件' '/new.JPG'`、`mkdir UUID /new`、`mv UUID '/已有照片路径' '/renamed.JPG'`。三者应立即报“此位置为只读”，不应出现部分上传或相机文件变化。界面仍由用户手动验收。
 
 24. **准备阿里云盘配置（M5-1）**：申请开放平台 client_id/client_secret，登记与 `ALIYUN_REDIRECT_URI` 完全一致的回调地址。填写不入库的 `Config/Secrets.xcconfig`，参考 example 中 `$()` 的 URL 写法；执行 `make test && make release` 后重启 App。不要把凭据提交到 Git 或发到聊天中。
@@ -250,9 +351,24 @@ build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
 30. **夸克文件操作（M6-2）**：用该连接 UUID 执行 `ls UUID /`、`df UUID`；对视频执行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，核对 1 MiB。准备不重要且大于 100 MB 的新文件，依次执行 `mkdir UUID /KayoiAcceptance`、`put UUID '/本地文件' /KayoiAcceptance/upload.bin`、`get UUID /KayoiAcceptance/upload.bin '/本地下载文件'`，比较两端 SHA-256。重复 put 同一路径应报同名错误，旧文件内容不变；执行 `mv UUID /KayoiAcceptance/upload.bin /KayoiAcceptance/renamed.bin`、`rm UUID /KayoiAcceptance/renamed.bin`，逐步核对网页版及回收站。
 31. **夸克 Cookie 删除（M6-3）**：在钥匙串访问中仅删除测试连接 service=com.seaony.Kayoi、account=`<UUID>.cookie` 的记录，再在 App 点击测试连接；应提示重新登录，在允许通知时收到系统通知，App 不崩溃。重新扫码应恢复。没有发请求时不承诺即时发现失效。
 
+32. **准备 B3 开放平台配置（B3）**：分别申请百度、115、123、Microsoft、Google 和 Dropbox 的应用凭据，登记示例配置中的 `kayoi://oauth/...` 回调。复制 `Config/Secrets.example.xcconfig` 为 `Config/Secrets.xcconfig`，填入本地值；百度还要填 App ID。不要把凭据提交或发到聊天。执行 `make test && make release` 后启动 Release。
+33. **六个平台授权（B3）**：逐个添加百度网盘、115 网盘、123 云盘、OneDrive、Google Drive、Dropbox。确认浏览器显示对应官方域名、完成后返回 App、昵称和容量可见；取消一次授权后应为安静取消，且随后新增其他网盘不会被迫重新授权。检查钥匙串 account 为 `<UUID>.oauth.<kind>`，但不要导出令牌。
+34. **B3 文件操作（B3）**：对每个平台使用该位置 UUID 执行 `build/bin/kayoi-dev ls UUID /`、`df UUID`、`cat --range 0-1023 UUID '/测试文件'`、`put UUID '/本地测试文件' '/Kayoi测试/upload.bin'`、`get UUID '/Kayoi测试/upload.bin' '/本地下载文件'`、`mkdir`、`mv`、`rm`。每次在网页端核对名称、大小、回收站和最终内容；不要用重要文件。
+35. **B3 同名与边界（B3）**：重复 `put` 同一路径，六个平台都应报同名错误且旧内容不变。准备 0 字节、恰好一个分片、分片加 1 字节和最后一片不足的文件，至少覆盖百度、123、OneDrive、Google、Dropbox；123 另测超过 10 GB 应拒绝。百度普通账号记录实际速度和文件大小限制说明是否准确。
+36. **B3 刷新、限流和撤权（B3）**：在钥匙串测试记录中只把 access token 改为无效值，执行 `kayoi-dev ls` 应刷新并恢复；115 应请求独立刷新端点。制造或等待一次 HTTP 429/503 时确认按 Retry-After 重试并最终显示“服务请求过多”，不是权限错误。到平台网页撤销应用授权后再测试，应显示重新登录并通知；重新登录可恢复。
+
+37. **WebDAV 实际挂载（B1）**：准备坚果云、Nextcloud、ownCloud、群晖、威联通或 OpenList/AList 的 WebDAV，优先使用应用密码。添加 HTTP 或 HTTPS WebDAV，保存时应临时挂载成功；随后点击挂载，在 Finder 完成新建、读取、改名和删除，最后推出。若 `NetFSMountURLAsync` 返回认证错误而网页凭据有效，请记录服务名称、URL 协议、系统版本和错误码。不要把密码写入命令或验收文档。
+38. **NFS 实际挂载（B1）**：在 NAS 上给这台 Mac 配置只读或读写测试导出。添加 NFS，填写 NAS 地址和导出路径；测试并保存后检查 Finder、文件操作和推出。记录 NAS 型号、协议版本与挂载结果。
+39. **对象存储（B2）**：为七种服务至少各测一个测试桶，执行 `build/bin/kayoi-dev ls/stat/get/put/mkdir/mv/rm`。准备 0 字节、16 MiB 整片和 16 MiB+1 字节文件；重复上传同名文件应报错且旧对象不变。核对 ListObjects 跨页、Range 的 1 KiB 片段、multipart 完成和删除后的网页或对象存储控制台结果。AWS/R2/OSS/COS/Kodo 还需记录 endpoint、region 与 bucket 是否匹配。
+40. **UC 与天翼（B4）**：分别扫码登录 UC、填写天翼网页登录信息。天翼要分别保存个人云和家庭云，验证家庭云与个人云项目互不串用；对两个位置执行 `build/bin/kayoi-dev ls/stat/get/put/mkdir/mv/rm`，核对网页端和回收站。家庭账号有多个家庭云时，确认表单能选择正确家庭。
+41. **移动、PikPak、蓝奏（B4）**：按表单把网页登录信息复制到钥匙串输入框，不粘贴到聊天或 Git。移动云盘验证容量、Range、上传和整理；PikPak 验证账号密码、分页、Range 和上传；蓝奏验证账号 Cookie 或公开分享链接、密码、Range，并确认所有写操作返回只读。
+42. **迅雷上传（B4）**：保存迅雷连接后，用测试目录执行 `build/bin/kayoi-dev put <UUID> <本地文件> /测试目录/upload.bin`。先测 0 字节、一个完整分片和末片不足的文件，再测一个大于 1 GB 的文件；在迅雷网页端核对名称、大小和内容。重复上传同名文件必须报错且旧文件不变。上传中制造断网或取消，重新列出目录确认只清理本次新建的未完成条目，旧文件保持不动。
+43. **通用相机（B5）**：使用一台 macOS“图像捕捉”能识别的富士、索尼、佳能、尼康或其它 PTP/MTP 相机。先退出图像捕捉，连接相机并允许存储访问；执行 `build/bin/kayoi-dev devices`，在 App 保存“相机（USB）”，再测试 `ls`、相机 / `DCIM` 路径、`stat`、Range `get`、`df` 和删除。若删除被拒绝，应保留 `EACCES`，并记录品牌、型号和系统能力，不能把拒绝改写成成功。
+44. **最终界面手验（A）**：打开本仓库 `docs/screenshots/` 对照实际窗口，分别切换系统浅色/深色和中文/英文，检查菜单栏面板、28 种添加类型、设置、长名称截断、错误提示、键盘上下键与 Return、VoiceOver 标签、滚动区域和禁用态。扫码窗口、OAuth 窗口和真实错误状态需用真实账号触发。
+
 ## 未做与风险
 
-- M7、M8 按要求不做；因此只有 SMB 能挂载 Finder，其余类型使用连接测试和开发工具。
+- M7、M8 按要求不做。SMB、WebDAV 和 NFS 使用系统挂载；其余类型使用连接测试和开发工具。
 - Windows 网络、密码验证、临时挂载与推出尚无实测。假实现只证明应用流程，不证明系统 API 在目标共享上的行为。
 - 临时挂载点只用 `rmdir` 删除空目录；推出失败不会递归删除远端内容。若出现错误并留下临时挂载，请保留错误信息后用 Finder 推出对应卷。
 - 仅安装了已授权的 XcodeGen，第三方代码仅使用已批准用途的 BoringSSL。未使用 Jev：本阶段是确定性的系统接口与编译检查。
@@ -330,3 +446,27 @@ Kayoi.app: satisfies its Designated Requirement
 - 通过：现有 `make test` 123项，退出码0（`/tmp/kayoi-cards-test.log`）；`make release` 与签名校验通过（`/tmp/kayoi-cards-release.log`）；`git diff --check` 无输出。
 - 待用户验证：电脑控制读取 Kayoi 窗口返回 timeoutReached，未取得新版界面截图。请退出旧版后重新打开 Release，检查“添加位置”卡片未选/选中/下一步/上一步，SMB、Android、GR及两种网盘表单，设置页；分别检查中文/英文、深色/浅色、键盘焦点与错误提示。未新增测试、UI自动化或快照测试。
 - 未提交、未推送。
+
+## 打磨目标最终门禁（2026-11-04）
+
+提交前重新执行 `make test` 和 `make release`，退出码均为 0。完整输出：`/tmp/kayoi-final-ship-test.log`、`/tmp/kayoi-final-ship-release.log`；`make release` 内含 `make gen`。
+
+| 检查项 | 结果与实测 |
+| --- | --- |
+| 单元测试 | 通过。12 个 Swift 包共 243 项，0 失败：Core 31、ADB 26、RicohGR 14、AliyunDrive 28、Quark 32、S3Drive 12、CloudDrive 35、CameraUSB 12、PikPakDrive 10、LanzouDrive 5、TianyiDrive 14、ChinaWebDrive 24。 |
+| Release 构建 | 通过。Xcode 输出 `** BUILD SUCCEEDED **`。 |
+| App 签名 | 通过。`codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Kayoi.app` 输出 `valid on disk`、`satisfies its Designated Requirement`。 |
+| DevTool 签名 | 通过。`codesign --verify --strict --verbose=2 build/bin/kayoi-dev` 输出 `valid on disk`、`satisfies its Designated Requirement`；`--help` 退出码 0，输出 12 行。 |
+| 官方 SDK | 通过构建验证。迅雷上传使用 `alibabacloud-oss-swift-sdk-v2` `0.4.0` 的基础 `AlibabaCloudOSS` product；SwiftPM 解析并固定 Swift Crypto `3.15.1`、swift-asn1 `1.7.4`、XMLCoder `0.18.2`。没有 Team ID 时，Xcode 以 `CODE_SIGNING_ALLOWED=NO` 构建，再由 Makefile 用指定 Apple Development 身份签 App 和嵌套包。 |
+| 产物结构 | 通过。主程序为 arm64 + x86_64 通用二进制；`LSMinimumSystemVersion=26.0`、`LSUIElement=true`；相机权限文案为通用的“发现并读取通过 USB 连接的相机。”。 |
+| 编译警告 | 最终日志只有 1 条既有的 `appintentsmetadataprocessor` 提示“Metadata extraction skipped. No AppIntents.framework dependency found.”；没有 Swift 或 C 编译警告。 |
+| 本地化 | 通过。`Localizable.xcstrings` 462 项：`L(...)` 缺键 0、英文缺失 0、简中缺失 0、复数变体缺失 0、未使用目录项 0。`InfoPlist.xcstrings` 的本地网络与相机权限均有简中、英文。Release 内已生成两种语言的 `Localizable.strings`、`Localizable.stringsdict` 和 `InfoPlist.strings`。 |
+| 截图 | 文件检查通过，最新迅雷文案待重截。`docs/screenshots/` 共 62 张 PNG，空文件 0；其中面板、设置、类型选择器和迅雷以外表单仍可读取。迅雷表单两张截图生成于本轮“支持上传”文案修改前，不能当作最终视觉证据；电脑控制读取菜单栏窗口仍 `timeoutReached`，需要用户用最新 Release 手验。 |
+| 新增鉴权回归 | 通过。`unauthorizedCloudErrorsAskForLogin()` 覆盖 UC、天翼、移动、迅雷、PikPak、蓝奏的 `unauthorized` 与 HTTP 401 文案；`webDriveAuthenticationFailureAsksForLogin()` 验证实验网盘鉴权失败会进入 `needsLogin` 并触发登录过期回调。 |
+| 提交前审查修复 | 通过构建和现有测试。迅雷 `kayoi-dev put` 不再在 Provider 创建前被拒绝；跨源重定向删除 `Authorization`、`Cookie`、`SessionKey`、`Signature`、`Space-Authorization` 等已知认证头；网页登录和夸克登录在任务先取消时立即结束；123 云盘列表不会为同名文件缓存单一 ID；云端改名失败会清掉相关路径缓存；移动云盘上传失败会清理本次创建的远端条目；OneDrive/Google 取消上传会话；S3 递归移动和多种分片上传失败时用未取消的清理任务执行补偿。各平台仍不承诺跨目录改名是一次原子操作，失败时会返回错误并清缓存，执行前应避免把重要文件放在测试目录。 |
+| 差异检查 | 通过。`git diff --check` 无输出。 |
+| 最新 Release 启动 | 通过。已退出旧进程并启动本次签名构建 `build/DerivedData/Build/Products/Release/Kayoi.app`，进程 PID `15236`。 |
+
+逐条实现和假实现证据见 `docs/POLISH-REPORT.md`。真实 Windows 共享、WebDAV/NFS、开放平台账号、B4 账号、安卓手机、相机和系统通知仍按本文“待用户验证”顺序执行。
+
+迅雷上传已按用户批准接入官方阿里云 OSS Swift SDK，自动测试覆盖任务参数、同名拒绝、失败清理、非法 endpoint 和分片边界。真实 STS、真实文件、长文件、同名竞态和限流仍待用户按第 42 项验证；迅雷 API 仍属实验性网页接口。

@@ -24,4 +24,12 @@ private func webCookie(
     webCookie("lookalike", "private", domain: "evilquark.cn"),
   ])
   #expect(header == "__pus=test-pus; __puus=test-puus")
+
+  let uc = try QuarkWebCookies.header(
+    from: [
+      webCookie("__puus", "uc-puus", domain: ".uc.cn"),
+      webCookie("__pus", "uc-pus", domain: ".uc.cn"),
+      webCookie("quark", "ignored"),
+    ], domain: "uc.cn")
+  #expect(uc == "__pus=uc-pus; __puus=uc-puus")
 }

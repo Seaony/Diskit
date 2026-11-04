@@ -23,17 +23,23 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
-后续配置阿里云盘时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前已实现菜单栏连接管理、系统 SMB 挂载和安卓 USB 的连接测试及开发工具文件操作；安卓无线调试也已接入；GR IV USB 也已接入；阿里云盘已接入；夸克实验性接入已写入工作区，实际扫码和文件操作待用户验证。
+需要开放平台凭据时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前实现菜单栏连接管理、系统 SMB/WebDAV/NFS、安卓 USB 与无线调试、GR IV 和通用 USB 相机、七种 S3 兼容对象存储、阿里云盘、六个官方网盘、夸克/UC、天翼、移动、迅雷、PikPak 和蓝奏云。真实账号与外部设备仍按验收记录逐项验证。
 
-阶段一只有 SMB 使用系统挂载；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
+SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
 
-## Windows 共享
+## SMB 共享
 
-添加位置选择 Windows 共享，填写主机、用户名、密码与共享名。“列出共享”使用系统 smbutil，密码通过终端交互输入，不放入命令行或环境变量；保存前另用 NetFS 验证所填密码和共享，在独立路径临时挂载后推出。已有挂载不变，验证失败不会保存。
+添加位置选择 SMB，填写主机、用户名、密码与共享名。“列出共享”使用系统 smbutil，密码通过终端交互输入，不放入命令行或环境变量；保存前另用 NetFS 验证所填密码和共享，在独立路径临时挂载后推出。已有挂载不变，验证失败不会保存。
 
 Windows 需开启文件和打印机共享；微软账户填邮箱与账户密码，不使用 PIN。保存后可挂载、推出、编辑、拖动排序、删除；密码存登录钥匙串，配置不存密码。App 退出保留系统托管的 SMB 挂载。开机启动通过系统登录项控制，需要使用稳定位置的 App。
 
 日志在数据目录的 `Logs/` 内，保留最近 7 天的错误日志。界面和真机验证步骤见验收记录；目前没有真实 Windows 共享的通过结论。
+
+## WebDAV 与 NFS
+
+WebDAV 支持 HTTP、HTTPS 和常见服务预设，使用完整服务器 URL、用户名与密码；NFS 使用服务器地址和导出路径。两者都声明为系统挂载类型，保存前的密码测试会临时挂载到独立路径，成功后推出。
+
+本机对临时 WebDAV 服务的 `mount_webdav` 直接挂载和推出成功，但 `NetFSMountURLAsync` 对该测试服务返回认证错误。实现保留 NetFS 路线，实际坚果云、Nextcloud、ownCloud、群晖、威联通与 NFS 导出仍需用户按验收清单测试。
 
 ## 安卓 USB
 
@@ -55,6 +61,14 @@ Android 11+ 手机打开无线调试和“使用配对码配对设备”。在�
 
 Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号。当前没有 GR IV 真机结果，两个存储区、实际 PTP 返回布局和删除能力须按验收清单验证。
 
+## 相机（USB）
+
+通用相机入口通过 ImageCaptureCore 发现本地 PTP/MTP 相机，过滤 iPhone、iPad 等非相机设备。Provider 暴露相机存储和 DCIM 层级，支持 Range 下载；删除仅在设备声明支持时尝试，上传、建目录和移动返回只读错误。富士、索尼、佳能、尼康等品牌与删除能力仍需真机验收。
+
+## 对象存储
+
+支持 Amazon S3、Cloudflare R2、阿里云 OSS、腾讯云 COS、七牛 Kodo、MinIO 和 Backblaze B2。各预设会填写 endpoint、region 和寻址方式；认证使用系统 CryptoKit 计算 SigV4。支持分页、Range、multipart 上传、递归目录操作、条件冲突和常见 HTTP/XML 错误映射。假实现测试通过，真实存储桶与权限范围待验收。
+
 ## 阿里云盘
 
 填写本地 `Config/Secrets.xcconfig` 并重新构建，回调地址需与平台登记一致。添加时通过官方 OAuth 页面授权；授权目录就是此连接的根。client_id/client_secret 尚未配置时会明确提示，不假装登录成功。
@@ -68,3 +82,20 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 添加时通过内嵌网页扫码，也可手动粘贴 Cookie；验证账号和容量成功后才存入登录钥匙串 `<UUID>.cookie`。非官方接口可能随时失效，实际账号字段、扫码与大文件传输仍待验收。
 
 同名上传直接报错，旧文件不改动。文件操作使用 kayoi-dev；Cookie 失效后需重新登录。不要将 Cookie 写进配置或提交到 Git。
+
+## 官方开放平台网盘
+
+支持百度网盘、115 网盘、123 云盘、OneDrive、Google Drive 和 Dropbox。授权使用系统浏览器并校验回调 state，令牌保存在登录钥匙串的 `<UUID>.oauth.<kind>` 记录；删除位置时同步删除。连接、分页、Range 下载、上传分片、回收站删除、同名拒绝、401 刷新一次和限流重试均有假实现测试。
+
+- 百度网盘只访问应用专属目录，普通账号可能受下载速度和文件大小限制。
+- 123 云盘单文件上限为 10 GB，上传完成轮询最多等待 60 秒。
+- OneDrive 大文件使用上传会话；Google Drive 小于或等于 5 MiB 使用 multipart，大文件使用 resumable；Dropbox 大文件使用 upload session。
+- 六个平台遇到同名文件都报错，不改动旧文件。
+
+在 `Config/Secrets.xcconfig` 填写各平台 client ID、client secret 和已登记的 `kayoi://oauth/...` 回调地址。百度上传还需要 App ID。凭据缺失时界面只说明“此网盘尚未在 Kayoi 中启用”，不会显示开发字段。真实授权、令牌刷新、网页端结果和回收站仍待用户验收。
+
+## 实验性网页网盘
+
+支持夸克、UC、天翼个人云/家庭云、移动云盘、迅雷、PikPak 和蓝奏云。它们使用网页登录信息或账号密码，接口可能随服务商改版失效；登录信息只存登录钥匙串。蓝奏云只读。迅雷的上传使用官方阿里云 OSS Swift SDK 和迅雷提供的临时 STS 凭据，支持阿里云 OSS 分片；同名上传直接报错，上传失败会清理新建条目，不改旧文件。其余平台的上传、目录操作、同名规则、限流和登录刷新均有假实现覆盖。
+
+真实账号、扫码、网页风控、分片上传和回收站行为仍待验收。不要将 Cookie、访问令牌或账号密码写入配置或提交到 Git。

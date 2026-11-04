@@ -1,0 +1,273 @@
+import Core
+import CryptoKit
+import Foundation
+import Synchronization
+import Testing
+
+@testable import CloudDrive
+
+private final class MemorySecrets: SecretStore, Sendable {
+  let values = Mutex<[String: Data]>([:])
+
+  func read(_ key: String) throws -> Data? {
+    values.withLock { $0[key] }
+  }
+
+  func write(_ data: Data, for key: String) throws {
+    values.withLock { $0[key] = data }
+  }
+
+  func delete(_ key: String) throws {
+    _ = values.withLock { $0.removeValue(forKey: key) }
+  }
+}
+
+private final class FakeTransport: HTTPTransport, Sendable {
+  let responses = Mutex<[HTTPResponse]>([])
+  let requests = Mutex<[URLRequest]>([])
+  let streamResponse: HTTPResponse
+
+  init(_ responses: [HTTPResponse] = [], streamResponse: HTTPResponse? = nil) {
+    self.responses.withLock { $0 = responses }
+    self.streamResponse = streamResponse ?? HTTPResponse(status: 200)
+  }
+
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    requests.withLock { $0.append(request) }
+    return responses.withLock {
+      guard !$0.isEmpty else { return HTTPResponse(status: 500) }
+      return $0.removeFirst()
+    }
+  }
+
+  func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
+    requests.withLock { $0.append(request) }
+    return HTTPStreamResponse(
+      response: streamResponse,
+      body: AsyncThrowingStream { continuation in
+        continuation.yield(Data("range".utf8))
+        continuation.finish()
+      })
+  }
+}
+
+private let configuration = OAuthConfiguration(
+  clientID: "client",
+  clientSecret: "secret",
+  authorizationURL: URL(string: "https://example.com/authorize")!,
+  tokenURL: URL(string: "https://example.com/token")!,
+  redirectURI: "kayoi://oauth/test",
+  scopes: ["files.read", "files.write"],
+  additionalAuthorizationItems: ["prompt": "select_account"])
+
+private func tokenResponse(
+  access: String, refresh: String? = "refresh", expiresIn: Int = 3_600
+) -> HTTPResponse {
+  var object: [String: Any] = ["access_token": access, "expires_in": expiresIn]
+  object["refresh_token"] = refresh
+  return HTTPResponse(
+    status: 200, body: try! JSONSerialization.data(withJSONObject: object))
+}
+
+@Test func buildsAuthorizationURLAndExchangesCode() async throws {
+  let transport = FakeTransport([tokenResponse(access: "access")])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: MemorySecrets(), transport: transport
+  )
+
+  let authorization = try await session.authorizationURL(state: "state-token")
+  let query = URLComponents(url: authorization, resolvingAgainstBaseURL: false)?.queryItems
+  #expect(query?.first { $0.name == "client_id" }?.value == "client")
+  #expect(query?.first { $0.name == "state" }?.value == "state-token")
+  #expect(query?.first { $0.name == "scope" }?.value == "files.read files.write")
+  #expect(query?.first { $0.name == "prompt" }?.value == "select_account")
+
+  let token = try await session.exchange(code: "code")
+  #expect(token.accessToken == "access")
+  #expect(token.refreshToken == "refresh")
+  let request = try #require(transport.requests.withLock { $0.first })
+  let body = String(decoding: try #require(request.httpBody), as: UTF8.self)
+  #expect(body.contains("grant_type=authorization_code"))
+  #expect(body.contains("code=code"))
+}
+
+@Test func pkceChallengeMatchesTheVerifierSentWithTheCode() async throws {
+  let transport = FakeTransport([tokenResponse(access: "access")])
+  let pkceConfiguration = OAuthConfiguration(
+    clientID: "public-client", clientSecret: "",
+    authorizationURL: URL(string: "https://example.com/authorize")!,
+    tokenURL: URL(string: "https://example.com/token")!,
+    redirectURI: "kayoi://oauth/test", scopes: [], usesPKCE: true)
+  let session = OAuthSession(
+    configuration: pkceConfiguration, secretKey: "oauth", secrets: MemorySecrets(),
+    transport: transport)
+
+  let authorization = try await session.authorizationURL(state: "state")
+  let challenge = try #require(
+    URLComponents(url: authorization, resolvingAgainstBaseURL: false)?.queryItems?
+      .first(where: { $0.name == "code_challenge" })?.value)
+  #expect(
+    URLComponents(url: authorization, resolvingAgainstBaseURL: false)?.queryItems?
+      .first(where: { $0.name == "code_challenge_method" })?.value == "S256")
+
+  _ = try await session.exchange(code: "code")
+  let request = try #require(transport.requests.withLock { $0.first })
+  let body = String(decoding: try #require(request.httpBody), as: UTF8.self)
+  let verifier = try #require(
+    URLComponents(string: "https://example.invalid/?\(body)")?.queryItems?
+      .first(where: { $0.name == "code_verifier" })?.value)
+  let digest = SHA256.hash(data: Data(verifier.utf8))
+  let expected = Data(digest).base64EncodedString()
+    .replacingOccurrences(of: "+", with: "-")
+    .replacingOccurrences(of: "/", with: "_")
+    .replacingOccurrences(of: "=", with: "")
+  #expect(challenge == expected)
+}
+
+@Test func unauthorizedResponseRefreshesAndRetriesOnlyOnce() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: "refresh",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([
+    HTTPResponse(status: 401),
+    tokenResponse(access: "new"),
+    HTTPResponse(status: 200, body: Data("ok".utf8)),
+  ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  let response = try await session.authorized(
+    URLRequest(url: URL(string: "https://example.com/files")!))
+  #expect(response.status == 200)
+  let requests = transport.requests.withLock { $0 }
+  #expect(requests.count == 3)
+  #expect(requests[0].value(forHTTPHeaderField: "Authorization") == "Bearer old")
+  #expect(requests[2].value(forHTTPHeaderField: "Authorization") == "Bearer new")
+}
+
+@Test func missingRefreshTokenInvalidatesLogin() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: nil,
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([HTTPResponse(status: 401)])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  await #expect(throws: OAuthDriveError.loginRequired) {
+    _ = try await session.authorized(
+      URLRequest(url: URL(string: "https://example.com/files")!))
+  }
+  #expect(try await session.hasToken() == false)
+}
+
+@Test func refreshUsesItsOwnEndpoint() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: "refresh",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([
+    HTTPResponse(status: 401),
+    tokenResponse(access: "new"),
+    HTTPResponse(status: 200),
+  ])
+  let refreshURL = URL(string: "https://example.com/refresh")!
+  let refreshConfiguration = OAuthConfiguration(
+    clientID: "client", clientSecret: "secret",
+    authorizationURL: URL(string: "https://example.com/authorize")!,
+    tokenURL: URL(string: "https://example.com/token")!,
+    refreshTokenURL: refreshURL,
+    redirectURI: "kayoi://oauth/test", scopes: [])
+  let session = OAuthSession(
+    configuration: refreshConfiguration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  _ = try await session.authorized(
+    URLRequest(url: URL(string: "https://example.com/files")!))
+  #expect(transport.requests.withLock { $0[1].url } == refreshURL)
+}
+
+@Test func temporaryRefreshFailureKeepsExistingToken() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: "refresh",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([
+    HTTPResponse(status: 401),
+    HTTPResponse(status: 400, body: Data(#"{"error":"server_error"}"#.utf8)),
+  ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  await #expect(throws: OAuthDriveError.temporarilyUnavailable) {
+    _ = try await session.authorized(
+      URLRequest(url: URL(string: "https://example.com/files")!))
+  }
+  #expect(try await session.hasToken())
+}
+
+@Test func rateLimitedRequestRetriesAfterHeaderDelay() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "access", refreshToken: "refresh",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([
+    HTTPResponse(status: 429, headers: ["Retry-After": "0"]),
+    HTTPResponse(status: 200, body: Data("ok".utf8)),
+  ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  let response = try await session.authorized(
+    URLRequest(url: URL(string: "https://example.com/files")!))
+  #expect(response.status == 200)
+  #expect(transport.requests.withLock { $0.count } == 2)
+}
+
+@Test func drive115RefreshTokenErrorInvalidatesLogin() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: "bad",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let transport = FakeTransport([
+    HTTPResponse(
+      status: 200,
+      body: Data(
+        #"{"state":0,"code":40140114,"data":{},"message":"refresh_token 格式错误","errno":40140114}"#
+          .utf8))
+  ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  await #expect(throws: OAuthDriveError.loginRequired) {
+    _ = try await session.refreshNow()
+  }
+  #expect(try await session.hasToken() == false)
+}
+
+@Test func drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(
+    accessToken: "old", refreshToken: "throttled",
+    expiresAt: Date().addingTimeInterval(3_600))
+  try secrets.write(JSONEncoder().encode(token), for: "oauth")
+  let rateLimit = HTTPResponse(
+    status: 200,
+    headers: ["Retry-After": "0"],
+    body: Data(
+      #"{"state":0,"code":40140117,"message":"refresh frequently"}"#.utf8))
+  let transport = FakeTransport([rateLimit, rateLimit, rateLimit])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+
+  await #expect(throws: OAuthDriveError.temporarilyUnavailable) {
+    _ = try await session.refreshNow()
+  }
+  #expect(try await session.hasToken())
+  #expect(transport.requests.withLock { $0.count } == 3)
+}

@@ -25,7 +25,8 @@ private final class MemorySecrets: SecretStore, Sendable {
   func test(_ connection: Connection, password: String) async throws {
     calls.append("test")
     if let error { throw error }
-    guard available.contains(connection.params["share"] ?? "") else {
+    guard connection.kind != .smb || available.contains(connection.params["share"] ?? "")
+    else {
       throw ConnectionError.missingShare
     }
   }
@@ -48,6 +49,20 @@ private final class MemorySecrets: SecretStore, Sendable {
 private func sample(_ name: String = "Windows") -> Connection {
   Connection(
     name: name, params: ["host": "192.0.2.10", "username": "test@example.com", "share": "照片 共享"])
+}
+
+@Test func unauthorizedCloudErrorsAskForLogin() {
+  let cloudKinds: [ConnectionKind] = [
+    .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou,
+  ]
+  #expect(
+    cloudKinds.allSatisfy {
+      HumanError.remote(.unauthorized, kind: $0) == "登录已失效，请重新登录"
+    })
+  #expect(
+    cloudKinds.allSatisfy {
+      HumanError.remote(.http(401), kind: $0) == "登录已失效，请重新登录"
+    })
 }
 
 @MainActor private struct Fixture {
@@ -228,6 +243,55 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(ConnectionError.status(EAUTH) == .authentication)
 }
 
+@Test func systemMountURLsCoverSMBWebDAVAndNFS() throws {
+  let smb = try SystemMountAddress.url(for: sample())
+  #expect(smb.scheme == "smb")
+  #expect(smb.host == "192.0.2.10")
+  #expect(smb.path == "/照片 共享")
+
+  let webdav = try SystemMountAddress.url(
+    for: Connection(
+      kind: .webdavHTTPS, name: "Nextcloud",
+      params: ["url": "https://cloud.example.com/remote.php/dav/files/alice/"]))
+  #expect(webdav.scheme == "https")
+  #expect(webdav.host == "cloud.example.com")
+  #expect(webdav.path == "/remote.php/dav/files/alice")
+
+  let nfs = try SystemMountAddress.url(
+    for: Connection(kind: .nfs, name: "NAS", params: ["host": "nas.local", "path": "/media"]))
+  #expect(nfs.scheme == "nfs")
+  #expect(nfs.host == "nas.local")
+  #expect(nfs.path == "/media")
+  #expect(
+    SystemMountAddress.matches(
+      connection: Connection(
+        kind: .nfs, name: "NAS", params: ["host": "nas.local", "path": "/media"]),
+      source: "nas.local:/media", type: "nfs"))
+  #expect(
+    !SystemMountAddress.matches(
+      connection: Connection(
+        kind: .nfs, name: "NAS", params: ["host": "nas.local", "path": "/media"]),
+      source: "nas.local:/other", type: "nfs"))
+}
+
+@Test @MainActor func webDAVParticipatesInSaveMountAndAutoMount() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var connection = Connection(
+    kind: .webdavHTTPS, name: "Nextcloud", autoMount: true,
+    params: ["url": "https://cloud.example.com/dav", "username": "alice"])
+  try await manager.save(connection, password: "secret")
+  #expect(manager.states[connection.id] == .disconnected)
+  await manager.autoMount()
+  #expect(manager.mountedCount == 1)
+  #expect(f.smb.calls.contains("test"))
+  #expect(f.smb.calls.contains("mount"))
+  connection.name = "Company files"
+  try await manager.save(connection, password: "secret")
+  #expect(f.smb.volumes[connection.id] != nil)
+}
+
 @Test @MainActor func testingExistingConnectionDoesNotUnmountIt() async throws {
   let f = Fixture()
   defer { f.clean() }
@@ -309,6 +373,45 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try manager.savedPassword(connection) == "")
 }
 
+@Test @MainActor func genericCameraRemovalClearsConnectionTestResult() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .cameraUSB, name: "相机", params: ["serial": "camera-usb"])
+  manager.cameraUSBDevicesChanged(serials: ["camera-usb"])
+  manager.testRemote = { _ in SpaceInfo(total: 0, used: 0) }
+  try await manager.save(connection, password: "")
+  manager.cameraUSBDevicesChanged(serials: [])
+  #expect(manager.states[connection.id] == .disconnected)
+  #expect(f.smb.calls.isEmpty)
+}
+
+@Test @MainActor func remoteSecretIsAvailableDuringTestAndRestoredOnFailure() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(
+    kind: .s3, name: "S3",
+    params: ["endpoint": "https://s3.example.com", "bucket": "bucket", "accessKey": "key"])
+  manager.testRemote = { tested in
+    let saved = try manager.savedPassword(tested)
+    #expect(saved == "new-secret")
+    throw RemoteError.posix(EACCES)
+  }
+  await #expect(throws: RemoteError.posix(EACCES)) {
+    try await manager.save(connection, password: "new-secret")
+  }
+  #expect(try manager.savedPassword(connection) == "")
+
+  manager.testRemote = { tested in
+    let saved = try manager.savedPassword(tested)
+    #expect(saved == "new-secret")
+    return SpaceInfo(total: 100, used: 10)
+  }
+  try await manager.save(connection, password: "new-secret")
+  #expect(try manager.savedPassword(connection) == "new-secret")
+}
+
 @Test @MainActor func cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret()
   async throws
 {
@@ -345,6 +448,22 @@ private func sample(_ name: String = "Windows") -> Connection {
   try await manager.remove(connection)
   #expect(try f.secrets.read("\(connection.id.uuidString).cookie") == nil)
   #expect(try f.secrets.read("another.cookie") == Data("other-account".utf8))
+}
+
+@Test @MainActor func deletingOfficialCloudRemovesItsOAuthToken() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(
+    kind: .oneDrive, name: "OneDrive", params: ["nickname": "测试账号"])
+  let tokenKey = "\(connection.id.uuidString).oauth.oneDrive"
+  try f.secrets.write(Data("token".utf8), for: tokenKey)
+  try f.secrets.write(Data("other-token".utf8), for: "another.oauth.oneDrive")
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
+  try await manager.save(connection, password: "")
+  try await manager.remove(connection)
+  #expect(try f.secrets.read(tokenKey) == nil)
+  #expect(try f.secrets.read("another.oauth.oneDrive") == Data("other-token".utf8))
 }
 
 @Test @MainActor func connectionFailuresLogOnceWithoutExtraMountNotifications() async throws {
@@ -411,4 +530,21 @@ private func sample(_ name: String = "Windows") -> Connection {
       ConnectionError.timeout.localizedDescription, RemoteError.posix(EACCES).localizedDescription,
       RemoteError.posix(EIO).localizedDescription,
     ])
+}
+
+@Test @MainActor func webDriveAuthenticationFailureAsksForLogin() async {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .mobileCloud, name: "移动云盘")
+  var expired: [UUID] = []
+  manager.loginExpired = { expired.append($0.id) }
+  manager.testRemote = { _ in
+    throw NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))
+  }
+
+  await manager.toggle(connection)
+
+  #expect(manager.states[connection.id] == .needsLogin)
+  #expect(expired == [connection.id])
 }

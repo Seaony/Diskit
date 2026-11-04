@@ -144,7 +144,13 @@ enum HTTPRedirectPolicy {
     if sameOrigin { return request }
     guard ["GET", "HEAD"].contains(originalMethod.uppercased()) else { return nil }
     var result = request
-    result.setValue(nil, forHTTPHeaderField: "Authorization")
+    let credentialHeaders = [
+      "Authorization", "Proxy-Authorization", "SessionKey", "Signature",
+      "Space-Authorization", "mcloud-sign", "x-captcha-token",
+    ]
+    for name in credentialHeaders {
+      result.setValue(nil, forHTTPHeaderField: name)
+    }
     func allowed(_ url: URL) -> Bool {
       guard let cookieDomain, let host = url.host?.lowercased() else { return false }
       return host == cookieDomain || host.hasSuffix("." + cookieDomain)

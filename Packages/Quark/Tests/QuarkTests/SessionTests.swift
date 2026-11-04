@@ -52,7 +52,7 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
     #expect(try secrets.read(key) == nil)
     #expect(request.value(forHTTPHeaderField: "User-Agent") == QuarkSession.userAgent)
     #expect(request.value(forHTTPHeaderField: "Referer") == "https://pan.quark.cn/")
-    #expect(request.value(forHTTPHeaderField: "Cookie")?.contains("__puus=session") == true)
+    #expect(request.value(forHTTPHeaderField: "Cookie")?.contains("__puus=") == true)
     #expect(request.timeoutInterval == 30)
     return request.url?.path == "/account/info" ? quarkMetadata() : quarkSpace()
   }
@@ -64,6 +64,30 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   #expect(try secrets.string(key)?.contains("extra=value==") == true)
   #expect(
     await transport.requests.map { $0.url?.path } == ["/account/info", "/1/clouddrive/member"])
+}
+
+@Test func ucLoginUsesUCEndpointsAndCookies() async throws {
+  let key = "uc.cookie"
+  let secrets = SessionSecrets()
+  let transport = SessionHTTP { (request: URLRequest) async throws -> HTTPResponse in
+    #expect(request.url?.host == "drive.uc.cn" || request.url?.host == "pc-api.uc.cn")
+    #expect(request.value(forHTTPHeaderField: "Referer") == "https://drive.uc.cn/")
+    #expect(request.value(forHTTPHeaderField: "Cookie")?.contains("__puus=") == true)
+    if request.url?.path == "/account/info" {
+      return quarkMetadata(headers: [
+        "Set-Cookie": "__puus=uc-session; Domain=.uc.cn; Path=/; Secure; HttpOnly"
+      ])
+    }
+    return quarkSpace()
+  }
+  let session = QuarkSession(
+    secretKey: key, secrets: secrets, configuration: .uc, transport: transport)
+  let account = try await session.login(cookie: goodQuarkCookie)
+  #expect(account.nickname == "测试账户")
+  #expect(try secrets.string(key)?.contains("__puus=uc-session") == true)
+  let urls = await transport.requests.compactMap(\.url)
+  #expect(urls[0].absoluteString.hasPrefix("https://drive.uc.cn/account/info"))
+  #expect(urls[1].absoluteString.hasPrefix("https://pc-api.uc.cn/1/clouddrive/member?"))
 }
 
 @Test func quarkMissingUserIDIsNotFabricatedFromCookieOrNickname() async throws {

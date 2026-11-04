@@ -6,7 +6,10 @@ let package = Package(
   products: [.executable(name: "kayoi-dev", targets: ["DevTool"])],
   dependencies: [
     .package(path: "../Core"), .package(path: "../ADB"), .package(path: "../RicohGR"),
-    .package(path: "../AliyunDrive"), .package(path: "../Quark"),
+    .package(path: "../AliyunDrive"), .package(path: "../Quark"), .package(path: "../S3Drive"),
+    .package(path: "../CloudDrive"), .package(path: "../CameraUSB"),
+    .package(path: "../PikPakDrive"), .package(path: "../LanzouDrive"),
+    .package(path: "../TianyiDrive"), .package(path: "../ChinaWebDrive"),
   ],
   targets: [
     .executableTarget(
@@ -16,5 +19,12 @@ let package = Package(
         .product(name: "RicohGR", package: "RicohGR"),
         .product(name: "AliyunDrive", package: "AliyunDrive"),
         .product(name: "Quark", package: "Quark"),
+        .product(name: "S3Drive", package: "S3Drive"),
+        .product(name: "CloudDrive", package: "CloudDrive"),
+        .product(name: "CameraUSB", package: "CameraUSB"),
+        .product(name: "PikPakDrive", package: "PikPakDrive"),
+        .product(name: "LanzouDrive", package: "LanzouDrive"),
+        .product(name: "TianyiDrive", package: "TianyiDrive"),
+        .product(name: "ChinaWebDrive", package: "ChinaWebDrive"),
       ])
   ], swiftLanguageModes: [.v6])

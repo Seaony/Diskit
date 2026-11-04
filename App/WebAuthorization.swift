@@ -12,14 +12,33 @@ import Foundation
     window
   }
   func authorize(_ url: URL) async throws -> URL {
-    try await withTaskCancellationHandler {
-      try await withCheckedThrowingContinuation { continuation in
+    try Task.checkCancellation()
+    return try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation {
+        (continuation: CheckedContinuation<URL, Error>) in
+        guard !Task.isCancelled else {
+          continuation.resume(throwing: CancellationError())
+          return
+        }
         self.continuation = continuation
-        let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "kayoi") {
+        let callbackScheme = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+          .queryItems?.first(where: { $0.name == "redirect_uri" })?.value
+          .flatMap(URL.init(string:))?.scheme
+        guard let callbackScheme else {
+          self.finish(.failure(URLError(.badURL)))
+          return
+        }
+        let session = ASWebAuthenticationSession(
+          url: url, callbackURLScheme: callbackScheme
+        ) {
           url, error in
           Task { @MainActor in
             if let error {
-              self.finish(.failure(error))
+              if (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin {
+                self.finish(.failure(CancellationError()))
+              } else {
+                self.finish(.failure(error))
+              }
             } else if let url {
               self.finish(.success(url))
             } else {

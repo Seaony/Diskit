@@ -21,10 +21,14 @@ public enum ConnectionState: Equatable, Sendable {
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
   private var ricohSerials: Set<String>?
+  private var cameraUSBSerials: Set<String>?
   public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
+  public var unexpectedDisconnect: ((Connection) -> Void)?
+  public var loginExpired: ((Connection) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
   public var openInFinder: ((URL) -> Void)?
+  public private(set) var detailedErrors: [UUID: String] = [:]
   public init(
     location: any StorageLocation = LocalStorageLocation(),
     secrets: any SecretStore = LoginKeychainStore(), smb: any SMBServing
@@ -40,6 +44,13 @@ public enum ConnectionState: Equatable, Sendable {
       if case .mounted = $0 { return true }
       return false
     }.count
+  }
+  public var mountsToEjectOnQuit: [Connection] {
+    connections.filter { connection in
+      guard connection.kind != .smb else { return false }
+      if case .mounted = states[connection.id] { return true }
+      return false
+    }
   }
   public func savedPassword(_ connection: Connection) throws -> String {
     guard let data = try secrets.read(connection.passwordKey) else { return "" }
@@ -61,23 +72,55 @@ public enum ConnectionState: Equatable, Sendable {
       busy.insert(connection.id)
       defer { busy.remove(connection.id) }
       var oldSecret: Data?
-      if connection.kind == .smb {
-        guard let host = connection.params["host"], !host.isEmpty,
-          let user = connection.params["username"], !user.isEmpty,
-          let share = connection.params["share"], !share.isEmpty
-        else { throw ConnectionError.invalidFields }
+      if connection.kind.usesSystemMount {
+        let guest = connection.params["guest"] == "true"
+        switch connection.kind {
+        case .smb:
+          guard let host = connection.params["host"], !host.isEmpty,
+            let share = connection.params["share"], !share.isEmpty
+          else { throw ConnectionError.invalidFields }
+          if !guest {
+            guard let user = connection.params["username"], !user.isEmpty else {
+              throw ConnectionError.invalidFields
+            }
+          }
+        case .webdav, .webdavHTTPS:
+          _ = try SystemMountAddress.url(for: connection)
+        case .nfs:
+          guard !(connection.params["path"] ?? "").isEmpty else {
+            throw ConnectionError.invalidFields
+          }
+          _ = try SystemMountAddress.url(for: connection)
+        default:
+          throw ConnectionError.invalidFields
+        }
         try await smb.test(connection, password: password)
         oldSecret = try secrets.read(connection.passwordKey)
         try secrets.write(Data(password.utf8), for: connection.passwordKey)
       } else {
+        if connection.kind.usesStoredRemoteSecret, !password.isEmpty {
+          oldSecret = try secrets.read(connection.passwordKey)
+          try secrets.write(Data(password.utf8), for: connection.passwordKey)
+        }
         guard let testRemote else { throw ConnectionError.notImplemented }
         states[connection.id] = .connecting
         do {
           states[connection.id] = remoteState(
             connection, result: .tested(try await testRemote(connection)))
         } catch {
+          if connection.kind.usesStoredRemoteSecret, oldSecret != nil || !password.isEmpty {
+            if let oldSecret {
+              try secrets.write(oldSecret, for: connection.passwordKey)
+            } else {
+              try secrets.delete(connection.passwordKey)
+            }
+          }
+          recordDetailedError(error, for: connection)
           states[connection.id] = remoteState(
-            connection, result: .failed(error.localizedDescription))
+            connection,
+            result: .failed(
+              (error as? RemoteError).map { HumanError.remote($0, kind: connection.kind) }
+                ?? error.localizedDescription))
           throw error
         }
       }
@@ -92,7 +135,7 @@ public enum ConnectionState: Equatable, Sendable {
         updated.append(added)
       }
       do { try repository.save(updated) } catch {
-        if connection.kind == .smb {
+        if connection.kind.usesSystemMount || connection.kind.usesStoredRemoteSecret {
           if let oldSecret {
             try secrets.write(oldSecret, for: connection.passwordKey)
           } else {
@@ -102,6 +145,9 @@ public enum ConnectionState: Equatable, Sendable {
         throw error
       }
       connections = updated
+      if connection.kind.usesSystemMount, states[connection.id] == nil {
+        states[connection.id] = .disconnected
+      }
       refreshMounts()
     } catch {
       reportOperationError(error)
@@ -119,19 +165,40 @@ public enum ConnectionState: Equatable, Sendable {
     try repository.save(updated)
     connections = updated
   }
+  public func move(_ id: UUID, offset: Int) throws {
+    guard let from = connections.firstIndex(where: { $0.id == id }) else { return }
+    let to = from + offset
+    guard connections.indices.contains(to) else { return }
+    var updated = connections
+    let item = updated.remove(at: from)
+    updated.insert(item, at: to)
+    for index in updated.indices { updated[index].order = index }
+    try repository.save(updated)
+    connections = updated
+  }
   public func remove(_ connection: Connection) async throws {
     guard !busy.contains(connection.id) else { throw ConnectionError.busy }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
-    if let mount = smb.mounted(connection) {
+    if connection.kind.usesSystemMount, let mount = smb.mounted(connection) {
       do { try await smb.unmount(mount.url) } catch {
         reportOperationError(error)
         throw error
       }
     }
     try secrets.delete(connection.passwordKey)
-    if connection.kind == .aliyunDrive { try secrets.delete("\(connection.id.uuidString).oauth") }
-    if connection.kind == .quark { try secrets.delete("\(connection.id.uuidString).cookie") }
+    switch connection.kind {
+    case .aliyunDrive:
+      try secrets.delete("\(connection.id.uuidString).oauth")
+    case .quark, .ucDrive:
+      try secrets.delete("\(connection.id.uuidString).cookie")
+    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .pikPak,
+      .tianyiDrive:
+      try secrets.delete(
+        "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)")
+    default:
+      break
+    }
     let cache = location.cacheDirectory.appending(path: connection.id.uuidString)
     if FileManager.default.fileExists(atPath: cache.path) {
       try FileManager.default.removeItem(at: cache)
@@ -146,15 +213,23 @@ public enum ConnectionState: Equatable, Sendable {
     guard !busy.contains(connection.id) else { return }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
-    if connection.kind != .smb {
+    if !connection.kind.usesSystemMount {
       states[connection.id] = .connecting
       do {
         guard let testRemote else { throw ConnectionError.notImplemented }
         states[connection.id] = remoteState(
           connection, result: .tested(try await testRemote(connection)))
       } catch {
+        let needsLogin = isLoginFailure(error, kind: connection.kind)
+        if needsLogin { loginExpired?(connection) }
         reportOperationError(error)
-        states[connection.id] = remoteState(connection, result: .failed(error.localizedDescription))
+        recordDetailedError(error, for: connection)
+        states[connection.id] =
+          needsLogin
+          ? .needsLogin
+          : remoteState(
+            connection, result: .failed(displayMessage(error, kind: connection.kind)))
+        return
       }
       return
     }
@@ -171,7 +246,9 @@ public enum ConnectionState: Equatable, Sendable {
       }
     } catch {
       reportOperationError(error)
-      states[connection.id] = remoteState(connection, result: .failed(error.localizedDescription))
+      recordDetailedError(error, for: connection)
+      states[connection.id] = remoteState(
+        connection, result: .failed(displayMessage(error, kind: connection.kind)))
       if current == nil { mountFailed?(error.localizedDescription) }
     }
   }
@@ -196,12 +273,16 @@ public enum ConnectionState: Equatable, Sendable {
     operationFailed?(message)
   }
   public func refreshMounts() {
-    for connection in connections where connection.kind == .smb && !busy.contains(connection.id) {
+    for connection in connections
+    where connection.kind.usesSystemMount && !busy.contains(connection.id) {
       if let mounted = smb.mounted(connection) {
         states[connection.id] = .mounted(mounted)
       } else if case .failed = states[connection.id] {
       } else {
+        let wasMounted: Bool
+        if case .mounted = states[connection.id] { wasMounted = true } else { wasMounted = false }
         states[connection.id] = .disconnected
+        if wasMounted { unexpectedDisconnect?(connection) }
       }
     }
   }
@@ -225,33 +306,100 @@ public enum ConnectionState: Equatable, Sendable {
     {
       return .disconnected
     }
+    if connection.kind == .cameraUSB, let cameraUSBSerials,
+      !cameraUSBSerials.contains(connection.params["serial"] ?? "")
+    {
+      return .disconnected
+    }
     return result
   }
   public func ricohDevicesChanged(serials: Set<String>) {
+    let previous = ricohSerials
     ricohSerials = serials
     for connection in connections
     where connection.kind == .ricohGR && !serials.contains(connection.params["serial"] ?? "") {
+      if previous?.contains(connection.params["serial"] ?? "") == true {
+        notifyIfConnectedDisconnects(connection)
+      }
+      states[connection.id] = .disconnected
+    }
+  }
+  public func cameraUSBDevicesChanged(serials: Set<String>) {
+    let previous = cameraUSBSerials
+    cameraUSBSerials = serials
+    for connection in connections
+    where connection.kind == .cameraUSB && !serials.contains(connection.params["serial"] ?? "") {
+      if previous?.contains(connection.params["serial"] ?? "") == true {
+        notifyIfConnectedDisconnects(connection)
+      }
       states[connection.id] = .disconnected
     }
   }
   public func wirelessGUIDsChanged(_ guids: Set<String>) {
+    let previous = wifiGUIDs
     wifiGUIDs = guids
     for connection in connections
     where connection.kind == .androidWiFi && !guids.contains(connection.params["guid"] ?? "") {
+      if previous?.contains(connection.params["guid"] ?? "") == true {
+        notifyIfConnectedDisconnects(connection)
+      }
       states[connection.id] = .disconnected
     }
   }
   public func usbDevicesChanged(serials: Set<String>) {
+    let previous = usbSerials
     usbSerials = serials
     for connection in connections
     where connection.kind == .androidUSB && !serials.contains(connection.params["serial"] ?? "") {
+      if previous?.contains(connection.params["serial"] ?? "") == true {
+        notifyIfConnectedDisconnects(connection)
+      }
       states[connection.id] = .disconnected
     }
   }
   public func autoMount() async {
     refreshMounts()
-    for connection in connections where connection.kind == .smb && connection.autoMount {
+    for connection in connections
+    where connection.kind.usesSystemMount && connection.autoMount {
       if smb.mounted(connection) == nil { await toggle(connection) }
     }
+  }
+
+  private func notifyIfConnectedDisconnects(_ connection: Connection) {
+    if case .mounted = states[connection.id] { unexpectedDisconnect?(connection) }
+  }
+
+  private func displayMessage(_ error: Error, kind: ConnectionKind) -> String {
+    if let error = error as? RemoteError { return HumanError.remote(error, kind: kind) }
+    return error.localizedDescription
+  }
+
+  private func isLoginFailure(_ error: Error, kind: ConnectionKind) -> Bool {
+    switch kind {
+    case .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
+      .googleDrive, .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou:
+      break
+    default:
+      return false
+    }
+    if let remote = error as? RemoteError {
+      switch remote {
+      case .unauthorized:
+        return true
+      case .http(let status):
+        return status == 401 || status == 403
+      case .posix(let code):
+        return code == EACCES || code == EPERM
+      default:
+        return false
+      }
+    }
+    let failure = error as NSError
+    return failure.domain == NSPOSIXErrorDomain
+      && (failure.code == Int(EACCES) || failure.code == Int(EPERM))
+  }
+
+  private func recordDetailedError(_ error: Error, for connection: Connection) {
+    detailedErrors[connection.id] = HumanError.detail(error, kind: connection.kind)
   }
 }

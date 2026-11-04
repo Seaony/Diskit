@@ -70,7 +70,9 @@ public actor QuarkProvider: RemoteFileProvider {
       let response: QuarkData<[QuarkDownload]> = try await rpc(
         "/file/download", body: ["fids": [file.fid]])
       guard let url = response.data.first?.downloadURL, url.scheme == "https",
-        let host = url.host?.lowercased(), host == "quark.cn" || host.hasSuffix(".quark.cn")
+        let host = url.host?.lowercased(),
+        host == session.configuration.cookieDomain
+          || host.hasSuffix("." + session.configuration.cookieDomain)
       else { throw RemoteError.protocolError }
       var request = URLRequest(url: url, timeoutInterval: 60)
       if let requested {
@@ -158,7 +160,7 @@ public actor QuarkProvider: RemoteFileProvider {
       request.httpBody = payload
       request.setValue(authorization, forHTTPHeaderField: "Authorization")
       request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-      request.setValue("https://pan.quark.cn/", forHTTPHeaderField: "Referer")
+      request.setValue(session.configuration.refererURL, forHTTPHeaderField: "Referer")
       for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
       let uploaded = try await session.authorized(request)
       try checkHTTP(uploaded)
@@ -185,7 +187,7 @@ public actor QuarkProvider: RemoteFileProvider {
     completion.setValue(authorization, forHTTPHeaderField: "Authorization")
     completion.setValue("application/xml", forHTTPHeaderField: "Content-Type")
     completion.setValue(md5, forHTTPHeaderField: "Content-MD5")
-    completion.setValue("https://pan.quark.cn/", forHTTPHeaderField: "Referer")
+    completion.setValue(session.configuration.refererURL, forHTTPHeaderField: "Referer")
     for (key, value) in headers { completion.setValue(value, forHTTPHeaderField: key) }
     let committed = try await session.authorized(completion)
     try checkHTTP(committed)
@@ -332,9 +334,12 @@ public actor QuarkProvider: RemoteFileProvider {
     body: [String: Any]? = nil
   ) async throws -> T {
     try requireConnection()
-    var components = URLComponents(string: "https://drive.quark.cn/1/clouddrive" + path)!
+    var components = URLComponents(string: session.configuration.apiBase + path)!
     components.queryItems =
-      [URLQueryItem(name: "pr", value: "ucpro"), URLQueryItem(name: "fr", value: "pc")]
+      [
+        URLQueryItem(name: "pr", value: session.configuration.clientParameter),
+        URLQueryItem(name: "fr", value: "pc"),
+      ]
       + query.keys.sorted().map { URLQueryItem(name: $0, value: query[$0]) }
     var request = URLRequest(url: components.url!, timeoutInterval: 30)
     request.httpMethod = method
@@ -353,11 +358,8 @@ public actor QuarkProvider: RemoteFileProvider {
   private func checkHTTP(_ response: HTTPResponse) throws {
     guard (200..<300).contains(response.status) else {
       switch response.status {
-      case 401, 403: throw RemoteError.posix(EACCES)
-      case 404: throw RemoteError.posix(ENOENT)
-      case 409: throw RemoteError.posix(EEXIST)
-      case 507: throw RemoteError.posix(ENOSPC)
-      default: throw RemoteError.posix(EIO)
+      case 401: throw QuarkError.loginRequired
+      default: throw RemoteError.http(response.status)
       }
     }
   }

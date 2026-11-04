@@ -59,6 +59,84 @@ public enum SMBAddress {
   }
 }
 
+public enum SystemMountAddress {
+  public static func url(for connection: Connection) throws -> URL {
+    switch connection.kind {
+    case .smb:
+      return try SMBAddress.url(
+        host: connection.params["host"] ?? "",
+        user: connection.params["username"],
+        share: connection.params["share"])
+    case .webdav, .webdavHTTPS:
+      return try url(
+        scheme: connection.kind == .webdavHTTPS ? "https" : "http",
+        address: connection.params["url"] ?? "",
+        path: nil)
+    case .nfs:
+      return try url(
+        scheme: "nfs", address: connection.params["host"] ?? "",
+        path: connection.params["path"])
+    default:
+      throw ConnectionError.invalidFields
+    }
+  }
+
+  public static func matches(connection: Connection, source: String, type: String) -> Bool {
+    guard let expectedType = fileSystemType(for: connection.kind), type == expectedType,
+      let expected = try? url(for: connection)
+    else { return false }
+    if connection.kind == .nfs, !source.lowercased().hasPrefix("nfs:") {
+      let parts = source.split(separator: ":", maxSplits: 1, omittingEmptySubsequences: false)
+      guard parts.count == 2 else { return false }
+      return parts[0].lowercased() == expected.host?.lowercased()
+        && normalizedPath(parts[1].hasPrefix("/") ? String(parts[1]) : "/" + parts[1])
+          == normalizedPath(expected.path)
+    }
+    let normalizedSource =
+      source.hasPrefix(expected.scheme! + ":")
+      ? source : expected.scheme! + ":" + source
+    guard let actual = URLComponents(string: normalizedSource) else { return false }
+    return actual.host?.lowercased() == expected.host?.lowercased()
+      && normalizedPath(actual.path) == normalizedPath(expected.path)
+  }
+
+  private static func url(scheme: String, address: String, path: String?) throws -> URL {
+    let value = address.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !value.isEmpty else { throw ConnectionError.invalidFields }
+    if let components = URLComponents(string: value),
+      let valueScheme = components.scheme?.lowercased()
+    {
+      guard valueScheme == scheme, components.host != nil, components.user == nil else {
+        throw ConnectionError.invalidFields
+      }
+      return components.url!
+    }
+    guard !value.contains(where: { $0.isWhitespace || "/@?#".contains($0) }) else {
+      throw ConnectionError.invalidFields
+    }
+    var components = URLComponents()
+    components.scheme = scheme
+    components.host = value
+    components.path = path.map { $0.hasPrefix("/") ? $0 : "/" + $0 } ?? ""
+    guard let url = components.url else { throw ConnectionError.invalidFields }
+    return url
+  }
+
+  private static func fileSystemType(for kind: ConnectionKind) -> String? {
+    switch kind {
+    case .smb: "smbfs"
+    case .webdav, .webdavHTTPS: "webdav"
+    case .nfs: "nfs"
+    default: nil
+    }
+  }
+
+  private static func normalizedPath(_ path: String) -> String {
+    let value = path.isEmpty ? "/" : path
+    return value.count > 1 && value.hasSuffix("/") ? String(value.dropLast()) : value
+  }
+}
+
 @MainActor public final class SystemSMBService: SMBServing {
   private let location: any StorageLocation
   public init(location: any StorageLocation = LocalStorageLocation()) { self.location = location }
@@ -67,10 +145,10 @@ public enum SMBAddress {
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     // 只删除空挂载点，推出失败时绝不能递归删除远端内容。
     defer { _ = rmdir(directory.path) }
-    let url = try SMBAddress.url(
-      host: connection.params["host"] ?? "", share: connection.params["share"] ?? "")
+    let url = try SystemMountAddress.url(for: connection)
     let mounted = try await MountRequest().run(
-      url: url, user: connection.params["username"] ?? "", password: password, mountPoint: directory
+      url: url, user: connection.params["username"] ?? "", password: password,
+      guest: connection.params["guest"] == "true", mountPoint: directory
     )
     guard mounted.standardizedFileURL == directory.standardizedFileURL else {
       throw ConnectionError.system(EIO)
@@ -94,10 +172,10 @@ public enum SMBAddress {
     }.value
   }
   public func mount(_ connection: Connection, password: String) async throws -> URL {
-    let url = try SMBAddress.url(
-      host: connection.params["host"] ?? "", share: connection.params["share"] ?? "")
+    let url = try SystemMountAddress.url(for: connection)
     return try await MountRequest().run(
-      url: url, user: connection.params["username"] ?? "", password: password)
+      url: url, user: connection.params["username"] ?? "", password: password,
+      guest: connection.params["guest"] == "true")
   }
   public func unmount(_ url: URL) async throws {
     try await UnmountRequest().run(url)
@@ -112,14 +190,12 @@ public enum SMBAddress {
       let type = withUnsafePointer(to: &entry.f_fstypename) {
         String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self))
       }
-      guard type == "smbfs" else { continue }
       let source = withUnsafePointer(to: &entry.f_mntfromname) {
         String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self))
       }
-      guard let parts = URLComponents(string: "smb:" + source),
-        parts.host?.lowercased() == connection.params["host"]?.lowercased(),
-        parts.path == "/" + (connection.params["share"] ?? "")
-      else { continue }
+      guard SystemMountAddress.matches(connection: connection, source: source, type: type) else {
+        continue
+      }
       let path = withUnsafePointer(to: &entry.f_mntonname) {
         String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self))
       }
@@ -135,41 +211,53 @@ public enum SMBAddress {
   private var request: AsyncRequestID?
   private var continuation: CheckedContinuation<URL, Error>?
   private var timer: Task<Void, Never>?
-  func run(url: URL, user: String, password: String, mountPoint: URL? = nil) async throws -> URL {
-    try await withCheckedThrowingContinuation { continuation in
-      self.continuation = continuation
-      let options = NSMutableDictionary(dictionary: [
-        kNAUIOptionKey as String: kNAUIOptionNoUI, kNetFSForceNewSessionKey as String: true,
-        kNetFSUseAuthenticationInfoKey as String: false,
-      ])
-      let mountOptions: NSMutableDictionary? = mountPoint.map { _ in
-        NSMutableDictionary(dictionary: [
-          kNetFSMountAtMountDirKey as String: true, kNetFSMountFlagsKey as String: MNT_DONTBROWSE,
+  func run(
+    url: URL, user: String, password: String, guest: Bool = false, mountPoint: URL? = nil
+  ) async throws -> URL {
+    try await withTaskCancellationHandler {
+      try await withCheckedThrowingContinuation { continuation in
+        self.continuation = continuation
+        let options = NSMutableDictionary(dictionary: [
+          kNAUIOptionKey as String: kNAUIOptionNoUI, kNetFSForceNewSessionKey as String: true,
+          kNetFSUseAuthenticationInfoKey as String: false, kNetFSAllowLoopbackKey as String: true,
         ])
-      }
-      let status = NetFSMountURLAsync(
-        url as CFURL, mountPoint.map { $0 as CFURL }, user as CFString, password as CFString,
-        options, mountOptions, &request, .main
-      ) { status, _, points in
-        let paths = (points as? [String]) ?? []
-        Task { @MainActor in
-          if status == 0, let path = paths.first {
-            self.finish(.success(URL(fileURLWithPath: path)))
-          } else {
-            self.finish(.failure(ConnectionError.status(status == 0 ? EIO : status)))
+        if guest { options[kNetFSUseGuestKey as String] = true }
+        let mountOptions: NSMutableDictionary? = mountPoint.map { _ in
+          NSMutableDictionary(dictionary: [
+            kNetFSMountAtMountDirKey as String: true,
+            kNetFSMountFlagsKey as String: MNT_DONTBROWSE,
+          ])
+        }
+        let status = NetFSMountURLAsync(
+          url as CFURL, mountPoint.map { $0 as CFURL }, user as CFString, password as CFString,
+          options, mountOptions, &request, .main
+        ) { status, _, points in
+          let paths = (points as? [String]) ?? []
+          Task { @MainActor in
+            if status == 0, let path = paths.first {
+              self.finish(.success(URL(fileURLWithPath: path)))
+            } else {
+              self.finish(.failure(ConnectionError.status(status == 0 ? EIO : status)))
+            }
           }
         }
+        if status != 0 {
+          finish(.failure(ConnectionError.status(status)))
+          return
+        }
+        timer = Task { @MainActor in
+          do { try await Task.sleep(for: .seconds(15)) } catch { return }
+          if let request = self.request { NetFSMountURLCancel(request) }
+          self.finish(.failure(ConnectionError.timeout))
+        }
       }
-      if status != 0 {
-        finish(.failure(ConnectionError.status(status)))
-        return
-      }
-      timer = Task { @MainActor in
-        do { try await Task.sleep(for: .seconds(15)) } catch { return }
-        if let request = self.request { NetFSMountURLCancel(request) }
-        self.finish(.failure(ConnectionError.timeout))
-      }
+    } onCancel: {
+      Task { @MainActor in self.cancel() }
     }
+  }
+  private func cancel() {
+    if let request { NetFSMountURLCancel(request) }
+    finish(.failure(CancellationError()))
   }
   private func finish(_ result: Result<URL, Error>) {
     guard let continuation else { return }

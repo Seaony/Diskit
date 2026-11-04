@@ -6,7 +6,7 @@ public enum AliyunError: Error, Equatable, LocalizedError, Sendable {
   case authorizationFailed(Int)
   public var errorDescription: String? {
     switch self {
-    case .missingConfiguration: L("请先填写阿里云盘 client_id、client_secret 和回调地址")
+    case .missingConfiguration: L("阿里云盘尚未在 Kayoi 中启用")
     case .invalidState: L("授权状态无效，请重新登录")
     case .loginRequired: L("阿里云盘需重新登录")
     case .invalidResponse: L("阿里云盘返回了无效的数据")
