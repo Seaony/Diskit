@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Core
 import Foundation
 import Synchronization
@@ -5,47 +6,15 @@ import Testing
 
 @testable import CloudDrive
 
-private final class ProviderSecrets: SecretStore, Sendable {
-  let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-}
+private typealias ProviderSecrets = TestSecretStore
 
-private final class ProviderFakeTransport: HTTPTransport, Sendable {
-  let responses = Mutex<[HTTPResponse]>([])
-  let requests = Mutex<[URLRequest]>([])
-  let streamResponse: HTTPResponse
-
-  init(_ responses: [HTTPResponse], streamResponse: HTTPResponse? = nil) {
-    self.responses.withLock { $0 = responses }
-    self.streamResponse = streamResponse ?? HTTPResponse(status: 200)
-  }
-
-  func send(_ request: URLRequest) async throws -> HTTPResponse {
-    requests.withLock { $0.append(request) }
-    return responses.withLock {
-      guard !$0.isEmpty else { return HTTPResponse(status: 500) }
-      return $0.removeFirst()
-    }
-  }
-
-  func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
-    requests.withLock { $0.append(request) }
-    return HTTPStreamResponse(
-      response: streamResponse,
-      body: AsyncThrowingStream { continuation in
-        continuation.yield(Data("range".utf8))
-        continuation.finish()
-      })
-  }
-}
+private typealias ProviderFakeTransport = ScriptedHTTPTransport
 
 private func providerSession(_ transport: any HTTPTransport) throws -> OAuthSession {
   let secrets = ProviderSecrets()
   let token = OAuthToken(
     accessToken: "access", refreshToken: "refresh",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   return OAuthSession(
     configuration: OAuthConfiguration(

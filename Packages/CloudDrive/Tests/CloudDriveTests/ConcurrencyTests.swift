@@ -1,4 +1,6 @@
-import Core
+@testable import Core
+import CoreTestSupport
+import Synchronization
 import Foundation
 import Testing
 
@@ -10,6 +12,7 @@ private let limitConfiguration = OAuthConfiguration(
   tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test", scopes: [])
 
 private actor ProfileConcurrencyProbe: HTTPTransport {
+  let gate = BatchGate(expected: 16)
   let host: String
   let path: String
   let json: String
@@ -29,7 +32,7 @@ private actor ProfileConcurrencyProbe: HTTPTransport {
     maximum = max(maximum, active)
     count += 1
     defer { active -= 1 }
-    try await Task.sleep(for: .milliseconds(30))
+    try await gate.enter()
     return HTTPResponse(status: 200, body: Data(json.utf8))
   }
 }
@@ -64,7 +67,7 @@ func cloudProvidersShareAccountRequestAllowance(kind: String) async throws {
   try secrets.write(
     JSONEncoder().encode(
       OAuthToken(
-        accessToken: "local", refreshToken: "local", expiresAt: Date().addingTimeInterval(3600))),
+        accessToken: "local", refreshToken: "local", expiresAt: .distantFuture)),
     for: "account")
   func make() -> any OAuthProfileProviding {
     let session = OAuthSession(
@@ -83,6 +86,9 @@ func cloudProvidersShareAccountRequestAllowance(kind: String) async throws {
   }
   let first = make()
   let second = make()
+  let limit = HTTPConcurrencyLimit.shared(
+    for: "oauth:" + secrets.refreshLockLocation(for: "account").path)
+  await limit.observeQueue { probe.gate.observeQueue($0) }
   try await withThrowingTaskGroup(of: Void.self) { group in
     for index in 0..<16 {
       group.addTask {
@@ -99,12 +105,14 @@ func cloudProvidersShareAccountRequestAllowance(kind: String) async throws {
 }
 
 private actor RefreshStreamProbe: HTTPTransport {
+  let refreshed = TestEvent()
   var refreshes = 0
   func send(_ request: URLRequest) async throws -> HTTPResponse {
     guard request.url?.absoluteString == "https://example.invalid/token" else {
       return HTTPResponse(status: 404)
     }
     refreshes += 1
+    refreshed.signal()
     return HTTPResponse(
       status: 200,
       body: Data(#"{"access_token":"new","refresh_token":"new-refresh","expires_in":3600}"#.utf8))
@@ -127,7 +135,7 @@ private actor RefreshStreamProbe: HTTPTransport {
   try secrets.write(
     JSONEncoder().encode(
       OAuthToken(
-        accessToken: "old", refreshToken: "refresh", expiresAt: Date().addingTimeInterval(3600))),
+        accessToken: "old", refreshToken: "refresh", expiresAt: .distantFuture)),
     for: "account")
   let probe = RefreshStreamProbe()
   let session = OAuthSession(
@@ -138,14 +146,14 @@ private actor RefreshStreamProbe: HTTPTransport {
       try await session.authorizedStream(
         URLRequest(url: URL(string: "https://example.invalid/held")!)))
   }
+  let limit = HTTPConcurrencyLimit.shared(
+    for: "oauth:" + secrets.refreshLockLocation(for: "account").path)
+  await limit.observeQueue { if $0 > 0 { probe.refreshed.signal() } }
   let rejected = Task {
     try await session.authorizedStream(
       URLRequest(url: URL(string: "https://example.invalid/rejected")!))
   }
-  for _ in 0..<200 {
-    if await probe.refreshes == 1 { break }
-    try await Task.sleep(for: .milliseconds(1))
-  }
+  try await probe.refreshed.wait()
   let refreshesBeforeReleasingOtherDownloads = await probe.refreshes
   #expect(refreshesBeforeReleasingOtherDownloads == 1)
   held.removeAll()
@@ -155,6 +163,7 @@ private actor RefreshStreamProbe: HTTPTransport {
 }
 
 private actor OneDriveUploadConcurrencyProbe: HTTPTransport {
+  let gate = BatchGate(expected: 12)
   var active = 0
   var maximum = 0
   var uploads = 0
@@ -176,7 +185,7 @@ private actor OneDriveUploadConcurrencyProbe: HTTPTransport {
     maximum = max(maximum, active)
     uploads += 1
     defer { active -= 1 }
-    try await Task.sleep(for: .milliseconds(30))
+    try await gate.enter()
     return HTTPResponse(status: 201)
   }
 }
@@ -186,7 +195,7 @@ private actor OneDriveUploadConcurrencyProbe: HTTPTransport {
   try secrets.write(
     JSONEncoder().encode(
       OAuthToken(
-        accessToken: "local", refreshToken: "local", expiresAt: Date().addingTimeInterval(3600))),
+        accessToken: "local", refreshToken: "local", expiresAt: .distantFuture)),
     for: "account")
   let probe = OneDriveUploadConcurrencyProbe()
   var providers: [OneDriveProvider] = []
@@ -201,6 +210,9 @@ private actor OneDriveUploadConcurrencyProbe: HTTPTransport {
   let file = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
   defer { try? FileManager.default.removeItem(at: file) }
   try Data([1, 2]).write(to: file)
+  let limit = HTTPConcurrencyLimit.shared(
+    for: "oauth:" + secrets.refreshLockLocation(for: "account").path)
+  await limit.observeQueue { probe.gate.observeQueue($0) }
   try await withThrowingTaskGroup(of: Void.self) { group in
     for (index, provider) in providers.enumerated() {
       group.addTask { try await provider.write(try RemotePath("/file\(index)"), from: file) }
@@ -211,4 +223,27 @@ private actor OneDriveUploadConcurrencyProbe: HTTPTransport {
   #expect(maximum <= 4)
   #expect(maximum > 1)
   #expect(await probe.uploads == 12)
+}
+
+private final class BatchGate: Sendable {
+  private struct State { var entered = 0; var queued = 0 }
+  private let state = Mutex(State())
+  private let expected: Int
+  private let released = TestEvent()
+  init(expected: Int) { self.expected = expected }
+  func observeQueue(_ count: Int) {
+    let ready = state.withLock { value in
+      value.queued = count
+      return value.entered + value.queued >= expected || value.entered > 4
+    }
+    if ready { released.signal() }
+  }
+  func enter() async throws {
+    let ready = state.withLock { value in
+      value.entered += 1
+      return value.entered + value.queued >= expected || value.entered > 4
+    }
+    if ready { released.signal() }
+    try await released.wait()
+  }
 }

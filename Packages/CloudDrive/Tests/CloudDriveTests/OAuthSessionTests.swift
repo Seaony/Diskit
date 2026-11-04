@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Core
 import CryptoKit
 import Foundation
@@ -6,52 +7,9 @@ import Testing
 
 @testable import CloudDrive
 
-private final class MemorySecrets: SecretStore, Sendable {
-  let failWrites = Mutex(false)
-  let values = Mutex<[String: Data]>([:])
+private typealias MemorySecrets = TestSecretStore
 
-  func read(_ key: String) throws -> Data? {
-    values.withLock { $0[key] }
-  }
-
-  func write(_ data: Data, for key: String) throws {
-    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
-    values.withLock { $0[key] = data }
-  }
-
-  func delete(_ key: String) throws {
-    _ = values.withLock { $0.removeValue(forKey: key) }
-  }
-}
-
-private final class FakeTransport: HTTPTransport, Sendable {
-  let responses = Mutex<[HTTPResponse]>([])
-  let requests = Mutex<[URLRequest]>([])
-  let streamResponse: HTTPResponse
-
-  init(_ responses: [HTTPResponse] = [], streamResponse: HTTPResponse? = nil) {
-    self.responses.withLock { $0 = responses }
-    self.streamResponse = streamResponse ?? HTTPResponse(status: 200)
-  }
-
-  func send(_ request: URLRequest) async throws -> HTTPResponse {
-    requests.withLock { $0.append(request) }
-    return responses.withLock {
-      guard !$0.isEmpty else { return HTTPResponse(status: 500) }
-      return $0.removeFirst()
-    }
-  }
-
-  func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
-    requests.withLock { $0.append(request) }
-    return HTTPStreamResponse(
-      response: streamResponse,
-      body: AsyncThrowingStream { continuation in
-        continuation.yield(Data("range".utf8))
-        continuation.finish()
-      })
-  }
-}
+private typealias FakeTransport = ScriptedHTTPTransport
 
 private let configuration = OAuthConfiguration(
   clientID: "client",
@@ -130,7 +88,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: "refresh",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([
     HTTPResponse(status: 401),
@@ -153,7 +111,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: nil,
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([HTTPResponse(status: 401)])
   let session = OAuthSession(
@@ -170,7 +128,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: "refresh",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([
     HTTPResponse(status: 401),
@@ -196,7 +154,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: "refresh",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([
     HTTPResponse(status: 401),
@@ -216,7 +174,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "access", refreshToken: "refresh",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([
     HTTPResponse(status: 429, headers: ["Retry-After": "0"]),
@@ -234,7 +192,7 @@ private func tokenResponse(
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: "bad",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let transport = FakeTransport([
     HTTPResponse(
@@ -252,18 +210,18 @@ private func tokenResponse(
   #expect(try await session.hasToken() == false)
 }
 
-@Test func drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() async throws {
+@Test func drive115RefreshRateLimitKeepsLoginWithoutReplayingGrant() async throws {
   let secrets = MemorySecrets()
   let token = OAuthToken(
     accessToken: "old", refreshToken: "throttled",
-    expiresAt: Date().addingTimeInterval(3_600))
+    expiresAt: .distantFuture)
   try secrets.write(JSONEncoder().encode(token), for: "oauth")
   let rateLimit = HTTPResponse(
     status: 200,
     headers: ["Retry-After": "0"],
     body: Data(
       #"{"state":0,"code":40140117,"message":"refresh frequently"}"#.utf8))
-  let transport = FakeTransport([rateLimit, rateLimit, rateLimit])
+  let transport = FakeTransport([rateLimit])
   let session = OAuthSession(
     configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
 
@@ -271,7 +229,9 @@ private func tokenResponse(
     _ = try await session.refreshNow()
   }
   #expect(try await session.hasToken())
-  #expect(transport.requests.withLock { $0.count } == 3)
+  #expect(transport.requests.withLock { $0.count } == 1)
+  let storedData = try #require(try secrets.read("oauth"))
+  #expect(try JSONDecoder().decode(OAuthToken.self, from: storedData) == token)
 }
 
 private struct RefreshFailureHTTP: HTTPTransport {
@@ -464,7 +424,7 @@ func commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession: B
   try secrets.write(
     JSONEncoder().encode(
       OAuthToken(
-        accessToken: "old", refreshToken: "old-refresh", expiresAt: Date().addingTimeInterval(3600))
+        accessToken: "old", refreshToken: "old-refresh", expiresAt: .distantFuture)
     ),
     for: "oauth")
   let transport = FakeTransport([tokenResponse(access: "fresh", refresh: "rotated")])
@@ -548,4 +508,38 @@ func separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force: Bool) async 
   #expect(try await firstTask.value == "new")
   #expect(try await secondTask.value == "new")
   #expect(await transport.refreshes == 1)
+}
+
+@Test(arguments: [false, true])
+func publicPKCEClientNeverSendsConfiguredSecret(refresh: Bool) async throws {
+  let transport = FakeTransport([tokenResponse(access: "new", refresh: "rotated")])
+  let config = OAuthConfiguration(
+    clientID: "public-client", clientSecret: "must-not-be-sent",
+    authorizationURL: URL(string: "https://example.invalid/authorize")!,
+    tokenURL: URL(string: "https://example.invalid/token")!,
+    redirectURI: "com.example.client:/oauth2redirect", scopes: [], usesPKCE: true)
+  #expect(config.clientSecret.isEmpty)
+  let secrets = MemorySecrets()
+  let session = OAuthSession(configuration: config, secretKey: "oauth", secrets: secrets, transport: transport)
+  if refresh {
+    try secrets.write(JSONEncoder().encode(OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)), for: "oauth")
+    _ = try await session.accessToken()
+  } else {
+    _ = try await session.authorizationURL(state: "expected-state")
+    _ = try await session.exchange(code: "code")
+  }
+  let request = try #require(transport.requests.withLock { $0.first })
+  let body = String(decoding: try #require(request.httpBody), as: UTF8.self)
+  let fields = URLComponents(string: "https://example.invalid/?" + body)?.queryItems ?? []
+  #expect(fields.first { $0.name == "client_id" }?.value == "public-client")
+  #expect(!fields.contains { $0.name == "client_secret" })
+  #expect(!body.contains("must-not-be-sent"))
+  #expect(refresh || fields.contains { $0.name == "code_verifier" })
+}
+
+@Test func onlyExplicitOAuthLoginFailureRequiresReauthentication() {
+  #expect(OAuthDriveError.loginRequired.requiresLogin)
+  for error in [OAuthDriveError.configuration, .temporarilyUnavailable, .invalidResponse, .authorizationDenied] {
+    #expect(!error.requiresLogin)
+  }
 }

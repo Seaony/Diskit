@@ -3,7 +3,10 @@ import AuthenticationServices
 import Core
 import Foundation
 
-@MainActor final class WebAuthorization: NSObject, ASWebAuthenticationPresentationContextProviding {
+@MainActor
+final class WebAuthorization: NSObject, ASWebAuthenticationPresentationContextProviding,
+  OAuthAuthorizing
+{
   private let window: NSWindow
   private var session: ASWebAuthenticationSession?
   private var continuation: CheckedContinuation<URL, Error>?
@@ -48,6 +51,7 @@ import Foundation
         }
         self.session = session
         session.presentationContextProvider = self
+        session.prefersEphemeralWebBrowserSession = true
         if !session.start() { finish(.failure(URLError(.cannotConnectToHost))) }
       }
     } onCancel: {

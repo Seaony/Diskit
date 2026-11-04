@@ -121,6 +121,11 @@ enum CloudDriveSupport {
     if !query.isEmpty {
       components.queryItems = (components.queryItems ?? []) + query
     }
+    if let items = components.queryItems {
+      components.percentEncodedQuery = items.map { item in
+        encode(item.name) + (item.value.map { "=" + encode($0) } ?? "")
+      }.joined(separator: "&")
+    }
     guard let url = components.url else { throw RemoteError.protocolError }
     return url
   }
@@ -151,7 +156,8 @@ enum CloudDriveSupport {
     case 401: .unauthorized
     case 403: .posix(EACCES)
     case 404: .posix(ENOENT)
-    case 409, 412: .posix(EIO)
+    case 409: .posix(EIO)
+    case 412: .posix(EEXIST)
     case 416: .posix(EINVAL)
     case 429, 503: .rateLimited
     case 507: .posix(ENOSPC)
@@ -160,7 +166,7 @@ enum CloudDriveSupport {
   }
 
   static func mapHTTP(_ response: HTTPResponse) -> RemoteError? {
-    let text = String(decoding: response.body, as: UTF8.self).lowercased()
+    let text = failureText(response)
     if isRateLimited(response, text: text) {
       return .rateLimited
     }
@@ -178,26 +184,97 @@ enum CloudDriveSupport {
   }
 
   static func sendWithRetry(
-    _ transport: any HTTPTransport, _ request: URLRequest, attempts: Int = 3
+    _ transport: any HTTPTransport, _ request: URLRequest, attempts: Int = 3, upload: Bool = false,
+    retrySafe: Bool? = nil, deadline: HTTPProgressDeadline? = nil,
+    sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
   ) async throws -> HTTPResponse {
-    for attempt in 0..<max(1, attempts) {
-      let response = try await transport.send(request)
-      guard shouldRetry(response), attempt + 1 < attempts else { return response }
-      try await Task.sleep(for: .seconds(retryDelay(response, attempt: attempt)))
+    let operation: @Sendable () async throws -> HTTPResponse = {
+      for attempt in 0..<max(1, attempts) {
+        try Task.checkCancellation()
+        let response: HTTPResponse
+        do {
+          response = try await (upload ? transport.upload(request) : transport.send(request))
+        } catch {
+          guard mayRetry(request, explicit: retrySafe), isTransientNetworkFailure(error),
+            attempt + 1 < attempts
+          else { throw error }
+          try await sleep(.seconds(retryDelay(HTTPResponse(status: 0), attempt: attempt)))
+          continue
+        }
+        guard mayRetry(request, explicit: retrySafe), shouldRetry(response), attempt + 1 < attempts
+        else { return response }
+        let delay = retryDelay(response, attempt: attempt)
+        guard delay < RemoteTimeout.cloudRequest else { return response }
+        try await sleep(.seconds(delay))
+      }
+      throw RemoteError.rateLimited
     }
-    throw RemoteError.rateLimited
+    if upload { return try await operation() }
+    return try await
+      (deadline ?? HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))).run(
+        operation)
   }
 
   static func streamWithRetry(
-    _ transport: any HTTPTransport, _ request: URLRequest, attempts: Int = 3
+    _ transport: any HTTPTransport, _ request: URLRequest, attempts: Int = 3,
+    retrySafe: Bool? = nil, deadline: HTTPProgressDeadline? = nil,
+    sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }
   ) async throws -> HTTPStreamResponse {
-    for attempt in 0..<max(1, attempts) {
-      let response = try await transport.stream(request)
-      guard shouldRetry(response.response), attempt + 1 < attempts else { return response }
-      try await Task.sleep(
-        for: .seconds(retryDelay(response.response, attempt: attempt)))
+    try await (deadline ?? HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))).run
+    {
+      for attempt in 0..<max(1, attempts) {
+        try Task.checkCancellation()
+        switch try await streamAttempt(
+          transport, request, attempt: attempt, attempts: attempts, retrySafe: retrySafe)
+        {
+        case .response(let response): return response
+        case .retry(let delay): try await sleep(.seconds(delay))
+        }
+      }
+      throw RemoteError.rateLimited
     }
-    throw RemoteError.rateLimited
+  }
+
+  private enum StreamAttempt {
+    case response(HTTPStreamResponse)
+    case retry(TimeInterval)
+  }
+
+  private static func streamAttempt(
+    _ transport: any HTTPTransport, _ request: URLRequest, attempt: Int, attempts: Int,
+    retrySafe: Bool?
+  ) async throws -> StreamAttempt {
+    let response: HTTPStreamResponse
+    do { response = try await transport.stream(request) } catch {
+      guard mayRetry(request, explicit: retrySafe), isTransientNetworkFailure(error),
+        attempt + 1 < attempts
+      else { throw error }
+      return .retry(retryDelay(HTTPResponse(status: 0), attempt: attempt))
+    }
+    guard mayRetry(request, explicit: retrySafe), shouldRetry(response.response),
+      attempt + 1 < attempts
+    else { return .response(response) }
+    let delay = retryDelay(response.response, attempt: attempt)
+    guard delay < RemoteTimeout.cloudRequest else { return .response(response) }
+    // 返回退避值前销毁拒绝响应，释放它占用的下载额度。
+    return .retry(delay)
+  }
+
+  private static func mayRetry(_ request: URLRequest, explicit: Bool?) -> Bool {
+    explicit ?? ["GET", "HEAD"].contains((request.httpMethod ?? "GET").uppercased())
+  }
+
+  private static func isTransientNetworkFailure(_ error: Error) -> Bool {
+    if error is CancellationError { return false }
+    let failure = error as NSError
+    if failure.domain == NSURLErrorDomain {
+      return [
+        NSURLErrorTimedOut, NSURLErrorNetworkConnectionLost, NSURLErrorCannotConnectToHost,
+        NSURLErrorDNSLookupFailed, NSURLErrorCannotFindHost,
+      ].contains(failure.code)
+    }
+    return failure.domain == NSPOSIXErrorDomain
+      && [Int(ETIMEDOUT), Int(ECONNRESET), Int(ECONNREFUSED), Int(EPIPE)].contains(failure.code)
   }
 
   static func emptyStream() -> AsyncThrowingStream<Data, Error> {
@@ -214,12 +291,31 @@ enum CloudDriveSupport {
     }
   }
 
+
   private static func shouldRetry(_ response: HTTPResponse) -> Bool {
     if response.status == 429 || response.status == 503 || response.status == 504 {
       return true
     }
-    let text = String(decoding: response.body, as: UTF8.self).lowercased()
-    return isRateLimited(response, text: text)
+    return isRateLimited(response, text: failureText(response))
+  }
+
+  private static func failureText(_ response: HTTPResponse) -> String {
+    guard (200..<300).contains(response.status) else {
+      return String(decoding: response.body, as: UTF8.self).lowercased()
+    }
+    guard let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
+    else { return "" }
+    var failures = [object["error"], object["error_summary"]].compactMap { $0 }
+    let rejected =
+      (object["state"] as? Bool) == false || (object["success"] as? Bool) == false
+      || integerValue(object["code"]).map { $0 != 0 && $0 != 200 } == true
+      || integerValue(object["errno"]).map { $0 != 0 } == true
+    if rejected {
+      failures.append(
+        contentsOf: [object["message"], object["msg"], object["errmsg"]].compactMap { $0 })
+    }
+    guard let data = try? JSONSerialization.data(withJSONObject: failures) else { return "" }
+    return String(decoding: data, as: UTF8.self).lowercased()
   }
 
   private static func isRateLimited(_ response: HTTPResponse, text: String) -> Bool {
@@ -276,22 +372,18 @@ enum CloudDriveSupport {
     return nil
   }
 
-  private static func retryDelay(_ response: HTTPResponse, attempt: Int) -> Int64 {
-    if let value = response.header("Retry-After"),
-      let seconds = Int64(value.trimmingCharacters(in: .whitespaces))
-    {
-      return min(max(seconds, 0), 60)
-    }
+  static func retryDelay(_ response: HTTPResponse, attempt: Int, now: Date = Date()) -> TimeInterval
+  {
     if let value = response.header("Retry-After") {
+      let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+      if let seconds = TimeInterval(text) { return seconds.isFinite ? max(seconds, 0) : .infinity }
       let formatter = DateFormatter()
       formatter.locale = Locale(identifier: "en_US_POSIX")
       formatter.timeZone = TimeZone(secondsFromGMT: 0)
       formatter.dateFormat = "EEE',' dd MMM yyyy HH':'mm':'ss z"
-      if let date = formatter.date(from: value) {
-        return min(max(Int64(date.timeIntervalSinceNow.rounded(.up)), 0), 60)
-      }
+      if let date = formatter.date(from: text) { return max(date.timeIntervalSince(now), 0) }
     }
-    return min(Int64(1 << min(attempt, 5)), 30)
+    return TimeInterval(1 << min(max(attempt, 0), 5))
   }
 
   static func parseDate(_ value: String?) -> Date {
@@ -312,11 +404,10 @@ enum CloudDriveSupport {
   }
 
   static func parent(_ path: RemotePath) -> RemotePath {
-    let parts = path.value.split(separator: "/").dropLast()
-    return try! RemotePath(parts.isEmpty ? "/" : "/" + parts.joined(separator: "/"))
+    path.parent
   }
 
   static func basename(_ path: RemotePath) -> String {
-    String(path.value.split(separator: "/").last ?? "")
+    path.basename
   }
 }

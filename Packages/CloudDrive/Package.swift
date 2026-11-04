@@ -7,6 +7,6 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "CloudDrive", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "CloudDriveTests", dependencies: ["CloudDrive"]),
+    .testTarget(name: "CloudDriveTests", dependencies: ["CloudDrive", .product(name: "CoreTestSupport", package: "Core")]),
   ],
   swiftLanguageModes: [.v6])

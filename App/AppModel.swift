@@ -292,7 +292,7 @@ import UserNotifications
     case .oneDrive:
       return OAuthConfiguration(
         clientID: value("ONEDRIVE_CLIENT_ID"),
-        clientSecret: value("ONEDRIVE_CLIENT_SECRET"),
+        clientSecret: "",
         authorizationURL: URL(
           string: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize")!,
         tokenURL: URL(string: "https://login.microsoftonline.com/common/oauth2/v2.0/token")!,
@@ -301,10 +301,10 @@ import UserNotifications
     case .googleDrive:
       return OAuthConfiguration(
         clientID: value("GOOGLE_CLIENT_ID"),
-        clientSecret: value("GOOGLE_CLIENT_SECRET"),
+        clientSecret: "",
         authorizationURL: URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!,
         tokenURL: URL(string: "https://oauth2.googleapis.com/token")!,
-        redirectURI: value("GOOGLE_REDIRECT_URI"),
+        redirectURI: GoogleDesktopOAuth.redirectURI(clientID: value("GOOGLE_CLIENT_ID")),
         scopes: [
           "openid", "email", "profile", "https://www.googleapis.com/auth/drive",
         ],
@@ -313,7 +313,7 @@ import UserNotifications
     case .dropbox:
       return OAuthConfiguration(
         clientID: value("DROPBOX_CLIENT_ID"),
-        clientSecret: value("DROPBOX_CLIENT_SECRET"),
+        clientSecret: "",
         authorizationURL: URL(string: "https://www.dropbox.com/oauth2/authorize")!,
         tokenURL: URL(string: "https://api.dropboxapi.com/oauth2/token")!,
         redirectURI: value("DROPBOX_REDIRECT_URI"),
@@ -330,8 +330,7 @@ import UserNotifications
     guard let configuration = oauthConfiguration(for: kind), configuration.isConfigured else {
       return false
     }
-    return kind != .baiduDrive
-      || !(Bundle.main.infoDictionary?["BAIDU_APP_ID"] as? String ?? "").isEmpty
+    return true
   }
   func oauthSession(for connection: Connection) throws -> OAuthSession {
     guard oauthIsConfigured(for: connection.kind),

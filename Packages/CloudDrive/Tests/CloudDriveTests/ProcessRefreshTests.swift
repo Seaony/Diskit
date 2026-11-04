@@ -1,5 +1,6 @@
 import Core
 import Darwin
+import Dispatch
 import Foundation
 import Testing
 
@@ -32,11 +33,29 @@ private struct ProcessSecrets: SecretStore {
   }
 }
 
-private func waitForProcessFixture(_ condition: () -> Bool) async throws {
-  let deadline = ContinuousClock.now.advanced(by: .seconds(15))
-  while !condition() {
-    guard ContinuousClock.now < deadline else { throw CocoaError(.fileReadUnknown) }
-    try await Task.sleep(for: .milliseconds(5))
+private func waitForProcessFixture(in directory: URL, _ condition: @Sendable () -> Bool) async throws {
+  let descriptor = open(directory.path, O_EVTONLY)
+  guard descriptor >= 0 else { throw CocoaError(.fileReadUnknown) }
+  let source = DispatchSource.makeFileSystemObjectSource(
+    fileDescriptor: descriptor, eventMask: [.write, .rename, .delete], queue: .global())
+  let (events, continuation) = AsyncStream<Void>.makeStream()
+  source.setEventHandler { continuation.yield(()) }
+  source.setCancelHandler { close(descriptor) }
+  source.resume()
+  defer {
+    source.cancel()
+    continuation.finish()
+  }
+  try await withTaskCancellationHandler {
+    // 先监听再检查，避免文件刚写入时错过通知。
+    if condition() { return }
+    for await _ in events {
+      try Task.checkCancellation()
+      if condition() { return }
+    }
+    try Task.checkCancellation()
+  } onCancel: {
+    continuation.finish()
   }
 }
 
@@ -54,7 +73,7 @@ private struct ProcessRefreshHTTP: HTTPTransport {
     let event = directory.appending(path: "refresh-" + UUID().uuidString)
     try Data().write(to: event)
     // 两个进程都已读取旧记录，才允许首个刷新完成。
-    try await waitForProcessFixture {
+    try await waitForProcessFixture(in: directory) {
       ["one", "two"].allSatisfy {
         FileManager.default.fileExists(atPath: directory.appending(path: "read-" + $0).path)
       }
@@ -103,6 +122,8 @@ private struct ProcessRefreshHTTP: HTTPTransport {
   let bundle = try #require(Bundle(for: ProcessTestBundle.self).executableURL)
   let package = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
     .deletingLastPathComponent()
+  let (exits, exitContinuation) = AsyncStream<Int>.makeStream()
+  defer { exitContinuation.finish() }
   var children: [Process] = []
   var logs: [FileHandle] = []
   defer {
@@ -112,7 +133,7 @@ private struct ProcessRefreshHTTP: HTTPTransport {
     }
     for log in logs { try? log.close() }
   }
-  for role in ["one", "two"] {
+  for (index, role) in ["one", "two"].enumerated() {
     let child = Process()
     child.executableURL = URL(filePath: CommandLine.arguments[0])
     child.arguments = [
@@ -130,10 +151,19 @@ private struct ProcessRefreshHTTP: HTTPTransport {
     logs.append(log)
     child.standardOutput = log
     child.standardError = log
+    child.terminationHandler = { _ in exitContinuation.yield(index) }
     try child.run()
     children.append(child)
   }
-  try await waitForProcessFixture { children.allSatisfy { !$0.isRunning } }
+  var completed = 0
+  for await index in exits {
+    completed += 1
+    if children[index].terminationStatus != 0 {
+      for child in children where child.isRunning { child.terminate() }
+    }
+    if completed == children.count { break }
+  }
+  try Task.checkCancellation()
   for (index, child) in children.enumerated() {
     child.waitUntilExit()
     let log = try String(

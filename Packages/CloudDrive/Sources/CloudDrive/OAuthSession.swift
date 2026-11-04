@@ -3,98 +3,6 @@ import CryptoKit
 import Foundation
 import Security
 
-public struct OAuthConfiguration: Sendable, Equatable {
-  public let clientID: String
-  public let clientSecret: String
-  public let authorizationURL: URL
-  public let tokenURL: URL
-  public let refreshTokenURL: URL?
-  public let redirectURI: String
-  public let scopes: [String]
-  public let additionalAuthorizationItems: [String: String]
-  public let scopeSeparator: String
-  public let tokenRequestMethod: String
-  public let tokenRequestPlacement: OAuthTokenRequestPlacement
-  public let tokenResponseDataKey: String?
-  public let refreshGrantIncludesClientCredentials: Bool
-  public let refreshGrantIncludesRedirectURI: Bool
-  public let usesPKCE: Bool
-  public init(
-    clientID: String, clientSecret: String, authorizationURL: URL, tokenURL: URL,
-    refreshTokenURL: URL? = nil, redirectURI: String, scopes: [String],
-    additionalAuthorizationItems: [String: String] = [:], scopeSeparator: String = " ",
-    tokenRequestMethod: String = "POST",
-    tokenRequestPlacement: OAuthTokenRequestPlacement = .formBody,
-    tokenResponseDataKey: String? = nil,
-    refreshGrantIncludesClientCredentials: Bool = true,
-    refreshGrantIncludesRedirectURI: Bool = false,
-    usesPKCE: Bool = false
-  ) {
-    self.clientID = clientID
-    self.clientSecret = clientSecret
-    self.authorizationURL = authorizationURL
-    self.tokenURL = tokenURL
-    self.refreshTokenURL = refreshTokenURL
-    self.redirectURI = redirectURI
-    self.scopes = scopes
-    self.additionalAuthorizationItems = additionalAuthorizationItems
-    self.scopeSeparator = scopeSeparator
-    self.tokenRequestMethod = tokenRequestMethod
-    self.tokenRequestPlacement = tokenRequestPlacement
-    self.tokenResponseDataKey = tokenResponseDataKey
-    self.refreshGrantIncludesClientCredentials = refreshGrantIncludesClientCredentials
-    self.refreshGrantIncludesRedirectURI = refreshGrantIncludesRedirectURI
-    self.usesPKCE = usesPKCE
-  }
-  public var isConfigured: Bool {
-    !clientID.isEmpty && !redirectURI.isEmpty
-  }
-}
-
-public enum OAuthTokenRequestPlacement: Sendable, Equatable {
-  case formBody
-  case query
-}
-
-public struct OAuthToken: Codable, Sendable, Equatable {
-  public var accessToken: String
-  public var refreshToken: String?
-  public var expiresAt: Date
-  public init(accessToken: String, refreshToken: String?, expiresAt: Date) {
-    self.accessToken = accessToken
-    self.refreshToken = refreshToken
-    self.expiresAt = expiresAt
-  }
-}
-
-public struct OAuthProfile: Sendable, Equatable {
-  public let userID: String
-  public let nickname: String
-  public let avatarURL: String?
-  public init(userID: String, nickname: String, avatarURL: String? = nil) {
-    self.userID = userID
-    self.nickname = nickname
-    self.avatarURL = avatarURL
-  }
-}
-
-public protocol OAuthProfileProviding: Sendable {
-  func profile() async throws -> OAuthProfile
-}
-
-public enum OAuthDriveError: Error, LocalizedError, Sendable {
-  case configuration, loginRequired, temporarilyUnavailable, invalidResponse, authorizationDenied
-  public var errorDescription: String? {
-    switch self {
-    case .configuration: L("此网盘尚未在 Kayoi 中启用")
-    case .loginRequired: L("登录已失效，请重新登录")
-    case .temporarilyUnavailable: L("服务暂时无法连接，请稍后重试")
-    case .invalidResponse: L("服务返回了无法识别的数据")
-    case .authorizationDenied: L("没有完成授权，请重新登录")
-    }
-  }
-}
-
 public actor OAuthSession {
   public static let invalidationNotification = Notification.Name(
     "com.seaony.Kayoi.oauthDriveInvalidated")
@@ -105,23 +13,36 @@ public actor OAuthSession {
   private nonisolated let requestLimit: HTTPConcurrencyLimit
   private var refreshing: Task<String, Error>?
   private var codeVerifier: String?
+  private let makeDeadline: @Sendable () -> HTTPProgressDeadline
 
   public init(
     configuration: OAuthConfiguration, secretKey: String,
     secrets: any SecretStore = LoginKeychainStore(),
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
+    self.init(
+      configuration: configuration, secretKey: secretKey, secrets: secrets, transport: transport,
+      makeDeadline: { HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest)) })
+  }
+
+  init(
+    configuration: OAuthConfiguration, secretKey: String, secrets: any SecretStore,
+    transport: any HTTPTransport, makeDeadline: @escaping @Sendable () -> HTTPProgressDeadline
+  ) {
     self.configuration = configuration
     self.secretKey = secretKey
     self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
+    self.makeDeadline = makeDeadline
     let limit = HTTPConcurrencyLimit.shared(
       for: "oauth:" + secrets.refreshLockLocation(for: secretKey).path)
     requestLimit = limit
-    self.transport = LimitedHTTPTransport(transport, limit: limit)
+    self.transport = DiagnosticHTTPTransport(
+      LimitedHTTPTransport(transport, limit: limit), category: .cloudDrive)
   }
 
-  nonisolated func limited(_ transport: any HTTPTransport) -> LimitedHTTPTransport {
-    LimitedHTTPTransport(transport, limit: requestLimit)
+  nonisolated func limited(_ transport: any HTTPTransport) -> any HTTPTransport {
+    DiagnosticHTTPTransport(
+      LimitedHTTPTransport(transport, limit: requestLimit), category: .cloudDrive)
   }
 
   public func hasToken() throws -> Bool {
@@ -177,35 +98,61 @@ public actor OAuthSession {
       fields["code_verifier"] = codeVerifier
     }
     let response = try await CloudDriveSupport.sendWithRetry(
-      transport, tokenRequest(fields: fields))
+      transport, tokenRequest(fields: fields), retrySafe: false)
     let token = try parseToken(response, previousRefresh: nil)
     try saveToken(token)
     return token
   }
 
-  public func authorized(_ request: URLRequest) async throws -> HTTPResponse {
-    let access = try await validToken()
+  public func authorized(_ request: URLRequest, upload: Bool = false, retrySafe: Bool? = nil)
+    async throws -> HTTPResponse
+  {
+    if upload { return try await performAuthorized(request, upload: true, retrySafe: retrySafe) }
+    return try await makeDeadline().run {
+      try await self.performAuthorized(request, upload: false, retrySafe: retrySafe)
+    }
+  }
+
+  private func performAuthorized(_ request: URLRequest, upload: Bool, retrySafe: Bool?) async throws
+    -> HTTPResponse
+  {
+    let access = try await accessToken()
     var firstRequest = request
     firstRequest.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
-    let first = try await CloudDriveSupport.sendWithRetry(transport, firstRequest)
+    let first = try await CloudDriveSupport.sendWithRetry(
+      transport, firstRequest, upload: upload, retrySafe: retrySafe)
     guard first.status == 401 else { return first }
-    _ = try await refresh(force: true, rejectedAccessToken: access)
-    let retried = try await withToken(request)
-    return retried
+    _ = try await refreshNow(rejectedAccessToken: access)
+    return try await withToken(request, upload: upload, retrySafe: retrySafe)
   }
 
-  public func authorizedStream(_ request: URLRequest) async throws -> HTTPStreamResponse {
-    var request = request
-    let access = try await validToken()
+  public func authorizedStream(_ request: URLRequest, retrySafe: Bool? = nil) async throws
+    -> HTTPStreamResponse
+  {
+    try await makeDeadline().run {
+      try await self.performAuthorizedStream(request, retrySafe: retrySafe)
+    }
+  }
+
+  private func performAuthorizedStream(_ original: URLRequest, retrySafe: Bool?) async throws
+    -> HTTPStreamResponse
+  {
+    var request = original
+    let access = try await accessToken()
     request.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
-    if let response = try await streamWithoutRejection(request) { return response }
-    _ = try await refresh(force: true, rejectedAccessToken: access)
-    request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
-    return try await CloudDriveSupport.streamWithRetry(transport, request)
+    if let response = try await streamWithoutRejection(request, retrySafe: retrySafe) {
+      return response
+    }
+    _ = try await refreshNow(rejectedAccessToken: access)
+    request.setValue("Bearer \(try await accessToken())", forHTTPHeaderField: "Authorization")
+    return try await CloudDriveSupport.streamWithRetry(transport, request, retrySafe: retrySafe)
   }
 
-  private func streamWithoutRejection(_ request: URLRequest) async throws -> HTTPStreamResponse? {
-    let response = try await CloudDriveSupport.streamWithRetry(transport, request)
+  private func streamWithoutRejection(_ request: URLRequest, retrySafe: Bool?) async throws
+    -> HTTPStreamResponse?
+  {
+    let response = try await CloudDriveSupport.streamWithRetry(
+      transport, request, retrySafe: retrySafe)
     // 刷新前释放拒绝响应，不能占着下载额度等待刷新。
     return response.response.status == 401 ? nil : response
   }
@@ -219,11 +166,13 @@ public actor OAuthSession {
   }
 
   public func accessToken() async throws -> String {
-    try await validToken()
+    try await makeDeadline().run { try await self.validToken() }
   }
 
   public func refreshNow(rejectedAccessToken: String? = nil) async throws -> String {
-    try await refresh(force: true, rejectedAccessToken: rejectedAccessToken)
+    try await makeDeadline().run {
+      try await self.refresh(force: true, rejectedAccessToken: rejectedAccessToken)
+    }
   }
 
   private func validToken() async throws -> String {
@@ -233,10 +182,13 @@ public actor OAuthSession {
     return try await refresh(force: false, current: loaded)
   }
 
-  private func withToken(_ request: URLRequest) async throws -> HTTPResponse {
+  private func withToken(_ request: URLRequest, upload: Bool, retrySafe: Bool?) async throws
+    -> HTTPResponse
+  {
     var request = request
-    request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
-    return try await CloudDriveSupport.sendWithRetry(transport, request)
+    request.setValue("Bearer \(try await accessToken())", forHTTPHeaderField: "Authorization")
+    return try await CloudDriveSupport.sendWithRetry(
+      transport, request, upload: upload, retrySafe: retrySafe)
   }
 
   private func refresh(
@@ -250,9 +202,10 @@ public actor OAuthSession {
     if !force, let token = current, token.expiresAt > Date().addingTimeInterval(60) {
       return token.accessToken
     }
-    if let refreshing { return try await refreshing.value }
+    if let refreshing { return try await SharedTaskWaiter.value(of: refreshing) }
     let observed = try loadToken()
     let task = Task<String, Error> {
+      defer { refreshing = nil }
       let lease = try await secrets.acquireRefreshLock(for: secretKey)
       defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       let stored = try loadToken()
@@ -284,7 +237,9 @@ public actor OAuthSession {
         }
         let response = try await CloudDriveSupport.sendWithRetry(
           transport,
-          tokenRequest(fields: fields, url: configuration.refreshTokenURL ?? configuration.tokenURL)
+          tokenRequest(
+            fields: fields, url: configuration.refreshTokenURL ?? configuration.tokenURL),
+          retrySafe: false
         )
         let next = try parseToken(response, previousRefresh: refreshToken)
         try saveToken(next)
@@ -295,21 +250,14 @@ public actor OAuthSession {
       }
     }
     refreshing = task
-    do {
-      let value = try await task.value
-      refreshing = nil
-      return value
-    } catch {
-      refreshing = nil
-      throw error
-    }
+    return try await SharedTaskWaiter.value(of: task)
   }
 
   private func tokenRequest(fields: [String: String], url: URL? = nil) -> URLRequest {
     let target = url ?? configuration.tokenURL
     switch configuration.tokenRequestPlacement {
     case .formBody:
-      var request = URLRequest(url: target, timeoutInterval: 30)
+      var request = URLRequest(url: target, timeoutInterval: RemoteTimeout.cloudRequest)
       request.httpMethod = configuration.tokenRequestMethod
       request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
       request.httpBody = Self.formEncoded(fields).data(using: .utf8)
@@ -318,7 +266,7 @@ public actor OAuthSession {
       var components = URLComponents(
         url: target, resolvingAgainstBaseURL: false)!
       components.percentEncodedQuery = Self.formEncoded(fields)
-      var request = URLRequest(url: components.url!, timeoutInterval: 30)
+      var request = URLRequest(url: components.url!, timeoutInterval: RemoteTimeout.cloudRequest)
       request.httpMethod = configuration.tokenRequestMethod
       return request
     }
