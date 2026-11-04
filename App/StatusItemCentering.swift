@@ -14,8 +14,8 @@ struct StatusItemCentering: NSViewRepresentable {
       observers.forEach(NotificationCenter.default.removeObserver)
       observers = []
       guard let window else { return }
-      // 打开、内容高度变化后都重新居中
-      for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResizeNotification] {
+      // 打开、内容高度变化后都重新居中；高度变化后系统会把窗口挪回左对齐，所以移动后也要再居中
+      for name in [NSWindow.didBecomeKeyNotification, NSWindow.didResizeNotification, NSWindow.didMoveNotification] {
         observers.append(NotificationCenter.default.addObserver(forName: name, object: window, queue: .main) { [weak self] _ in
           MainActor.assumeIsolated { self?.center() }
         })
