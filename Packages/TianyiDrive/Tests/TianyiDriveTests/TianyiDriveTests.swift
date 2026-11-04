@@ -6,10 +6,14 @@ import Testing
 @testable import TianyiDrive
 
 private final class TestSecrets: SecretStore, Sendable {
+  let failWrites = Mutex(false)
   private let values = Mutex<[String: Data]>([:])
 
   func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
+  func write(_ data: Data, for key: String) throws {
+    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
+    values.withLock { $0[key] = data }
+  }
   func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
 }
 
@@ -837,4 +841,27 @@ func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
     StoredTianyiSession.self, from: #require(try secrets.read("tianyi.test")))
   #expect(stored.accessToken == "recovered")
   #expect(attempts.withLock { $0 } == 2)
+}
+
+@Test func tianyiRetriesPersistingRecoveredSessionBeforeUsingIt() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" {
+      return request.value(forHTTPHeaderField: "SessionKey") == "new-key"
+        ? capacity() : HTTPResponse(status: 401)
+    }
+    guard request.url?.path == "/getSessionForPC.action" else { throw RemoteError.protocolError }
+    return json([
+      "sessionKey": "new-key", "sessionSecret": "new-secret", "accessToken": "new-access",
+      "refreshToken": "rotated",
+    ])
+  }
+  let (session, secrets) = try session(http)
+  secrets.failWrites.withLock { $0 = true }
+  await #expect(throws: CocoaError.self) { try await session.connect() }
+  secrets.failWrites.withLock { $0 = false }
+  try await session.connect()
+  let saved = try JSONDecoder().decode(
+    StoredTianyiSession.self, from: #require(try secrets.read("tianyi.test")))
+  #expect(saved.accessToken == "new-access" && saved.refreshToken == "rotated")
+  #expect(await http.requests.filter { $0.url?.path == "/getSessionForPC.action" }.count == 1)
 }

@@ -179,7 +179,7 @@ public actor TianyiSession {
     transport: (any HTTPTransport)? = nil
   ) {
     self.secretKey = secretKey
-    self.secrets = secrets
+    self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.configuration = configuration
     self.transport =
       transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain)
@@ -536,7 +536,9 @@ public actor TianyiSession {
   }
 
   private func persist(_ value: StoredTianyiSession) throws {
+    state = nil
     try secrets.write(JSONEncoder().encode(value), for: secretKey)
+    state = value
   }
 
   private func invalidate() throws {

@@ -9,9 +9,13 @@ private let oauthConfiguration = AliyunConfiguration(
   clientID: "test-client", clientSecret: "test-secret", redirectURI: "kayoi://oauth/callback")
 
 private final class OAuthSecrets: SecretStore, Sendable {
+  let failWrites = Mutex(false)
   let values = Mutex<[String: Data]>([:])
   func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
+  func write(_ data: Data, for key: String) throws {
+    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
+    values.withLock { $0[key] = data }
+  }
   func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
 }
 
@@ -405,4 +409,29 @@ func oauthTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   #expect(try await session.authorized(oauthRequest()).status == 200)
   #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
   #expect(attempts.withLock { $0 } == 2)
+}
+
+@Test func aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+  let key = "persist-retry.oauth"
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: key, expiry: 0)
+  let refreshes = Mutex(0)
+  let transport = OAuthHTTP { request in
+    if request.url?.path == "/test" { return HTTPResponse(status: 200) }
+    guard request.url?.path == "/oauth/access_token" else { throw RemoteError.protocolError }
+    let count = refreshes.withLock {
+      $0 += 1
+      return $0
+    }
+    return count == 1
+      ? oauthToken() : HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8))
+  }
+  let session = AliyunSession(
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  secrets.failWrites.withLock { $0 = true }
+  await #expect(throws: CocoaError.self) { _ = try await session.authorized(oauthRequest()) }
+  secrets.failWrites.withLock { $0 = false }
+  #expect(try await session.authorized(oauthRequest()).status == 200)
+  #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
+  #expect(refreshes.withLock { $0 } == 1)
 }

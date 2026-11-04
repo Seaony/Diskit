@@ -132,3 +132,11 @@
 - `tenDelayedUnauthorizedRequestsShareOneRefresh`（`OAuthSessionTests.swift:398`）通过 continuation 精确安排 10 个旧令牌请求：先放行一个 401，等待新令牌请求成功后才返回余下 9 个 401。普通和流式两种方式修复前均发生重复刷新，修复后均只刷新一次、10 个请求全部成功；不靠 sleep 或真实时钟制造竞态。证据 `docs/evidence/v0.2/FIX-07-delayed-401-regression.log`。
 - 完整门禁通过：应用逻辑 9 项、包测试 277 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-delayed-401-gates.log`。
 - FIX-07 尚未通过：本提交不证明不同会话/不同进程只刷新一次，也不证明存储新令牌失败后的保留与恢复；独立业务鉴权驱动的显式刷新入口也仍需接入拒绝令牌比较。上述项目继续处理，不能据本测试宣称并发刷新整体完成。
+
+## FIX-07：新凭据写入失败后的重试（部分）
+
+- `Packages/Core/Sources/Core/RecoverableSecretStore.swift:5` 在底层写入失败时保留内存中的待保存值并返回原错误；下次读取先重试保存，成功后清除待写值，不缓存正常读取。四套授权/恢复会话使用该存储包装；公共 OAuth 和天翼写入前清理旧的内存缓存，避免绕过补写直接继续使用。没有新增明文落盘位置，没有访问真实钥匙串。
+- 先失败后修复：`commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain`、`aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain`、`pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain` 原来重用已轮换失效的旧刷新令牌而再次要求登录；`tianyiRetriesPersistingRecoveredSessionBeforeUsingIt` 原来只继续使用内存新会话、底层仍是旧记录。现在四项均在存储恢复后补写成功，刷新/恢复请求只发生一次。证据 `docs/evidence/v0.2/FIX-07-persist-regression.log`。
+- Core 的 `failedSecretWriteRemainsPendingUntilSaved` 验证持续写入失败会继续报错、旧存储不被误改、恢复后保存新值；`explicitDeletionClearsPendingWriteOnlyAfterSuccess` 验证显式删除失败不会丢弃待写值，成功删除后不会复活。
+- 完整门禁通过：应用逻辑 9 项、包测试 283 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-persist-gates.log`。
+- 边界：待写值保存在当前进程内存，进程退出后的恢复不作保证；跨会话与跨进程刷新协调仍未完成，不能将本次存储恢复测试作为 FIX-07 整体通过。

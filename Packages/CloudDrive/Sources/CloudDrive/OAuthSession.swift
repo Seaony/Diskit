@@ -113,7 +113,7 @@ public actor OAuthSession {
   ) {
     self.configuration = configuration
     self.secretKey = secretKey
-    self.secrets = secrets
+    self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.transport = transport
   }
 
@@ -410,7 +410,9 @@ public actor OAuthSession {
   }
 
   private func saveToken(_ token: OAuthToken) throws {
+    self.token = nil
     try secrets.write(JSONEncoder().encode(token), for: secretKey)
+    self.token = token
   }
 
   private static func pkceVerifier() throws -> String {

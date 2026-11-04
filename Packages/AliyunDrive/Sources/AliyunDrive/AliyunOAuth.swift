@@ -94,7 +94,7 @@ public actor AliyunSession {
     configuration: AliyunConfiguration, transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
     self.secretKey = secretKey
-    self.secrets = secrets
+    self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.configuration = configuration
     self.transport = transport
   }

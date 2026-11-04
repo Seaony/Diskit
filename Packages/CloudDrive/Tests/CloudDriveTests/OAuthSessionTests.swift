@@ -7,6 +7,7 @@ import Testing
 @testable import CloudDrive
 
 private final class MemorySecrets: SecretStore, Sendable {
+  let failWrites = Mutex(false)
   let values = Mutex<[String: Data]>([:])
 
   func read(_ key: String) throws -> Data? {
@@ -14,6 +15,7 @@ private final class MemorySecrets: SecretStore, Sendable {
   }
 
   func write(_ data: Data, for key: String) throws {
+    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
     values.withLock { $0[key] = data }
   }
 
@@ -416,4 +418,25 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws 
   }
   #expect(await transport.oldRequests == 10)
   #expect(await transport.refreshes == 1)
+}
+
+@Test func commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)),
+    for: "oauth")
+  let transport = FakeTransport([
+    tokenResponse(access: "new", refresh: "rotated"),
+    HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8)),
+  ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  secrets.failWrites.withLock { $0 = true }
+  await #expect(throws: CocoaError.self) { _ = try await session.accessToken() }
+  secrets.failWrites.withLock { $0 = false }
+  #expect(try await session.accessToken() == "new")
+  let saved = try JSONDecoder().decode(OAuthToken.self, from: #require(try secrets.read("oauth")))
+  #expect(saved.refreshToken == "rotated")
+  #expect(transport.requests.withLock { $0.count } == 1)
 }

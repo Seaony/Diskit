@@ -6,9 +6,13 @@ import Testing
 @testable import PikPakDrive
 
 private final class PikPakSecrets: SecretStore, Sendable {
+  let failWrites = Mutex(false)
   let values = Mutex<[String: Data]>([:])
   func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
+  func write(_ data: Data, for key: String) throws {
+    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
+    values.withLock { $0[key] = data }
+  }
   func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
 }
 
@@ -471,4 +475,31 @@ func pikPakTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   let saved = try JSONDecoder().decode(
     StoredPikPakAuthorization.self, from: #require(try secrets.read("pikpak.test")))
   #expect(!saved.invalidated && saved.refreshToken == "fresh-refresh")
+}
+
+@Test func pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+  let refreshes = Mutex(0)
+  let transport = FakePikPakHTTP { request in
+    if request.url?.path == "/v1/auth/token" {
+      let count = refreshes.withLock {
+        $0 += 1
+        return $0
+      }
+      if count > 1 {
+        return HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8))
+      }
+    }
+    return try stub(request)
+  }
+  let (session, secrets) = try session(transport: transport)
+  try secrets.write(authorization(expiresAt: 0), for: "pikpak.test")
+  let request = URLRequest(url: URL(string: "https://api-drive.mypikpak.com/drive/v1/about")!)
+  secrets.failWrites.withLock { $0 = true }
+  await #expect(throws: CocoaError.self) { _ = try await session.authorized(request) }
+  secrets.failWrites.withLock { $0 = false }
+  #expect(try await session.authorized(request).status == 200)
+  let saved = try JSONDecoder().decode(
+    StoredPikPakAuthorization.self, from: #require(try secrets.read("pikpak.test")))
+  #expect(saved.refreshToken == "fresh-refresh")
+  #expect(refreshes.withLock { $0 } == 1)
 }

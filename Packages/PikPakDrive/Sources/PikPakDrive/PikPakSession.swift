@@ -41,7 +41,7 @@ public actor PikPakSession {
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
     self.secretKey = secretKey
-    self.secrets = secrets
+    self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.transport = transport
   }
 
