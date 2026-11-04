@@ -547,6 +547,10 @@ public enum ConnectionState: Equatable, Sendable {
 
   private func displayMessage(_ error: Error, kind: ConnectionKind) -> String {
     if let error = error as? RemoteError { return HumanError.remote(error, kind: kind) }
+    let systemError = error as NSError
+    if systemError.domain == NSPOSIXErrorDomain && systemError.code == Int(ETIMEDOUT) {
+      return HumanError.timeout(kind: kind)
+    }
     return error.localizedDescription
   }
 

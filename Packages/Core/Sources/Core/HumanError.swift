@@ -15,6 +15,14 @@ public enum HumanError {
     }
   }
 
+  public static func timeout(kind: ConnectionKind) -> String {
+    switch kind {
+    case .androidUSB: L("连接超时，请检查 USB 线缆并解锁手机后重试")
+    case .cameraUSB, .ricohGR: L("连接超时，请检查 USB 线缆并打开相机后重试")
+    default: L("连接超时，请检查网络后重试")
+    }
+  }
+
   public static func remote(_ error: RemoteError, kind: ConnectionKind) -> String {
     switch error {
     case .unauthorized:
@@ -37,6 +45,7 @@ public enum HumanError {
         L("登录已失效，请重新登录")
       default: L("没有访问权限")
       }
+    case .posix(ETIMEDOUT): timeout(kind: kind)
     case .http(let status): http(status)
     default:
       error.localizedDescription
@@ -66,6 +75,10 @@ public enum HumanError {
       if case .posix(let code) = error { return "\(message) (errno \(code))" }
       if case .http(let status) = error { return "\(message) (HTTP \(status))" }
       return message
+    }
+    let systemError = error as NSError
+    if systemError.domain == NSPOSIXErrorDomain && systemError.code == Int(ETIMEDOUT) {
+      return "\(timeout(kind: kind)) (errno \(ETIMEDOUT))"
     }
     return detail(error)
   }

@@ -1243,3 +1243,22 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   try manager.setPresentation(id: connection.id, name: connection.name, color: connection.color)
   #expect(f.manager().connections.first?.name == "Original")
 }
+
+@Test @MainActor func usbTimeoutAdviceSurvivesSaveAndRetestErrorEntrypoints() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .androidUSB, name: "Phone", params: ["serial": "timeout-phone"])
+  manager.usbDevicesChanged(serials: ["timeout-phone"])
+  manager.testRemote = { _ in throw POSIXError(.ETIMEDOUT) }
+  await #expect(throws: POSIXError.self) {
+    try await manager.save(connection, password: "")
+  }
+  let expected = ConnectionState.failed(L("连接超时，请检查 USB 线缆并解锁手机后重试"))
+  #expect(manager.states[connection.id] == expected)
+  manager.testRemote = { _ in SpaceInfo(total: nil, used: nil) }
+  try await manager.save(connection, password: "")
+  manager.testRemote = { _ in throw RemoteError.posix(ETIMEDOUT) }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == expected)
+}

@@ -43,11 +43,11 @@ struct DemoFixtures {
         let name =
           scenario == "mixed" || scenario == "types"
           ? mixedStates[connection.kind] ?? "disconnected" : scenario
-        return (connection.id, Self.state(name, id: connection.id))
+        return (connection.id, Self.state(name, id: connection.id, kind: connection.kind))
       })
   }
 
-  static func state(_ name: String, id: UUID) -> ConnectionState {
+  static func state(_ name: String, id: UUID, kind: ConnectionKind) -> ConnectionState {
     switch name {
     case "unavailable": .unavailable
     case "connecting": .connecting
@@ -57,7 +57,7 @@ struct DemoFixtures {
       .mounted(
         MountedShare(url: URL(filePath: "/tmp/KayoiDemo/\(id)"), availableBytes: 120_000_000_000))
     case "ejecting": .ejecting
-    case "failed": .failed(L("连接超时，请检查网络后重试"))
+    case "failed": .failed(HumanError.remote(.posix(ETIMEDOUT), kind: kind))
     case "login": .needsLogin
     default: .disconnected
     }

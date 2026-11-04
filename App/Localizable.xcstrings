@@ -11617,6 +11617,22 @@
         }
       }
     },
+    "请检查网络和登录信息，然后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your network and sign-in information, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请检查网络和登录信息，然后重试。"
+          }
+        }
+      }
+    },
     "读取主机上的共享文件夹": {
       "localizations": {
         "en": {

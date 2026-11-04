@@ -44,3 +44,14 @@ import Testing
   try await service.unmount(url)
   #expect(service.mounted(connection) == nil)
 }
+
+@Test func demoTimeoutsUseTheSameDeviceAdviceAsRealFailures() {
+  let demo = DemoFixtures(scenario: "failed")
+  for connection in demo.connections {
+    guard case .failed(let message) = demo.states[connection.id] else {
+      Issue.record("Expected a failure fixture")
+      continue
+    }
+    #expect(message == HumanError.remote(.posix(ETIMEDOUT), kind: connection.kind))
+  }
+}
