@@ -16,9 +16,6 @@ import Testing
   #expect(try store.read() == Data("first".utf8))
   try store.write(Data("second".utf8))
   #expect(try store.read() == Data("second".utf8))
-  try store.delete()
-  #expect(try store.read() == nil)
-  try store.delete()
 }
 
 @Test func memorySecretLifecycle() throws {

@@ -10,5 +10,5 @@ let package = Package(
   targets: [
     .target(name: "Core", dependencies: ["CoreNative"], resources: [.process("Resources")]), .target(name: "CoreNative"),
     .target(name: "CoreTestSupport", dependencies: ["Core"]),
-    .testTarget(name: "CoreTests", dependencies: ["Core", "CoreTestSupport"]),
+    .testTarget(name: "CoreTests", dependencies: ["Core", "CoreNative", "CoreTestSupport"]),
   ], swiftLanguageModes: [.v6])

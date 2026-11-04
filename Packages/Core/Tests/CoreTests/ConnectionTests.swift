@@ -29,6 +29,9 @@ private final class MemorySecrets: SecretStore, Sendable {
   var calls: [String] = []
   var mountedAddresses: [UUID: URL] = [:]
   var onUnmount: ((URL) throws -> Void)?
+  var onMount: ((Connection) async -> Void)?
+  var refreshVolume: ((Connection) async -> MountedShare?)?
+  var mountedConnections: [Connection] = []
   func shares(host: String, user: String, password: String) async throws -> [String] {
     calls.append("shares")
     if let error { throw error }
@@ -44,6 +47,8 @@ private final class MemorySecrets: SecretStore, Sendable {
   }
   func mount(_ connection: Connection, password: String) async throws -> URL {
     calls.append("mount")
+    mountedConnections.append(connection)
+    await onMount?(connection)
     if let error { throw error }
     let value = MountedShare(
       url: URL(fileURLWithPath: "/Volumes/" + connection.id.uuidString), availableBytes: 12345)
@@ -57,6 +62,10 @@ private final class MemorySecrets: SecretStore, Sendable {
     if let unmountError { throw unmountError }
     volumes = volumes.filter { $0.value.url != url }
     mountedAddresses = mountedAddresses.filter { volumes[$0.key] != nil }
+  }
+  func refreshMounted(_ connection: Connection) async -> MountedShare? {
+    if let refreshVolume { return await refreshVolume(connection) }
+    return mounted(connection)
   }
   func mounted(_ connection: Connection) -> MountedShare? {
     if let address = mountedAddresses[connection.id],
@@ -562,7 +571,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   var expired: [UUID] = []
   manager.loginExpired = { expired.append($0.id) }
   manager.testRemote = { _ in
-    throw NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))
+    throw ExplicitLoginFailure(requiresLogin: true)
   }
 
   await manager.toggle(connection)
@@ -756,4 +765,446 @@ private func mountedEditConnection(_ kind: ConnectionKind) -> Connection {
   try FileManager.default.removeItem(at: config)
   try FileManager.default.moveItem(at: backup, to: config)
   #expect(try ConnectionRepository(location: f.location).load().first?.params == original.params)
+}
+
+@Test @MainActor func explicitEjectNeverMountsAnAlreadyGoneVolume() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.eject(connection)
+  #expect(!f.smb.calls.contains("mount"))
+  await manager.toggle(connection)
+  await manager.eject(connection)
+  await manager.eject(connection)
+  #expect(f.smb.calls.filter { $0 == "mount" }.count == 1)
+  #expect(f.smb.calls.filter { $0 == "unmount" }.count == 1)
+  #expect(manager.states[connection.id] == .disconnected)
+}
+
+@Test @MainActor func explicitEjectFailureKeepsVolumeAvailableForRetry() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  f.smb.unmountError = .busy
+  await manager.eject(connection)
+  #expect(f.smb.mounted(connection) != nil)
+  #expect(manager.detailedErrors[connection.id] != nil)
+  f.smb.unmountError = nil
+  await manager.eject(connection)
+  #expect(f.smb.mounted(connection) == nil)
+  #expect(f.smb.calls.filter { $0 == "mount" }.count == 1)
+}
+
+@Test @MainActor func saveFailureWithEmptyPasswordKeepsExistingCredential() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  var connection = Connection(kind: .s3, name: "original")
+  try await manager.save(connection, password: "original-secret")
+  let config = f.location.dataDirectory.appending(path: "connections.json")
+  try FileManager.default.removeItem(at: config)
+  try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
+  try Data().write(to: config.appending(path: "block-write"))
+  connection.name = "edited"
+  await #expect(throws: CocoaError.self) { try await manager.save(connection, password: "") }
+  #expect(try f.secrets.read(connection.passwordKey) == Data("original-secret".utf8))
+  #expect(f.secrets.deletions.withLock { $0.isEmpty })
+  #expect(manager.connections.first?.name == "original")
+}
+
+@Test @MainActor func credentialRollbackFailureDoesNotReplaceConfigurationError() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  var connection = Connection(kind: .s3, name: "original")
+  try await manager.save(connection, password: "original-secret")
+  let config = f.location.dataDirectory.appending(path: "connections.json")
+  try FileManager.default.removeItem(at: config)
+  try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
+  try Data().write(to: config.appending(path: "block-write"))
+  connection.name = "edited"
+  var expected: NSError?
+  do { try ConnectionRepository(location: f.location).save([connection]) } catch {
+    expected = error as NSError
+  }
+  let configurationError = try #require(expected)
+  manager.testRemote = { _ in
+    f.secrets.failWrites.withLock { $0 = true }
+    return SpaceInfo(total: 10, used: 1)
+  }
+  do {
+    try await manager.save(connection, password: "new-secret")
+    Issue.record("配置写入失败应向调用方报错")
+  } catch {
+    let failure = error as NSError
+    #expect(failure.domain == configurationError.domain)
+    #expect(failure.code == configurationError.code)
+  }
+  let detail = try #require(manager.detailedErrors[connection.id])
+  #expect(detail.contains(HumanError.detail(configurationError, kind: .s3)))
+  #expect(detail.contains(HumanError.detail(CocoaError(.fileWriteNoPermission), kind: .s3)))
+  #expect(manager.connections.first?.name == "original")
+  f.secrets.failWrites.withLock { $0 = false }
+}
+
+@Test @MainActor func cancelledConnectionTestCannotSaveLateResult() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  var connection = Connection(kind: .s3, name: "original")
+  try await manager.save(connection, password: "original-secret")
+  var completion: CheckedContinuation<SpaceInfo, Never>?
+  manager.testRemote = { _ in
+    await withCheckedContinuation { completion = $0 }
+  }
+  connection.name = "edited"
+  let task = Task { try await manager.save(connection, password: "new-secret") }
+  while completion == nil { await Task.yield() }
+  task.cancel()
+  completion?.resume(returning: SpaceInfo(total: 100, used: 2))
+  await #expect(throws: CancellationError.self) { try await task.value }
+  #expect(try f.secrets.read(connection.passwordKey) == Data("original-secret".utf8))
+  #expect(manager.connections.first?.name == "original")
+  #expect(try ConnectionRepository(location: f.location).load().first?.name == "original")
+}
+
+@Test @MainActor func clearingSharePasswordRollsBackWhenConfigurationCannotBeSaved() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  let connection = Connection(kind: .lanzou, name: "share", params: ["authMode": "share"])
+  try await manager.save(connection, password: "original-password")
+  let config = f.location.dataDirectory.appending(path: "connections.json")
+  try FileManager.default.removeItem(at: config)
+  try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
+  try Data().write(to: config.appending(path: "block-write"))
+  manager.testRemote = { _ in
+    let storedPassword = try f.secrets.read(connection.passwordKey)
+    #expect(storedPassword == nil)
+    return SpaceInfo(total: 10, used: 1)
+  }
+  await #expect(throws: CocoaError.self) {
+    try await manager.save(connection, password: "", clearPassword: true)
+  }
+  #expect(try f.secrets.read(connection.passwordKey) == Data("original-password".utf8))
+}
+
+@Test @MainActor func explicitlyClearingSharePasswordIsPersistedAfterSuccessfulTest() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  let connection = Connection(kind: .lanzou, name: "share", params: ["authMode": "share"])
+  try await manager.save(connection, password: "original-password")
+  try await manager.save(connection, password: "", clearPassword: true)
+  #expect(try f.secrets.read(connection.passwordKey) == nil)
+  #expect(try ConnectionRepository(location: f.location).load().first?.id == connection.id)
+}
+
+@Test(arguments: [URLError.Code.serverCertificateUntrusted, .dataNotAllowed])
+@MainActor func networkPermissionFailureDoesNotRequireLogin(code: URLError.Code) async {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(kind: .mobileCloud, name: "test")
+  var expired = false
+  manager.loginExpired = { _ in expired = true }
+  manager.testRemote = { _ in throw NetworkFailure.posix(URLError(code)) }
+  await manager.toggle(connection)
+  #expect(!expired)
+  guard case .failed = manager.states[connection.id] else {
+    Issue.record("网络权限或证书错误应显示操作失败")
+    return
+  }
+}
+
+private struct ExplicitLoginFailure: LoginRequiredFailure {
+  let requiresLogin: Bool
+}
+
+@Test @MainActor func resourcePermissionErrorsDoNotRequireLogin() async {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let errors: [any Error] = [
+    RemoteError.http(403), RemoteError.posix(EACCES), RemoteError.posix(EPERM),
+    NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES)),
+    ExplicitLoginFailure(requiresLogin: false),
+  ]
+  var expired = false
+  manager.loginExpired = { _ in expired = true }
+  for error in errors {
+    let connection = Connection(kind: .mobileCloud, name: "test")
+    manager.testRemote = { _ in throw error }
+    await manager.toggle(connection)
+    #expect(!expired)
+    guard case .failed = manager.states[connection.id] else {
+      Issue.record("资源权限错误不应要求重新登录")
+      continue
+    }
+  }
+}
+
+@Test @MainActor func normalSystemUnmountDoesNotReportUnexpectedDisconnect() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  let mounted = try #require(f.smb.mounted(connection))
+  var notices = 0
+  manager.unexpectedDisconnect = { _ in notices += 1 }
+  f.smb.volumes.removeValue(forKey: connection.id)
+  manager.systemVolumeUnmounted(at: mounted.url)
+  manager.refreshMounts()
+  #expect(notices == 0)
+  #expect(manager.states[connection.id] == .disconnected)
+  await manager.toggle(connection)
+  f.smb.volumes.removeValue(forKey: connection.id)
+  manager.refreshMounts()
+  manager.refreshMounts()
+  #expect(notices == 1)
+}
+
+@Test(arguments: [ConnectionKind.androidUSB, .androidWiFi, .ricohGR, .cameraUSB], [false, true])
+@MainActor func testedOrConnectingDeviceDisconnectNotifiesOnce(
+  kind: ConnectionKind, connecting: Bool
+) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(
+    kind: kind, name: "device", params: ["serial": "local", "guid": "local"])
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  try await manager.save(connection, password: "")
+  func update(_ present: Bool) {
+    let ids: Set<String> = present ? ["local"] : []
+    switch kind {
+    case .androidUSB: manager.usbDevicesChanged(serials: ids)
+    case .androidWiFi: manager.wirelessGUIDsChanged(ids)
+    case .ricohGR: manager.ricohDevicesChanged(serials: ids)
+    default: manager.cameraUSBDevicesChanged(serials: ids)
+    }
+  }
+  update(true)
+  var notices = 0
+  manager.unexpectedDisconnect = { _ in notices += 1 }
+  var completion: CheckedContinuation<SpaceInfo, Never>?
+  var task: Task<Void, Never>?
+  if connecting {
+    manager.testRemote = { _ in await withCheckedContinuation { completion = $0 } }
+    task = Task { await manager.toggle(connection) }
+    while completion == nil { await Task.yield() }
+  }
+  update(false)
+  update(false)
+  #expect(notices == 1)
+  #expect(manager.states[connection.id] == .disconnected)
+  completion?.resume(returning: SpaceInfo(total: 10, used: 1))
+  await task?.value
+  #expect(manager.states[connection.id] == .disconnected)
+}
+
+@Test(arguments: ["save", "mount", "remove"])
+@MainActor func successfulOperationsRemoveStaleDetailedErrors(operation: String) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  f.smb.error = .authentication
+  await manager.toggle(connection)
+  #expect(manager.detailedErrors[connection.id] != nil)
+  f.smb.error = nil
+  switch operation {
+  case "save": try await manager.save(connection, password: "test")
+  case "mount": await manager.toggle(connection)
+  default: try await manager.remove(connection)
+  }
+  #expect(manager.detailedErrors[connection.id] == nil)
+}
+
+@Test(arguments: ["remove", "edit", "disable"])
+@MainActor func autoMountUsesCurrentConfigurationAfterAwait(operation: String) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var first = sample("first")
+  first.autoMount = true
+  var second = sample("second")
+  second.autoMount = true
+  try await manager.save(first, password: "first")
+  try await manager.save(second, password: "second")
+  var completion: CheckedContinuation<Void, Never>?
+  f.smb.onMount = { connection in
+    if connection.id == first.id { await withCheckedContinuation { completion = $0 } }
+  }
+  let task = Task { await manager.autoMount() }
+  while completion == nil { await Task.yield() }
+  switch operation {
+  case "remove": try await manager.remove(second)
+  case "edit":
+    second.params["host"] = "192.0.2.30"
+    try await manager.save(second, password: "second")
+  default:
+    second.autoMount = false
+    try await manager.save(second, password: "second")
+  }
+  completion?.resume()
+  await task.value
+  let mountedSecond = f.smb.mountedConnections.filter { $0.id == second.id }
+  if operation == "edit" {
+    #expect(mountedSecond.count == 1)
+    #expect(mountedSecond.first?.params["host"] == "192.0.2.30")
+  } else {
+    #expect(mountedSecond.isEmpty)
+  }
+}
+
+@Test @MainActor func concurrentAutoMountRequestsDoNotMountTwice() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var connection = sample()
+  connection.autoMount = true
+  try await manager.save(connection, password: "test")
+  var completion: CheckedContinuation<Void, Never>?
+  f.smb.onMount = { _ in await withCheckedContinuation { completion = $0 } }
+  let first = Task { await manager.autoMount() }
+  while completion == nil { await Task.yield() }
+  await manager.autoMount()
+  completion?.resume()
+  await first.value
+  #expect(f.smb.mountedConnections.count == 1)
+}
+
+@Test @MainActor func lateCapacityRefreshCannotRestoreRemovedConnection() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  let mounted = try #require(f.smb.mounted(connection))
+  var completion: CheckedContinuation<MountedShare?, Never>?
+  f.smb.refreshVolume = { _ in await withCheckedContinuation { completion = $0 } }
+  let refreshing = Task { await manager.refreshMountSpace() }
+  while completion == nil { await Task.yield() }
+  try await manager.remove(connection)
+  completion?.resume(returning: MountedShare(url: mounted.url, availableBytes: 999))
+  await refreshing.value
+  #expect(manager.states[connection.id] == nil)
+  #expect(manager.connections.isEmpty)
+}
+
+@Test @MainActor func capacityRefreshUpdatesCurrentMountWithoutDuplicateRequest() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  let mounted = try #require(f.smb.mounted(connection))
+  var completion: CheckedContinuation<MountedShare?, Never>?
+  var refreshes = 0
+  f.smb.refreshVolume = { _ in
+    refreshes += 1
+    return await withCheckedContinuation { completion = $0 }
+  }
+  let first = Task { await manager.refreshMountSpace() }
+  while completion == nil { await Task.yield() }
+  await manager.refreshMountSpace()
+  completion?.resume(returning: MountedShare(url: mounted.url, availableBytes: 999))
+  await first.value
+  #expect(refreshes == 1)
+  #expect(
+    manager.states[connection.id] == .mounted(MountedShare(url: mounted.url, availableBytes: 999)))
+}
+
+@Test(arguments: [false, true])
+@MainActor func cancelledEjectionRestoresActualMountedState(explicit: Bool) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  let mounted = try #require(f.smb.mounted(connection))
+  f.smb.onUnmount = { _ in throw CancellationError() }
+  var logged = 0
+  manager.operationFailed = { _ in logged += 1 }
+  if explicit { await manager.eject(connection) } else { await manager.toggle(connection) }
+  #expect(manager.states[connection.id] == .mounted(mounted))
+  #expect(manager.detailedErrors[connection.id] == nil)
+  #expect(logged == 0)
+}
+
+@Test(arguments: [ConnectionState.connecting, .awaitingAuthorization])
+@MainActor func cancellingIdlePendingStateDoesNotStartRemoteWork(state: ConnectionState) {
+  let f = Fixture()
+  defer { f.clean() }
+  let connection = sample()
+  let manager = ConnectionManager(
+    location: f.location, secrets: f.secrets, smb: f.smb, initialStates: [connection.id: state])
+  manager.cancelIdleOperation(connection)
+  #expect(manager.states[connection.id] == .disconnected)
+  #expect(f.smb.calls.isEmpty)
+}
+
+@Test(arguments: [ConnectionKind.androidUSB, .ricohGR, .cameraUSB])
+@MainActor func devicePresenceUsesSavedIdentityInsteadOfDuplicateSerial(kind: ConnectionKind)
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 10, used: 1) }
+  let first = Connection(
+    kind: kind, name: "first", params: ["serial": "duplicate", "deviceID": "usb:1"])
+  let second = Connection(
+    kind: kind, name: "second", params: ["serial": "duplicate", "deviceID": "usb:2"])
+  try await manager.save(first, password: "")
+  try await manager.save(second, password: "")
+  func update(_ identities: Set<String>) {
+    switch kind {
+    case .androidUSB: manager.usbDevicesChanged(serials: identities)
+    case .ricohGR: manager.ricohDevicesChanged(serials: identities)
+    default: manager.cameraUSBDevicesChanged(serials: identities)
+    }
+  }
+  update(["usb:1", "usb:2"])
+  var notices: [UUID] = []
+  manager.unexpectedDisconnect = { notices.append($0.id) }
+  update(["usb:2"])
+  #expect(notices == [first.id])
+  #expect(manager.states[first.id] == .disconnected)
+  #expect(manager.states[second.id] == .tested(SpaceInfo(total: 10, used: 1)))
+}
+
+@Test @MainActor func expectedSystemUnmountIsQuietBeforeDidUnmountNotification() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  await manager.toggle(connection)
+  let mounted = try #require(f.smb.mounted(connection))
+  var notices = 0
+  manager.unexpectedDisconnect = { _ in notices += 1 }
+  manager.systemVolumeWillUnmount(at: mounted.url)
+  f.smb.volumes.removeValue(forKey: connection.id)
+  manager.refreshMounts()
+  manager.systemVolumeUnmounted(at: mounted.url)
+  #expect(notices == 0)
+  #expect(manager.states[connection.id] == .disconnected)
 }

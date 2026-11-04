@@ -18,6 +18,9 @@ public enum ConnectionState: Equatable, Sendable {
   private let location: any StorageLocation
   private let smb: any SMBServing
   private var busy: Set<UUID> = []
+  private var refreshingSpace: Set<UUID> = []
+  private var expectedUnmounts: Set<UUID> = []
+  private var autoMounting = false
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
   private var ricohSerials: Set<String>?
@@ -48,13 +51,6 @@ public enum ConnectionState: Equatable, Sendable {
       return false
     }.count
   }
-  public var mountsToEjectOnQuit: [Connection] {
-    connections.filter { connection in
-      guard connection.kind != .smb else { return false }
-      if case .mounted = states[connection.id] { return true }
-      return false
-    }
-  }
   public func savedPassword(_ connection: Connection) throws -> String {
     guard let data = try secrets.read(connection.passwordKey) else { return "" }
     return String(decoding: data, as: UTF8.self)
@@ -65,8 +61,14 @@ public enum ConnectionState: Equatable, Sendable {
       throw error
     }
   }
-  public func save(_ connection: Connection, password: String) async throws {
+  public func save(_ connection: Connection, password: String, clearPassword: Bool = false)
+    async throws
+  {
+    var oldSecret: Data?
+    var changedSecret = false
+    let previousState = states[connection.id]
     do {
+      try Task.checkCancellation()
       guard loadError == nil else { throw ConnectionError.unsupportedVersion }
       guard !busy.contains(connection.id) else { throw ConnectionError.busy }
       guard !connection.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -74,7 +76,6 @@ public enum ConnectionState: Equatable, Sendable {
       }
       busy.insert(connection.id)
       defer { busy.remove(connection.id) }
-      var oldSecret: Data?
       if connection.kind.usesSystemMount {
         let guest = connection.params["guest"] == "true"
         switch connection.kind {
@@ -98,6 +99,7 @@ public enum ConnectionState: Equatable, Sendable {
           throw ConnectionError.invalidFields
         }
         try await smb.test(connection, password: password)
+        try Task.checkCancellation()
         if let previous = connections.first(where: { $0.id == connection.id }),
           previous.kind.usesSystemMount, let mounted = smb.mounted(previous),
           try SystemMountAddress.url(for: previous) != SystemMountAddress.url(for: connection)
@@ -105,32 +107,36 @@ public enum ConnectionState: Equatable, Sendable {
           try await smb.unmount(mounted.url)
           states[connection.id] = .disconnected
         }
+        try Task.checkCancellation()
         oldSecret = try secrets.read(connection.passwordKey)
+        changedSecret = true
         try secrets.write(Data(password.utf8), for: connection.passwordKey)
       } else {
-        if connection.kind.usesStoredRemoteSecret, !password.isEmpty {
+        if connection.kind.usesStoredRemoteSecret, !password.isEmpty || clearPassword {
           oldSecret = try secrets.read(connection.passwordKey)
-          try secrets.write(Data(password.utf8), for: connection.passwordKey)
+          changedSecret = true
+          if clearPassword {
+            try secrets.delete(connection.passwordKey)
+          } else {
+            try secrets.write(Data(password.utf8), for: connection.passwordKey)
+          }
         }
         guard let testRemote else { throw ConnectionError.notImplemented }
         states[connection.id] = .connecting
         do {
-          states[connection.id] = remoteState(
-            connection, result: .tested(try await testRemote(connection)))
+          let result = try await testRemote(connection)
+          try Task.checkCancellation()
+          states[connection.id] = remoteState(connection, result: .tested(result))
         } catch {
-          if connection.kind.usesStoredRemoteSecret, oldSecret != nil || !password.isEmpty {
-            if let oldSecret {
-              try secrets.write(oldSecret, for: connection.passwordKey)
-            } else {
-              try secrets.delete(connection.passwordKey)
-            }
+          if error is CancellationError {
+            states[connection.id] = previousState
+            throw error
           }
           recordDetailedError(error, for: connection)
           states[connection.id] = remoteState(
             connection,
             result: .failed(
-              (error as? RemoteError).map { HumanError.remote($0, kind: connection.kind) }
-                ?? error.localizedDescription))
+              displayMessage(error, kind: connection.kind)))
           throw error
         }
       }
@@ -144,22 +150,31 @@ public enum ConnectionState: Equatable, Sendable {
         added.order = updated.count
         updated.append(added)
       }
-      do { try repository.save(updated) } catch {
-        if connection.kind.usesSystemMount || connection.kind.usesStoredRemoteSecret {
-          if let oldSecret {
-            try secrets.write(oldSecret, for: connection.passwordKey)
-          } else {
-            try secrets.delete(connection.passwordKey)
-          }
-        }
-        throw error
-      }
+      try Task.checkCancellation()
+      try repository.save(updated)
+      changedSecret = false
       connections = updated
+      detailedErrors.removeValue(forKey: connection.id)
       if connection.kind.usesSystemMount, states[connection.id] == nil {
         states[connection.id] = .disconnected
       }
       refreshMounts()
     } catch {
+      if changedSecret {
+        do {
+          if let oldSecret {
+            try secrets.write(oldSecret, for: connection.passwordKey)
+          } else {
+            try secrets.delete(connection.passwordKey)
+          }
+        } catch let rollbackError {
+          detailedErrors[connection.id] =
+            HumanError.detail(error, kind: connection.kind)
+            + "\n"
+            + LF("恢复原凭据失败：%@", HumanError.detail(rollbackError, kind: connection.kind))
+          reportOperationError(rollbackError)
+        }
+      }
       reportOperationError(error)
       throw error
     }
@@ -202,6 +217,8 @@ public enum ConnectionState: Equatable, Sendable {
     try repository.save(updated)
     connections = updated
     states.removeValue(forKey: connection.id)
+    expectedUnmounts.remove(connection.id)
+    detailedErrors.removeValue(forKey: connection.id)
     removed?(connection.id)
     let deletingSecrets = RecoverableSecretStore(base: secrets)
     try deletingSecrets.delete(connection.passwordKey)
@@ -222,53 +239,105 @@ public enum ConnectionState: Equatable, Sendable {
       try FileManager.default.removeItem(at: cache)
     }
   }
+  public func eject(_ connection: Connection) async {
+    guard connection.kind.usesSystemMount, !busy.contains(connection.id) else { return }
+    busy.insert(connection.id)
+    defer { busy.remove(connection.id) }
+    guard let mounted = smb.mounted(connection) else {
+      states[connection.id] = .disconnected
+      detailedErrors.removeValue(forKey: connection.id)
+      return
+    }
+    states[connection.id] = .ejecting
+    do {
+      try await smb.unmount(mounted.url)
+      states[connection.id] = .disconnected
+      detailedErrors.removeValue(forKey: connection.id)
+    } catch is CancellationError {
+      states[connection.id] = stateAfterCancellation(connection)
+    } catch {
+      reportOperationError(error)
+      recordDetailedError(error, for: connection)
+      states[connection.id] = .failed(displayMessage(error, kind: connection.kind))
+    }
+  }
+
   public func toggle(_ connection: Connection) async {
-    guard !busy.contains(connection.id) else { return }
+    guard !Task.isCancelled, !busy.contains(connection.id) else { return }
     if states[connection.id] == .awaitingAuthorization {
       states[connection.id] = .disconnected
       return
     }
-    busy.insert(connection.id)
-    defer { busy.remove(connection.id) }
-    if !connection.kind.usesSystemMount {
-      states[connection.id] = .connecting
-      do {
-        guard let testRemote else { throw ConnectionError.notImplemented }
-        states[connection.id] = remoteState(
-          connection, result: .tested(try await testRemote(connection)))
-      } catch {
-        let needsLogin = isLoginFailure(error, kind: connection.kind)
-        if needsLogin { loginExpired?(connection) }
-        reportOperationError(error)
-        recordDetailedError(error, for: connection)
-        states[connection.id] =
-          needsLogin
-          ? .needsLogin
-          : remoteState(
-            connection, result: .failed(displayMessage(error, kind: connection.kind)))
-        return
+    if connection.kind.usesSystemMount {
+      if smb.mounted(connection) != nil {
+        await eject(connection)
+      } else {
+        await mountIfNeeded(connection)
       }
       return
     }
-    let current = smb.mounted(connection)
+    busy.insert(connection.id)
+    defer { busy.remove(connection.id) }
     states[connection.id] = .connecting
     do {
-      if let current {
-        try await smb.unmount(current.url)
-        states[connection.id] = .disconnected
-      } else {
-        let url = try await smb.mount(connection, password: savedPassword(connection))
-        states[connection.id] = .mounted(smb.mounted(connection) ?? MountedShare(url: url))
-        if connection.openInFinderAfterMount { openInFinder?(url) }
-      }
+      guard let testRemote else { throw ConnectionError.notImplemented }
+      let result = try await testRemote(connection)
+      try Task.checkCancellation()
+      states[connection.id] = remoteState(connection, result: .tested(result))
+      detailedErrors.removeValue(forKey: connection.id)
+    } catch is CancellationError {
+      states[connection.id] = stateAfterCancellation(connection)
+    } catch {
+      let needsLogin = isLoginFailure(error, kind: connection.kind)
+      if needsLogin { loginExpired?(connection) }
+      reportOperationError(error)
+      recordDetailedError(error, for: connection)
+      states[connection.id] =
+        needsLogin
+        ? .needsLogin
+        : remoteState(connection, result: .failed(displayMessage(error, kind: connection.kind)))
+    }
+  }
+
+  private func mountIfNeeded(_ connection: Connection) async {
+    guard !Task.isCancelled, !busy.contains(connection.id) else { return }
+    if let mounted = smb.mounted(connection) {
+      states[connection.id] = .mounted(mounted)
+      detailedErrors.removeValue(forKey: connection.id)
+      return
+    }
+    busy.insert(connection.id)
+    defer { busy.remove(connection.id) }
+    states[connection.id] = .connecting
+    do {
+      let url = try await smb.mount(connection, password: savedPassword(connection))
+      states[connection.id] = .mounted(smb.mounted(connection) ?? MountedShare(url: url))
+      detailedErrors.removeValue(forKey: connection.id)
+      if connection.openInFinderAfterMount { openInFinder?(url) }
+    } catch is CancellationError {
+      states[connection.id] = stateAfterCancellation(connection)
     } catch {
       reportOperationError(error)
       recordDetailedError(error, for: connection)
       states[connection.id] = remoteState(
         connection, result: .failed(displayMessage(error, kind: connection.kind)))
-      if current == nil { mountFailed?(error.localizedDescription) }
+      mountFailed?(error.localizedDescription)
     }
   }
+  public func cancelIdleOperation(_ connection: Connection) {
+    guard !busy.contains(connection.id),
+      states[connection.id] == .connecting || states[connection.id] == .awaitingAuthorization
+    else { return }
+    states[connection.id] = stateAfterCancellation(connection)
+  }
+
+  private func stateAfterCancellation(_ connection: Connection) -> ConnectionState {
+    if connection.kind.usesSystemMount, let mounted = smb.mounted(connection) {
+      return .mounted(mounted)
+    }
+    return .disconnected
+  }
+
   public func reportOperationError(_ error: Error) {
     if error is CancellationError { return }
     let message: String
@@ -294,22 +363,75 @@ public enum ConnectionState: Equatable, Sendable {
     where connection.kind.usesSystemMount && !busy.contains(connection.id) {
       if let mounted = smb.mounted(connection) {
         states[connection.id] = .mounted(mounted)
+        expectedUnmounts.remove(connection.id)
+        detailedErrors.removeValue(forKey: connection.id)
       } else if case .failed = states[connection.id] {
       } else {
         let wasMounted: Bool
         if case .mounted = states[connection.id] { wasMounted = true } else { wasMounted = false }
         states[connection.id] = .disconnected
-        if wasMounted { unexpectedDisconnect?(connection) }
+        let expected = expectedUnmounts.remove(connection.id) != nil
+        if wasMounted && !expected { unexpectedDisconnect?(connection) }
       }
     }
   }
+  public func systemVolumeWillUnmount(at url: URL) {
+    for connection in connections where connection.kind.usesSystemMount {
+      if case .mounted(let mounted) = states[connection.id],
+        mounted.url.standardizedFileURL == url.standardizedFileURL
+      {
+        expectedUnmounts.insert(connection.id)
+      }
+    }
+  }
+
+  public func systemVolumeUnmounted(at url: URL) {
+    for connection in connections where connection.kind.usesSystemMount {
+      if case .mounted(let mounted) = states[connection.id],
+        mounted.url.standardizedFileURL == url.standardizedFileURL
+      {
+        states[connection.id] = .disconnected
+        expectedUnmounts.remove(connection.id)
+        detailedErrors.removeValue(forKey: connection.id)
+      }
+    }
+    refreshMounts()
+  }
+
+  public func refreshMountSpace() async {
+    refreshMounts()
+    for id in connections.map(\.id) {
+      guard !Task.isCancelled, !busy.contains(id), !refreshingSpace.contains(id),
+        let connection = connections.first(where: { $0.id == id }),
+        case .mounted(let previous) = states[id]
+      else { continue }
+      refreshingSpace.insert(id)
+      let refreshed = await smb.refreshMounted(connection)
+      refreshingSpace.remove(id)
+      guard !Task.isCancelled, !busy.contains(id),
+        connections.first(where: { $0.id == id }) == connection,
+        case .mounted(let current) = states[id], current.url == previous.url
+      else { continue }
+      guard let actual = smb.mounted(connection) else {
+        states[id] = .disconnected
+        if expectedUnmounts.remove(id) == nil { unexpectedDisconnect?(connection) }
+        continue
+      }
+      guard actual.url == previous.url, let refreshed, refreshed.url == previous.url else {
+        states[id] = .mounted(actual)
+        continue
+      }
+      states[id] = .mounted(refreshed)
+    }
+  }
+
   public func requireLogin(_ id: UUID) {
     if connections.contains(where: { $0.id == id }) { states[id] = .needsLogin }
   }
   private func remoteState(_ connection: Connection, result: ConnectionState) -> ConnectionState {
     if case .failed = result, states[connection.id] == .needsLogin { return .needsLogin }
     if connection.kind == .androidUSB, let usbSerials,
-      !usbSerials.contains(connection.params["serial"] ?? "")
+      !usbSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     {
       return .disconnected
     }
@@ -319,12 +441,12 @@ public enum ConnectionState: Equatable, Sendable {
       return .disconnected
     }
     if connection.kind == .ricohGR, let ricohSerials,
-      !ricohSerials.contains(connection.params["serial"] ?? "")
+      !ricohSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     {
       return .disconnected
     }
     if connection.kind == .cameraUSB, let cameraUSBSerials,
-      !cameraUSBSerials.contains(connection.params["serial"] ?? "")
+      !cameraUSBSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     {
       return .disconnected
     }
@@ -334,8 +456,12 @@ public enum ConnectionState: Equatable, Sendable {
     let previous = ricohSerials
     ricohSerials = serials
     for connection in connections
-    where connection.kind == .ricohGR && !serials.contains(connection.params["serial"] ?? "") {
-      if previous?.contains(connection.params["serial"] ?? "") == true {
+    where connection.kind == .ricohGR
+      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+    {
+      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+        == true
+      {
         notifyIfConnectedDisconnects(connection)
       }
       states[connection.id] = .disconnected
@@ -345,8 +471,12 @@ public enum ConnectionState: Equatable, Sendable {
     let previous = cameraUSBSerials
     cameraUSBSerials = serials
     for connection in connections
-    where connection.kind == .cameraUSB && !serials.contains(connection.params["serial"] ?? "") {
-      if previous?.contains(connection.params["serial"] ?? "") == true {
+    where connection.kind == .cameraUSB
+      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+    {
+      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+        == true
+      {
         notifyIfConnectedDisconnects(connection)
       }
       states[connection.id] = .disconnected
@@ -367,23 +497,37 @@ public enum ConnectionState: Equatable, Sendable {
     let previous = usbSerials
     usbSerials = serials
     for connection in connections
-    where connection.kind == .androidUSB && !serials.contains(connection.params["serial"] ?? "") {
-      if previous?.contains(connection.params["serial"] ?? "") == true {
+    where connection.kind == .androidUSB
+      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+    {
+      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+        == true
+      {
         notifyIfConnectedDisconnects(connection)
       }
       states[connection.id] = .disconnected
     }
   }
   public func autoMount() async {
+    guard !Task.isCancelled, !autoMounting else { return }
+    autoMounting = true
+    defer { autoMounting = false }
     refreshMounts()
-    for connection in connections
-    where connection.kind.usesSystemMount && connection.autoMount {
-      if smb.mounted(connection) == nil { await toggle(connection) }
+    let candidates = connections.filter { $0.kind.usesSystemMount && $0.autoMount }.map(\.id)
+    for id in candidates {
+      guard !Task.isCancelled else { return }
+      guard let connection = connections.first(where: { $0.id == id }),
+        connection.kind.usesSystemMount, connection.autoMount, !busy.contains(id)
+      else { continue }
+      await mountIfNeeded(connection)
     }
   }
 
   private func notifyIfConnectedDisconnects(_ connection: Connection) {
-    if case .mounted = states[connection.id] { unexpectedDisconnect?(connection) }
+    switch states[connection.id] {
+    case .mounted, .tested, .connecting: unexpectedDisconnect?(connection)
+    default: break
+    }
   }
 
   private func displayMessage(_ error: Error, kind: ConnectionKind) -> String {
@@ -392,6 +536,7 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   private func isLoginFailure(_ error: Error, kind: ConnectionKind) -> Bool {
+    guard !NetworkFailure.isTransportError(error) else { return false }
     switch kind {
     case .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
       .googleDrive, .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou:
@@ -399,21 +544,14 @@ public enum ConnectionState: Equatable, Sendable {
     default:
       return false
     }
+    if let failure = error as? any LoginRequiredFailure { return failure.requiresLogin }
     if let remote = error as? RemoteError {
       switch remote {
-      case .unauthorized:
-        return true
-      case .http(let status):
-        return status == 401 || status == 403
-      case .posix(let code):
-        return code == EACCES || code == EPERM
-      default:
-        return false
+      case .unauthorized, .http(401): return true
+      default: return false
       }
     }
-    let failure = error as NSError
-    return failure.domain == NSPOSIXErrorDomain
-      && (failure.code == Int(EACCES) || failure.code == Int(EPERM))
+    return false
   }
 
   private func recordDetailedError(_ error: Error, for connection: Connection) {

@@ -30,12 +30,6 @@ public struct ConfigurationStore: Sendable {
       at: location.dataDirectory, withIntermediateDirectories: true)
     try data.write(to: location.dataDirectory.appending(path: "connections.json"), options: .atomic)
   }
-  public func delete() throws {
-    let url = location.dataDirectory.appending(path: "connections.json")
-    if FileManager.default.fileExists(atPath: url.path) {
-      try FileManager.default.removeItem(at: url)
-    }
-  }
 }
 
 public protocol SecretStore: Sendable {

@@ -1,5 +1,4 @@
 import Foundation
-import Network
 import Observation
 
 public struct DiscoveredSMB: Identifiable, Equatable, Sendable {
@@ -16,49 +15,155 @@ public struct DiscoveredSMB: Identifiable, Equatable, Sendable {
 @MainActor @Observable public final class SMBDiscovery: NSObject, @preconcurrency NetServiceDelegate
 {
   public private(set) var devices: [DiscoveredSMB] = []
-  public private(set) var error: String?
-  private var browser: NWBrowser?
+  public private(set) var issue: SMBDiscoveryIssue?
+  public var error: String? { issue?.message }
+  private let makeBrowser: () -> any SMBDiscoveryBrowsing
+  private let resolve: (NetService, TimeInterval) -> Void
+  private let retryDelay: Duration
+  private var browser: (any SMBDiscoveryBrowsing)?
+  private var generation = 0
   private var services: [String: NetService] = [:]
-  public override init() { super.init() }
+  private var records: [String: SMBServiceRecord] = [:]
+  private var hosts: [String: String] = [:]
+  private var attempts: [String: Int] = [:]
+  private var retries: [String: Task<Void, Never>] = [:]
+  private var browserIssue: SMBDiscoveryIssue?
+  private var unresolved = Set<String>()
+
+  public override init() {
+    makeBrowser = { NativeSMBBrowser() }
+    resolve = { $0.resolve(withTimeout: $1) }
+    retryDelay = .seconds(2)
+    super.init()
+  }
+
+  init(
+    makeBrowser: @escaping () -> any SMBDiscoveryBrowsing,
+    resolve: @escaping (NetService, TimeInterval) -> Void, retryDelay: Duration = .seconds(2)
+  ) {
+    self.makeBrowser = makeBrowser
+    self.resolve = resolve
+    self.retryDelay = retryDelay
+    super.init()
+  }
+
   public func start() {
     guard browser == nil else { return }
-    let browser = NWBrowser(for: .bonjour(type: "_smb._tcp", domain: nil), using: .tcp)
-    browser.browseResultsChangedHandler = { results, _ in
-      Task { @MainActor in self.update(results) }
-    }
-    browser.stateUpdateHandler = { state in
-      if case .failed = state { Task { @MainActor in self.error = L("无法发现局域网设备，请检查本地网络权限") } }
-    }
-    self.browser = browser
-    browser.start(queue: .main)
-  }
-  private func update(_ results: Set<NWBrowser.Result>) {
-    var found: [DiscoveredSMB] = []
-    var current: Set<String> = []
-    for result in results {
-      guard case .service(let name, let type, let domain, _) = result.endpoint else { continue }
-      let id = "\(name).\(type).\(domain)"
-      current.insert(id)
-      found.append(DiscoveredSMB(id: id, name: name, host: services[id]?.hostName))
-      if services[id] == nil {
-        let service = NetService(domain: domain, type: type, name: name)
-        services[id] = service
-        service.delegate = self
-        service.resolve(withTimeout: 15)
+    generation += 1
+    let current = generation
+    let next = makeBrowser()
+    browser = next
+    next.event = { [weak self] event in
+      guard let self, self.generation == current else { return }
+      switch event {
+      case .results(let values): self.update(values)
+      case .ready:
+        self.browserIssue = nil
+        self.updateIssue()
+      case .waiting(let failure):
+        self.browserIssue = failure
+        self.updateIssue()
+      case .failed(let failure):
+        self.stop()
+        self.browserIssue = failure
+        self.updateIssue()
       }
     }
-    for id in Array(services.keys) where !current.contains(id) {
-      services.removeValue(forKey: id)?.stop()
+    next.start()
+  }
+
+  public func stop() {
+    generation += 1
+    browser?.event = nil
+    browser?.cancel()
+    browser = nil
+    for service in services.values {
+      service.delegate = nil
+      service.stop()
     }
-    devices = found.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    for task in retries.values { task.cancel() }
+    services.removeAll()
+    records.removeAll()
+    hosts.removeAll()
+    attempts.removeAll()
+    retries.removeAll()
+    devices.removeAll()
+    unresolved.removeAll()
+    browserIssue = nil
+    issue = nil
   }
+
+  public func restart() {
+    stop()
+    start()
+  }
+
+  private func update(_ values: [SMBServiceRecord]) {
+    let ids = Set(values.map(\.id))
+    for id in Array(records.keys) where !ids.contains(id) {
+      services.removeValue(forKey: id)?.stop()
+      retries.removeValue(forKey: id)?.cancel()
+      records.removeValue(forKey: id)
+      hosts.removeValue(forKey: id)
+      attempts.removeValue(forKey: id)
+      unresolved.remove(id)
+    }
+    for value in values { records[value.id] = value }
+    devices = values.map { value in
+      DiscoveredSMB(id: value.id, name: value.name, host: hosts[value.id])
+    }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    for value in values where services[value.id] == nil && retries[value.id] == nil {
+      beginResolution(value)
+    }
+    updateIssue()
+  }
+
+  private func beginResolution(_ record: SMBServiceRecord) {
+    guard records[record.id] != nil, (attempts[record.id] ?? 0) < 3 else { return }
+    attempts[record.id, default: 0] += 1
+    let service = NetService(domain: record.domain, type: record.type, name: record.name)
+    services[record.id] = service
+    service.delegate = self
+    resolve(service, RemoteTimeout.deviceRequest)
+  }
+
   public func netServiceDidResolveAddress(_ sender: NetService) {
-    guard let id = services.first(where: { $0.value === sender })?.key,
-      let index = devices.firstIndex(where: { $0.id == id })
-    else { return }
-    devices[index].host = sender.hostName
+    resolved(sender, host: sender.hostName)
   }
+
+  func resolved(_ sender: NetService, host: String?) {
+    guard let id = services.first(where: { $0.value === sender })?.key,
+      let index = devices.firstIndex(where: { $0.id == id }), let host, !host.isEmpty
+    else { return }
+    hosts[id] = host
+    devices[index].host = host
+    unresolved.remove(id)
+    updateIssue()
+  }
+
   public func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
-    error = L("设备地址解析失败，可手动填写主机地址")
+    guard let id = services.first(where: { $0.value === sender })?.key,
+      let record = records[id]
+    else { return }
+    sender.delegate = nil
+    sender.stop()
+    services.removeValue(forKey: id)
+    hosts.removeValue(forKey: id)
+    if let index = devices.firstIndex(where: { $0.id == id }) { devices[index].host = nil }
+    unresolved.insert(id)
+    updateIssue()
+    guard (attempts[id] ?? 0) < 3, retries[id] == nil else { return }
+    let current = generation
+    retries[id] = Task { @MainActor [weak self] in
+      guard let self else { return }
+      do { try await Task.sleep(for: self.retryDelay) } catch { return }
+      guard self.generation == current, self.records[id] != nil else { return }
+      self.retries.removeValue(forKey: id)
+      self.beginResolution(record)
+    }
+  }
+
+  private func updateIssue() {
+    issue = browserIssue ?? (unresolved.isEmpty ? nil : .resolutionFailed)
   }
 }
