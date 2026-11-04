@@ -201,64 +201,71 @@ public actor PikPakSession {
     }
     if let refreshTask { return try await refreshTask.value }
     let task = Task { [transport] in
-      guard let stored = try load(), !stored.refreshToken.isEmpty else {
-        throw PikPakError.loginRequired
-      }
-      var request = URLRequest(url: URL(string: Self.userRoot + "/v1/auth/token")!)
-      request.httpMethod = "POST"
-      request.timeoutInterval = 30
-      request.setValue(
-        "application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-      var form = URLComponents()
-      form.queryItems = [
-        URLQueryItem(name: "client_id", value: Self.clientID),
-        URLQueryItem(name: "grant_type", value: "refresh_token"),
-        URLQueryItem(name: "refresh_token", value: stored.refreshToken),
-      ]
-      guard let formBody = form.percentEncodedQuery else {
-        throw PikPakError.invalidResponse
-      }
-      request.httpBody = Data(formBody.utf8)
-      let response: HTTPResponse
+      let lease = try await CredentialRefreshLock.acquire(
+        at: secrets.refreshLockLocation(for: secretKey))
+      defer { lease.release() }
       do {
-        response = try await transport.send(request)
+        guard let stored = try load(), !stored.invalidated, !stored.refreshToken.isEmpty else {
+          throw PikPakError.loginRequired
+        }
+        if let rejected, stored.accessToken != rejected { return stored }
+        if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+          !stored.accessToken.isEmpty
+        {
+          return stored
+        }
+        var request = URLRequest(url: URL(string: Self.userRoot + "/v1/auth/token")!)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
+        request.setValue(
+          "application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var form = URLComponents()
+        form.queryItems = [
+          URLQueryItem(name: "client_id", value: Self.clientID),
+          URLQueryItem(name: "grant_type", value: "refresh_token"),
+          URLQueryItem(name: "refresh_token", value: stored.refreshToken),
+        ]
+        guard let formBody = form.percentEncodedQuery else {
+          throw PikPakError.invalidResponse
+        }
+        request.httpBody = Data(formBody.utf8)
+        let response: HTTPResponse
+        do {
+          response = try await transport.send(request)
+        } catch {
+          throw PikPakHTTP.transportError(error)
+        }
+        if response.status < 500, response.status != 429,
+          let body = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+          body["error"] as? String == "invalid_grant"
+        {
+          throw PikPakError.loginRequired
+        }
+        guard (200..<300).contains(response.status) else {
+          throw PikPakHTTP.map(status: response.status, body: response.body)
+        }
+        let token = try Self.decodeToken(response.body)
+        let userID = token.subject ?? stored.userID
+        let fresh = StoredPikPakAuthorization(
+          accessToken: token.accessToken, refreshToken: token.refreshToken,
+          expiresAt: Date().timeIntervalSince1970 + Double(token.expiresIn),
+          deviceID: stored.deviceID, userID: userID)
+        guard !fresh.accessToken.isEmpty, !fresh.refreshToken.isEmpty,
+          fresh.expiresAt
+            > Date()
+            .timeIntervalSince1970
+        else { throw PikPakError.invalidResponse }
+        try persist(fresh)
+        didNotifyInvalidation = false
+        return fresh
       } catch {
-        throw PikPakHTTP.transportError(error)
+        if (error as? PikPakError) == .loginRequired { try invalidate() }
+        throw error
       }
-      if response.status < 500, response.status != 429,
-        let body = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
-        body["error"] as? String == "invalid_grant"
-      {
-        throw PikPakError.loginRequired
-      }
-      guard (200..<300).contains(response.status) else {
-        throw PikPakHTTP.map(status: response.status, body: response.body)
-      }
-      let token = try Self.decodeToken(response.body)
-      let userID = token.subject ?? stored.userID
-      let fresh = StoredPikPakAuthorization(
-        accessToken: token.accessToken, refreshToken: token.refreshToken,
-        expiresAt: Date().timeIntervalSince1970 + Double(token.expiresIn),
-        deviceID: stored.deviceID, userID: userID)
-      guard !fresh.accessToken.isEmpty, !fresh.refreshToken.isEmpty,
-        fresh.expiresAt
-          > Date()
-          .timeIntervalSince1970
-      else { throw PikPakError.invalidResponse }
-      return fresh
     }
     refreshTask = task
-    do {
-      let fresh = try await task.value
-      try persist(fresh)
-      refreshTask = nil
-      didNotifyInvalidation = false
-      return fresh
-    } catch {
-      refreshTask = nil
-      if (error as? PikPakError) == .loginRequired { try invalidate() }
-      throw error
-    }
+    defer { refreshTask = nil }
+    return try await task.value
   }
 
   private func invalidate() throws {

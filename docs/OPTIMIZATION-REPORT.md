@@ -169,3 +169,11 @@
 - 首次完整门禁发现 ADB 测试进程崩溃。一次 HEAD 对照通过，当前源码增量复测仍崩溃；系统栈落在旧测试模块的 SecretStore 协议见证调用。清理包缓存后当前源码 26 项通过，与新增协议方法后旧测试产物未重编译相符。证据 `docs/evidence/v0.2/FIX-07-refresh-lock-build-cache.log`；未把失败门禁计为通过，未修改无关包。
 - 边界：独立进程证据目前证明系统锁互斥，不等于 App 与命令行完整刷新流程验收。阿里云盘、PikPak、天翼仍待接入；保存失败的待写值仍需跨会话协调。FIX-07 尚未整体通过。
 - 清理构建缓存后的完整提交门禁通过：应用逻辑 9 项、包测试 294 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-refresh-lock-gates.log`。
+
+## FIX-07：阿里云盘、PikPak 与天翼接入刷新锁（部分）
+
+- `Packages/AliyunDrive/Sources/AliyunDrive/AliyunOAuth.swift:244`、`Packages/PikPakDrive/Sources/PikPakDrive/PikPakSession.swift:204` 在取得账号文件锁后重读凭据；其他会话已刷新时直接复用新记录。刷新、保存及明确拒绝后的失效处理均在持锁期间完成。PikPak 原本在共享任务结束之后保存，现移入持锁任务，避免锁先释放而记录尚未保存。
+- `Packages/TianyiDrive/Sources/TianyiDrive/TianyiSession.swift:430` 在锁内比较当前记录与失败请求实际使用的记录。不同则复用当前记录，相同才恢复；保存成功后释放锁，资源重试在锁外执行。恢复过程的明确拒绝也在锁内处理。
+- 失败回归：`aliyunSeparateSessionsShareRefresh`（`OAuthTests.swift:449`）、`pikPakSeparateSessionsShareRefresh`（`PikPakTests.swift:517`）、`tianyiSeparateSessionsShareRestoration`（`TianyiDriveTests.swift:885`）均先确认第二个会话已读取或发出旧凭据请求，才放行第一次刷新响应；三项修复前均发生两次刷新/恢复，修复后仅一次且两个调用均成功。随后扩展为同一会话与独立会话两组。证据 `docs/evidence/v0.2/FIX-07-provider-locks-regression.log`、`docs/evidence/v0.2/FIX-07-provider-locks-gates.log`。
+- 完整门禁通过：应用逻辑 9 项、包测试 297 项，发布构建和签名校验通过。四套会话均已接入账号文件锁；本轮未连接真实设备、网盘、账号或钥匙串。
+- FIX-07 尚未整体通过：待保存的新凭据目前仍属于各存储包装实例，需要继续处理跨会话共享及其持锁生命周期；独立进程的完整授权替身流程也仍待补证据。

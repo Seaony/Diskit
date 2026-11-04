@@ -9,9 +9,18 @@ private let oauthConfiguration = AliyunConfiguration(
   clientID: "test-client", clientSecret: "test-secret", redirectURI: "kayoi://oauth/callback")
 
 private final class OAuthSecrets: SecretStore, Sendable {
+  let nextRead = Mutex<AsyncStream<Void>.Continuation?>(nil)
   let failWrites = Mutex(false)
   let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
+  func read(_ key: String) throws -> Data? {
+    let value = values.withLock { $0[key] }
+    nextRead.withLock { observer in
+      observer?.yield(())
+      observer?.finish()
+      observer = nil
+    }
+    return value
+  }
   func write(_ data: Data, for key: String) throws {
     if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
     values.withLock { $0[key] = data }
@@ -434,4 +443,44 @@ func oauthTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   #expect(try await session.authorized(oauthRequest()).status == 200)
   #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
   #expect(refreshes.withLock { $0 } == 1)
+}
+
+@Test(arguments: [false, true])
+func aliyunSeparateSessionsShareRefresh(separateSessions: Bool) async throws {
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: "concurrent", expiry: 0)
+  let started = AsyncStream<Void>.makeStream()
+  let release = AsyncStream<Void>.makeStream()
+  let count = Mutex(0)
+  let http = OAuthHTTP { request in
+    guard request.url?.path == "/oauth/access_token" else { return HTTPResponse(status: 200) }
+    let number = count.withLock {
+      $0 += 1
+      return $0
+    }
+    if number == 1 {
+      started.continuation.yield(())
+      started.continuation.finish()
+      for await _ in release.stream { break }
+    }
+    return oauthToken()
+  }
+  let first = AliyunSession(
+    secretKey: "concurrent", secrets: secrets, configuration: oauthConfiguration, transport: http)
+  let second =
+    separateSessions
+    ? AliyunSession(
+      secretKey: "concurrent", secrets: secrets, configuration: oauthConfiguration, transport: http)
+    : first
+  let firstTask = Task { try await first.authorized(oauthRequest()) }
+  for await _ in started.stream { break }
+  let read = AsyncStream<Void>.makeStream()
+  secrets.nextRead.withLock { $0 = read.continuation }
+  let secondTask = Task { try await second.authorized(oauthRequest()) }
+  for await _ in read.stream { break }
+  release.continuation.yield(())
+  release.continuation.finish()
+  #expect(try await firstTask.value.status == 200)
+  #expect(try await secondTask.value.status == 200)
+  #expect(count.withLock { $0 } == 1)
 }

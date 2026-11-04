@@ -240,9 +240,21 @@ public actor AliyunSession {
       return stored
     }
     if let refreshTask { return try await refreshTask.value }
-    let configuration = try effectiveConfiguration()
     let task = Task {
+      let lease = try await CredentialRefreshLock.acquire(
+        at: secrets.refreshLockLocation(for: secretKey))
+      defer { lease.release() }
       do {
+        guard let stored = try load(), !stored.invalidated, !stored.refreshToken.isEmpty else {
+          throw AliyunError.loginRequired
+        }
+        if let rejected, stored.accessToken != rejected { return stored }
+        if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+          !stored.accessToken.isEmpty
+        {
+          return stored
+        }
+        let configuration = try effectiveConfiguration()
         let fresh = try await self.token(
           configuration: configuration, grant: "refresh_token", value: stored.refreshToken)
         try self.persist(fresh)

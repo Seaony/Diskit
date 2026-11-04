@@ -417,17 +417,7 @@ public actor TianyiSession {
     let original = try requireState()
     var response = try await send(build(original))
     if TianyiHTTP.isAuthenticationFailure(response) {
-      let restored: StoredTianyiSession
-      do {
-        restored = try await restore(original)
-      } catch {
-        if (error as? TianyiError) == .loginRequired {
-          try invalidate()
-          throw RemoteError.unauthorized
-        }
-        throw error
-      }
-      try persist(restored)
+      let restored = try await recover(original)
       response = try await send(build(restored))
       if TianyiHTTP.isAuthenticationFailure(response) {
         throw RemoteError.unauthorized
@@ -435,6 +425,25 @@ public actor TianyiSession {
     }
     try TianyiHTTP.check(response)
     return response
+  }
+
+  private func recover(_ rejected: StoredTianyiSession) async throws -> StoredTianyiSession {
+    let lease = try await CredentialRefreshLock.acquire(
+      at: secrets.refreshLockLocation(for: secretKey))
+    defer { lease.release() }
+    let current = try requireState()
+    if current != rejected { return current }
+    do {
+      let restored = try await restore(current)
+      try persist(restored)
+      return restored
+    } catch {
+      if (error as? TianyiError) == .loginRequired {
+        try invalidate()
+        throw RemoteError.unauthorized
+      }
+      throw error
+    }
   }
 
   private func restore(_ rejected: StoredTianyiSession) async throws -> StoredTianyiSession {

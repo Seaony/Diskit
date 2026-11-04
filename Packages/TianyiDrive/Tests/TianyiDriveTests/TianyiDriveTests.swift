@@ -880,3 +880,53 @@ func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
   await #expect(throws: RemoteError.unauthorized) { _ = try await session.account() }
   #expect(await http.requests.count == 2)
 }
+
+@Test(arguments: [false, true])
+func tianyiSeparateSessionsShareRestoration(separateSessions: Bool) async throws {
+  let started = AsyncStream<Void>.makeStream()
+  let release = AsyncStream<Void>.makeStream()
+  let secondRequest = AsyncStream<Void>.makeStream()
+  let requests = Mutex(0)
+  let restores = Mutex(0)
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" {
+      if request.value(forHTTPHeaderField: "SessionKey") == "new-key" { return capacity() }
+      if requests.withLock({
+        $0 += 1
+        return $0
+      }) == 2 {
+        secondRequest.continuation.yield(())
+        secondRequest.continuation.finish()
+      }
+      return HTTPResponse(status: 401)
+    }
+    guard request.url?.path == "/getSessionForPC.action" else { throw RemoteError.protocolError }
+    if restores.withLock({
+      $0 += 1
+      return $0
+    }) == 1 {
+      started.continuation.yield(())
+      started.continuation.finish()
+      for await _ in release.stream { break }
+    }
+    return json([
+      "sessionKey": "new-key", "sessionSecret": "new-secret", "accessToken": "new",
+      "refreshToken": "rotated",
+    ])
+  }
+  let (first, secrets) = try session(http)
+  let second =
+    separateSessions
+    ? TianyiSession(
+      secretKey: "tianyi.test", secrets: secrets, configuration: personalConfiguration,
+      transport: http) : first
+  let firstTask = Task { try await first.connect() }
+  for await _ in started.stream { break }
+  let secondTask = Task { try await second.connect() }
+  for await _ in secondRequest.stream { break }
+  release.continuation.yield(())
+  release.continuation.finish()
+  try await firstTask.value
+  try await secondTask.value
+  #expect(restores.withLock { $0 } == 1)
+}
