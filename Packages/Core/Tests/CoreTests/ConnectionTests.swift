@@ -79,11 +79,11 @@ private func sample(_ name: String = "Windows") -> Connection {
   ]
   #expect(
     cloudKinds.allSatisfy {
-      HumanError.remote(.unauthorized, kind: $0) == "登录已失效，请重新登录"
+      HumanError.remote(.unauthorized, kind: $0) == L("登录已失效，请重新登录")
     })
   #expect(
     cloudKinds.allSatisfy {
-      HumanError.remote(.http(401), kind: $0) == "登录已失效，请重新登录"
+      HumanError.remote(.http(401), kind: $0) == L("登录已失效，请重新登录")
     })
 }
 
@@ -109,7 +109,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(manager.connections.isEmpty)
   #expect(try ConnectionRepository(location: f.location).load().isEmpty)
   #expect(f.secrets.values.withLock { $0.isEmpty })
-  #expect(ConnectionError.authentication.errorDescription == "用户名或密码错误")
+  #expect(ConnectionError.authentication.errorDescription == L("用户名或密码错误"))
 }
 
 @Test @MainActor func rejectsMissingShareAndInvalidFields() async throws {

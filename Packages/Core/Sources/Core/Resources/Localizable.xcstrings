@@ -1,0 +1,1824 @@
+{
+  "sourceLanguage": "zh-Hans",
+  "strings": {
+    "PikPak 没有完成任务，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak did not finish the task. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak 没有完成任务，请稍后重试"
+          }
+        }
+      }
+    },
+    "PikPak 登录已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your PikPak sign-in has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak 登录已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "PikPak 账号或密码不正确，请重新输入": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The PikPak account or password is incorrect. Enter them again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak 账号或密码不正确，请重新输入"
+          }
+        }
+      }
+    },
+    "PikPak 返回了无法识别的数据，接口可能已经变化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak returned unrecognized data. The interface may have changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak 返回了无法识别的数据，接口可能已经变化"
+          }
+        }
+      }
+    },
+    "PikPak 验证未通过，请稍后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak verification failed. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PikPak 验证未通过，请稍后重试"
+          }
+        }
+      }
+    },
+    "USB 相机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB Camera"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB 相机"
+          }
+        }
+      }
+    },
+    "删除未完成：已确认删除 %lld / %lld 个对象，失败对象的状态尚未确认。请刷新后检查剩余内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion did not finish. Confirmed deleted: %#@deleted@ of %#@total@. The failed object’s status is unconfirmed. Refresh to check what remains."
+          },
+          "substitutions": {
+            "deleted": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  }
+                }
+              }
+            },
+            "total": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg object"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg objects"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除未完成：已确认删除 %#@deleted@ / %#@total@ 个对象，失败对象的状态尚未确认。请刷新后检查剩余内容。"
+          },
+          "substitutions": {
+            "deleted": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  }
+                }
+              }
+            },
+            "total": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "同名文件已存在": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A file with this name already exists"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同名文件已存在"
+          }
+        }
+      }
+    },
+    "复制未完成，清理也失败了。原文件仍保留，请检查目标位置和未完成的分片上传。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The copy did not finish, and cleanup also failed. The original file is intact. Check the destination and incomplete multipart uploads."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制未完成，清理也失败了。原文件仍保留，请检查目标位置和未完成的分片上传。"
+          }
+        }
+      }
+    },
+    "天翼云盘操作失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tianyi Cloud operation failed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天翼云盘操作失败：%@"
+          }
+        }
+      }
+    },
+    "天翼云盘登录信息无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Tianyi Cloud sign-in information is invalid."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天翼云盘登录信息无效"
+          }
+        }
+      }
+    },
+    "天翼云盘登录已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Tianyi Cloud sign-in has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天翼云盘登录已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "天翼云盘返回了无法识别的数据，接口可能已经变化": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tianyi Cloud returned unrecognized data. The interface may have changed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "天翼云盘返回了无法识别的数据，接口可能已经变化"
+          }
+        }
+      }
+    },
+    "夸克网盘返回了无效的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quark Drive returned invalid data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夸克网盘返回了无效的数据"
+          }
+        }
+      }
+    },
+    "夸克网盘需重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Quark Drive again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夸克网盘需重新登录"
+          }
+        }
+      }
+    },
+    "存储 %lld": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Storage %lld"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Storage %lld"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "存储 %lld"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "存储 %lld"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "存储空间不足": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not enough storage space"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储空间不足"
+          }
+        }
+      }
+    },
+    "当前账号没有可用的家庭云": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account has no available family cloud."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前账号没有可用的家庭云"
+          }
+        }
+      }
+    },
+    "恢复原凭据失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not restore the previous credentials: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复原凭据失败：%@"
+          }
+        }
+      }
+    },
+    "手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone is busy in another debugging tool. Quit that tool or restart Kayoi."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi"
+          }
+        }
+      }
+    },
+    "手机返回了无效的配对数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The phone returned invalid pairing data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机返回了无效的配对数据"
+          }
+        }
+      }
+    },
+    "找不到文件或位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File or location not found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到文件或位置"
+          }
+        }
+      }
+    },
+    "找不到蓝奏云文件或分享": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Lanzou file or share could not be found."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到蓝奏云文件或分享"
+          }
+        }
+      }
+    },
+    "找不到该共享，请检查共享名和访问权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share not found. Check its name and your access permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到该共享，请检查共享名和访问权限"
+          }
+        }
+      }
+    },
+    "找不到请求的内容": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The requested content was not found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到请求的内容"
+          }
+        }
+      }
+    },
+    "授权回调不匹配，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The authorization callback did not match. Sign in again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权回调不匹配，请重新登录"
+          }
+        }
+      }
+    },
+    "授权未完成，请重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization was not completed. Try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权未完成，请重试"
+          }
+        }
+      }
+    },
+    "授权状态无效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid authorization state. Sign in again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授权状态无效，请重新登录"
+          }
+        }
+      }
+    },
+    "操作没有完成，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operation didn't finish. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作没有完成，请稍后重试"
+          }
+        }
+      }
+    },
+    "文件夹不是空的": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The folder is not empty"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件夹不是空的"
+          }
+        }
+      }
+    },
+    "新文件已上传，旧文件回收失败或结果未确认，请检查同名文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The new file was uploaded, but recycling the old file failed or could not be confirmed. Check for duplicate files."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新文件已上传，旧文件回收失败或结果未确认，请检查同名文件"
+          }
+        }
+      }
+    },
+    "无法发现局域网设备，请检查本地网络权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot discover devices. Check local network permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法发现局域网设备，请检查本地网络权限"
+          }
+        }
+      }
+    },
+    "无法发现局域网设备，请稍后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local network devices could not be discovered. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法发现局域网设备，请稍后重试"
+          }
+        }
+      }
+    },
+    "无法发现无线调试设备，请检查本地网络权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot discover wireless debugging devices. Check local network permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法发现无线调试设备，请检查本地网络权限"
+          }
+        }
+      }
+    },
+    "无线设备地址解析失败，请检查手机上的无线调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot resolve the wireless device. Check wireless debugging on your phone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无线设备地址解析失败，请检查手机上的无线调试"
+          }
+        }
+      }
+    },
+    "暂时无法发现局域网设备，请检查网络连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local network devices cannot be discovered right now. Check your network connection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂时无法发现局域网设备，请检查网络连接"
+          }
+        }
+      }
+    },
+    "服务暂时无法完成请求，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service couldn't complete the request. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务暂时无法完成请求，请稍后重试"
+          }
+        }
+      }
+    },
+    "服务暂时无法连接，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service is temporarily unavailable. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务暂时无法连接，请稍后重试"
+          }
+        }
+      }
+    },
+    "服务请求过多，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many requests. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务请求过多，请稍后重试"
+          }
+        }
+      }
+    },
+    "服务返回了无法识别的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The service returned an unrecognized response"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务返回了无法识别的数据"
+          }
+        }
+      }
+    },
+    "此位置为只读，不能上传、创建目录或移动文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location is read-only. Uploading, creating folders, and moving files are unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此位置为只读，不能上传、创建目录或移动文件"
+          }
+        }
+      }
+    },
+    "此类型暂时不可用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This type is temporarily unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此类型暂时不可用"
+          }
+        }
+      }
+    },
+    "此网盘尚未在 Kayoi 中启用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This drive is not enabled in Kayoi yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此网盘尚未在 Kayoi 中启用"
+          }
+        }
+      }
+    },
+    "没有完成授权，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorization was not completed. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有完成授权，请重新登录"
+          }
+        }
+      }
+    },
+    "没有访问权限": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access denied"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有访问权限"
+          }
+        }
+      }
+    },
+    "用户名或密码错误": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incorrect username or password"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用户名或密码错误"
+          }
+        }
+      }
+    },
+    "登录信息不完整，请重新扫码登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The sign-in information is incomplete. Scan the QR code again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录信息不完整，请重新扫码登录"
+          }
+        }
+      }
+    },
+    "登录已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your session has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "百度网盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baidu Netdisk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "百度网盘"
+          }
+        }
+      }
+    },
+    "目录中已有多份同名文件，无法确定要操作哪一份": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The folder contains multiple files with this name. The target is ambiguous"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目录中已有多份同名文件，无法确定要操作哪一份"
+          }
+        }
+      }
+    },
+    "移动云盘登录信息不完整": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Mobile Cloud sign-in information is incomplete."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动云盘登录信息不完整"
+          }
+        }
+      }
+    },
+    "移动云盘登录已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Mobile Cloud sign-in has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动云盘登录已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "移动云盘返回了无法识别的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mobile Cloud returned unrecognized data."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动云盘返回了无法识别的数据"
+          }
+        }
+      }
+    },
+    "移动失败，恢复原位置也未完成。请刷新目录，检查临时文件“%@”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The move failed, and the original location could not be restored. Refresh the folder and check the temporary file “%@”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动失败，恢复原位置也未完成。请刷新目录，检查临时文件“%@”。"
+          }
+        }
+      }
+    },
+    "移动未完成，且未能恢复原位置。最后确认的位置为“%@”，请在网盘中核对。原错误：%@；恢复错误：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The move did not finish, and the original location could not be restored. The last confirmed location is “%@”. Check it in the cloud drive. Original error: %@; recovery error: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动未完成，且未能恢复原位置。最后确认的位置为“%@”，请在网盘中核对。原错误：%@；恢复错误：%@"
+          }
+        }
+      }
+    },
+    "移动未完成，最后确认的位置为 %@。最终位置尚未确认，请刷新目录检查。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The move did not finish. The last confirmed location is %@. The final location is unconfirmed. Refresh the folder to check."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移动未完成，最后确认的位置为 %@。最终位置尚未确认，请刷新目录检查。"
+          }
+        }
+      }
+    },
+    "系统无法完成操作，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The system couldn't complete the operation. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统无法完成操作，请稍后重试"
+          }
+        }
+      }
+    },
+    "蓝奏云下载服务没有返回请求的文件范围": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Lanzou download service did not return the requested byte range."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云下载服务没有返回请求的文件范围"
+          }
+        }
+      }
+    },
+    "蓝奏云分享密码错误": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Lanzou share password is incorrect."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云分享密码错误"
+          }
+        }
+      }
+    },
+    "蓝奏云操作失败：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou operation failed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云操作失败：%@"
+          }
+        }
+      }
+    },
+    "蓝奏云登录已失效，请更新登录信息": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Lanzou sign-in has expired. Update the sign-in information."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云登录已失效，请更新登录信息"
+          }
+        }
+      }
+    },
+    "蓝奏云要求浏览器验证，请在浏览器中完成验证后更新登录信息": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou requires browser verification. Complete it in a browser, then update the sign-in information."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云要求浏览器验证，请在浏览器中完成验证后更新登录信息"
+          }
+        }
+      }
+    },
+    "蓝奏云请求过于频繁，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou has received too many requests. Try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云请求过于频繁，请稍后重试"
+          }
+        }
+      }
+    },
+    "蓝奏云返回了无法识别的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou returned unrecognized data."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云返回了无法识别的数据"
+          }
+        }
+      }
+    },
+    "蓝奏云连接配置无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Lanzou connection configuration is invalid."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云连接配置无效"
+          }
+        }
+      }
+    },
+    "蓝奏云需要登录或分享密码": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou requires sign-in or a share password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云需要登录或分享密码"
+          }
+        }
+      }
+    },
+    "设备不支持大于 4 GB 的文件": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device does not support files larger than 4 GB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备不支持大于 4 GB 的文件"
+          }
+        }
+      }
+    },
+    "设备不支持此操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device does not support this operation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备不支持此操作"
+          }
+        }
+      }
+    },
+    "设备地址解析失败，可手动填写主机地址": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not resolve the device. Enter its host address manually"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备地址解析失败，可手动填写主机地址"
+          }
+        }
+      }
+    },
+    "设备或服务已断开": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device or service is disconnected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备或服务已断开"
+          }
+        }
+      }
+    },
+    "设备正被其它调试工具占用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device is busy in another debugging tool"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备正被其它调试工具占用"
+          }
+        }
+      }
+    },
+    "该位置不支持此操作": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location does not support this operation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该位置不支持此操作"
+          }
+        }
+      }
+    },
+    "该位置为只读": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location is read-only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该位置为只读"
+          }
+        }
+      }
+    },
+    "请先在网页完成验证后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete verification on the website, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在网页完成验证后重试"
+          }
+        }
+      }
+    },
+    "请在手机上允许 USB 调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow USB debugging on the phone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在手机上允许 USB 调试"
+          }
+        }
+      }
+    },
+    "请在相机上允许访问": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow access on the camera"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在相机上允许访问"
+          }
+        }
+      }
+    },
+    "请检查带星号的必填项": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete every required field marked with an asterisk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请检查带星号的必填项"
+          }
+        }
+      }
+    },
+    "请求格式不正确": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The request is invalid"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求格式不正确"
+          }
+        }
+      }
+    },
+    "请求的文件范围无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The requested file range is invalid"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请求的文件范围无效"
+          }
+        }
+      }
+    },
+    "请输入 6 位配对码": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the 6-digit pairing code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入 6 位配对码"
+          }
+        }
+      }
+    },
+    "请选择要访问的家庭云": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select a family cloud."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择要访问的家庭云"
+          }
+        }
+      }
+    },
+    "路径无效": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid path"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "路径无效"
+          }
+        }
+      }
+    },
+    "迅雷云盘登录信息不完整": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Xunlei Drive sign-in information is incomplete."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迅雷云盘登录信息不完整"
+          }
+        }
+      }
+    },
+    "迅雷云盘登录已失效，请重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Xunlei Drive sign-in has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迅雷云盘登录已失效，请重新登录"
+          }
+        }
+      }
+    },
+    "迅雷云盘返回了无法识别的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xunlei Drive returned unrecognized data."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迅雷云盘返回了无法识别的数据"
+          }
+        }
+      }
+    },
+    "迅雷返回了不支持的上传服务": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xunlei returned an unsupported upload service."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迅雷返回了不支持的上传服务"
+          }
+        }
+      }
+    },
+    "这个分享需要密码": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This share requires a password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这个分享需要密码"
+          }
+        }
+      }
+    },
+    "连接正在处理，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An operation is in progress. Try again shortly"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接正在处理，请稍后重试"
+          }
+        }
+      }
+    },
+    "连接的相机未确认是 GR IV": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connected camera could not be confirmed as a GR IV"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接的相机未确认是 GR IV"
+          }
+        }
+      }
+    },
+    "连接超时，请检查主机地址和网络": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection timed out. Check the host address and network"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接超时，请检查主机地址和网络"
+          }
+        }
+      }
+    },
+    "连接超时，请检查网络后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection timed out. Check your network and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接超时，请检查网络后重试"
+          }
+        }
+      }
+    },
+    "配对码错误": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incorrect pairing code"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对码错误"
+          }
+        }
+      }
+    },
+    "配置来自更新版本，请升级 Kayoi": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This configuration requires a newer version of Kayoi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置来自更新版本，请升级 Kayoi"
+          }
+        }
+      }
+    },
+    "阿里云盘尚未在 Kayoi 中启用": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aliyun Drive is not enabled in Kayoi yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阿里云盘尚未在 Kayoi 中启用"
+          }
+        }
+      }
+    },
+    "阿里云盘授权失败（%d）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Aliyun Drive authorization failed (%d)"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Aliyun Drive authorization failed (%d)"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "阿里云盘授权失败（%d）"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "阿里云盘授权失败（%d）"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "阿里云盘请求过于频繁，请稍后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many Aliyun Drive requests. Try again later"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阿里云盘请求过于频繁，请稍后重试"
+          }
+        }
+      }
+    },
+    "阿里云盘返回了无效的数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aliyun Drive returned invalid data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阿里云盘返回了无效的数据"
+          }
+        }
+      }
+    },
+    "阿里云盘需重新登录": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to Aliyun Drive again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "阿里云盘需重新登录"
+          }
+        }
+      }
+    },
+    "连接超时，请检查 USB 线缆并解锁手机后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection timed out. Check the USB cable, unlock your phone, and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接超时，请检查 USB 线缆并解锁手机后重试"
+          }
+        }
+      }
+    },
+    "连接超时，请检查 USB 线缆并打开相机后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection timed out. Check the USB cable, turn on your camera, and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接超时，请检查 USB 线缆并打开相机后重试"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -93,8 +93,6 @@ public enum ConnectionError: Error, Equatable, LocalizedError {
   }
 }
 
-public func L(_ value: String) -> String { NSLocalizedString(value, bundle: .main, comment: "") }
-
 public struct ConnectionRepository: Sendable {
   public let store: ConfigurationStore
   public init(location: any StorageLocation = LocalStorageLocation()) {
