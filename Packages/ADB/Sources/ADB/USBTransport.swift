@@ -8,6 +8,11 @@ public struct ADBDevice: Identifiable, Sendable, Equatable {
   public let serial: String
   public let name: String
   public let registryID: UInt64
+  public init(serial: String, name: String, registryID: UInt64) {
+    self.serial = serial
+    self.name = name
+    self.registryID = registryID
+  }
 }
 
 public enum ADBUSB {

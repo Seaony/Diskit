@@ -66,7 +66,7 @@ def main():
         ], text=True))
         for target in report["targets"]:
             for file in target.get("files", []):
-                if Path(file["path"]).is_relative_to(ROOT / "App" / "Logic"):
+                if Path(file["path"]).is_relative_to(ROOT / "App"):
                     covered += file["coveredLines"]
                     count += file["executableLines"]
     rows.append(("App 逻辑", covered, count, 75, ok))

@@ -179,9 +179,9 @@ struct ConnectionEditor: View {
         pairWirelessDevice()
       }
     }
-    .onChange(of: model.usbDiscovery.devices.map(\.serial)) { _, _ in autoSelectDevice() }
-    .onChange(of: model.ricohDiscovery.devices.map(\.serial)) { _, _ in autoSelectDevice() }
-    .onChange(of: model.cameraUSBDiscovery.devices.map(\.serial)) { _, _ in autoSelectDevice() }
+    .onChange(of: model.usbDevices.map(\.serial)) { _, _ in autoSelectDevice() }
+    .onChange(of: model.ricohDevices.map(\.serial)) { _, _ in autoSelectDevice() }
+    .onChange(of: model.cameraUSBDevices.map(\.serial)) { _, _ in autoSelectDevice() }
   }
 
   private var editorHeader: some View {
@@ -431,7 +431,7 @@ struct ConnectionEditor: View {
   }
 
   @ViewBuilder private var devicePicker: some View {
-    if model.usbDiscovery.devices.isEmpty {
+    if model.usbDevices.isEmpty {
       inlineEmptyState(
         symbol: "cable.connector.slash", title: L("没有发现安卓手机"),
         detail: L("请打开 USB 调试并检查数据线，然后重新连接。"))
@@ -442,7 +442,7 @@ struct ConnectionEditor: View {
       ) {
         Picker(L("安卓设备"), selection: parameter("serial")) {
           Text(L("请选择")).tag("")
-          ForEach(model.usbDiscovery.devices) { device in
+          ForEach(model.usbDevices) { device in
             Text(device.name + " · " + device.serial).tag(device.serial)
           }
         }
@@ -452,7 +452,7 @@ struct ConnectionEditor: View {
 
   private var wirelessFields: some View {
     VStack(alignment: .leading, spacing: 14) {
-      let pairingDevices = model.wirelessDiscovery.devices.filter { $0.type == .pairing }
+      let pairingDevices = model.wirelessDevices.filter { $0.type == .pairing }
       if draft.params["guid"] != nil {
         Label(L("这台手机已配对，可以直接测试连接。"), systemImage: "checkmark.circle.fill")
           .font(.callout).foregroundStyle(KayoiTheme.accent)
@@ -503,7 +503,7 @@ struct ConnectionEditor: View {
 
   @ViewBuilder private var cameraFields: some View {
     if draft.kind == .ricohGR {
-      if model.ricohDiscovery.devices.isEmpty {
+      if model.ricohDevices.isEmpty {
         inlineEmptyState(
           symbol: "camera.badge.ellipsis", title: L("没有发现理光相机"),
           detail: L("请用数据线连接 GR IV，并退出正在占用相机的 App。"))
@@ -514,14 +514,14 @@ struct ConnectionEditor: View {
         ) {
           Picker(L("理光相机"), selection: parameter("serial")) {
             Text(L("请选择")).tag("")
-            ForEach(model.ricohDiscovery.devices) { device in
+            ForEach(model.ricohDevices) { device in
               Text(device.name + " · " + device.serial).tag(device.serial)
             }
           }
         }
       }
     } else {
-      if model.cameraUSBDiscovery.devices.isEmpty {
+      if model.cameraUSBDevices.isEmpty {
         inlineEmptyState(
           symbol: "camera.badge.ellipsis", title: L("没有发现相机"),
           detail: L("请用数据线连接相机，并退出正在占用相机的 App。"))
@@ -532,7 +532,7 @@ struct ConnectionEditor: View {
         ) {
           Picker(L("相机"), selection: parameter("serial")) {
             Text(L("请选择")).tag("")
-            ForEach(model.cameraUSBDiscovery.devices) { device in
+            ForEach(model.cameraUSBDevices) { device in
               Text(device.name + " · " + device.serial).tag(device.serial)
             }
           }
@@ -816,7 +816,7 @@ struct ConnectionEditor: View {
   }
 
   @ViewBuilder private var accountAvatar: some View {
-    if let value = draft.params["avatarURL"], let url = URL(string: value) {
+    if !model.options.isDemo, let value = draft.params["avatarURL"], let url = URL(string: value) {
       AsyncImage(url: url) { image in
         image.resizable().scaledToFill()
       } placeholder: {
@@ -1101,22 +1101,22 @@ struct ConnectionEditor: View {
     guard chosen || draft.kind == .androidUSB else { return }
     switch draft.kind {
     case .androidUSB where (draft.params["serial"] ?? "").isEmpty:
-      if let device = model.usbDiscovery.devices.first {
+      if let device = model.usbDevices.first {
         draft.params["serial"] = device.serial
         autoNameFromDevice()
       }
     case .ricohGR where (draft.params["serial"] ?? "").isEmpty:
-      if let device = model.ricohDiscovery.devices.first {
+      if let device = model.ricohDevices.first {
         draft.params["serial"] = device.serial
         autoNameFromDevice()
       }
     case .cameraUSB where (draft.params["serial"] ?? "").isEmpty:
-      if let device = model.cameraUSBDiscovery.devices.first {
+      if let device = model.cameraUSBDevices.first {
         draft.params["serial"] = device.serial
         autoNameFromDevice()
       }
     case .androidWiFi where pairingID.isEmpty:
-      if let device = model.wirelessDiscovery.devices.first(where: { $0.type == .pairing }) {
+      if let device = model.wirelessDevices.first(where: { $0.type == .pairing }) {
         pairingID = device.id
       }
     default:
@@ -1127,13 +1127,13 @@ struct ConnectionEditor: View {
   private func autoNameFromDevice() {
     guard draft.name.isEmpty || draft.name == draft.kind.defaultName else { return }
     if let serial = draft.params["serial"] {
-      if let device = model.usbDiscovery.devices.first(where: { $0.serial == serial }) {
+      if let device = model.usbDevices.first(where: { $0.serial == serial }) {
         draft.name = device.name
-      } else if let device = model.ricohDiscovery.devices.first(where: {
+      } else if let device = model.ricohDevices.first(where: {
         $0.serial == serial
       }) {
         draft.name = device.name
-      } else if let device = model.cameraUSBDiscovery.devices.first(where: {
+      } else if let device = model.cameraUSBDevices.first(where: {
         $0.serial == serial
       }) {
         draft.name = device.name
@@ -1143,7 +1143,7 @@ struct ConnectionEditor: View {
 
   private func pairWirelessDevice() {
     guard pairingTask == nil,
-      let device = model.wirelessDiscovery.devices.first(where: { $0.id == pairingID }),
+      let device = model.wirelessDevices.first(where: { $0.id == pairingID }),
       let host = device.host, let port = device.port
     else { return }
     busy = true
@@ -1156,7 +1156,7 @@ struct ConnectionEditor: View {
         pairingTask = nil
       }
       do {
-        let guid = try await ADBPairing.pair(host: host, port: port, code: pairingCode)
+        let guid = model.options.isDemo ? "adb-demo-ABC123" : try await ADBPairing.pair(host: host, port: port, code: pairingCode)
         try Task.checkCancellation()
         draft.params["guid"] = guid
         draft.params["name"] = draft.name
@@ -1212,9 +1212,16 @@ struct ConnectionEditor: View {
         saving = nil
       }
       do {
+        if model.options.isDemo {
+          stage = L("正在测试连接…")
+          try await model.connections.save(draft, password: password)
+          model.forceLogin = false
+          dismissWindow(id: "connection")
+          return
+        }
         if draft.kind == .androidWiFi && draft.params["guid"] == nil {
           stage = L("正在配对…")
-          guard let device = model.wirelessDiscovery.devices.first(where: { $0.id == pairingID }),
+          guard let device = model.wirelessDevices.first(where: { $0.id == pairingID }),
             let host = device.host, let port = device.port
           else { throw RemoteError.notConnected }
           draft.params["guid"] = try await ADBPairing.pair(

@@ -17,7 +17,70 @@ import TianyiDrive
 import UserNotifications
 
 @MainActor @Observable final class AppModel {
-  let connections = ConnectionManager(smb: SystemSMBService())
+  let connections: ConnectionManager
+  let options: RuntimeOptions
+  let preferences: UserDefaults
+  let secrets: any SecretStore
+  private let location: any StorageLocation
+  var demoSetupError: String?
+
+  init(options: RuntimeOptions = .current) {
+    self.options = options
+    if options.isDemo {
+      let identifier = UUID().uuidString
+      let home = FileManager.default.temporaryDirectory.appending(path: "KayoiDemo-" + identifier)
+      let location = LocalStorageLocation(home: home)
+      self.location = location
+      let secrets = MemorySecretStore()
+      self.secrets = secrets
+      preferences = UserDefaults(suiteName: "com.seaony.Kayoi.demo." + identifier)!
+      let fixture = DemoFixtures(scenario: options.scenario)
+      do { try ConnectionRepository(location: location).save(fixture.connections) } catch {
+        demoSetupError = HumanError.detail(error)
+      }
+      connections = ConnectionManager(
+        location: location, secrets: secrets,
+        smb: DemoMountService(states: fixture.states), initialStates: fixture.states)
+    } else {
+      location = LocalStorageLocation()
+      secrets = LoginKeychainStore()
+      preferences = .standard
+      connections = ConnectionManager(smb: SystemSMBService())
+    }
+  }
+
+  private var showsDemoDiscovery: Bool { options.isDemo && options.scenario != "empty" }
+  var usbDevices: [ADBDevice] {
+    options.isDemo
+      ? (showsDemoDiscovery ? [ADBDevice(serial: "demo-usb", name: "Pixel 8", registryID: 0)] : [])
+      : usbDiscovery.devices
+  }
+  var wirelessDevices: [WirelessDevice] {
+    options.isDemo
+      ? (showsDemoDiscovery
+        ? [
+          WirelessDevice(name: "adb-discovered-DEF456", type: .pairing, host: "demo.invalid", port: 12345)
+        ] : []) : wirelessDiscovery.devices
+  }
+  var ricohDevices: [RicohDevice] {
+    options.isDemo
+      ? (showsDemoDiscovery ? [RicohDevice(id: "demo-gr", serial: "demo-gr", name: "GR IV")] : [])
+      : ricohDiscovery.devices
+  }
+  var cameraUSBDevices: [CameraUSBDevice] {
+    options.isDemo
+      ? (showsDemoDiscovery
+        ? [
+          CameraUSBDevice(
+            id: "demo-camera", serial: "demo-camera", name: "USB Camera", vendorID: 0, productID: 0)
+        ] : []) : cameraUSBDiscovery.devices
+  }
+  var smbDevices: [DiscoveredSMB] {
+    options.isDemo
+      ? (showsDemoDiscovery
+        ? [DiscoveredSMB(id: "demo-smb", name: "Demo NAS", host: "discovered.invalid")] : [])
+      : discovery.devices
+  }
   let discovery = SMBDiscovery()
   let usbDiscovery = USBDiscovery()
   let wirelessDiscovery = WirelessDiscovery()
@@ -30,10 +93,16 @@ import UserNotifications
   private var started = false
   private var observers: [NSObjectProtocol] = []
   private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "connections")
-  private let location = LocalStorageLocation()
   func start() {
     guard !started else { return }
     started = true
+    if options.isDemo {
+      connections.testRemote = { _ in
+        try await Task.sleep(for: .seconds(2))
+        return SpaceInfo(total: 256_000_000_000, used: 136_000_000_000)
+      }
+      return
+    }
     connections.openInFinder = { NSWorkspace.shared.open($0) }
     connections.operationFailed = { [weak self] message in
       self?.logger.error("\(message, privacy: .public)")
@@ -247,6 +316,7 @@ import UserNotifications
       secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)")
   }
   func remoteProvider(for connection: Connection) async throws -> any RemoteFileProvider {
+    guard !options.isDemo else { throw ConnectionError.notImplemented }
     switch connection.kind {
     case .androidUSB, .androidWiFi:
       return try await ADBProviderFactory.make(for: connection)
@@ -314,7 +384,7 @@ import UserNotifications
         throw ConnectionError.invalidFields
       }
       let secret =
-        try LoginKeychainStore().read(connection.passwordKey).map {
+        try secrets.read(connection.passwordKey).map {
           String(decoding: $0, as: UTF8.self)
         } ?? ""
       return S3Provider(
@@ -328,11 +398,14 @@ import UserNotifications
     }
   }
   func savedRemoteSecret(for connection: Connection) throws -> String {
-    try LoginKeychainStore().read(connection.passwordKey).map {
+    try secrets.read(connection.passwordKey).map {
       String(decoding: $0, as: UTF8.self)
     } ?? ""
   }
   func oauthProfile(for connection: Connection) async throws -> OAuthProfile {
+    if options.isDemo {
+      return OAuthProfile(userID: "demo", nickname: "Demo", avatarURL: nil)
+    }
     let provider = try await remoteProvider(for: connection)
     guard let oauth = provider as? any OAuthProfileProviding else {
       throw ConnectionError.notImplemented
@@ -427,7 +500,7 @@ import UserNotifications
 
   func enforceCacheLimit() {
     let limit =
-      Int64(UserDefaults.standard.object(forKey: "cacheLimitGB") as? Int ?? 5)
+      Int64(preferences.object(forKey: "cacheLimitGB") as? Int ?? 5)
       * 1_024 * 1_024 * 1_024
     guard
       let enumerator = FileManager.default.enumerator(
@@ -516,17 +589,23 @@ import UserNotifications
   }
 
   func requestNotificationAuthorization() async {
+    if options.isDemo {
+      notificationAuthorization = .authorized
+      return
+    }
     let center = UNUserNotificationCenter.current()
     _ = try? await center.requestAuthorization(options: [.alert, .sound])
     await refreshNotificationAuthorization()
   }
 
   func refreshNotificationAuthorization() async {
+    guard !options.isDemo else { return }
     notificationAuthorization = await UNUserNotificationCenter.current().notificationSettings()
       .authorizationStatus
   }
 
   func openNotificationSettings() {
+    guard !options.isDemo else { return }
     NSWorkspace.shared.open(
       URL(string: "x-apple.systempreferences:com.apple.preference.notifications")!)
   }
@@ -545,7 +624,8 @@ import UserNotifications
   }
 
   private func sendNotification(_ kind: NotificationKind, title: String, body: String) {
-    let defaults = UserDefaults.standard
+    guard !options.isDemo else { return }
+    let defaults = preferences
     if defaults.object(forKey: kind.preferenceKey) != nil,
       !defaults.bool(forKey: kind.preferenceKey)
     {

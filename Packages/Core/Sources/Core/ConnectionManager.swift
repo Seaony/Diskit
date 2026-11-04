@@ -2,7 +2,7 @@ import Foundation
 import Observation
 
 public enum ConnectionState: Equatable, Sendable {
-  case disconnected, connecting
+  case disconnected, unavailable, connecting, awaitingAuthorization, ejecting
   case mounted(MountedShare)
   case tested(SpaceInfo)
   case failed(String)
@@ -31,8 +31,10 @@ public enum ConnectionState: Equatable, Sendable {
   public private(set) var detailedErrors: [UUID: String] = [:]
   public init(
     location: any StorageLocation = LocalStorageLocation(),
-    secrets: any SecretStore = LoginKeychainStore(), smb: any SMBServing
+    secrets: any SecretStore = LoginKeychainStore(), smb: any SMBServing,
+    initialStates: [UUID: ConnectionState] = [:]
   ) {
+    self.states = initialStates
     self.repository = ConnectionRepository(location: location)
     self.secrets = secrets
     self.smb = smb
@@ -211,6 +213,10 @@ public enum ConnectionState: Equatable, Sendable {
   }
   public func toggle(_ connection: Connection) async {
     guard !busy.contains(connection.id) else { return }
+    if states[connection.id] == .awaitingAuthorization {
+      states[connection.id] = .disconnected
+      return
+    }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
     if !connection.kind.usesSystemMount {

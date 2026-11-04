@@ -115,8 +115,20 @@ targets:
     sources:
       - Tests/KayoiTests
       - App/Logic
+      - App/AppModel.swift
     dependencies:
       - package: Core
+      - package: ADB
+      - package: AliyunDrive
+      - package: Quark
+      - package: S3Drive
+      - package: CloudDrive
+      - package: RicohGR
+      - package: CameraUSB
+      - package: PikPakDrive
+      - package: LanzouDrive
+      - package: TianyiDrive
+      - package: ChinaWebDrive
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.tests

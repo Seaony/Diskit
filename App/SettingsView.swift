@@ -39,6 +39,7 @@ struct SettingsView: View {
             isOn: Binding(
               get: { startsAtLogin },
               set: { enabled in
+                if model.options.isDemo { startsAtLogin = enabled; return }
                 loginError = nil
                 do {
                   if enabled {
@@ -148,7 +149,7 @@ struct SettingsView: View {
     ) {
       Button(L("重新生成密钥"), role: .destructive) {
         do {
-          try ADBIdentity().regenerate()
+          if !model.options.isDemo { try ADBIdentity().regenerate() }
           refreshFingerprint()
         } catch { fingerprintError = HumanError.detail(error) }
       }
@@ -196,11 +197,13 @@ struct SettingsView: View {
   }
 
   private func refreshLogin() {
+    guard !model.options.isDemo else { return }
     startsAtLogin = [.enabled, .requiresApproval].contains(SMAppService.mainApp.status)
     loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
   }
 
   private func refreshFingerprint() {
+    if model.options.isDemo { fingerprint = "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"; return }
     do {
       fingerprint = try ADBIdentity().fingerprint()
       fingerprintError = nil

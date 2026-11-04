@@ -7,6 +7,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
 
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     guard let model else { return .terminateNow }
+    if model.options.isDemo { return .terminateNow }
     let mounts = model.connections.mountsToEjectOnQuit
     guard !mounts.isEmpty else { return .terminateNow }
     let alert = NSAlert()
@@ -68,9 +69,23 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         )
         .task {
           appDelegate.model = model
+          if let appearance = model.options.appearance {
+            NSApplication.shared.appearance = NSAppearance(named: appearance == "dark" ? .darkAqua : .aqua)
+          }
           model.start()
+          if model.options.panelWindow { openWindow(id: "demo-panel") }
         }
     }.menuBarExtraStyle(.window)
+    Window("Kayoi", id: "demo-panel") {
+      if model.options.isDemo {
+        PanelView(model: model)
+          .defaultAppStorage(model.preferences)
+          .containerBackground(KayoiTheme.background, for: .window)
+          .tint(KayoiTheme.accent)
+          .task { model.start() }
+      }
+    }.defaultSize(width: 380, height: 560).windowResizability(.contentSize)
+      .defaultLaunchBehavior(.suppressed).commandsRemoved()
     Window(model.editing == nil ? L("添加位置") : L("编辑位置"), id: "connection") {
       ConnectionEditor(model: model).id(model.editing?.id)
         .containerBackground(KayoiTheme.background, for: .window)
@@ -79,6 +94,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
       .suppressed)
     Window("设置", id: "settings") {
       SettingsView(model: model)
+        .defaultAppStorage(model.preferences)
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
     }.defaultSize(width: 600, height: 680).windowResizability(.contentSize).defaultLaunchBehavior(

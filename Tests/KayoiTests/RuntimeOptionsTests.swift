@@ -23,3 +23,13 @@ import Testing
   #expect(RuntimeOptions(environment: ["KAYOI_DEMO": "1"]).scenario == "mixed")
   #expect(RuntimeOptions(environment: [:]).scenario == "live")
 }
+
+@Test func demoAppearanceNeverChangesProduction() {
+  #expect(RuntimeOptions(environment: ["KAYOI_DEMO_APPEARANCE": "dark"]).appearance == nil)
+  #expect(
+    RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_DEMO_APPEARANCE": "dark"]).appearance
+      == "dark")
+  #expect(
+    RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_DEMO_APPEARANCE": "other"]).appearance
+      == nil)
+}

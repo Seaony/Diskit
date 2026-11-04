@@ -1,0 +1,127 @@
+Window: "Kayoi", App: Kayoi.
+0 标准窗口 Kayoi, ID: demo-panel, Secondary Actions: Raise
+	1 container
+		2 text Kayoi 20 个位置
+		3 滚动区 Secondary Actions: Scroll Up, Scroll Down
+			4 文本 已发现
+			5 图像 smartphone
+			6 text Help: Pixel 8, Value: Pixel 8 demo-usb
+			7 按钮 添加“Pixel 8”
+			8 图像 smartphone
+			9 text Help: 安卓手机 · discovered, Value: 安卓手机 · discovered 可配对
+			10 按钮 添加“安卓手机 · discovered”
+			11 图像 Description: 电脑, ID: desktopcomputer
+			12 text Help: Demo NAS, Value: Demo NAS discovered.invalid
+			13 按钮 添加“Demo NAS”
+			14 文本 GR IV
+			15 图像 Description: 相机, ID: camera
+			16 文本 USB 相机
+			17 按钮 添加“GR IV”
+			18 图像 camera.aperture
+			19 text Help: USB Camera, Value: USB Camera USB 相机
+			20 按钮 添加“USB Camera”
+			21 文本 已保存的位置
+			22 container (selected)
+				23 图像 smartphone
+				24 text Help: Demo androidUSB, Value: Demo androidUSB 未连接
+				25 按钮 测试连接“Demo androidUSB”
+			26 container
+				27 图像 smartphone
+				28 text Help: Demo androidWiFi, Value: Demo androidWiFi 请在手机上允许 USB 调试
+				29 按钮 取消“Demo androidWiFi”
+			30 container
+				31 图像 Description: 电脑, ID: desktopcomputer
+				32 text Help: Demo smb, Value: Demo smb 请在手机上允许 USB 调试
+				33 按钮 取消“Demo smb”
+			34 container
+				35 图像 Description: 相机, ID: camera
+				36 text Help: Demo ricohGR, Value: Demo ricohGR 请在手机上允许 USB 调试
+				37 按钮 取消“Demo ricohGR”
+			38 container
+				39 图像 Description: 大部多云, ID: cloud
+				40 text Help: Demo aliyunDrive, Value: Demo aliyunDrive 请在手机上允许 USB 调试
+				41 按钮 取消“Demo aliyunDrive”
+			42 container
+				43 图像 Description: 大部多云, ID: cloud.fill
+				44 text Help: Demo quark, Value: Demo quark 请在手机上允许 USB 调试
+				45 按钮 取消“Demo quark”
+			46 container
+				47 图像 camera.aperture
+				48 text Help: Demo cameraUSB, Value: Demo cameraUSB 请在手机上允许 USB 调试
+				49 按钮 取消“Demo cameraUSB”
+			50 container
+				51 图像 externaldrive.connected.to.line.below
+				52 text Help: Demo webdav, Value: Demo webdav 请在手机上允许 USB 调试
+				53 按钮 取消“Demo webdav”
+			54 container
+				55 图像 externaldrive.connected.to.line.below
+				56 text Help: Demo webdavHTTPS, Value: Demo webdavHTTPS 请在手机上允许 USB 调试
+				57 按钮 取消“Demo webdavHTTPS”
+			58 container
+				59 图像 network
+				60 text Help: Demo nfs, Value: Demo nfs 请在手机上允许 USB 调试
+				61 按钮 取消“Demo nfs”
+			62 container
+				63 图像 externaldrive.badge.icloud
+				64 text Help: Demo s3, Value: Demo s3 请在手机上允许 USB 调试
+				65 按钮 取消“Demo s3”
+			66 container
+				67 图像 externaldrive.badge.icloud
+				68 text Help: Demo cloudflareR2, Value: Demo cloudflareR2 请在手机上允许 USB 调试
+				69 按钮 取消“Demo cloudflareR2”
+			70 container
+				71 图像 externaldrive.badge.icloud
+				72 text Help: Demo aliyunOSS, Value: Demo aliyunOSS 请在手机上允许 USB 调试
+				73 按钮 取消“Demo aliyunOSS”
+			74 container
+				75 图像 externaldrive.badge.icloud
+				76 text Help: Demo tencentCOS, Value: Demo tencentCOS 请在手机上允许 USB 调试
+				77 按钮 取消“Demo tencentCOS”
+			78 container
+				79 图像 externaldrive.badge.icloud
+				80 text Help: Demo qiniuKodo, Value: Demo qiniuKodo 请在手机上允许 USB 调试
+				81 按钮 取消“Demo qiniuKodo”
+			82 container
+				83 图像 externaldrive.badge.icloud
+				84 text Help: Demo minIO, Value: Demo minIO 请在手机上允许 USB 调试
+				85 按钮 取消“Demo minIO”
+			86 container
+				87 图像 externaldrive.badge.icloud
+				88 text Help: Demo backblazeB2, Value: Demo backblazeB2 请在手机上允许 USB 调试
+				89 按钮 取消“Demo backblazeB2”
+			90 container
+				91 图像 Description: 大部多云, ID: cloud
+				92 text Help: Demo baiduDrive, Value: Demo baiduDrive 请在手机上允许 USB 调试
+				93 按钮 取消“Demo baiduDrive”
+			94 container
+				95 图像 Description: 大部多云, ID: cloud
+				96 text Help: 这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称, Value: 这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称 请在手机上允许 USB 调试
+				97 按钮 取消“这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称这是用于检查换行的长名称”
+			98 container
+				99 图像 Description: 大部多云, ID: cloud
+				100 text Help: Long demo location name Long demo location name Long demo location name Long demo location name , Value: Long demo location name Long demo location name Long demo location name Long demo location name  请在手机上允许 USB 调试
+				101 按钮 取消“Long demo location name Long demo location name Long demo location name Long demo location name ”
+			102 按钮 Description: 添加位置, Help: 添加手机、电脑、相机或网盘位置
+			103 滚动条 (settable, float) 0.1611039794608472
+				104 值指示器 (settable, float) 0.1611039794608472
+				105 增箭头按钮
+				106 减箭头按钮
+				107 增页面按钮
+				108 减页面按钮
+		109 文本 Kayoi 0.1.0
+		110 按钮 Description: 打开 Kayoi 帮助, Help: 帮助
+		111 按钮 Description: 打开设置, Help: 设置
+		112 按钮 Description: 退出 Kayoi, Help: 退出
+	113 关闭按钮
+	114 缩放按钮 (disabled)
+	115 最小化按钮
+	116 文本 Kayoi
+117 menu bar
+	118 Kayoi
+	119 文件
+	120 编辑
+	121 显示
+	122 窗口
+	123 帮助
+
+The focused UI element is 109 文本 Kayoi 0.1.0

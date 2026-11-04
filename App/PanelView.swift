@@ -44,7 +44,7 @@ struct PanelView: View {
   @FocusState private var keyboardFocus: Bool
 
   private var mergedWirelessDevices: [MergedWirelessDevice] {
-    let grouped = Dictionary(grouping: model.wirelessDiscovery.devices) { device in
+    let grouped = Dictionary(grouping: model.wirelessDevices) { device in
       WirelessSelection.serial(fromGUID: device.name) ?? device.name
     }
     return grouped.map { key, devices in
@@ -58,7 +58,7 @@ struct PanelView: View {
   private var discoveredItems: [DiscoveredItem] {
     var items: [DiscoveredItem] = []
 
-    for camera in model.ricohDiscovery.devices
+    for camera in model.ricohDevices
     where !model.connections.connections.contains(where: {
       $0.kind == .ricohGR && $0.params["serial"] == camera.serial
     }) {
@@ -71,7 +71,7 @@ struct PanelView: View {
           pairingSelection: nil))
     }
 
-    for camera in model.cameraUSBDiscovery.devices
+    for camera in model.cameraUSBDevices
     where !model.connections.connections.contains(where: {
       $0.kind == .cameraUSB && $0.params["serial"] == camera.serial
     }) {
@@ -84,7 +84,7 @@ struct PanelView: View {
           pairingSelection: nil))
     }
 
-    for device in model.usbDiscovery.devices
+    for device in model.usbDevices
     where !model.connections.connections.contains(where: {
       $0.kind == .androidUSB && $0.params["serial"] == device.serial
     }) {
@@ -117,7 +117,7 @@ struct PanelView: View {
           connection: connection, pairingSelection: pairing?.id))
     }
 
-    for device in model.discovery.devices
+    for device in model.smbDevices
     where !model.connections.connections.contains(where: { $0.params["host"] == device.host }) {
       items.append(
         DiscoveredItem(
@@ -150,7 +150,7 @@ struct PanelView: View {
       ScrollViewReader { proxy in
         ScrollView {
           VStack(alignment: .leading, spacing: 10) {
-            if let error = model.connections.loadError {
+            if let error = model.demoSetupError ?? model.connections.loadError {
               errorBanner(error, title: L("无法读取位置列表"))
             }
             if let error = model.discovery.error ?? model.wirelessDiscovery.error {
@@ -235,6 +235,7 @@ struct PanelView: View {
       return .handled
     }
     .task {
+      guard !model.options.isDemo else { return }
       while !Task.isCancelled {
         model.connections.refreshMounts()
         do { try await Task.sleep(for: .seconds(30)) } catch { return }
@@ -696,6 +697,9 @@ private enum PanelCopy {
     switch state {
     case .needsLogin: L("需要重新登录")
     case .disconnected: L("未连接")
+    case .unavailable: L("设备或服务已断开")
+    case .awaitingAuthorization: L("请在手机上允许 USB 调试")
+    case .ejecting: L("正在推出…")
     case .connecting: L("正在连接…")
     case .failed(let error): error
     case .tested(let space):
@@ -716,6 +720,9 @@ private enum PanelCopy {
     case .mounted: L("推出")
     case .failed: L("重试")
     case .connecting: L("连接中…")
+    case .awaitingAuthorization: L("取消")
+    case .ejecting: L("正在推出…")
+    case .unavailable: L("测试连接")
     case .disconnected: kind.usesSystemMount ? L("挂载") : L("测试连接")
     }
   }

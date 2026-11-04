@@ -103,3 +103,9 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 ## 隔离验收构建
 
 `make gen`、`make test`、`make release` 默认使用 `Config/Validation.xcconfig`，不加载本机密钥文件。单元测试的密钥存储只在内存中。真实账号验收由用户另行运行 `make release KAYOI_BUILD_CONFIG=Config/App.xcconfig`；该入口会读取用户本地凭据，不用于自动验收。直接运行 XcodeGen 时也需显式设置 `KAYOI_BUILD_CONFIG`。
+
+## 演示模式
+
+只做本地界面检查时，用 `KAYOI_DEMO=1 KAYOI_PANEL_WINDOW=1 build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi`。该路径使用随机临时配置目录、独立设置域和内存密钥，不启动设备发现、局域网浏览、真实通知与真实挂载；测试、保存、配对使用假操作。模拟共享密码填写 `error` 可触发认证失败。
+
+`KAYOI_DEMO_STATE` 支持 `mixed`（默认 20 个位置）、`empty`、`discovered`、`disconnected`、`unavailable`、`connecting`、`authorization`、`tested`、`mounted`、`ejecting`、`failed`、`login`；`types` 展示全部底层类型。20 行无法同时容纳全部类型，因此完整类型覆盖用 `types` 场景补充。`KAYOI_DEMO_APPEARANCE=light|dark` 只切换演示进程外观，不改系统设置。伪语言开关尚在接入，当前不作为布局验收证据。
