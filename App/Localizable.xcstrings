@@ -261,7 +261,6 @@
       }
     },
     "ADB 密钥指纹": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {

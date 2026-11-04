@@ -166,8 +166,23 @@ struct SettingsView: View {
     }
   }
 
-        Section(L("关于")) {
-          LabeledContent(L("版本"), value: version)
+  private var androidPage: some View {
+    SettingsForm {
+      Section {
+        if fingerprint.isEmpty {
+          if let fingerprintError {
+            inlineError(fingerprintError)
+            Button(L("重试")) { model.operations.start { await refreshFingerprint() } }
+          } else {
+            ProgressView().nativeProgressAppearance().controlSize(.small).accessibilityLabel(L("正在读取密钥指纹…"))
+          }
+        } else {
+          LabeledContent(L("ADB 密钥指纹")) {
+            Text(fingerprint)
+              .font(.body.monospaced()).monospacedDigit()
+              .textSelection(.enabled)
+              .fixedSize(horizontal: false, vertical: true)
+          }
           HStack {
             Button(copiedFingerprint ? L("已复制") : L("复制指纹"), action: copyFingerprint)
               .disabled(regeneratingKey)
