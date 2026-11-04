@@ -30,7 +30,7 @@ public actor PikPakSession {
   }
 
   private let secretKey: String
-  private let secrets: any SecretStore
+  private let secrets: RecoverableSecretStore
   private let transport: any HTTPTransport
   private var captcha: [String: CachedCaptcha] = [:]
   private var refreshTask: Task<StoredPikPakAuthorization, Error>?
@@ -201,9 +201,8 @@ public actor PikPakSession {
     }
     if let refreshTask { return try await refreshTask.value }
     let task = Task { [transport] in
-      let lease = try await CredentialRefreshLock.acquire(
-        at: secrets.refreshLockLocation(for: secretKey))
-      defer { lease.release() }
+      let lease = try await secrets.acquireRefreshLock(for: secretKey)
+      defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       do {
         guard let stored = try load(), !stored.invalidated, !stored.refreshToken.isEmpty else {
           throw PikPakError.loginRequired

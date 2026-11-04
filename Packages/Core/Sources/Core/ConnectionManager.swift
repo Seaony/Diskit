@@ -188,15 +188,16 @@ public enum ConnectionState: Equatable, Sendable {
         throw error
       }
     }
-    try secrets.delete(connection.passwordKey)
+    let deletingSecrets = RecoverableSecretStore(base: secrets)
+    try deletingSecrets.delete(connection.passwordKey)
     switch connection.kind {
     case .aliyunDrive:
-      try secrets.delete("\(connection.id.uuidString).oauth")
+      try deletingSecrets.delete("\(connection.id.uuidString).oauth")
     case .quark, .ucDrive:
-      try secrets.delete("\(connection.id.uuidString).cookie")
+      try deletingSecrets.delete("\(connection.id.uuidString).cookie")
     case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .pikPak,
       .tianyiDrive:
-      try secrets.delete(
+      try deletingSecrets.delete(
         "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)")
     default:
       break

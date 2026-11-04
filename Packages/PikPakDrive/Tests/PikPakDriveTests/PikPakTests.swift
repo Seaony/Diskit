@@ -486,7 +486,8 @@ func pikPakTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   #expect(!saved.invalidated && saved.refreshToken == "fresh-refresh")
 }
 
-@Test func pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+@Test(arguments: [false, true])
+func pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession: Bool) async throws {
   let refreshes = Mutex(0)
   let transport = FakePikPakHTTP { request in
     if request.url?.path == "/v1/auth/token" {
@@ -506,7 +507,10 @@ func pikPakTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   secrets.failWrites.withLock { $0 = true }
   await #expect(throws: CocoaError.self) { _ = try await session.authorized(request) }
   secrets.failWrites.withLock { $0 = false }
-  #expect(try await session.authorized(request).status == 200)
+  let retrySession =
+    newSession
+    ? PikPakSession(secretKey: "pikpak.test", secrets: secrets, transport: transport) : session
+  #expect(try await retrySession.authorized(request).status == 200)
   let saved = try JSONDecoder().decode(
     StoredPikPakAuthorization.self, from: #require(try secrets.read("pikpak.test")))
   #expect(saved.refreshToken == "fresh-refresh")

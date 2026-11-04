@@ -5,9 +5,13 @@ import Testing
 @testable import Core
 
 private final class MemorySecrets: SecretStore, Sendable {
+  let failWrites = Mutex(false)
   let values = Mutex<[String: Data]>([:])
   func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
+  func write(_ data: Data, for key: String) throws {
+    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
+    values.withLock { $0[key] = data }
+  }
   func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
 }
 
@@ -547,4 +551,25 @@ private func sample(_ name: String = "Windows") -> Connection {
 
   #expect(manager.states[connection.id] == .needsLogin)
   #expect(expired == [connection.id])
+}
+
+@Test(arguments: [ConnectionKind.aliyunDrive, .oneDrive])
+@MainActor func deletingConnectionClearsPendingRefreshedCredentials(kind: ConnectionKind)
+  async throws
+{
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = Connection(
+    kind: kind, name: "网盘", params: ["nickname": "测试账号", "userID": "user"])
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
+  try await manager.save(connection, password: "")
+  let key = connection.id.uuidString + (kind == .aliyunDrive ? ".oauth" : ".oauth.\(kind.rawValue)")
+  let sessionStore = RecoverableSecretStore(base: f.secrets)
+  f.secrets.failWrites.withLock { $0 = true }
+  #expect(throws: CocoaError.self) { try sessionStore.write(Data("rotated".utf8), for: key) }
+  f.secrets.failWrites.withLock { $0 = false }
+  try await manager.remove(connection)
+  #expect(try sessionStore.read(key) == nil)
+  #expect(try f.secrets.read(key) == nil)
 }

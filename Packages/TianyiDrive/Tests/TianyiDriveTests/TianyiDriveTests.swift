@@ -843,7 +843,8 @@ func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
   #expect(attempts.withLock { $0 } == 2)
 }
 
-@Test func tianyiRetriesPersistingRecoveredSessionBeforeUsingIt() async throws {
+@Test(arguments: [false, true])
+func tianyiRetriesPersistingRecoveredSessionBeforeUsingIt(newSession: Bool) async throws {
   let http = FakeHTTP { request in
     if request.url?.path == "/portal/getUserSizeInfo.action" {
       return request.value(forHTTPHeaderField: "SessionKey") == "new-key"
@@ -859,7 +860,12 @@ func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
   secrets.failWrites.withLock { $0 = true }
   await #expect(throws: CocoaError.self) { try await session.connect() }
   secrets.failWrites.withLock { $0 = false }
-  try await session.connect()
+  let retrySession =
+    newSession
+    ? TianyiSession(
+      secretKey: "tianyi.test", secrets: secrets, configuration: personalConfiguration,
+      transport: http) : session
+  try await retrySession.connect()
   let saved = try JSONDecoder().decode(
     StoredTianyiSession.self, from: #require(try secrets.read("tianyi.test")))
   #expect(saved.accessToken == "new-access" && saved.refreshToken == "rotated")

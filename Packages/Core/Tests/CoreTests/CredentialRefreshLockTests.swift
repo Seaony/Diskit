@@ -3,7 +3,7 @@ import Testing
 
 @testable import Core
 
-private func probeLockInChild(_ url: URL) throws -> Int32 {
+func probeLockInChild(_ url: URL) throws -> Int32 {
   let process = Process()
   process.executableURL = URL(filePath: "/usr/bin/python3")
   process.arguments = [

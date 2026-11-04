@@ -168,7 +168,7 @@ public actor TianyiSession {
 
   public nonisolated let configuration: TianyiConfiguration
   private let secretKey: String
-  private let secrets: any SecretStore
+  private let secrets: RecoverableSecretStore
   private let transport: any HTTPTransport
   private var didNotifyInvalidation = false
 
@@ -428,9 +428,8 @@ public actor TianyiSession {
   }
 
   private func recover(_ rejected: StoredTianyiSession) async throws -> StoredTianyiSession {
-    let lease = try await CredentialRefreshLock.acquire(
-      at: secrets.refreshLockLocation(for: secretKey))
-    defer { lease.release() }
+    let lease = try await secrets.acquireRefreshLock(for: secretKey)
+    defer { secrets.releaseRefreshLock(lease, for: secretKey) }
     let current = try requireState()
     if current != rejected { return current }
     do {

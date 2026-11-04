@@ -177,3 +177,13 @@
 - 失败回归：`aliyunSeparateSessionsShareRefresh`（`OAuthTests.swift:449`）、`pikPakSeparateSessionsShareRefresh`（`PikPakTests.swift:517`）、`tianyiSeparateSessionsShareRestoration`（`TianyiDriveTests.swift:885`）均先确认第二个会话已读取或发出旧凭据请求，才放行第一次刷新响应；三项修复前均发生两次刷新/恢复，修复后仅一次且两个调用均成功。随后扩展为同一会话与独立会话两组。证据 `docs/evidence/v0.2/FIX-07-provider-locks-regression.log`、`docs/evidence/v0.2/FIX-07-provider-locks-gates.log`。
 - 完整门禁通过：应用逻辑 9 项、包测试 297 项，发布构建和签名校验通过。四套会话均已接入账号文件锁；本轮未连接真实设备、网盘、账号或钥匙串。
 - FIX-07 尚未整体通过：待保存的新凭据目前仍属于各存储包装实例，需要继续处理跨会话共享及其持锁生命周期；独立进程的完整授权替身流程也仍待补证据。
+
+## FIX-07：待保存凭据共享与失败期间持锁（部分）
+
+- `Packages/Core/Sources/Core/RecoverableSecretStore.swift:13` 按存储身份与账号对应的锁路径共享待保存值；条目持有底层存储，避免类实例地址复用后误认账号。`Storage.swift:50` 的默认类存储身份包含实例标识，内存存储原有随机身份与钥匙串的稳定服务身份不变。嵌套包装展开到同一底层存储，避免重入共享互斥锁。
+- 四套会话均改用包装的 `acquireRefreshLock`、`releaseRefreshLock`（`RecoverableSecretStore.swift:23`、`:29`）。保存失败时条目保留文件锁；另一会话读取或等待锁时先重试补存。仍无法保存就返回存储错误，不使用旧刷新令牌；补存或显式删除成功后才释放保留的锁。凭据仍只暂存当前进程内存，锁文件不保存凭据。
+- 四项既有持久化失败测试新增 `newSession: true`：公共授权、阿里、PikPak 修复前抛 loginRequired，天翼修复前重复恢复；修复后新旧会话两组均能补存且只刷新/恢复一次。`failedWriteIsSharedBetweenStoreWrappers`（`RecoverableSecretStoreTests.swift:52`）修复前新包装读到旧值且未报保存错误，修复后通过。证据 `docs/evidence/v0.2/FIX-07-shared-pending-regression.log`。
+- `pendingSecretRetainsProcessLockUntilSavedOrDeleted`（`:66`）用独立子进程验证失败期间不能取得锁，补存/删除成功后可以；`refreshWaiterRetriesPendingWriteAndReportsStorageFailure`（`:89`）验证等待者不会绕过补存错误，存储恢复后可补存并取得锁；`pendingSecretsDoNotCrossStoreInstancesOrAccountKeys`（`:108`）覆盖不同实例、不同账号及嵌套包装。
+- 追踪显式删除发现连接管理器原先直接删底层记录，遗留待保存值会被后续读取复活。`ConnectionManager.swift:191` 的删除入口改用同一恢复包装；`deletingConnectionClearsPendingRefreshedCredentials`（`ConnectionTests.swift:557`）在阿里专用键与公共授权键两组中先复现删除后重新写回，修复后保持删除。
+- 边界：进程异常退出后的内存恢复不作保证；没有为此另建明文凭据文件。独立进程的完整授权替身流程仍待补充，当前证据不等同于真实 App/命令行账号验收。FIX-07 尚未整体通过。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 302 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-shared-pending-gates.log`。

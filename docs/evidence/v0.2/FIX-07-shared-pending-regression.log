@@ -1,0 +1,40 @@
+Core：修复前新增/扩展回归退出 1。
+􀢄  Test failedWriteIsSharedBetweenStoreWrappers() recorded an issue at RecoverableSecretStoreTests.swift:59:3: Expectation failed: an error was expected but none was thrown
+􀢄  Test failedWriteIsSharedBetweenStoreWrappers() recorded an issue at RecoverableSecretStoreTests.swift:61:3: Expectation failed: try second.read("account") == Data("new".utf8)
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 2 issues.
+Core：修复后包测试退出 0。
+􁁛  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() passed after 0.004 seconds.
+􁁛  Test failedWriteIsSharedBetweenStoreWrappers() passed after 0.004 seconds.
+􁁛  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() passed after 0.064 seconds.
+􁁛  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) with 2 test cases passed after 0.077 seconds.
+􁁛  Test run with 44 tests in 0 suites passed after 0.078 seconds.
+CloudDrive：修复前新增/扩展回归退出 1。
+􀢄  Test commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) recorded an issue with 1 argument newSession → true at OAuthSessionTests.swift:430:2: Caught error: .loginRequired
+􀢄  Test run with 1 test in 0 suites failed after 0.014 seconds with 1 issue.
+CloudDrive：修复后包测试退出 0。
+􁁛  Test commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.025 seconds.
+􁁛  Test run with 58 tests in 0 suites passed after 1.032 seconds.
+AliyunDrive：修复前新增/扩展回归退出 1。
+􀢄  Test aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) recorded an issue with 1 argument newSession → true at OAuthTests.swift:423:2: Caught error: .loginRequired
+􀢄  Test run with 1 test in 0 suites failed after 0.016 seconds with 1 issue.
+AliyunDrive：修复后包测试退出 0。
+􁁛  Test aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.011 seconds.
+􁁛  Test run with 33 tests in 0 suites passed after 0.076 seconds.
+PikPakDrive：修复前新增/扩展回归退出 1。
+􀢄  Test pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) recorded an issue with 1 argument newSession → true at PikPakTests.swift:489:2: Caught error: .loginRequired
+􀢄  Test run with 1 test in 0 suites failed after 0.016 seconds with 1 issue.
+PikPakDrive：修复后包测试退出 0。
+􁁛  Test pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.011 seconds.
+􁁛  Test run with 16 tests in 0 suites passed after 0.023 seconds.
+TianyiDrive：修复前新增/扩展回归退出 1。
+􀢄  Test tianyiRetriesPersistingRecoveredSessionBeforeUsingIt(newSession:) recorded an issue with 1 argument newSession → true at TianyiDriveTests.swift:868:3: Expectation failed: await http.requests.filter { $0.url?.path == "/getSessionForPC.action" }.count == 1
+􀢄  Test run with 1 test in 0 suites failed after 0.017 seconds with 1 issue.
+TianyiDrive：修复后包测试退出 0。
+􁁛  Test tianyiRetriesPersistingRecoveredSessionBeforeUsingIt(newSession:) with 2 test cases passed after 0.015 seconds.
+􁁛  Test run with 24 tests in 0 suites passed after 0.029 seconds.
+删除入口修复前：deletingConnectionClearsPendingRefreshedCredentials 两类连接均复活凭据，退出 1。
+􀢄  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) recorded an issue with 1 argument kind → .oneDrive at ConnectionTests.swift:570:3: Expectation failed: try sessionStore.read(key) == nil
+􀢄  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) recorded an issue with 1 argument kind → .oneDrive at ConnectionTests.swift:571:3: Expectation failed: try f.secrets.read(key) == nil
+􀢄  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) recorded an issue with 1 argument kind → .aliyunDrive at ConnectionTests.swift:570:3: Expectation failed: try sessionStore.read(key) == nil
+􀢄  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) recorded an issue with 1 argument kind → .aliyunDrive at ConnectionTests.swift:571:3: Expectation failed: try f.secrets.read(key) == nil
+􀢄  Test run with 1 test in 0 suites failed after 0.006 seconds with 4 issues.

@@ -81,7 +81,7 @@ public actor AliyunSession {
   public static let loginInvalidatedNotification = Notification.Name(
     "com.seaony.Kayoi.aliyunLoginInvalidated")
   private let secretKey: String
-  private let secrets: any SecretStore
+  private let secrets: RecoverableSecretStore
   private let configuration: AliyunConfiguration
   private let transport: any HTTPTransport
   private var refreshTask: Task<AliyunStoredAuthorization, Error>?
@@ -241,9 +241,8 @@ public actor AliyunSession {
     }
     if let refreshTask { return try await refreshTask.value }
     let task = Task {
-      let lease = try await CredentialRefreshLock.acquire(
-        at: secrets.refreshLockLocation(for: secretKey))
-      defer { lease.release() }
+      let lease = try await secrets.acquireRefreshLock(for: secretKey)
+      defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       do {
         guard let stored = try load(), !stored.invalidated, !stored.refreshToken.isEmpty else {
           throw AliyunError.loginRequired

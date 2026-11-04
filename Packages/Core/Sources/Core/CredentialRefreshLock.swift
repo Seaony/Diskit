@@ -15,7 +15,9 @@ public final class CredentialRefreshLock: Sendable {
     return directory.appending(path: digest + ".lock")
   }
 
-  public static func acquire(at url: URL) async throws -> CredentialRefreshLock {
+  public static func acquire(
+    at url: URL, onWait: (@Sendable () throws -> Void)? = nil
+  ) async throws -> CredentialRefreshLock {
     try Task.checkCancellation()
     try FileManager.default.createDirectory(
       at: url.deletingLastPathComponent(), withIntermediateDirectories: true,
@@ -29,6 +31,7 @@ public final class CredentialRefreshLock: Sendable {
         guard code == EWOULDBLOCK || code == EINTR else {
           throw POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
         }
+        try onWait?()
         try await Task.sleep(for: .milliseconds(10))
       }
       try Task.checkCancellation()

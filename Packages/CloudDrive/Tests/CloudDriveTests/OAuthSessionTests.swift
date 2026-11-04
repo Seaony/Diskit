@@ -427,7 +427,8 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool, separateSessi
   #expect(await transport.refreshes == 1)
 }
 
-@Test func commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+@Test(arguments: [false, true])
+func commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession: Bool) async throws {
   let secrets = MemorySecrets()
   try secrets.write(
     JSONEncoder().encode(
@@ -442,7 +443,12 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool, separateSessi
   secrets.failWrites.withLock { $0 = true }
   await #expect(throws: CocoaError.self) { _ = try await session.accessToken() }
   secrets.failWrites.withLock { $0 = false }
-  #expect(try await session.accessToken() == "new")
+  let retrySession =
+    newSession
+    ? OAuthSession(
+      configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+    : session
+  #expect(try await retrySession.accessToken() == "new")
   let saved = try JSONDecoder().decode(OAuthToken.self, from: #require(try secrets.read("oauth")))
   #expect(saved.refreshToken == "rotated")
   #expect(transport.requests.withLock { $0.count } == 1)

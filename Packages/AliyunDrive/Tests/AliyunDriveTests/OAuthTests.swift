@@ -420,7 +420,8 @@ func oauthTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   #expect(attempts.withLock { $0 } == 2)
 }
 
-@Test func aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain() async throws {
+@Test(arguments: [false, true])
+func aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession: Bool) async throws {
   let key = "persist-retry.oauth"
   let secrets = OAuthSecrets()
   try oauthStore(secrets, key: key, expiry: 0)
@@ -440,7 +441,12 @@ func oauthTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   secrets.failWrites.withLock { $0 = true }
   await #expect(throws: CocoaError.self) { _ = try await session.authorized(oauthRequest()) }
   secrets.failWrites.withLock { $0 = false }
-  #expect(try await session.authorized(oauthRequest()).status == 200)
+  let retrySession =
+    newSession
+    ? AliyunSession(
+      secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+    : session
+  #expect(try await retrySession.authorized(oauthRequest()).status == 200)
   #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
   #expect(refreshes.withLock { $0 } == 1)
 }

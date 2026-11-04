@@ -47,9 +47,13 @@ public protocol SecretStore: Sendable {
 
 extension SecretStore {
   public func refreshLockLocation(for key: String) -> URL {
-    CredentialRefreshLock.location(
+    let namespace =
+      Self.self is AnyClass
+      ? String(reflecting: Self.self) + String(describing: ObjectIdentifier(self as AnyObject))
+      : String(reflecting: Self.self)
+    return CredentialRefreshLock.location(
       directory: FileManager.default.temporaryDirectory.appending(path: "Kayoi-CredentialLocks"),
-      namespace: String(reflecting: Self.self), key: key)
+      namespace: namespace, key: key)
   }
 }
 

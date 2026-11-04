@@ -100,7 +100,7 @@ public actor OAuthSession {
     "com.seaony.Kayoi.oauthDriveInvalidated")
   private let configuration: OAuthConfiguration
   private let secretKey: String
-  private let secrets: any SecretStore
+  private let secrets: RecoverableSecretStore
   private let transport: any HTTPTransport
   private var refreshing: Task<String, Error>?
   private var codeVerifier: String?
@@ -243,9 +243,8 @@ public actor OAuthSession {
     if let refreshing { return try await refreshing.value }
     let observed = try loadToken()
     let task = Task<String, Error> {
-      let lease = try await CredentialRefreshLock.acquire(
-        at: secrets.refreshLockLocation(for: secretKey))
-      defer { lease.release() }
+      let lease = try await secrets.acquireRefreshLock(for: secretKey)
+      defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       let stored = try loadToken()
       if let stored {
         if stored != observed, stored.expiresAt > Date().addingTimeInterval(60) {
