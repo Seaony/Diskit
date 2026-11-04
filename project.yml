@@ -109,7 +109,27 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.seaony.Kayoi.oauth
             CFBundleURLSchemes: [kayoi]
+  KayoiTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/KayoiTests
+      - App/Logic
+    dependencies:
+      - package: Core
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.tests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
+  KayoiTests:
+    build:
+      targets:
+        KayoiTests: all
+    test:
+      gatherCoverageData: true
+      targets:
+        - KayoiTests
   Kayoi:
     build:
       targets:

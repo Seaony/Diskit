@@ -1,4 +1,4 @@
-.PHONY: gen build release test dev-tool format
+.PHONY: gen build release test coverage dev-tool format
 export KAYOI_BUILD_CONFIG ?= Config/Validation.xcconfig
 SIGN_IDENTITY ?= Apple Development: seaony@outlook.com
 
@@ -14,7 +14,8 @@ release: gen dev-tool
 	codesign --force --deep --options runtime --timestamp=none --sign "$(SIGN_IDENTITY)" --identifier com.seaony.Kayoi build/DerivedData/Build/Products/Release/Kayoi.app
 	codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Kayoi.app
 
-test:
+test: gen
+	xcodebuild -project Kayoi.xcodeproj -scheme KayoiTests -destination 'platform=macOS,arch=arm64' -derivedDataPath build/Tests test CODE_SIGNING_ALLOWED=NO
 	swift test --package-path Packages/Core
 	swift test --package-path Packages/ADB
 	swift test --package-path Packages/RicohGR
@@ -36,3 +37,6 @@ dev-tool:
 
 format:
 	rg --files App Packages -g '*.swift' -0 | xargs -0 xcrun swift-format format --in-place
+
+coverage: gen
+	python3 scripts/coverage.py
