@@ -118,3 +118,10 @@
 - 旧天翼测试把家庭 SessionKey 失败和无明确原因的 401 固定成删除整份账号，已修正为 `familySessionKeyFailurePreservesRecoverableLogin`、`authenticationFailureWithoutExplicitRejectionPreservesStoredCookieSession`。这类资源/会话错误并不能证明 Cookie 与刷新凭据都已失效。
 - 完整门禁通过：应用逻辑 9 项、包测试 273 项；发布构建、签名校验通过。证据 `docs/evidence/v0.2/FIX-06-oauth-tianyi-gates.log`。
 - 四套恢复路径的暂时故障矩阵现已覆盖。仍需追踪资源请求二次鉴权失败时其他驱动主动 invalidate 的路径，以及 FIX-07 的并发刷新/多进程与存储失败；FIX-06 暂不标为全链路通过。
+
+## FIX-06：资源二次鉴权失败保护
+
+- 移除公共 OAuth 普通/流式请求、百度三条重试路径、115 与 123 业务鉴权重试、阿里云盘普通/流式请求、PikPak 重试中的资源失败作废凭据行为。请求仍报错，不把错误改成成功，但不删除或标记刚刷新的账号信息。阿里云盘 `PermissionDenied` 归为 EACCES，不再推断为授权撤销。
+- 失败回归：`commonOAuthSecondResourceRejectionPreservesNewToken`（普通与流式）、`baiduPreservesLoginAfterASecondUnauthorizedResponse`、`driveBusinessAuthFailurePreservesRefreshedLogin`（115/123 × HTTP/业务失败）、`oauthSecondUnauthorizedResponseStopsAndNeedsLogin`、`oauthPermissionFailurePreservesLoginWithoutInvalidation`、`pikPakSecondResourceRejectionPreservesRefreshedLogin`，修复前均观察到凭据被删或作废；修复后保留轮换后的刷新令牌。证据：`docs/evidence/v0.2/FIX-06-resource-auth-regression.log`。阿里权限失败另覆盖普通与流式分支，确认不发送登录失效通知。
+- 四套会话的暂时恢复失败与后续资源拒绝现已有回归；明确刷新拒绝的已有测试保持通过。当前源码仅保留缺少可用凭据或明确刷新拒绝时的失效处理，以及显式 invalidate 接口。跨会话/多进程竞争和存储失败仍由 FIX-07 处理，真实服务码需账号验收。
+- 完整门禁通过：应用逻辑 9 项、包测试 276 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-06-resource-auth-gates.log`。

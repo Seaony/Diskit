@@ -1,0 +1,25 @@
+cloud 修复前
+􀢄  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) recorded an issue with 1 argument stream → true at OAuthSessionTests.swift:347:3: Expectation failed: try await session.hasToken()
+􀢄  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) recorded an issue with 1 argument stream → false at OAuthSessionTests.swift:347:3: Expectation failed: try await session.hasToken()
+􀢄  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) recorded an issue with 1 argument stream → false at OAuthSessionTests.swift:348:63: Expectation failed: try secrets.read("oauth") → nil
+􀢄  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) recorded an issue with 1 argument stream → true at OAuthSessionTests.swift:348:63: Expectation failed: try secrets.read("oauth") → nil
+􀢄  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) recorded an issue with 2 arguments kind → "115", business → false at OfficialDriveProvidersTests.swift:804:3: Expectation failed: try await session.hasToken()
+􀢄  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() recorded an issue at OfficialDriveProvidersTests.swift:430:3: Expectation failed: try await session.hasToken()
+􀢄  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) recorded an issue with 2 arguments kind → "115", business → true at OfficialDriveProvidersTests.swift:804:3: Expectation failed: try await session.hasToken()
+􀢄  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) recorded an issue with 2 arguments kind → "123", business → false at OfficialDriveProvidersTests.swift:804:3: Expectation failed: try await session.hasToken()
+􀢄  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) recorded an issue with 2 arguments kind → "123", business → true at OfficialDriveProvidersTests.swift:804:3: Expectation failed: try await session.hasToken()
+􀢄  Test run with 3 tests in 0 suites failed after 0.003 seconds with 9 issues.
+aliyun 修复前
+􀢄  Test oauthSecondUnauthorizedResponseStopsAndNeedsLogin() recorded an issue at OAuthTests.swift:223:3: Expectation failed: try await session.hasToken()
+􀢄  Test oauthSecondUnauthorizedResponseStopsAndNeedsLogin() recorded an issue at OAuthTests.swift:224:3: Expectation failed: try !oauthRecord(secrets, key: key).invalidated
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:186:11: Expectation failed: expected error ".posix(13)" of type RemoteError, but ".loginRequired" of type AliyunError was thrown instead
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:186:11: Expectation failed: expected error ".posix(13)" of type RemoteError, but ".loginRequired" of type AliyunError was thrown instead
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:190:3: Expectation failed: await transport.requests.count == 2
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:191:3: Expectation failed: (received.withLock { $0.count } → 1) == 0
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:192:3: Expectation failed: try await session.hasToken()
+􀢄  Test oauthPermissionFailurePreservesLoginWithoutInvalidation() recorded an issue at OAuthTests.swift:193:3: Expectation failed: try !oauthRecord(secrets, key: key).invalidated
+􀢄  Test run with 2 tests in 0 suites failed after 0.002 seconds with 8 issues.
+pikpak 修复前
+􀢄  Test pikPakSecondResourceRejectionPreservesRefreshedLogin() recorded an issue at PikPakTests.swift:469:3: Expectation failed: try await session.hasToken()
+􀢄  Test pikPakSecondResourceRejectionPreservesRefreshedLogin() recorded an issue at PikPakTests.swift:471:3: Expectation failed: (!saved.invalidated → false) && (saved.refreshToken == "fresh-refresh" → <not evaluated>)
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 2 issues.

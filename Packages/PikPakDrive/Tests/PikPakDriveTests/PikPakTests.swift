@@ -456,3 +456,19 @@ func pikPakTransientRefreshFailurePreservesLogin(_ status: Int) async throws {
   #expect(stored.refreshToken == "fresh-refresh")
   #expect(attempts.withLock { $0 } == 2)
 }
+
+@Test func pikPakSecondResourceRejectionPreservesRefreshedLogin() async throws {
+  let transport = FakePikPakHTTP { request in
+    if request.url?.path == "/drive/v1/about" { return HTTPResponse(status: 401) }
+    return try stub(request)
+  }
+  let (session, secrets) = try session(transport: transport)
+  await #expect(throws: PikPakError.loginRequired) {
+    _ = try await session.authorized(
+      URLRequest(url: URL(string: "https://api-drive.mypikpak.com/drive/v1/about")!))
+  }
+  #expect(try await session.hasToken())
+  let saved = try JSONDecoder().decode(
+    StoredPikPakAuthorization.self, from: #require(try secrets.read("pikpak.test")))
+  #expect(!saved.invalidated && saved.refreshToken == "fresh-refresh")
+}

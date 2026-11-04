@@ -164,7 +164,8 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
   }
 }
 
-@Test func oauthRevocationInvalidatesWithoutRefreshingAndNotifiesOnce() async throws {
+@Test(arguments: [false, true])
+func oauthPermissionFailurePreservesLoginWithoutInvalidation(_ stream: Bool) async throws {
   let key = UUID().uuidString + ".oauth"
   let secrets = OAuthSecrets()
   try oauthStore(secrets, key: key)
@@ -183,14 +184,18 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
   let session = AliyunSession(
     secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
   for _ in 0..<2 {
-    await #expect(throws: AliyunError.loginRequired) {
-      try await session.authorized(oauthRequest())
+    await #expect(throws: RemoteError.posix(EACCES)) {
+      if stream {
+        _ = try await session.authorizedStream(oauthRequest())
+      } else {
+        _ = try await session.authorized(oauthRequest())
+      }
     }
   }
-  #expect(await transport.requests.count == 1)
-  #expect(received.withLock { $0.count } == 1)
-  #expect(try await !session.hasToken())
-  #expect(try oauthRecord(secrets, key: key).invalidated)
+  #expect(await transport.requests.count == 2)
+  #expect(received.withLock { $0.count } == 0)
+  #expect(try await session.hasToken())
+  #expect(try !oauthRecord(secrets, key: key).invalidated)
 }
 
 @Test func oauthRefreshFailureKeepsProtectedRecordButRequiresNewLogin() async throws {
@@ -220,6 +225,8 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
     secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
   await #expect(throws: AliyunError.loginRequired) { try await session.authorized(oauthRequest()) }
   #expect(await transport.requests.count == 3)
+  #expect(try await session.hasToken())
+  #expect(try !oauthRecord(secrets, key: key).invalidated)
 }
 
 @Test func oauthSignedURLDoesNotReceiveBearerOrTriggerTokenRefresh() async throws {

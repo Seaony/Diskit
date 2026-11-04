@@ -181,7 +181,6 @@ public actor OAuthSession {
     guard first.status == 401 else { return first }
     _ = try await refresh(force: true)
     let retried = try await withToken(request)
-    if retried.status == 401 { invalidate() }
     return retried
   }
 
@@ -193,7 +192,6 @@ public actor OAuthSession {
       _ = try await refresh(force: true)
       request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
       let retried = try await CloudDriveSupport.streamWithRetry(transport, request)
-      if retried.response.status == 401 { invalidate() }
       return retried
     }
     return response

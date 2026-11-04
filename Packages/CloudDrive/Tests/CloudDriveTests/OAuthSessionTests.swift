@@ -332,3 +332,31 @@ func commonOAuthExplicitInvalidGrantInvalidatesLogin(_ status: Int) async throws
   #expect(try await session.refreshNow() == "recovered")
   #expect(try await session.hasToken())
 }
+
+@Test(arguments: [false, true])
+func commonOAuthSecondResourceRejectionPreservesNewToken(_ stream: Bool) async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantFuture)),
+    for: "oauth")
+  let transport =
+    stream
+    ? FakeTransport(
+      [tokenResponse(access: "new", refresh: "rotated")], streamResponse: HTTPResponse(status: 401))
+    : FakeTransport([
+      HTTPResponse(status: 401), tokenResponse(access: "new", refresh: "rotated"),
+      HTTPResponse(status: 401),
+    ])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  let request = URLRequest(url: URL(string: "https://example.com/files")!)
+  if stream {
+    #expect(try await session.authorizedStream(request).response.status == 401)
+  } else {
+    #expect(try await session.authorized(request).status == 401)
+  }
+  #expect(try await session.hasToken())
+  let saved = try JSONDecoder().decode(OAuthToken.self, from: #require(try secrets.read("oauth")))
+  #expect(saved.refreshToken == "rotated")
+}

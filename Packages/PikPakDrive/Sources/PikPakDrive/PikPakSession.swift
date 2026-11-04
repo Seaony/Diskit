@@ -143,10 +143,7 @@ public actor PikPakSession {
         continue
       }
       if Self.requiresRefresh(response) {
-        guard authRetries == 0 else {
-          try invalidate()
-          throw PikPakError.loginRequired
-        }
+        guard authRetries == 0 else { throw PikPakError.loginRequired }
         _ = try await refresh(rejected: authorization.accessToken)
         authRetries += 1
         continue

@@ -135,10 +135,8 @@ public actor AliyunSession {
           authRetries += 1
           continue
         }
-        if action != .none {
-          try invalidate()
-          throw AliyunError.loginRequired
-        }
+        if action == .invalid { throw RemoteError.posix(EACCES) }
+        if action != .none { throw AliyunError.loginRequired }
       }
       return response
     }
@@ -174,10 +172,8 @@ public actor AliyunSession {
           authRetries += 1
           continue
         }
-        if action != .none {
-          try invalidate()
-          throw AliyunError.loginRequired
-        }
+        if action == .invalid { throw RemoteError.posix(EACCES) }
+        if action != .none { throw AliyunError.loginRequired }
       }
       return HTTPStreamResponse(
         response: response,

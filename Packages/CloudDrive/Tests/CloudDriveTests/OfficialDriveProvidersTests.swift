@@ -409,7 +409,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
   #expect(paths == ["/open/user/info", "/token", "/open/user/info"])
 }
 
-@Test func baiduInvalidatesLoginAfterASecondUnauthorizedResponse() async throws {
+@Test func baiduPreservesLoginAfterASecondUnauthorizedResponse() async throws {
   let transport = ProviderFakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"errno":0,"uk":1}"#.utf8)),
     HTTPResponse(status: 401),
@@ -427,7 +427,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
   await #expect(throws: OAuthDriveError.loginRequired) {
     _ = try await provider.stat(try RemotePath("/a.txt"))
   }
-  #expect(try await session.hasToken() == false)
+  #expect(try await session.hasToken())
 }
 
 @Test func emptyRangesReturnWithoutNetworkForAllProviders() async throws {
@@ -791,4 +791,30 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     dropboxTransport.requests.withLock {
       $0.contains { $0.url?.path == "/2/files/delete_v2" }
     })
+}
+
+@Test(arguments: ["115", "123"], [false, true])
+func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business: Bool) async throws
+{
+  let denied =
+    business
+    ? HTTPResponse(
+      status: 200,
+      body: Data((kind == "115" ? #"{"state":0,"code":40140116}"# : #"{"code":401}"#).utf8))
+    : HTTPResponse(status: 401)
+  let transport = ProviderFakeTransport([
+    denied,
+    HTTPResponse(
+      status: 200,
+      body: Data(#"{"access_token":"new","refresh_token":"rotated","expires_in":3600}"#.utf8)),
+    denied,
+  ])
+  let session = try providerSession(transport)
+  let provider: any RemoteFileProvider =
+    kind == "115"
+    ? Drive115Provider(session: session, transport: transport)
+    : Drive123Provider(session: session, transport: transport)
+  await #expect(throws: OAuthDriveError.loginRequired) { try await provider.connect() }
+  #expect(try await session.hasToken())
+  #expect(transport.requests.withLock { $0.count } == 3)
 }

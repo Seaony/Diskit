@@ -304,7 +304,6 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       "Bearer \(try await session.refreshNow())", forHTTPHeaderField: "Authorization")
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || businessCode(in: second) == 401 {
-      await session.invalidate()
       throw OAuthDriveError.loginRequired
     }
     return second

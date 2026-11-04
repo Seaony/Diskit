@@ -329,7 +329,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 {
-      await session.invalidate()
       throw OAuthDriveError.loginRequired
     }
     return second
@@ -342,7 +341,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || isBusinessUnauthorized(second) {
-      await session.invalidate()
       throw OAuthDriveError.loginRequired
     }
     return second
@@ -356,7 +354,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || isBusinessUnauthorized(second) {
-      await session.invalidate()
       throw OAuthDriveError.loginRequired
     }
     return second
