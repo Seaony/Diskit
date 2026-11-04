@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、下载长度和验证页识别已完成本地回归，精确大小元数据继续处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归；下一步 FIX-12。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -261,3 +261,15 @@
 - `lanzouKeepsAttachmentHTMLAndBinaryContent`（`:475`）确认 HTML 附件及 2048 字节二进制文件逐字节不变；`lanzouDoesNotSniffHTMLInsideNonzeroRange`（`:501`）确认文件中间的 HTML 样式片段不会被误认成页面。证据 `docs/evidence/v0.2/FIX-11-html-regression.log`。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 322 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-11-html-gates.log`。
 - FIX-11 尚未整体通过：列表/属性的精确大小仍需修复。本轮没有访问真实分享链接或账号，也不将替身识别结果写成真实风控页面验收通过。
+
+
+## FIX-11：精确大小元数据与本地验收结论
+
+- `Packages/LanzouDrive/Sources/LanzouDrive/LanzouValue.swift:68` 只把明确的整数字节值作为精确大小；KB/MB 显示文字、小数、布尔值、非法值和溢出值不再转换或填 0。`LanzouEntry.size` 使用可选值表示尚未确认，分享页面完全停止从正文猜测大小，避免文件名数字被误读。
+- `LanzouProvider.swift:162` 在生成公开文件信息前，为没有精确大小的文件解析下载地址并查询长度。`LanzouSession.swift:265` 优先 HEAD；缺少长度或明确不支持 HEAD 时发 bytes=0-0 范围查询，取 Content-Range 总量。忽略范围但返回完整 Content-Length 的响应可提供大小；bytes */0 可确认空文件。不能取得精确值则报错，不返回假 0 或估算值。
+- 元数据和下载共用请求头与类型检查（`LanzouSession.swift:222`、`:247`），不把账号 Cookie 发给下载站点；HTML 验证响应或压缩传输长度不能当成原文件字节数。范围回退只读取响应头，不遍历正文；已核对 Core 的 HTTPByteCursor 在释放时取消底层任务。
+- `lanzouResolvesRoundedMetadataFromDownloadResponse`（`LanzouDriveTests.swift:529`）先复现页面约 1 MB 却被解析成文件名中的 2026 字节；修复后 HEAD 与范围回退两组均返回 1,100,003 字节，随后 stat 复用缓存、不重复请求。`lanzouAccountRoundedSizeUsesMetadataWithoutLeakingLoginCookie`（`:577`）覆盖账号文件及 Cookie 隔离。
+- `lanzouSizeParserAcceptsOnlyExactByteCounts`（`:566`）验证合法字节值与估算/溢出/布尔值的区别；`lanzouMetadataRequiresAnAuthoritativeLength`（`:607`）覆盖空文件、未知总量、HTML、非法长度、忽略范围、压缩响应和缺失长度七组。原分页夹具改为明确字节值，估算大小由独立用例覆盖。证据 `docs/evidence/v0.2/FIX-11-size-regression.log`。
+- 代价：无精确大小的文件需要额外元数据请求，当前按列表顺序执行；缓存后的单文件属性读取复用结果。没有用减少请求为理由继续报告估算值，也没有静默跳过失败条目。
+- FIX-11 指定的三类本地行为现已验证：精确大小、按实际响应读取范围、验证页拒绝。真实分享/账号、下载站点 HEAD 与范围支持仍待用户验收。本轮未访问真实账号或分享链接。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 326 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-11-size-gates.log`。

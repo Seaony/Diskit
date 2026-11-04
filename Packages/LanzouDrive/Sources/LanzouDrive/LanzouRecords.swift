@@ -59,7 +59,7 @@ enum LanzouJSON {
 struct LanzouEntry: Sendable {
   let name: String
   let isDirectory: Bool
-  let size: Int64
+  let size: Int64?
   let modified: Date
   let id: String
 

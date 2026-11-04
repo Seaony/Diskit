@@ -9,7 +9,6 @@ struct LanzouSharePage: Sendable {
   let url: URL
   let isFile: Bool
   let fileName: String?
-  let size: Int64
   let modified: Date
   let requiresPassword: Bool
   let fields: [String: String]
@@ -54,7 +53,6 @@ struct LanzouSharePage: Sendable {
     let folders = parseFolders(in: html, baseURL: url)
     return LanzouSharePage(
       url: url, isFile: isFile, fileName: fileName,
-      size: LanzouValues.parseSize(LanzouHTML.strippedText(html)),
       modified: LanzouValues.parseDate(rawDate), requiresPassword: passwordMarkers,
       fields: fields, folders: folders, html: html)
   }

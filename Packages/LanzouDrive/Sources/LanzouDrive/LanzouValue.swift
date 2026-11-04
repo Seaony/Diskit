@@ -1,4 +1,5 @@
 import Core
+import CoreFoundation
 import Foundation
 
 struct LanzouCookieHeader: Equatable, Sendable {
@@ -63,23 +64,21 @@ struct LanzouCookieHeader: Equatable, Sendable {
 }
 
 enum LanzouValues {
-  static func parseSize(_ value: Any?) -> Int64 {
-    if let number = value as? NSNumber { return max(0, number.int64Value) }
-    guard let text = value as? String else { return 0 }
-    let pattern = #"(?i)([0-9]+(?:\.[0-9]+)?)\s*([kmgt]?i?b?)"#
-    guard let match = LanzouHTML.firstMatch(pattern, in: text),
-      let numberText = match[1], let unitText = match[2],
-      let number = Double(numberText)
-    else { return 0 }
-    let exponent: Int
-    switch unitText.uppercased() {
-    case "K", "KB", "KIB": exponent = 1
-    case "M", "MB", "MIB": exponent = 2
-    case "G", "GB", "GIB": exponent = 3
-    case "T", "TB", "TIB": exponent = 4
-    default: exponent = 0
+  // 显示用的 KB、MB 可能已取整，不能代替实际字节数。
+  static func parseSize(_ value: Any?) -> Int64? {
+    let text: String
+    if let number = value as? NSNumber {
+      guard CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+      text = number.stringValue
+    } else if let string = value as? String {
+      text = string
+    } else {
+      return nil
     }
-    return Int64(number * pow(1024, Double(exponent)))
+    guard let match = LanzouHTML.firstMatch(#"(?i)^\s*([0-9]+)\s*(?:B|字节)?\s*$"#, in: text),
+      let digits = match[1]
+    else { return nil }
+    return Int64(digits)
   }
 
   static func parseDate(_ value: String?) -> Date {

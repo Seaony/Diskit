@@ -1,0 +1,16 @@
+修复前：swift test --package-path Packages/LanzouDrive --filter lanzouResolvesRoundedMetadataFromDownloadResponse；退出 1。
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → false at LanzouDriveTests.swift:550:3: Expectation failed: (items.first?.size → 2026) == (exact → 1100003)
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → true at LanzouDriveTests.swift:550:3: Expectation failed: (items.first?.size → 2026) == (exact → 1100003)
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → false at LanzouDriveTests.swift:551:3: Expectation failed: try await provider.stat(RemotePath("/视频2026.bin")).size == exact
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → true at LanzouDriveTests.swift:551:3: Expectation failed: try await provider.stat(RemotePath("/视频2026.bin")).size == exact
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → false at LanzouDriveTests.swift:553:3: Expectation failed: (requests.filter { $0.httpMethod == "HEAD" }.count → 0) == 1
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → true at LanzouDriveTests.swift:553:3: Expectation failed: (requests.filter { $0.httpMethod == "HEAD" }.count → 0) == 1
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → false at LanzouDriveTests.swift:554:3: Expectation failed: (requests.count → 0) == ((fallback ? 2 : 1) → 1)
+􀢄  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) recorded an issue with 1 argument fallback → true at LanzouDriveTests.swift:554:3: Expectation failed: (requests.count → 0) == ((fallback ? 2 : 1) → 2)
+􀢄  Test run with 1 test in 0 suites failed after 0.006 seconds with 8 issues.
+修复后：swift test --package-path Packages/LanzouDrive；退出 0。
+􁁛  Test lanzouSizeParserAcceptsOnlyExactByteCounts() passed after 0.008 seconds.
+􁁛  Test lanzouAccountRoundedSizeUsesMetadataWithoutLeakingLoginCookie() passed after 0.008 seconds.
+􁁛  Test lanzouMetadataRequiresAnAuthoritativeLength(scenario:) with 7 test cases passed after 0.008 seconds.
+􁁛  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test run with 16 tests in 0 suites passed after 0.010 seconds.

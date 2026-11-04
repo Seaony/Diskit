@@ -117,7 +117,7 @@ public actor LanzouProvider: RemoteFileProvider {
     switch node.backing {
     case .accountFolder(let folderID):
       let entries = try await session.accountChildren(folderID: folderID)
-      children = try nodes(for: entries, at: node.item.path) { entry in
+      children = try await nodes(for: entries, at: node.item.path) { entry in
         entry.isDirectory ? .accountFolder(entry.id) : .accountFile(entry.id)
       }
     case .accountFile:
@@ -144,7 +144,7 @@ public actor LanzouProvider: RemoteFileProvider {
         }
         childrenAndBacking.append((file, .sharePage(fileURL)))
       }
-      children = try nodes(for: childrenAndBacking, at: node.item.path)
+      children = try await nodes(for: childrenAndBacking, at: node.item.path)
     }
     let grouped = Dictionary(grouping: children, by: { $0.item.name })
     for child in children where grouped[child.item.name]?.count == 1 {
@@ -155,27 +155,31 @@ public actor LanzouProvider: RemoteFileProvider {
 
   private func nodes(
     for entries: [LanzouEntry], at parent: RemotePath, backing: (LanzouEntry) -> Backing
-  ) throws -> [Node] {
-    try entries.map { entry in
-      Node(
-        item: RemoteItem(
-          path: try parent.appending(entry.name), name: entry.name,
-          isDirectory: entry.isDirectory, size: entry.size, modified: entry.modified),
-        backing: backing(entry))
-    }
+  ) async throws -> [Node] {
+    try await nodes(for: entries.map { ($0, backing($0)) }, at: parent)
   }
 
   private func nodes(
     for entries: [(LanzouEntry, Backing)], at parent: RemotePath
-  ) throws -> [Node] {
-    try entries.map { pair in
-      let (entry, backing) = pair
-      return Node(
-        item: RemoteItem(
-          path: try parent.appending(entry.name), name: entry.name,
-          isDirectory: entry.isDirectory, size: entry.size, modified: entry.modified),
-        backing: backing)
+  ) async throws -> [Node] {
+    var result: [Node] = []
+    for (entry, backing) in entries {
+      try Task.checkCancellation()
+      let path = try parent.appending(entry.name)
+      let size: Int64
+      if let exact = entry.size {
+        size = exact
+      } else {
+        let url = try await downloadURL(for: backing)
+        size = try await session.downloadSize(url)
+      }
+      result.append(
+        Node(
+          item: RemoteItem(
+            path: path, name: entry.name, isDirectory: entry.isDirectory,
+            size: size, modified: entry.modified), backing: backing))
     }
+    return result
   }
 
   private func downloadURL(for backing: Backing) async throws -> URL {

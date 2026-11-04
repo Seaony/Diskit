@@ -117,15 +117,15 @@ private func accountReply(_ request: URLRequest) -> FakeReply? {
       data: json([
         "zt": 1,
         "text": [
-          ["id": "file-1", "name_all": "一.txt", "size": "1 KB", "time": "2026-11-02"],
-          ["id": "file-2", "name_all": "二.txt", "size": "2 KB", "time": "2026-11-02"],
+          ["id": "file-1", "name_all": "一.txt", "size": 1024, "time": "2026-11-02"],
+          ["id": "file-2", "name_all": "二.txt", "size": 2048, "time": "2026-11-02"],
         ],
       ]))
   case "2":
     return FakeReply(
       data: json([
         "zt": 1,
-        "text": [["id": "file-3", "name_all": "三.txt", "size": "3 KB", "time": "2026-11-03"]],
+        "text": [["id": "file-3", "name_all": "三.txt", "size": 3072, "time": "2026-11-03"]],
       ]))
   default:
     return FakeReply(data: json(["zt": 1, "text": [Any]()]))
@@ -160,6 +160,7 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
         "zt": 1, "dom": "https://download.example", "url": "object", "inf": "文件.bin",
       ]))
   case ("download.example", "/file/object"):
+    if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
     return FakeReply(
       status: 206, data: Data(10..<20),
       headers: [
@@ -224,14 +225,14 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
         return FakeReply(
           data: json([
             "zt": 1,
-            "text": [["id": "f1", "name_all": "a.txt", "size": "1 K", "time": "2026-11-01"]],
+            "text": [["id": "f1", "name_all": "a.txt", "size": 1024, "time": "2026-11-01"]],
           ]))
       }
       if page == "2" {
         return FakeReply(
           data: json([
             "zt": 1,
-            "text": [["id": "f2", "name_all": "b.txt", "size": "2 K", "time": "2026-11-02"]],
+            "text": [["id": "f2", "name_all": "b.txt", "size": 2048, "time": "2026-11-02"]],
           ]))
       }
       return FakeReply(data: json(["zt": 1, "text": [Any]()]))
@@ -287,6 +288,7 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
 
   let unsupportedHTTP = FakeHTTP { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       return FakeReply(status: 200, data: Data([1, 2, 3]))
     }
     return try #require(shareDownloadReply(request))
@@ -375,6 +377,7 @@ func lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds: (Int64, Int64, Int64)
   let expected = Data(repeating: 7, count: Int(actualEnd - start))
   let http = FakeHTTP { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       return FakeReply(
         status: 206, data: expected,
         headers: [
@@ -401,6 +404,7 @@ func lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds: (Int64, Int64, Int64)
 func lanzouRejectsIncorrectRangeBodyLength(length: Int) async throws {
   let http = FakeHTTP { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       return FakeReply(
         status: 206, data: Data(repeating: 7, count: length),
         headers: ["Content-Range": "bytes 10-19/100"])
@@ -428,6 +432,7 @@ func lanzouRejectsInconsistentContentRanges(header: String) {
 func lanzouChecksDeclaredDownloadLength(ranged: Bool) async throws {
   let http = FakeHTTP { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       var headers = ["Content-Length": "9"]
       if ranged { headers["Content-Range"] = "bytes 10-19/100" }
       return FakeReply(status: ranged ? 206 : 200, data: Data([1, 2, 3]), headers: headers)
@@ -449,6 +454,7 @@ func lanzouRejectsVerificationPagesBeforeYieldingBytes(kind: String, chunkSize: 
   let page = "\u{FEFF} \n<!DOCTYPE html><html>verification required</html>"
   let http = FakeHTTP(chunkSize: chunkSize) { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       var headers = ["Content-Length": "\(page.utf8.count)"]
       if kind == "html" || kind == "inline" { headers["Content-Type"] = "text/html; charset=UTF-8" }
       if kind == "xhtml" { headers["Content-Type"] = "application/xhtml+xml" }
@@ -478,6 +484,7 @@ func lanzouKeepsAttachmentHTMLAndBinaryContent(html: Bool) async throws {
     ? Data("<!DOCTYPE html><html>saved document</html>".utf8) : Data(repeating: 0xff, count: 2048)
   let http = FakeHTTP(chunkSize: 7) { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       var headers = [
         "Content-Length": "\(content.count)",
         "Content-Type": html ? "text/html" : "application/octet-stream",
@@ -502,6 +509,7 @@ func lanzouKeepsAttachmentHTMLAndBinaryContent(html: Bool) async throws {
   let content = Data("<html>".utf8)
   let http = FakeHTTP(chunkSize: 1) { request in
     if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" { return FakeReply(headers: ["Content-Length": "100"]) }
       return FakeReply(status: 206, data: content, headers: ["Content-Range": "bytes 10-15/100"])
     }
     return try #require(shareDownloadReply(request))
@@ -515,4 +523,118 @@ func lanzouKeepsAttachmentHTMLAndBinaryContent(html: Bool) async throws {
     result.append(chunk)
   }
   #expect(result == content)
+}
+
+@Test(arguments: [false, true])
+func lanzouResolvesRoundedMetadataFromDownloadResponse(fallback: Bool) async throws {
+  let exact: Int64 = 1_100_003
+  let http = FakeHTTP { request in
+    if request.url?.path == "/share" {
+      return FakeReply(
+        text: shareSettingsPage().replacingOccurrences(of: "文件.bin", with: "视频2026.bin")
+          .replacingOccurrences(of: "100 B", with: "1 MB"))
+    }
+    if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" {
+        return fallback
+          ? FakeReply(status: 405)
+          : FakeReply(headers: [
+            "Content-Length": "\(exact)", "Content-Type": "application/octet-stream",
+          ])
+      }
+      #expect(request.value(forHTTPHeaderField: "Range") == "bytes=0-0")
+      return FakeReply(
+        status: 206, data: Data([1]),
+        headers: ["Content-Range": "bytes 0-0/\(exact)", "Content-Length": "1"])
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(items.first?.name == "视频2026.bin")
+  #expect(items.first?.size == exact)
+  #expect(try await provider.stat(RemotePath("/视频2026.bin")).size == exact)
+  let requests = await http.requests().filter { $0.url?.host == "download.example" }
+  #expect(requests.filter { $0.httpMethod == "HEAD" }.count == 1)
+  #expect(requests.count == (fallback ? 2 : 1))
+  #expect(requests.allSatisfy { $0.value(forHTTPHeaderField: "Authorization") == nil })
+}
+
+@Test func lanzouSizeParserAcceptsOnlyExactByteCounts() {
+  for text in ["1 KB", "1.2 MB", "2026.bin", "-1", "NaN", "18446744073709551616", "1.0", ""] {
+    #expect(LanzouValues.parseSize(text) == nil)
+  }
+  #expect(LanzouValues.parseSize(true) == nil)
+  #expect(LanzouValues.parseSize(1234) == 1234)
+  #expect(LanzouValues.parseSize("1234 B") == 1234)
+  #expect(LanzouValues.parseSize("0 字节") == 0)
+  #expect(LanzouValues.parseSize(String(Int64.max)) == Int64.max)
+}
+
+@Test func lanzouAccountRoundedSizeUsesMetadataWithoutLeakingLoginCookie() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/mydisk.php" { return try #require(accountReply(request)) }
+    if request.url?.path == "/doupload.php" {
+      let fields = form(request)
+      if fields["task"] == "22" {
+        return FakeReply(
+          data: json([
+            "zt": 1, "info": ["f_id": "share", "new_url": "https://share.example/share"],
+          ]))
+      }
+      let files: [[String: Any]] =
+        fields["task"] == "5" && fields["pg"] == "1"
+        ? [["id": "file", "name_all": "file.bin", "size": "1 MB"]] : []
+      return FakeReply(data: json(["zt": 1, "text": files]))
+    }
+    if request.url?.host == "download.example" {
+      #expect(request.httpMethod == "HEAD")
+      #expect(request.value(forHTTPHeaderField: "Cookie")?.contains("phpdisk_info") != true)
+      return FakeReply(headers: ["Content-Length": "1100003"])
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(.accountCookie("phpdisk_info=fake")), transport: http)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).first?.size == 1_100_003)
+}
+
+@Test(arguments: ["zero", "unknown", "html", "malformed", "ignored-range", "compressed", "absent"])
+func lanzouMetadataRequiresAnAuthoritativeLength(scenario: String) async throws {
+  let http = FakeHTTP { request in
+    if request.url?.host == "download.example" {
+      if request.httpMethod == "HEAD" {
+        switch scenario {
+        case "html":
+          return FakeReply(headers: ["Content-Length": "100", "Content-Type": "text/html"])
+        case "malformed": return FakeReply(headers: ["Content-Length": "-1"])
+        case "compressed":
+          return FakeReply(headers: ["Content-Length": "100", "Content-Encoding": "gzip"])
+        case "absent": return FakeReply()
+        default: return FakeReply(status: 405)
+        }
+      }
+      switch scenario {
+      case "zero": return FakeReply(status: 416, headers: ["Content-Range": "bytes */0"])
+      case "ignored-range": return FakeReply(headers: ["Content-Length": "1234"])
+      case "unknown": return FakeReply(status: 206, headers: ["Content-Range": "bytes 0-0/*"])
+      default: return FakeReply()
+      }
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  if scenario == "zero" || scenario == "ignored-range" {
+    #expect(try await provider.list(RemotePath("/")).first?.size == (scenario == "zero" ? 0 : 1234))
+  } else {
+    let expected: LanzouError = scenario == "html" ? .antiBotChallenge : .invalidResponse
+    await #expect(throws: expected) { _ = try await provider.list(RemotePath("/")) }
+  }
 }

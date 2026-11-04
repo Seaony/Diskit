@@ -87,7 +87,7 @@ actor LanzouSession {
         page: page,
         files: [
           LanzouEntry(
-            name: name, isDirectory: false, size: page.size, modified: page.modified, id: "")
+            name: name, isDirectory: false, size: nil, modified: page.modified, id: "")
         ], folders: [])
     }
 
@@ -190,38 +190,10 @@ actor LanzouSession {
     _ url: URL, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
     try requireConnection()
-    guard LanzouConfiguration.isHTTPSURL(url) else { throw LanzouError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 60)
-    request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
-    request.setValue("https://\(url.host ?? "")/file/", forHTTPHeaderField: "Referer")
-    if let range {
-      request.setValue(
-        "bytes=\(range.lowerBound)-\(range.upperBound - 1)", forHTTPHeaderField: "Range")
-    }
-    var cookie = try LanzouCookieHeader("down_ip=1")
-    if shareCookieOrigin == Self.origin(url), let shareCookies {
-      for pair in shareCookies.text.split(separator: ";") {
-        let values = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-        if values.count == 2 {
-          cookie.add(
-            String(values[0]), value: String(values[1]).trimmingCharacters(in: .whitespaces))
-        }
-      }
-    }
-    request.setValue(cookie.text, forHTTPHeaderField: "Cookie")
-    request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
-
+    let request = try makeDownloadRequest(url, range: range)
     let stream = try await transport.stream(request)
     try checkHTTP(stream.response)
-    let attachment =
-      stream.response.header("Content-Disposition")?
-      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-      == "attachment"
-    let mediaType = stream.response.header("Content-Type")?
-      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    if !attachment, mediaType == "text/html" || mediaType == "application/xhtml+xml" {
-      throw LanzouError.antiBotChallenge
-    }
+    let attachment = try Self.validateDownloadType(stream.response)
     let declaredLength: Int64?
     if let header = stream.response.header("Content-Length") {
       guard let length = Int64(header), length >= 0 else { throw LanzouError.invalidResponse }
@@ -245,6 +217,83 @@ actor LanzouSession {
       stream.body, expectedLength: expectedLength,
       inspectHTML: !attachment && (range == nil || range?.lowerBound == 0))
     return AsyncThrowingStream(unfolding: { try await cursor.next() })
+  }
+
+  private func makeDownloadRequest(_ url: URL, range: Range<Int64>?) throws -> URLRequest {
+    guard LanzouConfiguration.isHTTPSURL(url) else { throw LanzouError.invalidResponse }
+    var request = URLRequest(url: url, timeoutInterval: 60)
+    request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
+    request.setValue("https://\(url.host ?? "")/file/", forHTTPHeaderField: "Referer")
+    if let range {
+      request.setValue(
+        "bytes=\(range.lowerBound)-\(range.upperBound - 1)", forHTTPHeaderField: "Range")
+    }
+    var cookie = try LanzouCookieHeader("down_ip=1")
+    if shareCookieOrigin == Self.origin(url), let shareCookies {
+      for pair in shareCookies.text.split(separator: ";") {
+        let values = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
+        if values.count == 2 {
+          cookie.add(
+            String(values[0]), value: String(values[1]).trimmingCharacters(in: .whitespaces))
+        }
+      }
+    }
+    request.setValue(cookie.text, forHTTPHeaderField: "Cookie")
+    request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+
+    return request
+  }
+
+  private static func validateDownloadType(_ response: HTTPResponse) throws -> Bool {
+    let attachment =
+      response.header("Content-Disposition")?
+      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      == "attachment"
+    let mediaType = response.header("Content-Type")?
+      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if !attachment, mediaType == "text/html" || mediaType == "application/xhtml+xml" {
+      throw LanzouError.antiBotChallenge
+    }
+    if let encoding = response.header("Content-Encoding"),
+      !encoding.isEmpty, encoding.lowercased() != "identity"
+    {
+      throw LanzouError.invalidResponse
+    }
+    return attachment
+  }
+
+  func downloadSize(_ url: URL) async throws -> Int64 {
+    try requireConnection()
+    var request = try makeDownloadRequest(url, range: nil)
+    request.httpMethod = "HEAD"
+    let response = try await transport.send(request)
+    if response.status == 200 {
+      _ = try Self.validateDownloadType(response)
+      if let raw = response.header("Content-Length") {
+        guard let length = Int64(raw), length >= 0 else { throw LanzouError.invalidResponse }
+        return length
+      }
+    } else if response.status != 405 && response.status != 501 {
+      try checkHTTP(response)
+      throw LanzouError.invalidResponse
+    }
+    let stream = try await transport.stream(makeDownloadRequest(url, range: 0..<1))
+    let ranged = stream.response
+    if ranged.status == 416, ranged.header("Content-Range") == "bytes */0" { return 0 }
+    try checkHTTP(ranged)
+    _ = try Self.validateDownloadType(ranged)
+    if ranged.status == 206 {
+      guard Self.contentRangeLength(ranged.header("Content-Range"), for: 0..<1) == 1,
+        let raw = ranged.header("Content-Range")?.split(separator: "/").last,
+        let total = Int64(raw), total > 0,
+        ranged.header("Content-Length") == nil || ranged.header("Content-Length") == "1"
+      else { throw LanzouError.invalidResponse }
+      return total
+    }
+    guard ranged.status == 200, let raw = ranged.header("Content-Length"),
+      let length = Int64(raw), length >= 0
+    else { throw LanzouError.invalidResponse }
+    return length
   }
 
   static func contentRangeLength(_ header: String?, for range: Range<Int64>) -> Int64? {
