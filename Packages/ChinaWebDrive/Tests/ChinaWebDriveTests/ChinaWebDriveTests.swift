@@ -9,11 +9,17 @@ private actor ScriptHTTP: HTTPTransport {
   private var replies: [HTTPResponse]
   private var streamReplies: [HTTPResponse]
   private(set) var requests: [URLRequest] = []
+  private(set) var uploads: [URLRequest] = []
   private(set) var streamRequests: [URLRequest] = []
 
   init(_ replies: [HTTPResponse], streams: [HTTPResponse] = []) {
     self.replies = replies
     streamReplies = streams
+  }
+
+  func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    uploads.append(request)
+    return try await send(request)
   }
 
   func send(_ request: URLRequest) async throws -> HTTPResponse {
@@ -212,6 +218,7 @@ private func requestBody(_ request: URLRequest) throws -> [String: Any] {
   await provider.onProgress { loaded, total in progress.withLock { $0.append((loaded, total)) } }
   try await provider.connect()
   try await provider.write(try RemotePath("/upload.bin"), from: file)
+  #expect(await http.uploads.count == 2)
   let requests = await http.requests
   let puts = requests.filter { $0.httpMethod == "PUT" }
   #expect(puts.map(\.httpBody) == [Data([1, 2]), Data([3])])
@@ -719,4 +726,37 @@ func trashFailureNeverFallsBackToPermanentDeletion(mobile: Bool) async throws {
   await first.disconnect()
   #expect(try await second.list(RemotePath("/")).isEmpty)
   await #expect(throws: RemoteError.notConnected) { _ = try await first.list(RemotePath("/")) }
+}
+
+@Test func mobileCapacityPreservesPartialAndUnknownValues() async throws {
+  let cases: [(String, SpaceInfo)] = [
+    ("{}", SpaceInfo(total: nil, used: nil)),
+    (#"{"diskSize":"1000"}"#, SpaceInfo(total: 1000, used: nil)),
+    (#"{"usedSize":"400"}"#, SpaceInfo(total: nil, used: 400)),
+    (#"{"freeDiskSize":"600"}"#, SpaceInfo(total: nil, used: nil, available: 600)),
+    (#"{"diskSize":"0","freeDiskSize":"0"}"#, SpaceInfo(total: 0, used: 0)),
+  ]
+  for (json, expected) in cases {
+    let space = response(#"{"success":true,"code":"0000","data":\#(json)}"#)
+    let http = ScriptHTTP([mobileRoute, space])
+    let provider = MobileCloudProvider(session: mobileSession(http))
+    try await provider.connect()
+    #expect(try await provider.spaceInfo() == expected)
+  }
+}
+
+@Test func xunleiCapacityPreservesMissingQuotaAndRealZero() async throws {
+  let cases: [(String, SpaceInfo)] = [
+    ("{}", SpaceInfo(total: nil, used: nil)),
+    (#"{"quota":{"limit":"1000"}}"#, SpaceInfo(total: 1000, used: nil)),
+    (#"{"quota":{"usage":"400"}}"#, SpaceInfo(total: nil, used: 400)),
+    (#"{"quota":{"limit":"0","usage":"0"}}"#, SpaceInfo(total: 0, used: 0)),
+    (#"{"quota":{"limit":"100","usage":"200"}}"#, SpaceInfo(total: 100, used: 200)),
+  ]
+  for (json, expected) in cases {
+    let http = ScriptHTTP([xunleiAbout, response(json)])
+    let provider = XunleiProvider(session: xunleiSession(http))
+    try await provider.connect()
+    #expect(try await provider.spaceInfo() == expected)
+  }
 }

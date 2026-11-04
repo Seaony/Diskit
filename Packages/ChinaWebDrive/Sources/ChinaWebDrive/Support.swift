@@ -1,6 +1,7 @@
 import Core
 import CryptoKit
 import Foundation
+import Synchronization
 
 struct FlexibleInt64: Decodable, Equatable, Sendable {
   let value: Int64
@@ -35,25 +36,39 @@ struct FlexibleString: Decodable, Equatable, Sendable {
 }
 
 enum ChinaWebSupport {
+  private static let compactParser = Mutex(
+    {
+      let formatter = DateFormatter()
+      formatter.calendar = Calendar(identifier: .gregorian)
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)
+      formatter.dateFormat = "yyyyMMddHHmmss"
+      formatter.isLenient = false
+      return formatter
+    }())
+  private static let isoParser = Mutex(
+    [true, false].map { fractional in
+      let formatter = ISO8601DateFormatter()
+      formatter.formatOptions =
+        fractional ? [.withInternetDateTime, .withFractionalSeconds] : [.withInternetDateTime]
+      return formatter
+    })
+  private static let dateParsers = Mutex(
+    [
+      "yyyyMMddHHmmss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss",
+    ].map { format in
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)
+      formatter.dateFormat = format
+      return formatter
+    })
+
   static let userAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
   static func jsonData(_ object: Any) throws -> Data {
     try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
-  }
-
-  static func jsonRequest(
-    _ url: URL, method: String = "POST", json: Any? = nil
-  ) throws -> URLRequest {
-    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
-    request.httpMethod = method
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
-    request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-    if let json {
-      request.httpBody = try jsonData(json)
-    }
-    return request
   }
 
   static func checkHTTP(_ response: HTTPResponse) throws {
@@ -87,49 +102,71 @@ enum ChinaWebSupport {
     }
   }
 
+  static func requiresVerification(_ response: HTTPResponse) -> Bool {
+    guard let root = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any] else {
+      return false
+    }
+    let code = root["code"].map { String(describing: $0) } ?? ""
+    let error = root["error"] as? String ?? ""
+    guard
+      response.status >= 400 || root["success"] as? Bool == false || !error.isEmpty
+        || (!code.isEmpty && !["0", "0000", "200"].contains(code))
+    else { return false }
+    let text = ["message", "msg", "error", "error_description", "error_msg", "error_code", "code"]
+      .compactMap { root[$0] as? String }.joined(separator: " ").lowercased()
+    return [
+      "captcha", "验证码", "人机验证", "风控", "risk control", "risk_control", "verification_required",
+      "need_verify",
+    ]
+    .contains(where: { text.contains($0) })
+  }
+
   static func isValidRemoteName(_ value: String) -> Bool {
     !value.isEmpty && value != "." && value != ".." && !value.contains("/")
       && !value.utf8.contains(0)
   }
 
   static func parent(of path: RemotePath) -> RemotePath {
-    let components = path.value.split(separator: "/").dropLast()
-    return try! RemotePath(components.isEmpty ? "/" : "/" + components.joined(separator: "/"))
+    path.parent
   }
 
   static func basename(_ path: RemotePath) -> String {
-    path.value.split(separator: "/").last.map(String.init) ?? ""
+    path.basename
   }
 
   static func parseDate(_ value: String?) -> Date {
     guard let value, !value.isEmpty else { return Date(timeIntervalSince1970: 0) }
+    if value.count == 14, value.utf8.allSatisfy({ (48...57).contains($0) }) {
+      return compactParser.withLock { formatter in
+        guard let date = formatter.date(from: value), formatter.string(from: date) == value else {
+          return Date(timeIntervalSince1970: 0)
+        }
+        return date
+      }
+    }
     if let seconds = Int64(value) {
       return Date(timeIntervalSince1970: Double(seconds) / (value.count > 10 ? 1_000 : 1))
     }
-    let iso = ISO8601DateFormatter()
-    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let date = iso.date(from: value) { return date }
-    iso.formatOptions = [.withInternetDateTime]
-    if let date = iso.date(from: value) { return date }
-    for format in ["yyyyMMddHHmmss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss"] {
-      let formatter = DateFormatter()
-      formatter.locale = Locale(identifier: "en_US_POSIX")
-      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)
-      formatter.dateFormat = format
-      if let date = formatter.date(from: value) { return date }
+    if let date = isoParser.withLock({ formatters -> Date? in
+      for formatter in formatters {
+        if let date = formatter.date(from: value) { return date }
+      }
+      return nil
+    }) {
+      return date
     }
-    return Date(timeIntervalSince1970: 0)
+    return dateParsers.withLock { formatters in
+      for formatter in formatters {
+        if let date = formatter.date(from: value) { return date }
+      }
+      return Date(timeIntervalSince1970: 0)
+    }
   }
 
   static func validRange(
     _ header: String?, requested: Range<Int64>, size: Int64
   ) -> Bool {
-    guard let header, header.lowercased().hasPrefix("bytes ") else { return false }
-    let fields = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
-    guard fields.count == 2, Int64(fields[1]) == size else { return false }
-    let bounds = fields[0].split(separator: "-", omittingEmptySubsequences: false)
-    return bounds.count == 2 && Int64(bounds[0]) == requested.lowerBound
-      && Int64(bounds[1]) == requested.upperBound - 1
+    HTTPContentRange.matches(header?.lowercased(), requested: requested, size: size)
   }
 
   static func trustedHost(_ host: String, domain: String) -> Bool {

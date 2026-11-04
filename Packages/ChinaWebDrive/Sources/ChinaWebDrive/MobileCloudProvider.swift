@@ -1,7 +1,7 @@
 import Core
 import Foundation
 
-private struct MobileCloudItem: Decodable, Sendable {
+private struct MobileCloudItem: Decodable, Equatable, Sendable {
   let fileID: String
   let name: String
   let parentFileID: String?
@@ -20,7 +20,9 @@ private struct MobileCloudItem: Decodable, Sendable {
   var isDirectory: Bool { type.lowercased() == "folder" }
 
   func item(at path: RemotePath) throws -> RemoteItem {
-    guard ChinaWebSupport.isValidRemoteName(name), !fileID.isEmpty else {
+    guard ChinaWebSupport.isValidRemoteName(name), !fileID.isEmpty,
+      ["file", "folder"].contains(type.lowercased())
+    else {
       throw MobileCloudError.invalidResponse
     }
     let value = size?.value ?? 0
@@ -105,6 +107,8 @@ public actor MobileCloudProvider: RemoteFileProvider {
   private let maxPartsPerURL: Int
   private var connected = false
   private var nodes: [String: MobileCloudItem] = [:]
+  private var cacheGeneration = 0
+  private var listingIDs: [String: UUID] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -123,11 +127,15 @@ public actor MobileCloudProvider: RemoteFileProvider {
   public func connect() async throws {
     try await session.connect()
     connected = true
+    cacheGeneration += 1
+    listingIDs.removeAll()
     nodes.removeAll()
   }
 
   public func disconnect() async {
     connected = false
+    cacheGeneration += 1
+    listingIDs.removeAll()
     nodes.removeAll()
   }
 
@@ -136,20 +144,19 @@ public actor MobileCloudProvider: RemoteFileProvider {
     let data = try await session.accountRequest(
       "disk/getPersonalDiskInfo", body: ["userDomainId": await session.userDomainID ?? ""])
     let info: MobileCloudDiskInfo = try decode(data)
-    if let total = (info.diskSize ?? info.totalSize)?.value,
-      let free = info.freeDiskSize?.value
-    {
+    let total = (info.diskSize ?? info.totalSize)?.value
+    let free = info.freeDiskSize?.value
+    let used = info.usedSize?.value
+    guard [total, free, used].compactMap({ $0 }).allSatisfy({ $0 >= 0 }) else {
+      throw MobileCloudError.invalidResponse
+    }
+    if let total, let free {
       guard total >= 0, free >= 0, free <= total else {
         throw MobileCloudError.invalidResponse
       }
       return SpaceInfo(total: total, used: total - free)
     }
-    if let total = (info.diskSize ?? info.totalSize)?.value, let used = info.usedSize?.value,
-      total >= 0, used >= 0, used <= total
-    {
-      return SpaceInfo(total: total, used: used)
-    }
-    throw MobileCloudError.invalidResponse
+    return SpaceInfo(total: total, used: used, available: free)
   }
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
@@ -169,9 +176,9 @@ public actor MobileCloudProvider: RemoteFileProvider {
   public func read(
     _ path: RemotePath, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
-    let metadata = try await stat(path)
+    let node = try await resolve(path)
+    let metadata = try node.item(at: path)
     guard !metadata.isDirectory else { throw RemoteError.posix(EISDIR) }
-    guard let node = nodes[path.value] else { throw RemoteError.posix(ENOENT) }
     let requested: Range<Int64>?
     if let range {
       guard range.lowerBound >= 0, range.upperBound >= range.lowerBound,
@@ -205,6 +212,7 @@ public actor MobileCloudProvider: RemoteFileProvider {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let destination = ChinaWebSupport.parent(of: path)
     let folder = try await resolve(destination)
@@ -239,16 +247,19 @@ public actor MobileCloudProvider: RemoteFileProvider {
         ]
       },
     ]
+    defer { invalidate(destination) }
     let createdData = try await session.request("file/create", body: createBody)
     let created: MobileCloudCreate = try decode(createdData)
     guard !created.fileID.isEmpty else { throw MobileCloudError.invalidResponse }
+    guard created.exist != true, !existing.contains(where: { $0.fileID == created.fileID }) else {
+      throw RemoteError.posix(EEXIST)
+    }
     do {
       guard created.fileName == name else {
         throw RemoteError.posix(EEXIST)
       }
-      if created.rapidUpload == true || created.exist == true {
+      if created.rapidUpload == true {
         progress?(Int64(size), Int64(size))
-        invalidate(destination)
         return
       }
       guard let uploadID = created.uploadID, !uploadID.isEmpty else {
@@ -297,7 +308,8 @@ public actor MobileCloudProvider: RemoteFileProvider {
             else { throw RemoteError.posix(EIO) }
             payload.append(block)
           }
-          var request = URLRequest(url: serverPart.uploadURL, timeoutInterval: 120)
+          var request = URLRequest(
+            url: serverPart.uploadURL, timeoutInterval: RemoteTimeout.transferIdle)
           request.httpMethod = "PUT"
           request.httpBody = payload
           request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
@@ -313,7 +325,6 @@ public actor MobileCloudProvider: RemoteFileProvider {
           "fileId": created.fileID, "uploadId": uploadID, "contentHash": contentHash,
           "contentHashAlgorithm": hashAlgorithm,
         ])
-      invalidate(destination)
     } catch {
       await discard(created.fileID)
       throw error
@@ -328,10 +339,10 @@ public actor MobileCloudProvider: RemoteFileProvider {
     let destination = ChinaWebSupport.parent(of: path)
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
-    let matches = try await children(destination, parentID: folder.fileID).filter {
-      $0.name == ChinaWebSupport.basename(path)
+    let existing = try await children(destination, parentID: folder.fileID)
+    guard !existing.contains(where: { $0.name == ChinaWebSupport.basename(path) }) else {
+      throw RemoteError.posix(EEXIST)
     }
-    guard matches.isEmpty else { throw RemoteError.posix(EEXIST) }
     let body: [String: Any] = [
       "parentFileId": folder.fileID,
       "name": ChinaWebSupport.basename(path),
@@ -339,13 +350,17 @@ public actor MobileCloudProvider: RemoteFileProvider {
       "type": "folder",
       "fileRenameMode": "auto_rename",
     ]
+    defer { invalidate(destination) }
     let data = try await session.request("file/create", body: body)
     let created: MobileCloudCreate = try decode(data)
+    guard !created.fileID.isEmpty else { throw MobileCloudError.invalidResponse }
+    guard created.exist != true, !existing.contains(where: { $0.fileID == created.fileID }) else {
+      throw RemoteError.posix(EEXIST)
+    }
     guard created.fileName == ChinaWebSupport.basename(path) else {
       await discard(created.fileID)
       throw RemoteError.posix(EEXIST)
     }
-    invalidate(destination)
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -354,9 +369,9 @@ public actor MobileCloudProvider: RemoteFileProvider {
     if node.isDirectory, !recursive, !(try await children(path, parentID: node.fileID)).isEmpty {
       throw RemoteError.posix(ENOTEMPTY)
     }
+    defer { invalidate(ChinaWebSupport.parent(of: path)) }
     let _ = try await session.request(
       "recyclebin/batchTrash", body: ["fileIds": [node.fileID]])
-    invalidate(ChinaWebSupport.parent(of: path))
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
@@ -365,30 +380,80 @@ public actor MobileCloudProvider: RemoteFileProvider {
     let node = try await resolve(from)
     let source = ChinaWebSupport.parent(of: from)
     let destination = ChinaWebSupport.parent(of: to)
+    if node.isDirectory, to.value.hasPrefix(from.value + "/") { throw RemoteError.posix(EINVAL) }
+    let sourceFolder = try await resolve(source)
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
+    let targetName = ChinaWebSupport.basename(to)
     let conflicts = try await children(destination, parentID: folder.fileID).filter {
-      $0.name == ChinaWebSupport.basename(to) && $0.fileID != node.fileID
+      $0.name == targetName && $0.fileID != node.fileID
     }
     guard conflicts.isEmpty else { throw RemoteError.posix(EEXIST) }
-    do {
-      if source != destination {
-        let _ = try await session.request(
-          "file/batchMove",
-          body: ["fileIds": [node.fileID], "toParentFileId": folder.fileID])
-      }
-      if ChinaWebSupport.basename(from) != ChinaWebSupport.basename(to) {
-        let _ = try await session.request(
-          "file/update",
-          body: ["fileId": node.fileID, "name": ChinaWebSupport.basename(to), "description": ""])
-      }
-    } catch {
+    defer {
       invalidate(source)
       invalidate(destination)
-      throw error
     }
-    invalidate(source)
-    invalidate(destination)
+    let needsTemporaryName = source != destination && node.name != targetName
+    var lastConfirmed = from
+    do {
+      if needsTemporaryName {
+        let temporary = ".kayoi-move-" + UUID().uuidString
+        try await rename(node.fileID, to: temporary)
+        lastConfirmed = try source.appending(temporary)
+      }
+      if source != destination {
+        _ = try await session.request(
+          "file/batchMove", body: ["fileIds": [node.fileID], "toParentFileId": folder.fileID])
+        lastConfirmed = try destination.appending(ChinaWebSupport.basename(lastConfirmed))
+      }
+      if ChinaWebSupport.basename(lastConfirmed) != targetName {
+        try await rename(node.fileID, to: targetName)
+        lastConfirmed = to
+      }
+    } catch {
+      let original = error
+      guard needsTemporaryName else { throw original }
+      do {
+        let sourceItems = try await children(source, parentID: sourceFolder.fileID)
+        let current: MobileCloudItem
+        if let found = sourceItems.first(where: { $0.fileID == node.fileID }) {
+          current = found
+          lastConfirmed = try source.appending(found.name)
+        } else {
+          let destinationItems = try await children(destination, parentID: folder.fileID)
+          guard let found = destinationItems.first(where: { $0.fileID == node.fileID }) else {
+            throw RemoteError.posix(ENOENT)
+          }
+          current = found
+          lastConfirmed = try destination.appending(found.name)
+          guard !sourceItems.contains(where: { $0.name == found.name && $0.fileID != node.fileID })
+          else {
+            throw RemoteError.posix(EEXIST)
+          }
+          _ = try await session.request(
+            "file/batchMove",
+            body: ["fileIds": [node.fileID], "toParentFileId": sourceFolder.fileID])
+          lastConfirmed = try source.appending(found.name)
+        }
+        if current.name != node.name {
+          guard !sourceItems.contains(where: { $0.name == node.name && $0.fileID != node.fileID })
+          else {
+            throw RemoteError.posix(EEXIST)
+          }
+          try await rename(node.fileID, to: node.name)
+          lastConfirmed = from
+        }
+      } catch {
+        throw MobileCloudMoveFailure(
+          lastConfirmedPath: lastConfirmed.value, original: original, recovery: error)
+      }
+      throw original
+    }
+  }
+
+  private func rename(_ id: String, to name: String) async throws {
+    _ = try await session.request(
+      "file/update", body: ["fileId": id, "name": name, "description": ""])
   }
 
   private func requireConnection() throws {
@@ -441,7 +506,15 @@ public actor MobileCloudProvider: RemoteFileProvider {
   }
 
   private func children(_ path: RemotePath, parentID: String) async throws -> [MobileCloudItem] {
+    let generation = cacheGeneration
+    let listingID = UUID()
+    listingIDs[path.value] = listingID
+    clearCachedChildren(path)
+    defer {
+      if listingIDs[path.value] == listingID { listingIDs.removeValue(forKey: path.value) }
+    }
     var cursor = ""
+    var byID: [String: MobileCloudItem] = [:]
     var visited = Set<String>()
     var output: [MobileCloudItem] = []
     repeat {
@@ -455,13 +528,25 @@ public actor MobileCloudProvider: RemoteFileProvider {
       ]
       let data = try await session.request("file/list", body: body)
       let page: MobileCloudPage = try decode(data)
-      output.append(contentsOf: page.items)
+      for item in page.items {
+        let child = try path.appending(item.name)
+        _ = try item.item(at: child)
+        if let previous = byID[item.fileID] {
+          guard previous == item else { throw MobileCloudError.invalidResponse }
+          continue
+        }
+        byID[item.fileID] = item
+        output.append(item)
+      }
       cursor = page.nextPageCursor ?? ""
       if !cursor.isEmpty, !visited.insert(cursor).inserted {
         throw MobileCloudError.invalidResponse
       }
     } while !cursor.isEmpty
-    invalidate(path)
+    guard generation == cacheGeneration, listingIDs[path.value] == listingID else {
+      throw RemoteError.posix(EAGAIN)
+    }
+    clearCachedChildren(path)
     let grouped = Dictionary(grouping: output, by: \.name)
     for item in output {
       let child = try path.appending(item.name)
@@ -485,6 +570,11 @@ public actor MobileCloudProvider: RemoteFileProvider {
   }
 
   private func invalidate(_ path: RemotePath) {
+    cacheGeneration += 1
+    clearCachedChildren(path)
+  }
+
+  private func clearCachedChildren(_ path: RemotePath) {
     let prefix = path.value == "/" ? "/" : path.value + "/"
     for key in Array(nodes.keys) where key.hasPrefix(prefix) {
       nodes.removeValue(forKey: key)

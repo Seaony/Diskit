@@ -10,17 +10,23 @@ public struct XunleiCredentials: Sendable, Equatable {
   }
 }
 
-public enum XunleiError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+public enum XunleiError: Error, Equatable, LocalizedError, CustomNSError, LoginRequiredFailure,
+  Sendable
+{
   case invalidCredentials
   case invalidResponse
   case loginRequired
   case unsupportedUploadProvider
+  case verificationRequired
+
+  public var requiresLogin: Bool { self == .loginRequired }
 
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int {
     switch self {
     case .invalidResponse: Int(EIO)
     case .unsupportedUploadProvider: Int(ENOTSUP)
+    case .verificationRequired: Int(EAGAIN)
     case .invalidCredentials, .loginRequired: Int(EACCES)
     }
   }
@@ -30,6 +36,7 @@ public enum XunleiError: Error, Equatable, LocalizedError, CustomNSError, Sendab
     case .invalidResponse: L("迅雷云盘返回了无法识别的数据")
     case .loginRequired: L("迅雷云盘登录已失效，请重新登录")
     case .unsupportedUploadProvider: L("迅雷返回了不支持的上传服务")
+    case .verificationRequired: L("请先在网页完成验证后重试")
     }
   }
   public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
@@ -39,11 +46,11 @@ public actor XunleiSession {
   public typealias Refresh = @Sendable (XunleiCredentials) async throws -> XunleiCredentials
 
   public static let apiBase = URL(string: "https://api-pan.xunlei.com/drive/v1")!
-  public static let loginURL = URL(string: "https://pan.xunlei.com/")!
 
   private var credentials: XunleiCredentials
   private let refresh: Refresh?
   private let transport: any HTTPTransport
+  private var refreshing: Task<XunleiCredentials, Error>?
 
   public init(
     credentials: XunleiCredentials,
@@ -78,7 +85,7 @@ public actor XunleiSession {
     var current = credentials
     var didRefresh = false
     while true {
-      var request = URLRequest(url: url, timeoutInterval: 60)
+      var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
       request.httpMethod = method
       request.setValue("Token \(current.accessToken)", forHTTPHeaderField: "Authorization")
       if let space = current.spaceAuthorization, !space.isEmpty {
@@ -92,9 +99,9 @@ public actor XunleiSession {
         request.httpBody = try ChinaWebSupport.jsonData(json)
       }
       let response = try await transport.send(request)
+      if ChinaWebSupport.requiresVerification(response) { throw XunleiError.verificationRequired }
       if Self.isUnauthorized(response), !didRefresh, refresh != nil {
         current = try await refreshed(current)
-        credentials = current
         didRefresh = true
         continue
       }
@@ -112,7 +119,7 @@ public actor XunleiSession {
     guard url.scheme == "https", let host = url.host, !host.isEmpty, url.user == nil,
       url.password == nil
     else { throw XunleiError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.setValue(ChinaWebSupport.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("https://pan.xunlei.com/", forHTTPHeaderField: "Referer")
     request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
@@ -133,22 +140,37 @@ public actor XunleiSession {
   }
 
   private func refreshed(_ rejected: XunleiCredentials) async throws -> XunleiCredentials {
+    if credentials != rejected { return credentials }
+    if let refreshing { return try await refreshing.value }
     guard let refresh else { throw XunleiError.loginRequired }
-    let value: XunleiCredentials
-    do {
-      value = try await refresh(rejected)
-    } catch {
-      throw XunleiError.loginRequired
+    let task = Task<XunleiCredentials, Error> {
+      let value: XunleiCredentials
+      do {
+        value = try await HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest)).run {
+          try await refresh(rejected)
+        }
+      } catch { throw NetworkFailure.posix(error) }
+      guard !value.accessToken.isEmpty else { throw XunleiError.loginRequired }
+      return value
     }
-    guard !value.accessToken.isEmpty else { throw XunleiError.loginRequired }
+    refreshing = task
+    defer { refreshing = nil }
+    let value = try await task.value
+    credentials = value
     return value
   }
 
   private static func isUnauthorized(_ response: HTTPResponse) -> Bool {
-    if response.status == 401 || response.status == 403 { return true }
+    if response.status == 429 || response.status >= 500 { return false }
+    if ChinaWebSupport.requiresVerification(response) { return false }
+    if response.status == 401 { return true }
     let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
-    let text = String(decoding: response.body, as: UTF8.self).lowercased()
-    let code = object?["error_code"] as? Int ?? object?["code"] as? Int
+    let text = ["error", "error_description", "message", "msg"].compactMap {
+      object?[$0] as? String
+    }.joined(separator: " ").lowercased()
+    let code =
+      object?["error_code"] as? Int ?? object?["code"] as? Int
+      ?? Int(object?["error_code"] as? String ?? object?["code"] as? String ?? "")
     return object?["error"] as? String == "invalid_token" || text.contains("token expired")
       || text.contains("unauthorized") || text.contains("login plz") || code == 1001
       || code == 1002
@@ -158,7 +180,8 @@ public actor XunleiSession {
     guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
       let error = object["error"] as? String
     else { return nil }
-    let value = error.lowercased()
+    let value = error.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    guard !value.isEmpty else { return nil }
     if value.contains("space") || value.contains("not_enough") {
       return .posix(ENOSPC)
     }

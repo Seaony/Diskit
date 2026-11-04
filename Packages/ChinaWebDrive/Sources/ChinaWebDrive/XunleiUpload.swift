@@ -55,6 +55,18 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
     parameters: XunleiUploadParameters,
     progress: (@Sendable (Int64, Int64) -> Void)?
   ) async throws {
+    do {
+      try await performUpload(
+        from: localFile, size: size, parameters: parameters, progress: progress)
+    } catch {
+      throw Self.map(error)
+    }
+  }
+
+  private func performUpload(
+    from localFile: URL, size: Int64, parameters: XunleiUploadParameters,
+    progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
     let configuration = Configuration.default()
       .withEndpoint(parameters.endpoint.absoluteString)
       .withCredentialsProvider(
@@ -66,7 +78,7 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
       )
       .withSignerVersion(.v1)
       .withRetryMaxAttempts(3)
-      .withTimeoutIntervalForRequest(60)
+      .withTimeoutIntervalForRequest(RemoteTimeout.transferIdle)
       .withUploadCRC64Validation(true)
     if let region = parameters.region, !region.isEmpty {
       configuration.withRegion(region)
@@ -78,72 +90,64 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
     let parts = try XunleiUploadPart.split(
       size: size, requestedPartSize: parameters.partSize)
     guard !parts.isEmpty else {
-      _ = try await client.putObject(
-        PutObjectRequest(
-          bucket: parameters.bucket,
-          key: parameters.key,
-          forbidOverwrite: true,
-          body: .data(Data()),
-          progress: ProgressClosure { _, transferred, expected in
-            progress?(transferred, expected)
-          }
-        )
-      )
+      let deadline = HTTPProgressDeadline(interval: .seconds(RemoteTimeout.transferIdle))
+      try await deadline.run {
+        _ = try await client.putObject(
+          PutObjectRequest(
+            bucket: parameters.bucket, key: parameters.key, forbidOverwrite: true,
+            body: .data(Data()),
+            progress: ProgressClosure { increment, transferred, expected in
+              if increment > 0 { deadline.recordProgress() }
+              progress?(transferred, expected)
+            }))
+      }
       progress?(0, 0)
       return
     }
 
-    let initiated = try await client.initiateMultipartUpload(
-      InitiateMultipartUploadRequest(
-        bucket: parameters.bucket,
-        key: parameters.key,
-        forbidOverwrite: true
-      )
-    )
-    guard let uploadID = initiated.uploadId, !uploadID.isEmpty else {
+    let uploadID = try await HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))
+      .run {
+        try await client.initiateMultipartUpload(
+          InitiateMultipartUploadRequest(
+            bucket: parameters.bucket, key: parameters.key, forbidOverwrite: true)
+        ).uploadId
+      }
+    guard let uploadID, !uploadID.isEmpty else {
       throw RemoteError.protocolError
     }
     do {
-      let handle = try FileHandle(forReadingFrom: localFile)
-      defer { try? handle.close() }
       var uploaded: [UploadPart] = []
       for part in parts {
         try Task.checkCancellation()
-        try handle.seek(toOffset: UInt64(part.offset))
-        var body = Data()
-        while body.count < Int(part.length) {
-          guard let chunk = try handle.read(upToCount: Int(part.length) - body.count),
-            !chunk.isEmpty
-          else { throw RemoteError.posix(EIO) }
-          body.append(chunk)
+        let partFile = try XunleiPartFile(
+          source: localFile, offset: part.offset, length: part.length)
+        let deadline = HTTPProgressDeadline(interval: .seconds(RemoteTimeout.transferIdle))
+        let etag = try await deadline.run {
+          try await client.uploadPart(
+            UploadPartRequest(
+              bucket: parameters.bucket, key: parameters.key, partNumber: part.number,
+              uploadId: uploadID, body: .file(partFile.url),
+              progress: ProgressClosure { increment, transferred, _ in
+                if increment > 0 { deadline.recordProgress() }
+                progress?(part.offset + transferred, size)
+              })
+          ).etag
         }
-        let result = try await client.uploadPart(
-          UploadPartRequest(
-            bucket: parameters.bucket,
-            key: parameters.key,
-            partNumber: part.number,
-            uploadId: uploadID,
-            body: .data(body),
-            progress: ProgressClosure { _, transferred, expected in
-              progress?(part.offset + transferred, expected)
-            }
-          )
-        )
-        guard let etag = result.etag, !etag.isEmpty else {
-          throw RemoteError.protocolError
-        }
+        withExtendedLifetime(partFile) {}
+        guard let etag, !etag.isEmpty else { throw RemoteError.protocolError }
         uploaded.append(UploadPart(etag: etag, partNumber: part.number))
         progress?(part.offset + part.length, size)
       }
-      let completed = try await client.completeMultipartUpload(
-        CompleteMultipartUploadRequest(
-          bucket: parameters.bucket,
-          key: parameters.key,
-          forbidOverwrite: true,
-          uploadId: uploadID,
-          completeMultipartUpload: CompleteMultipartUpload(parts: uploaded)
-        )
-      )
+      let completionParts = uploaded
+      let completed = try await HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))
+        .run {
+          let result = try await client.completeMultipartUpload(
+            CompleteMultipartUploadRequest(
+              bucket: parameters.bucket, key: parameters.key, forbidOverwrite: true,
+              uploadId: uploadID,
+              completeMultipartUpload: CompleteMultipartUpload(parts: completionParts)))
+          return (key: result.key, etag: result.etag)
+        }
       guard completed.key == nil || completed.key == parameters.key,
         let etag = completed.etag, !etag.isEmpty
       else { throw RemoteError.protocolError }
@@ -152,26 +156,37 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
       let parameters = parameters
       let uploadID = uploadID
       let cleanup = Task.detached {
-        _ = try? await client.abortMultipartUpload(
-          AbortMultipartUploadRequest(
-            bucket: parameters.bucket,
-            key: parameters.key,
-            uploadId: uploadID
-          )
-        )
+        try? await HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest)).run {
+          _ = try await client.abortMultipartUpload(
+            AbortMultipartUploadRequest(
+              bucket: parameters.bucket, key: parameters.key, uploadId: uploadID))
+        }
       }
       await cleanup.value
       throw Self.map(error)
     }
   }
 
-  private static func map(_ error: Error) -> Error {
+  static func map(_ error: Error) -> Error {
     if error is CancellationError || error is RemoteError || error is XunleiError {
       return error
+    }
+    if let wrapped = error as? ClientError, let inner = wrapped.innerError {
+      return map(inner)
+    }
+    if let fileError = error as? CocoaError {
+      switch fileError.code {
+      case .fileWriteOutOfSpace: return RemoteError.posix(ENOSPC)
+      case .fileNoSuchFile, .fileReadNoSuchFile: return RemoteError.posix(ENOENT)
+      case .fileReadNoPermission, .fileWriteNoPermission: return RemoteError.posix(EACCES)
+      default: break
+      }
     }
     if let error = error as? ServerError {
       switch error.statusCode {
       case 401, 403: return RemoteError.posix(EACCES)
+      case 404: return RemoteError.posix(ENOENT)
+      case 408, 504: return RemoteError.posix(ETIMEDOUT)
       case 409, 412: return RemoteError.posix(EEXIST)
       case 413: return RemoteError.tooLarge
       case 429, 503: return RemoteError.rateLimited
@@ -180,6 +195,6 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
       default: return RemoteError.posix(EIO)
       }
     }
-    return RemoteError.posix(EIO)
+    return NetworkFailure.posix(error)
   }
 }

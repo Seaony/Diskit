@@ -13,22 +13,31 @@ public struct MobileCloudCredentials: Sendable, Equatable {
   }
 }
 
-public enum MobileCloudError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+public enum MobileCloudError: Error, Equatable, LocalizedError, CustomNSError, LoginRequiredFailure,
+  Sendable
+{
   case invalidCredentials
   case invalidResponse
   case loginRequired
+  case verificationRequired
 
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int {
-    self == .invalidResponse ? Int(EIO) : Int(EACCES)
+    switch self {
+    case .invalidResponse: Int(EIO)
+    case .verificationRequired: Int(EAGAIN)
+    case .invalidCredentials, .loginRequired: Int(EACCES)
+    }
   }
   public var errorDescription: String? {
     switch self {
     case .invalidCredentials: L("移动云盘登录信息不完整")
     case .invalidResponse: L("移动云盘返回了无法识别的数据")
     case .loginRequired: L("移动云盘登录已失效，请重新登录")
+    case .verificationRequired: L("请先在网页完成验证后重试")
     }
   }
+  public var requiresLogin: Bool { self == .loginRequired }
   public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
 }
 
@@ -49,7 +58,6 @@ public actor MobileCloudSession {
   public static let routeURL = URL(
     string: "https://user-njs.yun.139.com/user/route/qryRoutePolicy")!
   public static let userBaseURL = URL(string: "https://user-njs.yun.139.com/user")!
-  public static let loginURL = URL(string: "https://yun.139.com/w/")!
 
   private var credentials: MobileCloudCredentials
   private let refresh: Refresh?
@@ -57,6 +65,7 @@ public actor MobileCloudSession {
   private let now: @Sendable () -> Date
   private let nonce: @Sendable () -> String
   private var route: MobileCloudRoute?
+  private var refreshing: Task<MobileCloudCredentials, Error>?
 
   public init(
     credentials: MobileCloudCredentials,
@@ -125,7 +134,7 @@ public actor MobileCloudSession {
           throw error
         }
       }
-      if lastError is MobileCloudError, !didRefresh, refresh != nil {
+      if lastError as? MobileCloudError == .loginRequired, !didRefresh, refresh != nil {
         current = try await validateRefresh(current)
         credentials = current
         didRefresh = true
@@ -168,7 +177,7 @@ public actor MobileCloudSession {
     guard url.scheme == "https", let host = url.host, !host.isEmpty, url.user == nil,
       url.password == nil
     else { throw MobileCloudError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.setValue(ChinaWebSupport.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("https://yun.139.com/", forHTTPHeaderField: "Referer")
     request.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
@@ -218,17 +227,29 @@ public actor MobileCloudSession {
   private func validateRefresh(
     _ rejected: MobileCloudCredentials
   ) async throws -> MobileCloudCredentials {
+    if credentials != rejected { return credentials }
+    if let refreshing { return try await refreshing.value }
     guard let refresh else { throw MobileCloudError.loginRequired }
-    let value: MobileCloudCredentials
+    let task = Task {
+      let value = try await HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest)).run
+      {
+        try await refresh(rejected)
+      }
+      guard !value.phone.isEmpty, !value.token.isEmpty else {
+        throw MobileCloudError.loginRequired
+      }
+      return value
+    }
+    refreshing = task
     do {
-      value = try await refresh(rejected)
+      let value = try await task.value
+      credentials = value
+      refreshing = nil
+      return value
     } catch {
-      throw MobileCloudError.loginRequired
+      refreshing = nil
+      throw NetworkFailure.posix(error)
     }
-    guard !value.phone.isEmpty, !value.token.isEmpty else {
-      throw MobileCloudError.loginRequired
-    }
-    return value
   }
 
   private func makeRequest(
@@ -242,7 +263,7 @@ public actor MobileCloudSession {
     let random = nonce()
     guard random.utf8.count == 16 else { throw MobileCloudError.invalidResponse }
     let signature = Self.sign(body: body, timestamp: timestamp, random: random)
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.httpBody = body
     request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Content-Type")
@@ -309,25 +330,37 @@ public actor MobileCloudSession {
   }
 
   private func validate(_ response: HTTPResponse) throws {
-    if isUnauthorized(response) { throw MobileCloudError.loginRequired }
-    guard (200..<300).contains(response.status) else {
-      throw RemoteError.http(response.status)
-    }
-    guard let root = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
-    else { throw MobileCloudError.invalidResponse }
-    if root["success"] as? Bool == false { throw mapFailure(response) }
-    let code = (root["code"] as? NSNumber)?.intValue
-    let codeText = root["code"] as? String
-    if code == 9008 || code == 9100 || codeText == "9008" || codeText == "9100" {
-      throw MobileCloudError.loginRequired
-    }
-    if code == 9000 || codeText == "9000" {
-      throw mapFailure(response)
+    do {
+      if ChinaWebSupport.requiresVerification(response) {
+        throw MobileCloudError.verificationRequired
+      }
+      if isUnauthorized(response) { throw MobileCloudError.loginRequired }
+      guard (200..<300).contains(response.status) else {
+        throw RemoteError.http(response.status)
+      }
+      guard let root = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
+      else { throw MobileCloudError.invalidResponse }
+      if root["success"] as? Bool == false { throw mapFailure(response) }
+      let code = (root["code"] as? NSNumber)?.intValue
+      let codeText = root["code"] as? String
+      if code == 9008 || code == 9100 || codeText == "9008" || codeText == "9100" {
+        throw MobileCloudError.loginRequired
+      }
+      if code == 9000 || codeText == "9000" {
+        throw mapFailure(response)
+      }
+    } catch {
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .chinaWebDrive, operation: .request)
+      }
+      throw error
     }
   }
 
   private func isUnauthorized(_ response: HTTPResponse) -> Bool {
-    if response.status == 401 || response.status == 403 { return true }
+    guard response.status != 429, response.status < 500 else { return false }
+    if ChinaWebSupport.requiresVerification(response) { return false }
+    if response.status == 401 { return true }
     guard let root = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
     else { return false }
     let code = (root["code"] as? NSNumber)?.intValue

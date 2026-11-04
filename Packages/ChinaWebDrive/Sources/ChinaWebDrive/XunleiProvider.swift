@@ -103,7 +103,11 @@ public actor XunleiProvider: RemoteFileProvider {
   private let session: XunleiSession
   private let rootFolderID: String
   private let uploader: any XunleiVendorUploader
+  private let uploadPollInterval: Duration
+  private let uploadIdleTimeout: Duration
+  private let makeUploadDeadline: (@Sendable () -> HTTPProgressDeadline)?
   private var connected = false
+  private var cacheGeneration: UInt64 = 0
   private var nodes: [String: XunleiFile] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
@@ -111,16 +115,25 @@ public actor XunleiProvider: RemoteFileProvider {
     self.session = session
     self.rootFolderID = rootFolderID
     self.uploader = AliyunOSSXunleiUploader()
+    uploadPollInterval = .milliseconds(500)
+    uploadIdleTimeout = .seconds(RemoteTimeout.transferIdle)
+    makeUploadDeadline = nil
   }
 
   init(
     session: XunleiSession,
     rootFolderID: String = "",
-    uploader: any XunleiVendorUploader
+    uploader: any XunleiVendorUploader,
+    uploadPollInterval: Duration = .milliseconds(500),
+    uploadIdleTimeout: Duration = .seconds(RemoteTimeout.transferIdle),
+    makeUploadDeadline: (@Sendable () -> HTTPProgressDeadline)? = nil
   ) {
     self.session = session
     self.rootFolderID = rootFolderID
     self.uploader = uploader
+    self.uploadPollInterval = uploadPollInterval
+    self.uploadIdleTimeout = uploadIdleTimeout
+    self.makeUploadDeadline = makeUploadDeadline
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
@@ -128,23 +141,31 @@ public actor XunleiProvider: RemoteFileProvider {
   }
 
   public func connect() async throws {
-    try await session.connect()
-    connected = true
+    connected = false
+    cacheGeneration &+= 1
+    let generation = cacheGeneration
     nodes.removeAll()
+    try await session.connect()
+    guard cacheGeneration == generation else { throw CancellationError() }
+    connected = true
   }
 
   public func disconnect() async {
     connected = false
+    cacheGeneration &+= 1
     nodes.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
     try requireConnection()
     let response = try await session.request(method: "GET", path: "about")
-    guard let about = try? JSONDecoder().decode(XunleiAbout.self, from: response.body),
-      let quota = about.quota, let total = quota.limit?.value, let used = quota.usage?.value,
-      total >= 0, used >= 0, used <= total
+    guard let about = try? JSONDecoder().decode(XunleiAbout.self, from: response.body)
     else { throw XunleiError.invalidResponse }
+    let total = about.quota?.limit?.value
+    let used = about.quota?.usage?.value
+    guard [total, used].compactMap({ $0 }).allSatisfy({ $0 >= 0 }) else {
+      throw XunleiError.invalidResponse
+    }
     return SpaceInfo(total: total, used: used)
   }
 
@@ -165,9 +186,9 @@ public actor XunleiProvider: RemoteFileProvider {
   public func read(
     _ path: RemotePath, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
-    let metadata = try await stat(path)
+    let node = try await resolve(path)
+    let metadata = try node.item(at: path)
     guard !metadata.isDirectory else { throw RemoteError.posix(EISDIR) }
-    guard let node = nodes[path.value] else { throw RemoteError.posix(ENOENT) }
     let requested: Range<Int64>?
     if let range {
       guard range.lowerBound >= 0, range.upperBound >= range.lowerBound,
@@ -200,6 +221,7 @@ public actor XunleiProvider: RemoteFileProvider {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let destination = ChinaWebSupport.parent(of: path)
     let folder = try await resolve(destination)
@@ -213,6 +235,7 @@ public actor XunleiProvider: RemoteFileProvider {
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0
     else { throw RemoteError.posix(EIO) }
     let size = Int64(fileSize)
+    defer { invalidate(destination) }
     let response = try await session.request(
       method: "POST",
       path: "files",
@@ -235,7 +258,6 @@ public actor XunleiProvider: RemoteFileProvider {
     }
     if created.file.phase == "PHASE_TYPE_COMPLETE" {
       progress?(size, size)
-      invalidate(destination)
       return
     }
     if created.file.phase == "PHASE_TYPE_ERROR" {
@@ -262,10 +284,9 @@ public actor XunleiProvider: RemoteFileProvider {
         from: localFile, size: size, parameters: parameters, progress: progress)
       try await waitForUpload(created.file.id, name: name, size: size)
       progress?(size, size)
-      invalidate(destination)
     } catch {
       await discard(created.file.id)
-      throw error
+      throw NetworkFailure.posix(error)
     }
   }
 
@@ -282,6 +303,7 @@ public actor XunleiProvider: RemoteFileProvider {
     guard !existing.contains(where: { $0.name == name }) else {
       throw RemoteError.posix(EEXIST)
     }
+    defer { invalidate(destination) }
     let response = try await session.request(
       method: "POST", path: "files",
       json: ["kind": "drive#folder", "parent_id": requestParent(folder.id), "name": name])
@@ -290,7 +312,6 @@ public actor XunleiProvider: RemoteFileProvider {
       try? await trash(created.id)
       throw RemoteError.posix(EEXIST)
     }
-    invalidate(destination)
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -299,8 +320,8 @@ public actor XunleiProvider: RemoteFileProvider {
     if file.isDirectory, !recursive, !(try await children(path, parentID: file.id)).isEmpty {
       throw RemoteError.posix(ENOTEMPTY)
     }
+    defer { invalidate(ChinaWebSupport.parent(of: path)) }
     try await trash(file.id)
-    invalidate(ChinaWebSupport.parent(of: path))
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
@@ -315,6 +336,10 @@ public actor XunleiProvider: RemoteFileProvider {
       $0.name == ChinaWebSupport.basename(to) && $0.id != file.id
     }
     guard conflicts.isEmpty else { throw RemoteError.posix(EEXIST) }
+    defer {
+      invalidate(source)
+      invalidate(destination)
+    }
     let response = try await session.request(
       method: "POST",
       path: "files/\(ChinaWebSupport.encodedPathComponent(file.id))/move",
@@ -328,8 +353,6 @@ public actor XunleiProvider: RemoteFileProvider {
     guard moved.name == ChinaWebSupport.basename(to),
       moved.parentID == nil || moved.parentID == requestParent(folder.id)
     else { throw XunleiError.invalidResponse }
-    invalidate(source)
-    invalidate(destination)
   }
 
   private func requireConnection() throws {
@@ -374,9 +397,15 @@ public actor XunleiProvider: RemoteFileProvider {
   }
 
   private func children(_ path: RemotePath, parentID: String) async throws -> [XunleiFile] {
+    let generation = cacheGeneration
+    var completed = false
+    defer {
+      if !completed, connected, cacheGeneration == generation { invalidate(path) }
+    }
     var pageToken = ""
     var visited = Set<String>()
     var output: [XunleiFile] = []
+    var ids = Set<String>()
     repeat {
       try Task.checkCancellation()
       let query = [
@@ -389,19 +418,27 @@ public actor XunleiProvider: RemoteFileProvider {
       ]
       let response = try await session.request(method: "GET", path: "files", query: query)
       let page = try JSONDecoder().decode(XunleiPage.self, from: response.body)
-      output.append(contentsOf: page.files)
+      for file in page.files {
+        guard ids.insert(file.id).inserted else { throw XunleiError.invalidResponse }
+        output.append(file)
+      }
       pageToken = page.nextPageToken ?? ""
       if !pageToken.isEmpty, !visited.insert(pageToken).inserted {
         throw XunleiError.invalidResponse
       }
     } while !pageToken.isEmpty
-    invalidate(path)
     let grouped = Dictionary(grouping: output, by: \.name)
+    var updated: [String: XunleiFile] = [:]
     for item in output {
       let child = try path.appending(item.name)
       _ = try item.item(at: child)
-      if grouped[item.name]?.count == 1 { nodes[child.value] = item }
+      if grouped[item.name]?.count == 1 { updated[child.value] = item }
     }
+    if connected, cacheGeneration == generation {
+      invalidate(path)
+      nodes.merge(updated) { _, new in new }
+    }
+    completed = true
     return output
   }
 
@@ -464,25 +501,30 @@ public actor XunleiProvider: RemoteFileProvider {
   }
 
   private func waitForUpload(_ id: String, name: String, size: Int64) async throws {
-    for attempt in 0..<120 {
-      let file = try await detail(id)
-      guard file.id == id, file.name == name, file.kind == "drive#file" else {
-        throw XunleiError.invalidResponse
-      }
-      if file.phase == "PHASE_TYPE_COMPLETE" {
-        guard file.size == nil || file.size?.value == size else {
+    let deadline = makeUploadDeadline?() ?? HTTPProgressDeadline(interval: uploadIdleTimeout)
+    let interval = uploadPollInterval
+    try await deadline.run {
+      var runningObserved = false
+      while true {
+        try Task.checkCancellation()
+        let file = try await self.detail(id)
+        guard file.id == id, file.name == name, file.kind == "drive#file" else {
           throw XunleiError.invalidResponse
         }
-        return
-      }
-      if file.phase == "PHASE_TYPE_ERROR" {
-        throw XunleiError.invalidResponse
-      }
-      if attempt < 119 {
-        try await Task.sleep(for: .milliseconds(500))
+        if file.phase == "PHASE_TYPE_COMPLETE" {
+          guard file.size == nil || file.size?.value == size else {
+            throw XunleiError.invalidResponse
+          }
+          return
+        }
+        if file.phase == "PHASE_TYPE_ERROR" { throw XunleiError.invalidResponse }
+        if file.phase == "PHASE_TYPE_RUNNING", !runningObserved {
+          runningObserved = true
+          deadline.recordProgress()
+        }
+        if interval > .zero { try await Task.sleep(for: interval) }
       }
     }
-    throw RemoteError.posix(ETIMEDOUT)
   }
 
   private func validate(
@@ -510,6 +552,7 @@ public actor XunleiProvider: RemoteFileProvider {
   }
 
   private func invalidate(_ path: RemotePath) {
+    cacheGeneration &+= 1
     let prefix = path.value == "/" ? "/" : path.value + "/"
     for key in Array(nodes.keys) where key.hasPrefix(prefix) {
       nodes.removeValue(forKey: key)

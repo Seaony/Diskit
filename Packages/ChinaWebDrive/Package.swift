@@ -20,7 +20,10 @@ let package = Package(
         .product(name: "AlibabaCloudOSS", package: "alibabacloud-oss-swift-sdk-v2"),
       ]
     ),
-    .testTarget(name: "ChinaWebDriveTests", dependencies: ["ChinaWebDrive"]),
+    .testTarget(
+      name: "ChinaWebDriveTests",
+      dependencies: ["ChinaWebDrive", .product(name: "CoreTestSupport", package: "Core")]
+    ),
   ],
   swiftLanguageModes: [.v6]
 )

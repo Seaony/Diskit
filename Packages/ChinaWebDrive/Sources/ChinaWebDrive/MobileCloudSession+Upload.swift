@@ -9,6 +9,6 @@ extension MobileCloudSession {
     var unsigned = request
     unsigned.setValue(nil, forHTTPHeaderField: "Authorization")
     unsigned.setValue(nil, forHTTPHeaderField: "Cookie")
-    return try await transport.send(unsigned)
+    return try await transport.upload(unsigned)
   }
 }
