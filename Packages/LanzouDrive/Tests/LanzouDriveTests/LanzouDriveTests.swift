@@ -638,3 +638,18 @@ func lanzouMetadataRequiresAnAuthoritativeLength(scenario: String) async throws 
     await #expect(throws: expected) { _ = try await provider.list(RemotePath("/")) }
   }
 }
+
+@Test func lanzouProviderDisconnectKeepsOtherSessionUserConnected() async throws {
+  let http = FakeHTTP { request in
+    accountReply(request) ?? FakeReply(status: 404)
+  }
+  let session = LanzouSession(
+    configuration: try configuration(.accountCookie("phpdisk_info=local")), transport: http)
+  let first = LanzouProvider(session: session)
+  let second = LanzouProvider(session: session)
+  try await first.connect()
+  try await second.connect()
+  await first.disconnect()
+  #expect(try await second.list(RemotePath("/")).count == 4)
+  await #expect(throws: RemoteError.notConnected) { _ = try await first.list(RemotePath("/")) }
+}

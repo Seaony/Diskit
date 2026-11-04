@@ -42,7 +42,7 @@ extension HTTPTransport {
   }
 }
 
-public struct URLSessionHTTPTransport: HTTPTransport {
+public final class URLSessionHTTPTransport: HTTPTransport {
   private let session: URLSession
   private let redirectDelegate: HTTPRedirectDelegate
   public init(cookieDomain: String? = nil) {

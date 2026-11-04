@@ -25,8 +25,12 @@ public actor LanzouProvider: RemoteFileProvider {
     configuration: LanzouConfiguration,
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
-    self.configuration = configuration
-    session = LanzouSession(configuration: configuration, transport: transport)
+    self.init(session: LanzouSession(configuration: configuration, transport: transport))
+  }
+
+  public init(session: LanzouSession) {
+    self.configuration = session.configuration
+    self.session = session
   }
 
   public func connect() async throws {
@@ -38,7 +42,6 @@ public actor LanzouProvider: RemoteFileProvider {
   public func disconnect() async {
     connected = false
     nodes.removeAll()
-    await session.disconnect()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {

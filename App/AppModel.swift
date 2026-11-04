@@ -378,30 +378,11 @@ import UserNotifications
     case .tianyiDrive:
       return TianyiProvider(session: tianyiSession(for: connection))
     case .lanzou:
-      let secret = try savedRemoteSecret(for: connection)
-      let authentication: LanzouAuthentication
-      if connection.params["authMode"] == "share" {
-        guard let url = URL(string: connection.params["shareURL"] ?? "") else {
-          throw ConnectionError.invalidFields
-        }
-        authentication = .share(url: url, password: secret.isEmpty ? nil : secret)
-      } else {
-        authentication = .accountCookie(secret)
-      }
-      return LanzouProvider(
-        configuration: try LanzouConfiguration(authentication: authentication))
+      return LanzouProvider(session: try lanzouSession(for: connection))
     case .mobileCloud:
-      return MobileCloudProvider(
-        session: MobileCloudSession(
-          credentials: MobileCloudCredentials(
-            phone: connection.params["phone"] ?? "",
-            token: try savedRemoteSecret(for: connection),
-            userDomainID: connection.params["userDomainID"])))
+      return MobileCloudProvider(session: try mobileCloudSession(for: connection))
     case .thunderDrive:
-      return XunleiProvider(
-        session: XunleiSession(
-          credentials: XunleiCredentials(
-            accessToken: try savedRemoteSecret(for: connection))))
+      return XunleiProvider(session: try xunleiSession(for: connection))
     case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2:
       guard let endpoint = URL(string: connection.params["endpoint"] ?? "") else {
         throw ConnectionError.invalidFields
@@ -410,15 +391,52 @@ import UserNotifications
         try secrets.read(connection.passwordKey).map {
           String(decoding: $0, as: UTF8.self)
         } ?? ""
+      let configuration = S3Configuration(
+        endpoint: endpoint, region: connection.params["region"] ?? "us-east-1",
+        bucket: connection.params["bucket"] ?? "",
+        accessKey: connection.params["accessKey"] ?? "", secretKey: secret,
+        pathStyle: connection.params["pathStyle"] != "false")
       return S3Provider(
-        configuration: S3Configuration(
-          endpoint: endpoint, region: connection.params["region"] ?? "us-east-1",
-          bucket: connection.params["bucket"] ?? "",
-          accessKey: connection.params["accessKey"] ?? "", secretKey: secret,
-          pathStyle: connection.params["pathStyle"] != "false"))
+        configuration: configuration,
+        transport: s3Transport(for: connection, configuration: configuration))
     default:
       throw ConnectionError.notImplemented
     }
+  }
+  func lanzouSession(for connection: Connection) throws -> LanzouSession {
+    let secret = try savedRemoteSecret(for: connection)
+    let authentication: LanzouAuthentication
+    if connection.params["authMode"] == "share" {
+      guard let url = URL(string: connection.params["shareURL"] ?? "") else {
+        throw ConnectionError.invalidFields
+      }
+      authentication = .share(url: url, password: secret.isEmpty ? nil : secret)
+    } else {
+      authentication = .accountCookie(secret)
+    }
+    let configuration = try LanzouConfiguration(authentication: authentication)
+    return sessionCache.value(for: connection, configuration: configuration) {
+      LanzouSession(configuration: configuration)
+    }
+  }
+  func mobileCloudSession(for connection: Connection) throws -> MobileCloudSession {
+    let credentials = MobileCloudCredentials(
+      phone: connection.params["phone"] ?? "", token: try savedRemoteSecret(for: connection),
+      userDomainID: connection.params["userDomainID"])
+    return sessionCache.value(for: connection, configuration: credentials) {
+      MobileCloudSession(credentials: credentials)
+    }
+  }
+  func xunleiSession(for connection: Connection) throws -> XunleiSession {
+    let credentials = XunleiCredentials(accessToken: try savedRemoteSecret(for: connection))
+    return sessionCache.value(for: connection, configuration: credentials) {
+      XunleiSession(credentials: credentials)
+    }
+  }
+  func s3Transport(for connection: Connection, configuration: S3Configuration)
+    -> URLSessionHTTPTransport
+  {
+    sessionCache.value(for: connection, configuration: configuration) { URLSessionHTTPTransport() }
   }
   func savedRemoteSecret(for connection: Connection) throws -> String {
     try secrets.read(connection.passwordKey).map {

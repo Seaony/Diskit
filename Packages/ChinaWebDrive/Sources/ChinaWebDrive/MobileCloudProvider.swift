@@ -129,7 +129,6 @@ public actor MobileCloudProvider: RemoteFileProvider {
   public func disconnect() async {
     connected = false
     nodes.removeAll()
-    await session.disconnect()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {

@@ -707,3 +707,16 @@ func trashFailureNeverFallsBackToPermanentDeletion(mobile: Bool) async throws {
   #expect(try requestBody(cleanup)["fileIds"] as? [String] == ["new"])
   #expect(await !http.requests.contains { $0.url?.path.contains("batchDelete") == true })
 }
+
+@Test func mobileProviderDisconnectKeepsOtherSessionUserConnected() async throws {
+  let empty = response(#"{"success":true,"code":"0000","data":{"items":[],"nextPageCursor":null}}"#)
+  let http = ScriptHTTP([mobileRoute, mobileRoute, empty])
+  let session = mobileSession(http)
+  let first = MobileCloudProvider(session: session)
+  let second = MobileCloudProvider(session: session)
+  try await first.connect()
+  try await second.connect()
+  await first.disconnect()
+  #expect(try await second.list(RemotePath("/")).isEmpty)
+  await #expect(throws: RemoteError.notConnected) { _ = try await first.list(RemotePath("/")) }
+}

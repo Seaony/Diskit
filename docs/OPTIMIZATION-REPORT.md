@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 接入已通过本地门禁，应用层令牌和 Cookie 会话复用已通过本地门禁，其他会话待处理；FIX-18 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度、CloudDrive/S3 限流及全部应用层网盘会话复用已通过本地门禁，真实账号另待用户验收；FIX-18 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -361,3 +361,14 @@
 - `ConnectionManager.swift:205` 在删除配置落盘、内存列表更新后触发 removed，AppModel 清除对应缓存；保存失败不触发，即便后续凭据清理失败也已清除被移除位置的会话。已有十二类删除保存失败回归及清理失败回归补上通知顺序断言；`appRemovedConnectionReleasesCachedSession`（`:44`）验证实际应用删除路径。
 - `AppModel.discardUnsavedSessions`（`:231`）在关闭编辑器和取消保存结束时清理未保存草稿，不丢弃已保存位置的会话；`appDiscardsOnlyUnsavedSessionCache`（`:83`）覆盖两种情况。以上只调整工厂和生命周期，没有改界面布局或文案，未启动应用或登录真实服务。
 - 失败及应用回归证据 `docs/evidence/v0.2/FIX-17-app-regression.log`；完整提交门禁通过：应用逻辑 14 项、包测试 354 项，发布构建及签名校验通过，证据 `docs/evidence/v0.2/FIX-17-app-gates.log`。FIX-17 尚未整体通过：蓝奏、移动、迅雷及 S3 底层会话复用仍需核对完成，当前不能用这些测试代替它们的验收。
+
+
+## FIX-17：剩余会话复用与共享断开边界
+
+- `App/AppModel.swift:406`、`:422`、`:430` 为蓝奏、移动、迅雷复用同一保存位置的会话，缓存比较完整配置或凭据，分享地址、密码、令牌、手机/空间配置改变时替换实例；新操作不复用旧凭据。显示名称变化不影响复用，删除及放弃草稿沿用上一组清理规则。
+- `LanzouSession.swift:10` 提供可共享的会话及只读配置，`LanzouProvider.swift:31` 支持注入会话，原配置初始化入口保留。蓝奏（`:42`）及移动（`MobileCloudProvider.swift:129`）的 provider.disconnect 只清当前使用者的连接状态和目录缓存，不清其他使用者所依赖的共享 Cookie/路由。移除由本次改动产生的蓝奏内部无调用 disconnect。
+- `lanzouProviderDisconnectKeepsOtherSessionUserConnected`（`LanzouDriveTests.swift:642`）与 `mobileProviderDisconnectKeepsOtherSessionUserConnected`（`ChinaWebDriveTests.swift:711`）各创建两个共享会话的 provider；修复前断开第一个后第二个分别报 notConnected、invalidResponse；修复后第二个继续实际列目录，第一个仍正确拒绝未连接操作。
+- S3 没有独立授权会话 actor，`AppModel.swift:436` 复用其 URLSession 传输对象。`Core/HTTPTransport.swift:45` 将持有不可变 URLSession 的 transport 改为 final 引用类型，便于直接缓存其身份，没有另包一层空壳；原有两种初始化与发送/流接口保持不变。S3Provider 自身状态仍独立，共享四并发额度继续生效。
+- `appReusesConfiguredSessionsAndReplacesChangedCredentials`（`SessionReuseTests.swift:97`）覆盖蓝奏、移动、迅雷、S3 四组：重复调用及改名复用，凭据改变替换，放弃草稿后不复用旧对象。`appLanzouConfigurationChangeReplacesSharedSession`（`:126`）确认分享地址改变后的实际会话配置。只有内存样例凭据，未连接真实账号或共享链接。
+- 已核对 DevTool 的单命令控制流（`main.swift:170` 创建一个 provider，`:266` 连接后执行一个命令并断开），它没有同一次执行反复创建同账号 provider 的应用层路径，因此不另加进程内长期缓存；其 S3/CloudDrive 包级额度和跨进程刷新锁继续由对应包提供。
+- 回归证据 `docs/evidence/v0.2/FIX-17-share-regression.log`；完整提交门禁通过：应用逻辑 16 项、包测试 356 项，发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-17-share-gates.log`。FIX-17 指定的本地限流与会话复用验收现已通过，真实账号项目进入 ACCEPTANCE。FIX-17 的账号边界为同一保存位置/凭据记录（S3 请求额度另按端点和访问标识合并），不同位置中独立登录记录不冒称为识别出了同一个服务端账号；本轮没有真实账号证据。

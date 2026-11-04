@@ -1,0 +1,260 @@
+蓝奏失败：swift test --package-path Packages/LanzouDrive --filter lanzouProviderDisconnectKeepsOtherSessionUserConnected；退出 1。
+Building for debugging...
+[1 / 5]
+[2 / 6] LanzouDrive
+[3 / 7] LanzouDrive
+[9 / 12] LanzouDrive
+[12 / 16] LanzouDriveTests-product
+[15 / 19] LanzouDriveTests-product
+[21 / 23] LanzouDriveTests-product
+Build complete! (2.72秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test lanzouProviderDisconnectKeepsOtherSessionUserConnected() started.
+􀢄  Test lanzouProviderDisconnectKeepsOtherSessionUserConnected() recorded an issue at LanzouDriveTests.swift:642:2: Caught error: .notConnected
+􀢄  Test lanzouProviderDisconnectKeepsOtherSessionUserConnected() failed after 0.004 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.004 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - LanzouDriveTests (Swift Testing)
+
+移动失败：swift test --package-path Packages/ChinaWebDrive --filter mobileProviderDisconnectKeepsOtherSessionUserConnected；退出 1。
+Building for debugging...
+[Using on-disk description]
+[2 / 6] ChinaWebDriveTests-product
+[4 / 8] ChinaWebDriveTests-product
+[10 / 12] ChinaWebDriveTests-product
+Build complete! (2.56秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() started.
+􀢄  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() recorded an issue at ChinaWebDriveTests.swift:711:2: Caught error: .invalidResponse
+􀢄  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() failed after 0.005 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.005 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - ChinaWebDriveTests (Swift Testing)
+
+蓝奏完整包：swift test --package-path Packages/LanzouDrive；退出 0。
+Building for debugging...
+[1 / 5]
+[2 / 6] Core
+[3 / 7] Core
+[8 / 12] LanzouDrive
+[9 / 13] LanzouDrive
+[14 / 17] Core
+[15 / 18] Core
+[21 / 24] LanzouDrive
+[24 / 27] LanzouDriveTests-product
+[26 / 29] LanzouDriveTests-product
+[28 / 29] LanzouDriveTests-product
+Build complete! (3.29秒)
+Test Suite 'All tests' started at 2026-11-04 18:50:45.282.
+Test Suite 'All tests' passed at 2026-11-04 18:50:45.283.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test wrongPasswordAndReadOnlyWritesFailWithoutUpload() started.
+􀟈  Test shareFolderPaginationAndPasswordModelWork() started.
+􀟈  Test accountPaginationAndLoginExpirationAreDetected() started.
+􀟈  Test lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) started.
+􀟈  Test lanzouAccountRoundedSizeUsesMetadataWithoutLeakingLoginCookie() started.
+􀟈  Test lanzouSizeParserAcceptsOnlyExactByteCounts() started.
+􀟈  Test lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test lanzouChecksDeclaredDownloadLength(ranged:) started.
+􀟈  Test lanzouRejectsIncorrectRangeBodyLength(length:) started.
+􀟈  Test lanzouDoesNotSniffHTMLInsideNonzeroRange() started.
+􀟈  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) started.
+􀟈  Test businessAndHTTPErrorsStayDistinct() started.
+􀟈  Test lanzouKeepsAttachmentHTMLAndBinaryContent(html:) started.
+􀟈  Test lanzouProviderDisconnectKeepsOtherSessionUserConnected() started.
+􀟈  Test rangeRequestCarriesHeaderAndRejectsFullResponse() started.
+􀟈  Test case passing 2 arguments kind → "html", chunkSize → 1 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument scenario → "zero" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 2 arguments kind → "html", chunkSize → 7 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument fallback → false to lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) started.
+􀟈  Test case passing 1 argument fallback → true to lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) started.
+􀟈  Test case passing 1 argument length → 3 to lanzouRejectsIncorrectRangeBodyLength(length:) started.
+􀟈  Test case passing 1 argument ranged → true to lanzouChecksDeclaredDownloadLength(ranged:) started.
+􀟈  Test case passing 1 argument ranged → false to lanzouChecksDeclaredDownloadLength(ranged:) started.
+􀟈  Test case passing 1 argument scenario → "html" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "unknown" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 2 arguments kind → "xhtml", chunkSize → 1 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument scenario → "malformed" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 1 argument length → 11 to lanzouRejectsIncorrectRangeBodyLength(length:) started.
+􀟈  Test case passing 1 argument header → "bytes 10-19/19" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 1 argument bounds → (100, 110, 105) to lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) started.
+􀟈  Test case passing 2 arguments kind → "xhtml", chunkSize → 7 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument scenario → "ignored-range" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 1 argument html → false to lanzouKeepsAttachmentHTMLAndBinaryContent(html:) started.
+􀟈  Test case passing 1 argument header → "bytes 10-18/100" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 1 argument bounds → (10, 20, 999) to lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) started.
+􀟈  Test case passing 1 argument html → true to lanzouKeepsAttachmentHTMLAndBinaryContent(html:) started.
+􀟈  Test case passing 2 arguments kind → "missing", chunkSize → 1 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument bounds → (80, 110, 103) to lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) started.
+􀟈  Test case passing 1 argument header → "bytes 11-19/100" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 1 argument scenario → "absent" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 2 arguments kind → "missing", chunkSize → 7 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument header → "bytes 10-20/100" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 1 argument scenario → "compressed" to lanzouMetadataRequiresAnAuthoritativeLength(scenario:) started.
+􀟈  Test case passing 2 arguments kind → "octet", chunkSize → 1 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument header → "bytes 10-19/-1" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 2 arguments kind → "octet", chunkSize → 7 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument header → "bytes 10-18/*" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 2 arguments kind → "inline", chunkSize → 1 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􀟈  Test case passing 1 argument header → "items 10-19/100" to lanzouRejectsInconsistentContentRanges(header:) started.
+􀟈  Test case passing 2 arguments kind → "inline", chunkSize → 7 to lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) started.
+􁁛  Test lanzouSizeParserAcceptsOnlyExactByteCounts() passed after 0.008 seconds.
+􁁛  Test lanzouAccountRoundedSizeUsesMetadataWithoutLeakingLoginCookie() passed after 0.008 seconds.
+􁁛  Test businessAndHTTPErrorsStayDistinct() passed after 0.008 seconds.
+􁁛  Test lanzouResolvesRoundedMetadataFromDownloadResponse(fallback:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test lanzouRejectsIncorrectRangeBodyLength(length:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test lanzouDoesNotSniffHTMLInsideNonzeroRange() passed after 0.008 seconds.
+􁁛  Test wrongPasswordAndReadOnlyWritesFailWithoutUpload() passed after 0.008 seconds.
+􁁛  Test lanzouChecksDeclaredDownloadLength(ranged:) with 2 test cases passed after 0.009 seconds.
+􀟈  Test case passing 1 argument header → "bytes 10-9/100" to lanzouRejectsInconsistentContentRanges(header:) started.
+􁁛  Test shareFolderPaginationAndPasswordModelWork() passed after 0.009 seconds.
+􁁛  Test lanzouRejectsInconsistentContentRanges(header:) with 8 test cases passed after 0.008 seconds.
+􁁛  Test lanzouProviderDisconnectKeepsOtherSessionUserConnected() passed after 0.009 seconds.
+􁁛  Test accountPaginationAndLoginExpirationAreDetected() passed after 0.009 seconds.
+􁁛  Test lanzouKeepsAttachmentHTMLAndBinaryContent(html:) with 2 test cases passed after 0.009 seconds.
+􁁛  Test lanzouMetadataRequiresAnAuthoritativeLength(scenario:) with 7 test cases passed after 0.009 seconds.
+􁁛  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) with 3 test cases passed after 0.009 seconds.
+􁁛  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) with 10 test cases passed after 0.010 seconds.
+􁁛  Test rangeRequestCarriesHeaderAndRejectsFullResponse() passed after 0.011 seconds.
+􁁛  Test run with 17 tests in 0 suites passed after 0.011 seconds.
+
+移动迅雷完整包：swift test --package-path Packages/ChinaWebDrive；退出 0。
+Building for debugging...
+[Using on-disk description]
+[2 / 6] Core
+[3 / 7] Core
+[8 / 12] ChinaWebDrive
+[9 / 13] ChinaWebDrive
+[14 / 17] Core
+[15 / 18] Core
+[24 / 27] ChinaWebDrive
+[27 / 30] ChinaWebDriveTests-product
+[29 / 32] ChinaWebDriveTests-product
+[31 / 32] ChinaWebDriveTests-product
+Build complete! (4.15秒)
+Test Suite 'All tests' started at 2026-11-04 18:50:48.128.
+Test Suite 'All tests' passed at 2026-11-04 18:50:48.129.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test httpErrorsMapToExpectedPOSIXCodes() started.
+􀟈  Test xunleiUploadFailureTrashesOnlyTheNewFile() started.
+􀟈  Test mobileCloudPaginatesAndUsesRecordedHeaders() started.
+􀟈  Test mobileCloudSignerMatchesMitGoldenVector() started.
+􀟈  Test xunleiRefreshesUnauthorizedRequestOnce() started.
+􀟈  Test xunleiRangeUsesDetailLinkWithoutLeakingLoginHeaders() started.
+􀟈  Test mobileCloudRefreshesOnceAndRepeatsRoute() started.
+􀟈  Test mobileCloudRequestsLaterUploadURLBatches() started.
+􀟈  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test xunleiBusinessErrorsMapToPOSIX() started.
+􀟈  Test xunleiUploadPartSplitHandlesBoundaries() started.
+􀟈  Test xunleiUploadUsesAliyunMultipartWithoutSendingLoginToVendor() started.
+􀟈  Test mobileCloudRangeValidatesContentRangeAndDoesNotSendAuthToCDN() started.
+􀟈  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test mobileCloudUploadUsesServerPartBoundariesAndFinishes() started.
+􀟈  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() started.
+􀟈  Test xunleiExistingDirectoryNameFailsBeforeCreate() started.
+􀟈  Test mobileCloudPartSplitHandlesZeroExactAndRemainder() started.
+􀟈  Test xunleiPaginatesAndUsesTokenHeaders() started.
+􀟈  Test mobileCloudSpaceUsesAccountEndpointAndUserDomain() started.
+􀟈  Test mobileCloudExistingNameNeverUploadsOrRenames() started.
+􀟈  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() started.
+􀟈  Test xunleiHTTPConflictMapsToEEXIST() started.
+􀟈  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() started.
+􀟈  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() started.
+􀟈  Test mobileCloudMkdirAndMoveUseDocumentedOperations() started.
+􀟈  Test xunleiUploadRejectsExistingNameBeforeCreatingTask() started.
+􀟈  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() started.
+􀟈  Test case passing 1 argument mobile → false to trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test case passing 1 argument mobile → true to trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test case passing 2 arguments mobile → false, directory → false to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → false, directory → true to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → true, directory → false to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → true, directory → true to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􁁛  Test httpErrorsMapToExpectedPOSIXCodes() passed after 0.005 seconds.
+􁁛  Test xunleiUploadPartSplitHandlesBoundaries() passed after 0.004 seconds.
+􁁛  Test mobileCloudPartSplitHandlesZeroExactAndRemainder() passed after 0.004 seconds.
+􁁛  Test mobileCloudSignerMatchesMitGoldenVector() passed after 0.005 seconds.
+􁁛  Test xunleiRefreshesUnauthorizedRequestOnce() passed after 0.005 seconds.
+􁁛  Test xunleiExistingDirectoryNameFailsBeforeCreate() passed after 0.004 seconds.
+􁁛  Test xunleiRangeUsesDetailLinkWithoutLeakingLoginHeaders() passed after 0.005 seconds.
+􁁛  Test xunleiBusinessErrorsMapToPOSIX() passed after 0.005 seconds.
+􁁛  Test xunleiHTTPConflictMapsToEEXIST() passed after 0.004 seconds.
+􁁛  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() passed after 0.004 seconds.
+􁁛  Test xunleiUploadUsesAliyunMultipartWithoutSendingLoginToVendor() passed after 0.005 seconds.
+􁁛  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() passed after 0.004 seconds.
+􁁛  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() passed after 0.004 seconds.
+􁁛  Test xunleiUploadRejectsExistingNameBeforeCreatingTask() passed after 0.004 seconds.
+􁁛  Test xunleiUploadFailureTrashesOnlyTheNewFile() passed after 0.005 seconds.
+􁁛  Test mobileCloudSpaceUsesAccountEndpointAndUserDomain() passed after 0.005 seconds.
+􁁛  Test mobileCloudRefreshesOnceAndRepeatsRoute() passed after 0.006 seconds.
+􁁛  Test mobileCloudExistingNameNeverUploadsOrRenames() passed after 0.008 seconds.
+􁁛  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() passed after 0.008 seconds.
+􁁛  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) with 2 test cases passed after 0.009 seconds.
+􁁛  Test mobileCloudRangeValidatesContentRangeAndDoesNotSendAuthToCDN() passed after 0.009 seconds.
+􁁛  Test xunleiPaginatesAndUsesTokenHeaders() passed after 0.009 seconds.
+􁁛  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() passed after 0.009 seconds.
+􁁛  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) with 4 test cases passed after 0.010 seconds.
+􁁛  Test mobileCloudUploadUsesServerPartBoundariesAndFinishes() passed after 0.010 seconds.
+􁁛  Test mobileCloudPaginatesAndUsesRecordedHeaders() passed after 0.010 seconds.
+􁁛  Test mobileCloudRequestsLaterUploadURLBatches() passed after 0.010 seconds.
+􁁛  Test mobileCloudMkdirAndMoveUseDocumentedOperations() passed after 0.010 seconds.
+􁁛  Test run with 28 tests in 0 suites passed after 0.011 seconds.
+
+应用逻辑：xcodebuild -project Kayoi.xcodeproj -scheme KayoiTests -destination platform=macOS,arch=arm64 -derivedDataPath build/Tests test CODE_SIGNING_ALLOWED=NO；退出 0。
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-macos26.0 -bundle -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.2.sdk -O0 -Xlinker -no_warn_duplicate_libraries -L/Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -L/Users/seaony/code/Kayoi/build/Tests/Build/Products/Debug -L/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib -F/Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/EagerLinkingTBDs/Debug -F/Users/seaony/code/Kayoi/build/Tests/Build/Products/Debug/PackageFrameworks -F/Users/seaony/code/Kayoi/build/Tests/Build/Products/Debug -iframework /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks -filelist /Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/Kayoi.build/Debug/KayoiTests.build/Objects-normal/arm64/KayoiTests.LinkFileList -Xlinker -rpath -Xlinker @loader_path -Xlinker -rpath -Xlinker /Users/seaony/code/Kayoi/build/Tests/Build/Products/Debug/PackageFrameworks -Xlinker -rpath -Xlinker @loader_path/../Frameworks -Xlinker -rpath -Xlinker @executable_path/../Frameworks -Xlinker -object_path_lto -Xlinker /Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/Kayoi.build/Debug/KayoiTests.build/Objects-normal/arm64/KayoiTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -debug_variant -Xlinker -dependency_info -Xlinker /Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/Kayoi.build/Debug/KayoiTests.build/Objects-normal/arm64/KayoiTests_dependency_info.dat -fobjc-link-runtime -fprofile-instr-generate -L/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/seaony/code/Kayoi/build/Tests/Build/Intermediates.noindex/Kayoi.build/Debug/KayoiTests.build/Objects-normal/arm64/KayoiTests.swiftmodule -lc++ -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport -o /Users/seaony/code/Kayoi/build/Tests/Build/Products/Debug/KayoiTests.xctest/Contents/MacOS/KayoiTests
+Test Suite 'All tests' started at 2026-11-04 18:51:29.544.
+Test Suite 'All tests' passed at 2026-11-04 18:51:29.545.
+􀟈 Test run started.
+􀟈 Test appDemoStartsWithIsolatedServicesAndStorage() started.
+􁁛 Test appDemoStartsWithIsolatedServicesAndStorage() passed after 0.006 seconds.
+􀟈 Test emptyDemoDoesNotShowDiscoveredDevices() started.
+􁁛 Test emptyDemoDoesNotShowDiscoveredDevices() passed after 0.001 seconds.
+􀟈 Test cancelDemoAuthorizationNeverStartsConnection() started.
+􁁛 Test cancelDemoAuthorizationNeverStartsConnection() passed after 0.001 seconds.
+􀟈 Test demoFixturesCoverStatesAndKeepStableIdentities() started.
+􁁛 Test demoFixturesCoverStatesAndKeepStableIdentities() passed after 0.001 seconds.
+􀟈 Test demoMountLifecycleUsesOnlyMemory() started.
+􁁛 Test demoMountLifecycleUsesOnlyMemory() passed after 0.001 seconds.
+􀟈 Test demoRequiresExplicitOptIn() started.
+􁁛 Test demoRequiresExplicitOptIn() passed after 0.001 seconds.
+􀟈 Test demoOptionsSelectIsolatedScenario() started.
+􁁛 Test demoOptionsSelectIsolatedScenario() passed after 0.001 seconds.
+􀟈 Test demoAppearanceNeverChangesProduction() started.
+􁁛 Test demoAppearanceNeverChangesProduction() passed after 0.001 seconds.
+􀟈 Test appReusesAccountSessionsAcrossRequests(kind:) started.
+􀟈 Test case passing 1 argument kind → .aliyunDrive to appReusesAccountSessionsAcrossRequests(kind:) started.
+​􀟈 Test case passing 1 argument kind → .pikPak to appReusesAccountSessionsAcrossRequests(kind:) started.
+​􀟈 Test case passing 1 argument kind → .tianyiDrive to appReusesAccountSessionsAcrossRequests(kind:) started.
+​􁁛 Test appReusesAccountSessionsAcrossRequests(kind:) with 3 test cases passed after 0.011 seconds.
+􀟈 Test appKeepsServiceAndTianyiScopeSessionsSeparate() started.
+􁁛 Test appKeepsServiceAndTianyiScopeSessionsSeparate() passed after 0.001 seconds.
+􀟈 Test appRemovedConnectionReleasesCachedSession() started.
+􁁛 Test appRemovedConnectionReleasesCachedSession() passed after 0.001 seconds.
+􀟈 Test cachedOAuthSessionSeesUpdatedInMemoryCredentials() started.
+􁁛 Test cachedOAuthSessionSeesUpdatedInMemoryCredentials() passed after 0.001 seconds.
+􀟈 Test appDiscardsOnlyUnsavedSessionCache() started.
+􁁛 Test appDiscardsOnlyUnsavedSessionCache() passed after 0.001 seconds.
+􀟈 Test appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) started.
+􀟈 Test case passing 1 argument kind → .lanzou to appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) started.
+​􀟈 Test case passing 1 argument kind → .mobileCloud to appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) started.
+​􀟈 Test case passing 1 argument kind → .thunderDrive to appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) started.
+​􀟈 Test case passing 1 argument kind → .s3 to appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) started.
+​􁁛 Test appReusesConfiguredSessionsAndReplacesChangedCredentials(kind:) with 4 test cases passed after 0.004 seconds.
+􀟈 Test appLanzouConfigurationChangeReplacesSharedSession() started.
+􁁛 Test appLanzouConfigurationChangeReplacesSharedSession() passed after 0.001 seconds.
+􀟈 Test themeAssetsHaveOpaqueLightDarkAndHighContrastVariants() started.
+􁁛 Test themeAssetsHaveOpaqueLightDarkAndHighContrastVariants() passed after 0.001 seconds.
+􁁛 Test run with 16 tests in 0 suites passed after 0.034 seconds.
+Test session results, code coverage, and logs:
+** TEST SUCCEEDED **

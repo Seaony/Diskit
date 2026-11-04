@@ -1,6 +1,7 @@
 import CloudDrive
 import Core
 import Foundation
+import S3Drive
 import Testing
 
 @MainActor @Test(arguments: [ConnectionKind.aliyunDrive, .pikPak, .tianyiDrive])
@@ -90,4 +91,47 @@ func appReusesAccountSessionsAcrossRequests(kind: ConnectionKind) {
   let savedSession = model.aliyunSession(for: saved)
   model.discardUnsavedSessions(for: saved)
   #expect(savedSession === model.aliyunSession(for: saved))
+}
+
+@MainActor @Test(arguments: [ConnectionKind.lanzou, .mobileCloud, .thunderDrive, .s3])
+func appReusesConfiguredSessionsAndReplacesChangedCredentials(kind: ConnectionKind) throws {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  var connection = Connection(kind: kind, name: "first", params: ["phone": "local-only"])
+  try model.secrets.write(Data("phpdisk_info=local".utf8), for: connection.passwordKey)
+  func session(_ value: Connection) throws -> AnyObject {
+    switch value.kind {
+    case .lanzou: return try model.lanzouSession(for: value)
+    case .mobileCloud: return try model.mobileCloudSession(for: value)
+    case .thunderDrive: return try model.xunleiSession(for: value)
+    default:
+      return model.s3Transport(
+        for: value,
+        configuration: S3Configuration(
+          endpoint: URL(string: "https://example.invalid")!, region: "local", bucket: "local",
+          accessKey: "local", secretKey: try model.savedRemoteSecret(for: value)))
+    }
+  }
+  let original = try session(connection)
+  #expect(try original === session(connection))
+  connection.name = "renamed"
+  #expect(try original === session(connection))
+  try model.secrets.write(Data("phpdisk_info=updated".utf8), for: connection.passwordKey)
+  let replacement = try session(connection)
+  #expect(original !== replacement)
+  #expect(try replacement === session(connection))
+  model.discardUnsavedSessions(for: connection)
+  #expect(try replacement !== session(connection))
+}
+
+@MainActor @Test func appLanzouConfigurationChangeReplacesSharedSession() throws {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  var connection = Connection(
+    kind: .lanzou, params: ["authMode": "share", "shareURL": "https://example.invalid/first"])
+  let original = try model.lanzouSession(for: connection)
+  connection.params["shareURL"] = "https://example.invalid/second"
+  let replacement = try model.lanzouSession(for: connection)
+  #expect(original !== replacement)
+  #expect(
+    replacement.configuration.authentication
+      == .share(url: URL(string: "https://example.invalid/second")!, password: nil))
 }

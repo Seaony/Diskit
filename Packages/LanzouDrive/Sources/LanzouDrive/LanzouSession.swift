@@ -7,13 +7,13 @@ struct LanzouShareListing: Sendable {
   let folders: [LanzouShareFolderLink]
 }
 
-actor LanzouSession {
+public actor LanzouSession {
   private struct AccountContext: Sendable {
     let uid: String
     let vei: String
   }
 
-  private let configuration: LanzouConfiguration
+  public nonisolated let configuration: LanzouConfiguration
   private let transport: any HTTPTransport
   private var accountCookie: LanzouCookieHeader?
   private var accountContext: AccountContext?
@@ -21,7 +21,7 @@ actor LanzouSession {
   private var shareCookieOrigin: String?
   private var isConnected = false
 
-  init(
+  public init(
     configuration: LanzouConfiguration,
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
@@ -46,13 +46,6 @@ actor LanzouSession {
       }
     }
     isConnected = true
-  }
-
-  func disconnect() {
-    isConnected = false
-    accountContext = nil
-    shareCookies = nil
-    shareCookieOrigin = nil
   }
 
   func accountChildren(folderID: String) async throws -> [LanzouEntry] {
