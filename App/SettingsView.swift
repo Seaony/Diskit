@@ -261,7 +261,14 @@ struct SettingsView: View {
   }
 
   private func refreshLogin() {
-    guard !model.options.isDemo else { return }
+    if model.options.isDemo {
+      if let state = model.options.demoLoginItem {
+        startsAtLogin = state.isEnabled
+        loginNeedsApproval = state == .requiresApproval
+        loginError = state.errorMessage
+      }
+      return
+    }
     startsAtLogin = [.enabled, .requiresApproval].contains(SMAppService.mainApp.status)
     loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
   }

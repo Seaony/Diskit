@@ -5,6 +5,7 @@ import SwiftUI
 final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
   weak var model: AppModel?
   let windows = WindowCoordinator()
+  let performance = DemoPerformanceProbe(options: .current)
   private var openPanel: (() -> Void)?
   private var pendingReopen = false
 
@@ -30,6 +31,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
     }
     pendingReopen = false
     windows.prepareToOpen()
+    performance?.requestPanel()
     openPanel()
     NSApplication.shared.activate()
   }
@@ -61,20 +63,25 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
             PerformanceDrawProbe(probe: probe, role: .menu).accessibilityHidden(true)
           }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-          model.connections.mountedCount > 0
-            ? String.localizedStringWithFormat(
-              L("Kayoi，%d 个位置已挂载"), model.connections.mountedCount)
-            : L("Kayoi，没有挂载的位置")
-        )
         .task {
           appDelegate.configure(model: model) { openWindow(id: "main-panel") }
           if model.options.isDemo, let appearance = DemoAppearance.name(options: model.options) {
             NSApplication.shared.appearance = NSAppearance(named: appearance)
           }
           model.start()
-          if model.options.panelWindow { openWindow(id: "demo-panel") }
+          if model.options.demoEditorKind != nil {
+            appDelegate.windows.prepareToOpen()
+            openWindow(id: "connection")
+          }
+          if model.options.demoWebService != nil {
+            appDelegate.windows.prepareToOpen()
+            openWindow(id: "demo-web-login")
+          }
+          if model.options.panelWindow {
+            appDelegate.performance?.requestPanel()
+            appDelegate.windows.prepareToOpen()
+            openWindow(id: "main-panel")
+          }
         }
     }.menuBarExtraStyle(.window)
     Window(L("Kayoi"), id: "main-panel") {
@@ -98,7 +105,15 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         .tint(KayoiTheme.accent)
     }.defaultSize(width: 640, height: 640).defaultLaunchBehavior(
       .suppressed)
-    Window("设置", id: "settings") {
+    Window(L("网页登录"), id: "demo-web-login") {
+      if model.options.isDemo {
+        DemoWebLoginWindow(options: model.options)
+          .background(WindowRegistration(coordinator: appDelegate.windows, role: "web-login"))
+          .containerBackground(KayoiTheme.background, for: .window)
+          .tint(KayoiTheme.accent)
+      }
+    }.defaultSize(width: 720, height: 640).defaultLaunchBehavior(.suppressed)
+    Settings {
       SettingsView(model: model)
         .background(WindowRegistration(coordinator: appDelegate.windows, role: "settings"))
         .defaultAppStorage(model.preferences)
@@ -118,6 +133,21 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         KayoiCommands(model: model, windows: appDelegate.windows)
         DemoCommands(model: model)
       }
-    }
+  }
+}
+
+private struct DemoWebLoginWindow: View {
+  @Environment(\.dismissWindow) private var dismissWindow
+  @State private var state: WebLoginState
+
+  init(options: RuntimeOptions) {
+    _state = State(
+      initialValue: WebLoginState(
+        service: options.demoWebService ?? .quark, options: options,
+        validate: { _ in }, finish: { _ in }))
+  }
+
+  var body: some View {
+    WebLoginView(state: state, cancel: { dismissWindow(id: "demo-web-login") })
   }
 }

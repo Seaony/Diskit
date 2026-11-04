@@ -33,3 +33,15 @@ import Testing
     RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_DEMO_APPEARANCE": "other"]).appearance
       == nil)
 }
+
+@Test func layoutDiagnosticsRequireDemoMode() {
+  let environment = ["KAYOI_LAYOUT_DIR": "/tmp/layout", "APP_GRID": "1", "KAYOI_DEMO_SETTINGS_TAB": "about"]
+  let live = RuntimeOptions(environment: environment)
+  #expect(live.layoutDirectory == nil)
+  #expect(!live.showsLayoutGrid)
+  #expect(live.demoSettingsTab == nil)
+  let demo = RuntimeOptions(environment: environment.merging(["KAYOI_DEMO": "1"]) { _, new in new })
+  #expect(demo.layoutDirectory == "/tmp/layout")
+  #expect(demo.showsLayoutGrid)
+  #expect(demo.demoSettingsTab == "about")
+}

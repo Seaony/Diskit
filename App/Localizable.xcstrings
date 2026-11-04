@@ -10032,6 +10032,23 @@
         }
       }
     },
+    "无法注册开机启动，请在系统设置中检查登录项权限。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to register launch at login. Check Login Items permissions in System Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法注册开机启动，请在系统设置中检查登录项权限。"
+          }
+        }
+      }
+    },
     "无法连接：%@": {
       "localizations": {
         "en": {
@@ -11052,6 +11069,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "网页暂时无法加载，请重新加载。"
+          }
+        }
+      }
+    },
+    "网页登录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web Sign-In"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网页登录"
           }
         }
       }

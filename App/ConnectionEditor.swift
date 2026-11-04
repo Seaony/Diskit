@@ -100,8 +100,8 @@ struct ConnectionEditor: View {
             .buttonStyle(FlatButtonStyle(prominent: true))
             .disabled(editor.selectedKind == nil).keyboardShortcut(.defaultAction)
         }
-      }
-    }
+      }.gridProbe("footer-actions", area: "editor-footer")
+    }.padding(Space.xl).gridArea("editor-footer", inset: Space.xl)
   }
 }
 

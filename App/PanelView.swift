@@ -132,6 +132,9 @@ struct PanelView: View {
   }
 
   private var discoveryErrors: [(message: String, permissionDenied: Bool)] {
+    if let error = model.options.demoDiscoveryError {
+      return [(error.message, error.permissionDenied)]
+    }
     return [
       model.discovery.error.map { ($0, model.discovery.issue == .permissionDenied) },
       model.wirelessDiscovery.error.map { ($0, model.wirelessDiscovery.issue == .permissionDenied) },
@@ -150,7 +153,7 @@ struct PanelView: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      header
+      header.gridProbe("header", area: "panel", edge: nil)
       Divider()
       ScrollViewReader { proxy in
         ScrollView {
@@ -195,6 +198,7 @@ struct PanelView: View {
                   onDelete: { deleteTarget = connection },
                   onDrop: { draggedID in move(draggedID, before: connection.id) }
                 ).id(connection.id)
+                  .gridProbe("row-" + connection.id.uuidString, area: "panel-list")
               }
             }
             if !showsEmptyState {
@@ -223,9 +227,12 @@ struct PanelView: View {
         }
       }
       Divider()
-      footer
+      footer.gridProbe("footer", area: "panel", edge: nil)
     }
     .frame(width: 380)
+    .gridArea("panel")
+    .gridDiagnostics("panel")
+    .demoAppearanceEvidence("panel")
     .background(KayoiTheme.background)
     .buttonStyle(FlatButtonStyle())
     .onDisappear { panelVisible = false }

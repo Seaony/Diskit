@@ -66,6 +66,12 @@ import TianyiDrive
   func load() {
     guard !loaded else { return }
     loaded = true
+    if let kind = model.options.demoEditorKind,
+      let state = model.demoEditorStateOverride ?? model.options.demoEditorState
+    {
+      applyDemoFixture(kind: kind, state: state)
+      return
+    }
     draft = model.editing ?? Connection()
     chosen = model.editing != nil
     pairingID = model.pairingSelection ?? ""
