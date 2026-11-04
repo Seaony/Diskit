@@ -94,7 +94,7 @@ public enum SystemMountAddress {
           == normalizedPath(expected.path)
     }
     let normalizedSource =
-      source.hasPrefix(expected.scheme! + ":")
+      source.lowercased().hasPrefix(expected.scheme!.lowercased() + ":")
       ? source : expected.scheme! + ":" + source
     guard let actual = URLComponents(string: normalizedSource) else { return false }
     return actual.host?.lowercased() == expected.host?.lowercased()
@@ -133,7 +133,7 @@ public enum SystemMountAddress {
   }
 
   private static func normalizedPath(_ path: String) -> String {
-    let value = path.isEmpty ? "/" : path
+    let value = path.isEmpty ? "/" : path.precomposedStringWithCanonicalMapping
     return value.count > 1 && value.hasSuffix("/") ? String(value.dropLast()) : value
   }
 }

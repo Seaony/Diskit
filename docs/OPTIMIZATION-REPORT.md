@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -299,3 +299,11 @@
 - 生产清理复用已有系统推出操作；失败写入隐私保护的系统日志（`:223`），不强制推出占用卷。系统拒绝推出时不能保证无残留，真实卷的超时、取消和占用行为留待用户验收。
 - 已核对本机 SDK 的 `NetFS.framework/Headers/NetFS.h:323` 附近回调与取消说明：取消尚未完成的请求后不再提交回调；本修复针对成功已经发生、回调处理迟到的情形，不假设每次取消都产生回调。
 - 测试只注入内存清理记录，不调用 NetFS 或访问真实卷。回归证据 `docs/evidence/v0.2/FIX-14-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 334 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-14-gates.log`。工具链恢复后重编现有 BoringSSL 产生整数转换警告，未作为本项改动处理。
+
+
+## FIX-15：挂载地址编码与规范化
+
+- `Packages/Core/Sources/Core/SMB.swift:96` 修复大写协议前缀被重复补前缀的问题；`:135` 明确将路径转换为 NFC 后比较。主机名继续忽略大小写，路径保留大小写；原 NFS 的 host:/path 形式不是 URL，保留其中字面百分号。
+- 审查第 1B 节关于“没做解码、大小写统一”的表述过宽：原 `URLComponents.path`/`URL.path` 已做一次标准 URL 解码，主机名已有 lowercased，Swift 字符串相等本身也接受 Unicode 等价写法。没有增加手动二次解码，避免将名为 Photos%20 的共享错认成 Photos 加空格。
+- `Packages/Core/Tests/CoreTests/MountAddressTests.swift:7` 的 `mountTableMatchesEncodedChineseShare` 先复现大写协议与编码中文名称匹配失败；`mountTableMatchesWebDAVAndRawNFS` 同样复现 HTTPS 前缀问题，并检查原始 NFS 路径、错误主机、错误文件系统。`mountTableMatchesCanonicalUnicode` 与 `mountTableDecodesExactlyOnceAndPreservesPathCase` 覆盖组合字符和百分号、路径大小写不混淆。
+- 追加 `mountTableMatchesUppercaseSavedScheme`，复现并修正保存地址本身使用大写协议名时的反向匹配失败；两边协议名均忽略大小写。完整提交门禁通过：应用逻辑 9 项、包测试 339 项，发布构建与签名校验通过。证据 `docs/evidence/v0.2/FIX-15-regression.log`、`docs/evidence/v0.2/FIX-15-gates.log`；真实系统挂载表格式另待用户验收。

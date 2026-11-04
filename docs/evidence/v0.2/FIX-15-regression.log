@@ -1,0 +1,239 @@
+修复前：swift test --package-path Packages/Core --filter mountTable；退出 1。
+Building for debugging...
+[Planning deferred tasks]
+[4 / 20] Core
+[6 / 15] CoreTests-product
+[8 / 17] CoreTests-product
+[14 / 16] CoreTests-product
+Build complete! (1.12秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test mountTableDecodesExactlyOnceAndPreservesPathCase() started.
+􀟈  Test mountTableMatchesWebDAVAndRawNFS() started.
+􀟈  Test mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test case passing 1 argument scheme → "smb" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument scheme → "SMB" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􁁛  Test mountTableDecodesExactlyOnceAndPreservesPathCase() passed after 0.001 seconds.
+􁁛  Test mountTableMatchesCanonicalUnicode(name:) with 2 test cases passed after 0.001 seconds.
+􀢄  Test mountTableMatchesWebDAVAndRawNFS() recorded an issue at MountAddressTests.swift:38:3: Expectation failed: SystemMountAddress.matches(connection: web, source: "HTTPS://NAS.LOCAL/cafe%CC%81/", type: "webdav")
+􀄵  SystemMountAddress.matches(connection: web, source: "HTTPS://NAS.LOCAL/cafe%CC%81/", type: "webdav") → false
+􀄵    web → Connection(id: 5B155E38-4CE7-4F02-B94D-B21D1363BA20, kind: Core.ConnectionKind.webdavHTTPS, name: "网页共享", color: "blue", autoMount: false, openInFinderAfterMount: true, order: 0, params: ["url": "https://nas.local/caf%C3%A9"])
+􀄵      id → 5B155E38-4CE7-4F02-B94D-B21D1363BA20
+􀄵      kind → .webdavHTTPS
+􀄵      name → "网页共享"
+􀄵      color → "blue"
+􀄵      autoMount → false
+􀄵      openInFinderAfterMount → true
+􀄵      order → 0
+􀄵      params → ["url": "https://nas.local/caf%C3%A9"]
+􀢄  Test mountTableMatchesEncodedChineseShare(scheme:) recorded an issue with 1 argument scheme → "SMB" at MountAddressTests.swift:10:3: Expectation failed: SystemMountAddress.matches(connection: connection, source: "\(scheme)://NAS.LOCAL/%E7%85%A7%E7%89%87%20%E5%85%B1%E4%BA%AB", type: "smbfs")
+􀄵  SystemMountAddress.matches(connection: connection, source: "\(scheme)://NAS.LOCAL/%E7%85%A7%E7%89%87%20%E5%85%B1%E4%BA%AB", type: "smbfs") → false
+􀄵    connection → Connection(id: F28E8332-8353-49FD-A589-7A81FEFE5FA3, kind: Core.ConnectionKind.smb, name: "共享", color: "blue", autoMount: false, openInFinderAfterMount: true, order: 0, params: ["share": "照片 共享", "host": "nas.local"])
+􀄵      id → F28E8332-8353-49FD-A589-7A81FEFE5FA3
+􀄵      kind → .smb
+􀄵      name → "共享"
+􀄵      color → "blue"
+􀄵      autoMount → false
+􀄵      openInFinderAfterMount → true
+􀄵      order → 0
+􀄵      params → ["share": "照片 共享", "host": "nas.local"]
+􀄵    "\(scheme)://NAS.LOCAL/%E7%85%A7%E7%89%87%20%E5%85%B1%E4%BA%AB" → "SMB://NAS.LOCAL/%E7%85%A7%E7%89%87%20%E5%85%B1%E4%BA%AB"
+􀢄  Test mountTableMatchesEncodedChineseShare(scheme:) with 2 test cases failed after 0.001 seconds with 1 issue.
+􀢄  Test mountTableMatchesWebDAVAndRawNFS() failed after 0.001 seconds with 1 issue.
+􀢄  Test run with 4 tests in 0 suites failed after 0.001 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - CoreTests (Swift Testing)
+
+保存地址大写协议回归：swift test --package-path Packages/Core --filter mountTableMatchesUppercaseSavedScheme；退出 1。
+Building for debugging...
+[2 / 5] CoreTests-product
+[4 / 7] CoreTests-product
+[10 / 12] CoreTests-product
+Build complete! (0.96秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test mountTableMatchesUppercaseSavedScheme() started.
+􀢄  Test mountTableMatchesUppercaseSavedScheme() recorded an issue at MountAddressTests.swift:58:3: Expectation failed: SystemMountAddress.matches(connection: connection, source: "https://NAS.LOCAL/dav", type: "webdav")
+􀄵  SystemMountAddress.matches(connection: connection, source: "https://NAS.LOCAL/dav", type: "webdav") → false
+􀄵    connection → Connection(id: 01C509BA-D690-4B59-8E32-2EF0FACD8E6A, kind: Core.ConnectionKind.webdavHTTPS, name: "网页共享", color: "blue", autoMount: false, openInFinderAfterMount: true, order: 0, params: ["url": "HTTPS://nas.local/dav"])
+􀄵      id → 01C509BA-D690-4B59-8E32-2EF0FACD8E6A
+􀄵      kind → .webdavHTTPS
+􀄵      name → "网页共享"
+􀄵      color → "blue"
+􀄵      autoMount → false
+􀄵      openInFinderAfterMount → true
+􀄵      order → 0
+􀄵      params → ["url": "HTTPS://nas.local/dav"]
+􀢄  Test mountTableMatchesUppercaseSavedScheme() failed after 0.001 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.001 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CoreTests (Swift Testing)
+
+最终修复后：swift test --package-path Packages/Core；退出 0。
+Building for debugging...
+[2 / 6] Core
+[3 / 7] Core
+[7 / 10] Core
+[10 / 11] CoreTests-product
+Build complete! (1.40秒)
+Test Suite 'All tests' started at 2026-11-04 18:21:24.974.
+Test Suite 'All tests' passed at 2026-11-04 18:21:24.975.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test testingExistingConnectionDoesNotUnmountIt() started.
+􀟈  Test smbURLKeepsCredentialsOutOfMountURL() started.
+􀟈  Test connectionLogsNeverIncludeUnknownErrorDetails() started.
+􀟈  Test removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test failedWriteIsSharedBetweenStoreWrappers() started.
+􀟈  Test credentialRefreshLockWaitCanBeCancelled() started.
+􀟈  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() started.
+􀟈  Test deliveredMountIsNotEjectedByLaterFailure() started.
+􀟈  Test connectionFailuresLogOnceWithoutExtraMountNotifications() started.
+􀟈  Test mountTableDecodesExactlyOnceAndPreservesPathCase() started.
+􀟈  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test mountFailureCanRetryAndReportsOnce() started.
+􀟈  Test futureConfigIsNotOverwritten() started.
+􀟈  Test cameraRemovalClearsConnectionTestResult() started.
+􀟈  Test rejectsMissingShareAndInvalidFields() started.
+􀟈  Test configurationLifecycle() started.
+􀟈  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() started.
+􀟈  Test lateMountCleanupFailureDoesNotSkipOtherMounts() started.
+􀟈  Test unauthorizedCloudErrorsAskForLogin() started.
+􀟈  Test mountTableMatchesWebDAVAndRawNFS() started.
+􀟈  Test mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test webDAVParticipatesInSaveMountAndAutoMount() started.
+􀟈  Test editSortAndRestartPreserveConfiguration() started.
+􀟈  Test systemMountURLsCoverSMBWebDAVAndNFS() started.
+􀟈  Test editingOnlyMountedNameKeepsVolume() started.
+􀟈  Test rejectsWrongPasswordBeforeSaving() started.
+􀟈  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test webDriveAuthenticationFailureAsksForLogin() started.
+􀟈  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() started.
+􀟈  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() started.
+􀟈  Test mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() started.
+􀟈  Test clearingCacheCannotReachConnectionTestContents() started.
+􀟈  Test memorySecretsAreIsolatedBetweenRuns() started.
+􀟈  Test failedSecretWriteRemainsPendingUntilSaved() started.
+􀟈  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() started.
+􀟈  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() started.
+􀟈  Test credentialRefreshLockIdentityMatchesStorageScope() started.
+􀟈  Test removalUnmountsAndDeletesSecretsAndCache() started.
+􀟈  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() started.
+􀟈  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() started.
+􀟈  Test startupMountsOnlyEnabledUnMountedConnections() started.
+􀟈  Test failedUnmountKeepsConnectionAndSecret() started.
+􀟈  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() started.
+􀟈  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() started.
+􀟈  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test credentialRefreshLockExcludesOtherProcessesAndReleases() started.
+􀟈  Test credentialRefreshLockRejectsSymlink() started.
+􀟈  Test memorySecretLifecycle() started.
+􀟈  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() started.
+􀟈  Test HTTPTransportPreservesErrorStatusAndHeaders() started.
+􀟈  Test mountTableMatchesUppercaseSavedScheme() started.
+􀟈  Test genericCameraRemovalClearsConnectionTestResult() started.
+􀟈  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() started.
+􀟈  Test deletingOfficialCloudRemovesItsOAuthToken() started.
+􀟈  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123+00:00" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123Z" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .quark to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive115 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive123 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .smb to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .googleDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .baiduDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .ucDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .dropbox to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test case passing 1 argument kind → .pikPak to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument name → "café" to mountTableMatchesCanonicalUnicode(name:) started.
+􀟈  Test case passing 1 argument kind → .tianyiDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument delete → false to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test case passing 1 argument delete → true to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 1 argument scheme → "smb" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 1 argument scheme → "SMB" to mountTableMatchesEncodedChineseShare(scheme:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 1 argument cancelled → false to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → true to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􁁛  Test mountTableMatchesCanonicalUnicode(name:) with 2 test cases passed after 0.002 seconds.
+􁁛  Test mountTableDecodesExactlyOnceAndPreservesPathCase() passed after 0.002 seconds.
+􁁛  Test systemMountURLsCoverSMBWebDAVAndNFS() passed after 0.002 seconds.
+􁁛  Test mountTableMatchesWebDAVAndRawNFS() passed after 0.002 seconds.
+􁁛  Test smbURLKeepsCredentialsOutOfMountURL() passed after 0.002 seconds.
+􁁛  Test mountTableMatchesEncodedChineseShare(scheme:) with 2 test cases passed after 0.002 seconds.
+􁁛  Test memorySecretsAreIsolatedBetweenRuns() passed after 0.002 seconds.
+􁁛  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) with 3 test cases passed after 0.002 seconds.
+􁁛  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() passed after 0.002 seconds.
+􁁛  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() passed after 0.002 seconds.
+􁁛  Test credentialRefreshLockIdentityMatchesStorageScope() passed after 0.002 seconds.
+􁁛  Test memorySecretLifecycle() passed after 0.002 seconds.
+􁁛  Test mountTableMatchesUppercaseSavedScheme() passed after 0.002 seconds.
+􁁛  Test credentialRefreshLockRejectsSymlink() passed after 0.002 seconds.
+􁁛  Test clearingCacheCannotReachConnectionTestContents() passed after 0.002 seconds.
+􁁛  Test configurationLifecycle() passed after 0.002 seconds.
+􁁛  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() passed after 0.003 seconds.
+􁁛  Test unauthorizedCloudErrorsAskForLogin() passed after 0.003 seconds.
+􁁛  Test connectionLogsNeverIncludeUnknownErrorDetails() passed after 0.003 seconds.
+􁁛  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() passed after 0.004 seconds.
+􁁛  Test failedSecretWriteRemainsPendingUntilSaved() passed after 0.004 seconds.
+􁁛  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() passed after 0.004 seconds.
+􁁛  Test failedWriteIsSharedBetweenStoreWrappers() passed after 0.005 seconds.
+􁁛  Test deliveredMountIsNotEjectedByLaterFailure() passed after 0.005 seconds.
+􁁛  Test cameraRemovalClearsConnectionTestResult() passed after 0.006 seconds.
+􁁛  Test HTTPTransportPreservesErrorStatusAndHeaders() passed after 0.007 seconds.
+􁁛  Test mountFailureCanRetryAndReportsOnce() passed after 0.007 seconds.
+􁁛  Test webDAVParticipatesInSaveMountAndAutoMount() passed after 0.020 seconds.
+􁁛  Test editSortAndRestartPreserveConfiguration() passed after 0.027 seconds.
+􁁛  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() passed after 0.027 seconds.
+􁁛  Test credentialRefreshLockWaitCanBeCancelled() passed after 0.028 seconds.
+􁁛  Test editingOnlyMountedNameKeepsVolume() passed after 0.031 seconds.
+􁁛  Test webDriveAuthenticationFailureAsksForLogin() passed after 0.037 seconds.
+􁁛  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() passed after 0.042 seconds.
+􁁛  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) with 2 test cases passed after 0.045 seconds.
+􁁛  Test removalUnmountsAndDeletesSecretsAndCache() passed after 0.049 seconds.
+􁁛  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() passed after 0.050 seconds.
+􁁛  Test startupMountsOnlyEnabledUnMountedConnections() passed after 0.051 seconds.
+􁁛  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) with 2 test cases passed after 0.051 seconds.
+􁁛  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() passed after 0.052 seconds.
+􁁛  Test genericCameraRemovalClearsConnectionTestResult() passed after 0.053 seconds.
+􁁛  Test deletingOfficialCloudRemovesItsOAuthToken() passed after 0.055 seconds.
+􁁛  Test credentialRefreshLockExcludesOtherProcessesAndReleases() passed after 0.056 seconds.
+􁁛  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() passed after 0.056 seconds.
+􁁛  Test testingExistingConnectionDoesNotUnmountIt() passed after 0.057 seconds.
+􁁛  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() passed after 0.057 seconds.
+􁁛  Test futureConfigIsNotOverwritten() passed after 0.058 seconds.
+􁁛  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() passed after 0.058 seconds.
+􁁛  Test lateMountCleanupFailureDoesNotSkipOtherMounts() passed after 0.058 seconds.
+􁁛  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() passed after 0.066 seconds.
+􁁛  Test rejectsWrongPasswordBeforeSaving() passed after 0.067 seconds.
+􁁛  Test removalSaveFailurePreservesCredentialsAndCache(kind:) with 12 test cases passed after 0.068 seconds.
+􁁛  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) with 8 test cases passed after 0.070 seconds.
+􁁛  Test failedUnmountKeepsConnectionAndSecret() passed after 0.070 seconds.
+􁁛  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() passed after 0.070 seconds.
+􁁛  Test rejectsMissingShareAndInvalidFields() passed after 0.071 seconds.
+􁁛  Test connectionFailuresLogOnceWithoutExtraMountNotifications() passed after 0.072 seconds.
+􁁛  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) with 2 test cases passed after 0.083 seconds.
+􁁛  Test run with 58 tests in 0 suites passed after 0.084 seconds.
