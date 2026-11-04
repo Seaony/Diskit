@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 接入已通过本地门禁，应用层会话复用待处理；FIX-18 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 接入已通过本地门禁，应用层令牌和 Cookie 会话复用已通过本地门禁，其他会话待处理；FIX-18 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -350,3 +350,14 @@
 - 原 `tenDelayedUnauthorizedRequestsShareOneRefresh` 夹具等十个请求同时到达才返回第一个 401，与四并发上限互相等待。已改为每满四个返回一个迟到拒绝，保留余下拒绝直到新令牌请求；更名 `tenConcurrentRequestsShareOneRefreshWithDelayedRejections`（`OAuthSessionTests.swift:402`）。仍覆盖普通/流式 × 单/多会话，十个操作全部成功且只刷新一次，实际旧令牌请求数允许 4 至 10，避免要求队列中的请求也必须用旧令牌。首次完整包运行因此手动中止，没有计为通过；修正后完整包通过。
 - 回归证据 `docs/evidence/v0.2/FIX-17-cloud-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 354 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-17-cloud-gates.log`。全部测试为内存凭据、临时文件与假传输，没有访问真实网盘。
 - FIX-17 仍未整体通过：本组补齐 CloudDrive 请求额度；AppModel 的会话实例复用，以及阿里等既有单会话限制的复用问题仍待处理。
+
+
+## FIX-17：应用层令牌与 Cookie 会话复用（部分）
+
+- `App/Logic/RemoteSessionCache.swift:4` 在 AppModel 生命周期内缓存会话，按位置 ID、服务类型、会话类型及用途区分，比较实际配置后决定复用或替换。显示名称、昵称不进入会话配置；provider 仍单独创建，目录缓存、连接状态与进度回调不会被无关的连接测试共用。
+- `App/AppModel.swift:224`、`:235`、`:240`、`:248`、`:336` 将阿里、PikPak、夸克/UC、天翼和六类公共 OAuth 会话接入缓存；都显式传入模型的凭据存储，演示测试不会退回真实钥匙串。编辑器的夸克登录与天翼个人登录入口改用同一工厂（`ConnectionEditor.swift:1301`、`:1337`），不绕过复用。
+- 天翼个人登录与家庭访问需要不同配置，分别保留两个用途的会话；更改 familyID 替换家庭会话，不影响个人会话。不能把两个空间的会话硬合并为一个配置。
+- `appReusesAccountSessionsAcrossRequests`（`SessionReuseTests.swift:7`）修复前阿里、PikPak、天翼三组均重复构造会话；修复后相同位置及改显示资料均保持相同实例，不同位置仍分离。`appKeepsServiceAndTianyiScopeSessionsSeparate`（`:25`）检查夸克/UC 隔离及天翼配置替换；`cachedOAuthSessionSeesUpdatedInMemoryCredentials`（`:53`）确认复用后仍读取新令牌、感知凭据删除，OAuth 配置变化时重建。
+- `ConnectionManager.swift:205` 在删除配置落盘、内存列表更新后触发 removed，AppModel 清除对应缓存；保存失败不触发，即便后续凭据清理失败也已清除被移除位置的会话。已有十二类删除保存失败回归及清理失败回归补上通知顺序断言；`appRemovedConnectionReleasesCachedSession`（`:44`）验证实际应用删除路径。
+- `AppModel.discardUnsavedSessions`（`:231`）在关闭编辑器和取消保存结束时清理未保存草稿，不丢弃已保存位置的会话；`appDiscardsOnlyUnsavedSessionCache`（`:83`）覆盖两种情况。以上只调整工厂和生命周期，没有改界面布局或文案，未启动应用或登录真实服务。
+- 失败及应用回归证据 `docs/evidence/v0.2/FIX-17-app-regression.log`；完整提交门禁通过：应用逻辑 14 项、包测试 354 项，发布构建及签名校验通过，证据 `docs/evidence/v0.2/FIX-17-app-gates.log`。FIX-17 尚未整体通过：蓝奏、移动、迅雷及 S3 底层会话复用仍需核对完成，当前不能用这些测试代替它们的验收。

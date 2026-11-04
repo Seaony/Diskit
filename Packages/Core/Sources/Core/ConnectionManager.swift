@@ -26,6 +26,7 @@ public enum ConnectionState: Equatable, Sendable {
   public var mountFailed: ((String) -> Void)?
   public var unexpectedDisconnect: ((Connection) -> Void)?
   public var loginExpired: ((Connection) -> Void)?
+  public var removed: ((UUID) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
   public var openInFinder: ((URL) -> Void)?
   public private(set) var detailedErrors: [UUID: String] = [:]
@@ -201,6 +202,7 @@ public enum ConnectionState: Equatable, Sendable {
     try repository.save(updated)
     connections = updated
     states.removeValue(forKey: connection.id)
+    removed?(connection.id)
     let deletingSecrets = RecoverableSecretStore(base: secrets)
     try deletingSecrets.delete(connection.passwordKey)
     switch connection.kind {

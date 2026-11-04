@@ -22,6 +22,7 @@ import UserNotifications
   let preferences: UserDefaults
   let secrets: any SecretStore
   private let location: any StorageLocation
+  private let sessionCache = RemoteSessionCache()
   var demoSetupError: String?
 
   init(options: RuntimeOptions = .current) {
@@ -47,6 +48,7 @@ import UserNotifications
       preferences = .standard
       connections = ConnectionManager(smb: SystemSMBService())
     }
+    connections.removed = { [weak self] id in self?.sessionCache.remove(id) }
   }
 
   private var showsDemoDiscovery: Bool { options.isDemo && options.scenario != "empty" }
@@ -59,7 +61,8 @@ import UserNotifications
     options.isDemo
       ? (showsDemoDiscovery
         ? [
-          WirelessDevice(name: "adb-discovered-DEF456", type: .pairing, host: "demo.invalid", port: 12345)
+          WirelessDevice(
+            name: "adb-discovered-DEF456", type: .pairing, host: "demo.invalid", port: 12345)
         ] : []) : wirelessDiscovery.devices
   }
   var ricohDevices: [RicohDevice] {
@@ -219,19 +222,42 @@ import UserNotifications
       redirectURI: info["ALIYUN_REDIRECT_URI"] as? String ?? "")
   }
   func aliyunSession(for connection: Connection) -> AliyunSession {
-    AliyunSession(
-      secretKey: "\(connection.id.uuidString).oauth", configuration: Self.aliyunConfiguration)
+    sessionCache.value(for: connection, configuration: Self.aliyunConfiguration) {
+      AliyunSession(
+        secretKey: "\(connection.id.uuidString).oauth", secrets: secrets,
+        configuration: Self.aliyunConfiguration)
+    }
+  }
+  func discardUnsavedSessions(for connection: Connection) {
+    guard !connections.connections.contains(where: { $0.id == connection.id }) else { return }
+    sessionCache.remove(connection.id)
   }
   func pikPakSession(for connection: Connection) -> PikPakSession {
-    PikPakSession(secretKey: "\(connection.id.uuidString).oauth.pikPak")
+    sessionCache.value(for: connection, configuration: "pikPak") {
+      PikPakSession(secretKey: "\(connection.id.uuidString).oauth.pikPak", secrets: secrets)
+    }
   }
-  func tianyiSession(for connection: Connection) -> TianyiSession {
+  func quarkSession(for connection: Connection) -> QuarkSession {
+    let configuration = connection.kind == .ucDrive ? QuarkCloudConfiguration.uc : .quark
+    return sessionCache.value(for: connection, configuration: configuration) {
+      QuarkSession(
+        secretKey: "\(connection.id.uuidString).cookie", secrets: secrets,
+        configuration: configuration)
+    }
+  }
+  func tianyiSession(for connection: Connection, personal: Bool = false) -> TianyiSession {
     let familyID = connection.params["familyID"] ?? ""
     let configuration =
-      connection.params["scope"] == "family"
+      !personal && connection.params["scope"] == "family"
       ? TianyiConfiguration.family(familyID: familyID) : TianyiConfiguration.personal
-    return TianyiSession(
-      secretKey: "\(connection.id.uuidString).oauth.tianyiDrive", configuration: configuration)
+    return sessionCache.value(
+      for: connection, configuration: configuration,
+      slot: configuration == .personal ? "personal" : "family"
+    ) {
+      TianyiSession(
+        secretKey: "\(connection.id.uuidString).oauth.tianyiDrive", secrets: secrets,
+        configuration: configuration)
+    }
   }
   func oauthConfiguration(for kind: ConnectionKind) -> OAuthConfiguration? {
     let info = Bundle.main.infoDictionary ?? [:]
@@ -311,9 +337,12 @@ import UserNotifications
     guard oauthIsConfigured(for: connection.kind),
       let configuration = oauthConfiguration(for: connection.kind)
     else { throw OAuthDriveError.configuration }
-    return OAuthSession(
-      configuration: configuration,
-      secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)")
+    return sessionCache.value(for: connection, configuration: configuration) {
+      OAuthSession(
+        configuration: configuration,
+        secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)", secrets: secrets
+      )
+    }
   }
   func remoteProvider(for connection: Connection) async throws -> any RemoteFileProvider {
     guard !options.isDemo else { throw ConnectionError.notImplemented }
@@ -326,14 +355,8 @@ import UserNotifications
       return try await CameraUSBProvider.make(identifier: connection.params["serial"] ?? "")
     case .aliyunDrive:
       return AliyunProvider(session: aliyunSession(for: connection))
-    case .quark:
-      return QuarkProvider(
-        session: QuarkSession(
-          secretKey: "\(connection.id.uuidString).cookie", configuration: .quark))
-    case .ucDrive:
-      return QuarkProvider(
-        session: QuarkSession(
-          secretKey: "\(connection.id.uuidString).cookie", configuration: .uc))
+    case .quark, .ucDrive:
+      return QuarkProvider(session: quarkSession(for: connection))
     case .baiduDrive:
       let root = Bundle.main.infoDictionary?["BAIDU_ROOT_PATH"] as? String ?? "apps/Kayoi"
       let appID = Bundle.main.infoDictionary?["BAIDU_APP_ID"] as? String ?? ""

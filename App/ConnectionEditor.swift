@@ -1210,6 +1210,7 @@ struct ConnectionEditor: View {
         busy = false
         stage = nil
         saving = nil
+        if Task.isCancelled { model.discardUnsavedSessions(for: draft) }
       }
       do {
         if model.options.isDemo {
@@ -1297,9 +1298,7 @@ struct ConnectionEditor: View {
         }
         if draft.kind == .quark || draft.kind == .ucDrive {
           stage = model.forceLogin ? L("等待网页登录…") : L("正在验证账号…")
-          let session = QuarkSession(
-            secretKey: "\(draft.id.uuidString).cookie",
-            configuration: draft.kind == .ucDrive ? .uc : .quark)
+          let session = model.quarkSession(for: draft)
           let hasCookie = try await session.hasCookie()
           let account: QuarkAccount
           if model.forceLogin || !hasCookie {
@@ -1335,8 +1334,7 @@ struct ConnectionEditor: View {
         }
         if draft.kind == .tianyiDrive {
           stage = model.forceLogin ? L("等待天翼云盘登录…") : L("正在验证账号…")
-          let authSession = TianyiSession(
-            secretKey: "\(draft.id.uuidString).oauth.tianyiDrive", configuration: .personal)
+          let authSession = model.tianyiSession(for: draft, personal: true)
           let hasLogin = try await authSession.hasLogin()
           if model.forceLogin || !hasLogin {
             guard !password.isEmpty else { throw TianyiError.invalidCookie }
@@ -1421,6 +1419,7 @@ struct ConnectionEditor: View {
   }
 
   private func cancelWork() {
+    model.discardUnsavedSessions(for: draft)
     saving?.cancel()
     pairingTask?.cancel()
     shareTask?.cancel()

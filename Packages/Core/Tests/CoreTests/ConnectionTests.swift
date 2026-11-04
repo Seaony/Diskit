@@ -600,6 +600,8 @@ private func sample(_ name: String = "Windows") -> Connection {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
+  var removed: [UUID] = []
+  manager.removed = { removed.append($0) }
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
   let connection =
     kind == .smb ? sample() : Connection(kind: kind, name: "网盘", params: ["nickname": "测试账号"])
@@ -621,6 +623,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
   try Data().write(to: config.appending(path: "block-write"))
   await #expect(throws: CocoaError.self) { try await manager.remove(connection) }
+  #expect(removed.isEmpty)
   #expect(manager.connections.contains { $0.id == connection.id })
   #expect(f.secrets.deletions.withLock { $0.isEmpty })
   for key in keys { #expect(try f.secrets.read(key) == Data("saved".utf8)) }
@@ -638,10 +641,13 @@ private func sample(_ name: String = "Windows") -> Connection {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
+  var removed: [UUID] = []
+  manager.removed = { removed.append($0) }
   let connection = sample()
   try await manager.save(connection, password: "saved")
   f.secrets.failDeletes.withLock { $0 = true }
   await #expect(throws: CocoaError.self) { try await manager.remove(connection) }
+  #expect(removed == [connection.id])
   #expect(manager.connections.isEmpty)
   #expect(manager.states[connection.id] == nil)
   #expect(try ConnectionRepository(location: f.location).load().isEmpty)
