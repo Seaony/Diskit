@@ -49,6 +49,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     [
       HTTPResponse(status: 200, body: Data(#"{"errno":0,"uk":7,"vip_type":0}"#.utf8)),
       HTTPResponse(status: 200, body: Data(list.utf8)),
+      HTTPResponse(status: 200, body: Data(list.utf8)),
       HTTPResponse(
         status: 200,
         body: Data(
@@ -82,10 +83,8 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(
       status: 200,
       body: Data(#"{"errno":0,"uploadid":"upload","block_list":[0,1]}"#.utf8)),
-    HTTPResponse(
-      status: 200, body: Data(#"{"error_code":0,"host":"https://upload.example.com"}"#.utf8)),
-    HTTPResponse(status: 200, body: Data(#"{"errno":0,"md5":"a"}"#.utf8)),
-    HTTPResponse(status: 200, body: Data(#"{"errno":0,"md5":"b"}"#.utf8)),
+    HTTPResponse(status: 200, body: Data(#"{"errno":0,"md5":"5a6d43d91a80aecd185e1a9f901beeeb"}"#.utf8)),
+    HTTPResponse(status: 200, body: Data(#"{"errno":0,"md5":"8bb6c17838643f9691cc6a4de6c51709"}"#.utf8)),
     HTTPResponse(status: 200, body: Data(#"{"errno":0,"fs_id":123}"#.utf8)),
   ])
   let provider = BaiduDriveProvider(
@@ -97,6 +96,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     $0.filter { $0.url?.path == "/rest/2.0/pcs/superfile2" }
   }
   #expect(uploads.count == 2)
+  #expect(transport.uploadRequests.withLock { $0.count } == 2)
   #expect(uploads[0].httpBody!.count > blockSize)
   #expect(uploads[1].httpBody!.count < 2_000)
 }
@@ -653,7 +653,8 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       $0.last {
         $0.httpMethod == "POST"
           && $0.url?.path == "/rest/2.0/xpan/file"
-          && String(decoding: $0.httpBody ?? Data(), as: UTF8.self).contains("opera=delete")
+          && URLComponents(url: $0.url!, resolvingAgainstBaseURL: false)?.queryItems?
+            .contains(where: { $0.name == "opera" && $0.value == "delete" }) == true
       }
     })
   #expect(baiduDelete.httpMethod == "POST")
@@ -788,7 +789,7 @@ func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business:
   #expect(transport.requests.withLock { $0.count } == 3)
 }
 
-@Test func baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() async throws {
+@Test func baiduUploadRetryPreservesMultipartBodyAndUpdatesQueryToken() async throws {
   let file = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
   defer { try? FileManager.default.removeItem(at: file) }
   try Data("hello&access_token=file-content".utf8).write(to: file)
@@ -796,15 +797,14 @@ func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business:
     #"{"errno":0,"uk":7,"vip_type":0}"#,
     #"{"errno":-9}"#,
     #"{"errno":0,"uploadid":"upload","block_list":[0]}"#,
-    #"{"error_code":0,"host":"https://upload.example.com"}"#,
     "{}",
     #"{"access_token":"fresh","refresh_token":"rotated","expires_in":3600}"#,
-    #"{"errno":0,"md5":"a"}"#,
+    #"{"errno":0,"md5":"753e1c1da158f697bed2111cff80e581"}"#,
     #"{"errno":0,"fs_id":123}"#,
   ]
   let transport = ProviderFakeTransport(
     bodies.enumerated().map {
-      HTTPResponse(status: $0.offset == 4 ? 401 : 200, body: Data($0.element.utf8))
+      HTTPResponse(status: $0.offset == 3 ? 401 : 200, body: Data($0.element.utf8))
     })
   let provider = BaiduDriveProvider(
     configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
@@ -815,9 +815,14 @@ func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business:
     $0.filter { $0.url?.path == "/rest/2.0/pcs/superfile2" }
   }
   #expect(uploads.count == 2)
+  #expect(transport.uploadRequests.withLock { $0.count } == 2)
   #expect(uploads[0].httpBody == uploads[1].httpBody)
-  #expect(uploads[1].value(forHTTPHeaderField: "Authorization") == "Bearer fresh")
-  #expect(uploads[0].url == uploads[1].url)
+  #expect(uploads[1].value(forHTTPHeaderField: "Authorization") == nil)
+  let firstQuery = URLComponents(url: uploads[0].url!, resolvingAgainstBaseURL: false)?.queryItems
+  let retryQuery = URLComponents(url: uploads[1].url!, resolvingAgainstBaseURL: false)?.queryItems
+  #expect(firstQuery?.first { $0.name == "access_token" }?.value == "access")
+  #expect(retryQuery?.first { $0.name == "access_token" }?.value == "fresh")
+  #expect(firstQuery?.filter { $0.name != "access_token" } == retryQuery?.filter { $0.name != "access_token" })
 }
 
 private actor LateProviderRejection: HTTPTransport {

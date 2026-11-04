@@ -20,7 +20,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private var connected = false
   private var userID: UInt64 = 0
   private var vipType = 0
-  private var downloadLinks: [String: String] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -48,7 +47,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   public func disconnect() async {
     connected = false
-    downloadLinks = [:]
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -68,15 +66,19 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let value = try decode(BaiduUser.self, from: response)
     return OAuthProfile(
       userID: String(value.uk ?? 0),
-      nickname: value.netdisk_name ?? value.baidu_name ?? "百度网盘",
+      nickname: value.netdisk_name ?? value.baidu_name ?? L("百度网盘"),
       avatarURL: value.avatar_url)
   }
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
     try ensureConnected()
+    return try await listEntries(path).map { try $0.item(root: configuration.rootPath) }
+  }
+
+  private func listEntries(_ path: RemotePath) async throws -> [BaiduItem] {
     let directory = remotePath(path)
     var start = 0
-    var result: [RemoteItem] = []
+    var result: [BaiduItem] = []
     while true {
       let response = try await request(
         method: "GET", path: "/rest/2.0/xpan/file",
@@ -89,12 +91,17 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
           URLQueryItem(name: "desc", value: "0"),
         ])
       let page = try decode(BaiduListResponse.self, from: response)
-      let entries = page.list ?? page.data?.list ?? []
-      for entry in entries {
-        let item = try entry.item(root: configuration.rootPath)
-        result.append(item)
-        if let link = entry.dlink { downloadLinks[item.path.value] = link }
+      guard page.errno == 0, let entries = page.list ?? page.data?.list else {
+        throw RemoteError.protocolError
       }
+      for entry in entries {
+        _ = try entry.item(root: configuration.rootPath)
+        let prefix = directory == "/" ? "/" : directory + "/"
+        guard entry.path.hasPrefix(prefix),
+          !entry.path.dropFirst(prefix.count).contains("/")
+        else { throw RemoteError.protocolError }
+      }
+      result.append(contentsOf: entries)
       guard entries.count == 1_000 else { break }
       start += entries.count
     }
@@ -109,7 +116,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         modified: Date(timeIntervalSince1970: 0))
     }
     let item = try await metadata(path, download: false)
-    if let link = item.dlink { downloadLinks[path.value] = link }
     return try item.item(root: configuration.rootPath)
   }
 
@@ -124,13 +130,12 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let metadata = try await metadata(path, download: true)
     guard let rawLink = metadata.dlink else { throw RemoteError.protocolError }
     let token = try await session.accessToken()
-    guard var components = URLComponents(string: rawLink) else {
-      throw RemoteError.protocolError
-    }
-    components.queryItems =
-      (components.queryItems ?? []) + [URLQueryItem(name: "access_token", value: token)]
-    guard let url = components.url else { throw RemoteError.protocolError }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    guard let link = URL(string: rawLink), link.scheme?.lowercased() == "https",
+      link.host != nil, link.user == nil, link.password == nil
+    else { throw RemoteError.protocolError }
+    let url = try CloudDriveSupport.url(
+      rawLink, query: [URLQueryItem(name: "access_token", value: token)])
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.setValue("pan.baidu.com", forHTTPHeaderField: "User-Agent")
     if let range {
       request.setValue(
@@ -144,6 +149,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let target = remotePath(path)
@@ -165,48 +171,50 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         "autoinit": "1", "rtype": "0",
       ])
     let prepared = try decode(BaiduPrecreate.self, from: precreate)
-    guard let uploadID = prepared.uploadid, !uploadID.isEmpty else {
-      throw RemoteError.protocolError
+    if prepared.return_type == 2 {
+      progress?(size, size)
+      return
     }
-    let locate = try await request(
-      method: "GET", path: "/rest/2.0/pcs/file",
-      query: [
-        URLQueryItem(name: "method", value: "locateupload"),
-        URLQueryItem(name: "appid", value: configuration.appID),
-        URLQueryItem(name: "path", value: target),
-        URLQueryItem(name: "uploadid", value: uploadID),
-        URLQueryItem(name: "upload_version", value: "2.0"),
-      ])
-    let uploadHost = try decodeUploadHost(locate)
-    let parts = prepared.block_list?.isEmpty == false ? prepared.block_list! : [0]
+    guard let uploadID = prepared.uploadid, !uploadID.isEmpty,
+      let parts = prepared.block_list,
+      Set(parts).count == parts.count,
+      parts.allSatisfy({ blocks.md5.indices.contains($0) })
+    else { throw RemoteError.protocolError }
+    var confirmedHashes = blocks.md5
     let handle = try FileHandle(forReadingFrom: localFile)
     defer { try? handle.close() }
-    var uploaded: Int64 = 0
+    var uploaded =
+      size
+      - parts.reduce(Int64(0)) { total, part in
+        total + min(blockSize, size - Int64(part) * blockSize)
+      }
     for part in parts {
       try Task.checkCancellation()
       let offset = Int64(part) * blockSize
       try handle.seek(toOffset: UInt64(offset))
       let length = min(blockSize, size - offset)
-      guard let data = try handle.read(upToCount: Int(length)) else {
+      let data = try handle.read(upToCount: Int(length)) ?? Data()
+      guard data.count == Int(length) else {
         throw RemoteError.posix(EIO)
       }
       var form = MultipartFormData()
       form.addFile("file", filename: "part-\(part)", data: data)
       let url = try CloudDriveSupport.url(
-        uploadHost + "/rest/2.0/pcs/superfile2",
+        "https://d.pcs.baidu.com/rest/2.0/pcs/superfile2",
         query: [
           URLQueryItem(name: "method", value: "upload"),
+          URLQueryItem(name: "access_token", value: try await session.accessToken()),
           URLQueryItem(name: "type", value: "tmpfile"),
           URLQueryItem(name: "path", value: target),
           URLQueryItem(name: "uploadid", value: uploadID),
           URLQueryItem(name: "partseq", value: String(part)),
         ])
-      var uploadRequest = CloudDriveSupport.multipartRequest(
+      let uploadRequest = CloudDriveSupport.multipartRequest(
         url, form: form, headers: ["User-Agent": "pan.baidu.com"])
-      uploadRequest.setValue(
-        "Bearer \(try await session.accessToken())", forHTTPHeaderField: "Authorization")
       let partResponse = try await upload(uploadRequest)
-      try checkBaidu(partResponse, allowMissingErrno: true)
+      let reply = try decode(BaiduUploadPart.self, from: partResponse)
+      guard reply.md5.lowercased() == blocks.md5[part] else { throw RemoteError.protocolError }
+      confirmedHashes[part] = reply.md5.lowercased()
       uploaded += Int64(data.count)
       progress?(uploaded, size)
     }
@@ -214,13 +222,14 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       method: "POST", path: "/rest/2.0/xpan/file",
       query: [URLQueryItem(name: "method", value: "create")],
       fields: [
-        "path": target, "size": String(size), "isdir": "0", "block_list": blockJSON,
-        "uploadid": uploadID, "rtype": "0",
+        "path": target, "size": String(size), "isdir": "0",
+        "block_list": try jsonString(confirmedHashes), "uploadid": uploadID, "rtype": "0",
       ])
     let done = try decode(BaiduCreated.self, from: created)
     guard done.errno == 0, done.fs_id != nil else {
       throw mapBusiness(done.errno)
     }
+    progress?(size, size)
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -251,7 +260,6 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       ],
       fields: ["async": "0", "filelist": entries])
     try checkBaidu(response)
-    downloadLinks.removeValue(forKey: path.value)
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
@@ -276,48 +284,44 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       ],
       fields: ["async": "0", "filelist": entries, "ondup": "fail"])
     try checkBaidu(response)
-    downloadLinks.removeValue(forKey: from.value)
   }
 
   private func metadata(_ path: RemotePath, download: Bool) async throws -> BaiduItem {
+    let matches = try await listEntries(CloudDriveSupport.parent(path))
+      .filter { $0.path == remotePath(path) }
+    guard let match = matches.first else { throw RemoteError.posix(ENOENT) }
+    guard matches.count == 1 else { throw RemoteError.posix(EEXIST) }
+    if !download { return match }
+    guard let id = match.fs_id else { throw RemoteError.protocolError }
     let response = try await request(
-      method: "GET", path: "/rest/2.0/xpan/file",
+      method: "GET", path: "/rest/2.0/xpan/multimedia",
       query: [
-        URLQueryItem(name: "method", value: "meta"),
-        URLQueryItem(name: "path", value: remotePath(path)),
-        URLQueryItem(name: "dlink", value: download ? "1" : "0"),
+        URLQueryItem(name: "method", value: "filemetas"),
+        URLQueryItem(name: "fsids", value: try jsonString([id])),
+        URLQueryItem(name: "dlink", value: "1"),
       ])
     let value = try decode(BaiduListResponse.self, from: response)
     let items = value.list ?? value.data?.list ?? []
-    guard let item = items.first else {
-      throw RemoteError.posix(ENOENT)
-    }
-    guard items.count == 1 else { throw RemoteError.posix(EEXIST) }
+    guard items.count == 1, let item = items.first,
+      item.fs_id == id, item.path == match.path
+    else { throw RemoteError.protocolError }
     return item
   }
 
   private func request(
     method: String, path: String, query: [URLQueryItem] = [], fields: [String: String] = [:]
   ) async throws -> HTTPResponse {
-    let base = try CloudDriveSupport.url("https://pan.baidu.com" + path)
+    let url = try CloudDriveSupport.url(
+      "https://pan.baidu.com" + path,
+      query: query + [URLQueryItem(name: "access_token", value: try await session.accessToken())])
+    var request: URLRequest
     if method == "GET" {
-      var request = URLRequest(
-        url: try CloudDriveSupport.url(
-          "https://pan.baidu.com" + path,
-          query: query + [
-            URLQueryItem(name: "access_token", value: try await session.accessToken())
-          ]),
-        timeoutInterval: 60)
-      request.httpMethod = method
+      request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
       request.setValue("pan.baidu.com", forHTTPHeaderField: "User-Agent")
-      return try await retryBusinessAuthentication(
-        ifNeeded: try await authorized(request), request: request)
+    } else {
+      request = CloudDriveSupport.formRequest(
+        url, method: method, fields: fields, headers: ["User-Agent": "pan.baidu.com"])
     }
-    var parameters = Dictionary(uniqueKeysWithValues: query.map { ($0.name, $0.value ?? "") })
-    parameters.merge(fields) { _, new in new }
-    parameters["access_token"] = try await session.accessToken()
-    let request = CloudDriveSupport.formRequest(
-      base, method: method, fields: parameters, headers: ["User-Agent": "pan.baidu.com"])
     return try await retryBusinessAuthentication(
       ifNeeded: try await authorized(request), request: request)
   }
@@ -335,11 +339,11 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func upload(_ request: URLRequest) async throws -> HTTPResponse {
-    let first = try await CloudDriveSupport.sendWithRetry(transport, request)
+    let first = try await CloudDriveSupport.sendWithRetry(transport, request, upload: true)
     guard first.status == 401 || isBusinessUnauthorized(first) else { return first }
     _ = try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request))
     let retry = try await replacingAccessToken(in: request)
-    let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
+    let second = try await CloudDriveSupport.sendWithRetry(transport, retry, upload: true)
     if second.status == 401 || isBusinessUnauthorized(second) {
       throw OAuthDriveError.loginRequired
     }
@@ -366,43 +370,50 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private func isBusinessUnauthorized(_ response: HTTPResponse) -> Bool {
     guard (200..<300).contains(response.status),
       let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
-      let errno = status.errno
+      let errno = status.code
     else { return false }
     if case .unauthorized = mapBusiness(errno) { return true }
     return false
   }
 
   private func decode<T: Decodable>(_ type: T.Type, from response: HTTPResponse) throws -> T {
-    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
-    if let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
-      let errno = status.errno, errno != 0
-    {
-      throw mapBusiness(errno)
-    }
     do {
-      return try JSONDecoder().decode(type, from: response.body)
+      if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+      if let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
+        let errno = status.code, errno != 0
+      {
+        throw mapBusiness(errno)
+      }
+      do {
+        return try JSONDecoder().decode(type, from: response.body)
+      } catch {
+        throw RemoteError.protocolError
+      }
     } catch {
-      throw RemoteError.protocolError
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .cloudDrive, operation: .request)
+      }
+      throw error
     }
   }
 
-  private func checkBaidu(_ response: HTTPResponse, allowMissingErrno: Bool = false) throws {
-    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
-    guard let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body) else {
-      if allowMissingErrno { return }
-      throw RemoteError.protocolError
+  private func checkBaidu(_ response: HTTPResponse) throws {
+    do {
+      if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+      guard let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
+        let errno = status.code
+      else { throw RemoteError.protocolError }
+      if errno != 0 { throw mapBusiness(errno) }
+      guard let result = try? JSONDecoder().decode(BaiduFileResult.self, from: response.body) else {
+        throw RemoteError.protocolError
+      }
+      for item in result.info ?? [] where item.errno != 0 { throw mapBusiness(item.errno) }
+    } catch {
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .cloudDrive, operation: .request)
+      }
+      throw error
     }
-    if let errno = status.errno, errno != 0 { throw mapBusiness(errno) }
-  }
-
-  private func decodeUploadHost(_ response: HTTPResponse) throws -> String {
-    let value = try decode(BaiduUploadHost.self, from: response)
-    let host = value.host ?? value.servers?.first?.server
-    guard var host else { throw RemoteError.protocolError }
-    if !host.hasPrefix("http://"), !host.hasPrefix("https://") {
-      host = "https://" + host
-    }
-    return host.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
   }
 
   private func makeBlocks(
@@ -419,7 +430,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     while remaining > 0 {
       try Task.checkCancellation()
       let length = min(blockSize, remaining)
-      guard let data = try handle.read(upToCount: Int(length)), !data.isEmpty else {
+      guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
         throw RemoteError.posix(EIO)
       }
       hasher.update(data: data)
@@ -431,6 +442,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func remotePath(_ path: RemotePath) -> String {
+    if configuration.rootPath == "/" { return path.value }
     if path.value == "/" { return configuration.rootPath }
     return configuration.rootPath + path.value
   }
@@ -451,13 +463,13 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       return .posix(EACCES)
     case -8, 10, 31061:
       return .posix(EEXIST)
-    case -9, 31066, 31190:
+    case -9, 31066:
       return .posix(ENOENT)
-    case -10:
+    case -10, 31190:
       return .posix(ENOSPC)
-    case 20012, 31034:
+    case 20012:
       return .posix(EIO)
-    case 42905:
+    case 31034, 42905:
       return .rateLimited
     case 31365:
       return .posix(EFBIG)
@@ -466,24 +478,25 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     }
   }
 
-  private func ensureMissing(_ path: RemotePath) async throws {
-    do {
-      _ = try await stat(path)
-      throw RemoteError.posix(EEXIST)
-    } catch {
-      guard CloudDriveSupport.isExplicitlyMissing(error) else { throw error }
-    }
-  }
-
   private func ensureConnected() throws {
     guard connected else { throw RemoteError.notConnected }
   }
 }
 
+private struct BaiduFileResult: Decodable {
+  struct Item: Decodable { let errno: Int }
+  let info: [Item]?
+}
+
 private struct BaiduStatus: Decodable {
   let errno: Int?
+  let error_code: Int?
   let errmsg: String?
   let show_msg: String?
+  var code: Int? {
+    if let errno, errno != 0 { return errno }
+    return error_code ?? errno
+  }
 }
 
 private struct BaiduUser: Decodable {
@@ -526,6 +539,8 @@ private struct BaiduItem: Decodable {
     let logical: String
     if path == root {
       logical = "/"
+    } else if root == "/", path.hasPrefix("/") {
+      logical = path
     } else if path.hasPrefix(root + "/") {
       logical = String(path.dropFirst(root.count))
     } else {
@@ -544,18 +559,14 @@ private struct BaiduPrecreate: Decodable {
   let errno: Int?
   let uploadid: String?
   let block_list: [Int]?
+  let return_type: Int?
+}
+
+private struct BaiduUploadPart: Decodable {
+  let md5: String
 }
 
 private struct BaiduCreated: Decodable {
   let errno: Int?
   let fs_id: UInt64?
-}
-
-private struct BaiduUploadHost: Decodable {
-  struct Server: Decodable {
-    let server: String
-  }
-  let error_code: Int?
-  let host: String?
-  let servers: [Server]?
 }
