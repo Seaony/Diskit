@@ -19,7 +19,7 @@ struct AliyunFile: Decodable, Sendable {
     else { throw RemoteError.protocolError }
     guard isDirectory || (size != nil && size! >= 0) else { throw RemoteError.protocolError }
     let modified: Date
-    if let updatedAt, let date = AliyunDates.parse(updatedAt) {
+    if let updatedAt, let date = RemoteTimestamp.parse(updatedAt) {
       modified = date
     } else {
       throw RemoteError.protocolError
@@ -42,7 +42,7 @@ struct AliyunDownloadLink: Decodable, Sendable {
   let url: URL
   let expiration: String
   let method: String
-  var expiresAt: Date? { AliyunDates.parse(expiration) }
+  var expiresAt: Date? { RemoteTimestamp.parse(expiration) }
 }
 
 struct AliyunPartURL: Decodable, Sendable {
@@ -101,16 +101,6 @@ enum AliyunMultipart {
       offset += length
     }
     return result
-  }
-}
-
-enum AliyunDates {
-  static func parse(_ text: String) -> Date? {
-    let format = ISO8601DateFormatter()
-    format.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let value = format.date(from: text) { return value }
-    format.formatOptions = [.withInternetDateTime]
-    return format.date(from: text)
   }
 }
 

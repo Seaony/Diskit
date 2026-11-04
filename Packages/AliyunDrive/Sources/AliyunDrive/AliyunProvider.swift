@@ -5,23 +5,39 @@ public actor AliyunProvider: RemoteFileProvider {
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: AliyunSession
+  private let taskTimeout: Duration
+  private let taskDeadline: HTTPProgressDeadline?
   private var driveID: String?
   private var rootID = "root"
   private var paths: [String: AliyunFile] = [:]
+  private var cacheGeneration: UInt64 = 0
+  private var listings: [String: UUID] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
     self.progress = progress
   }
   private var links: [String: AliyunDownloadLink] = [:]
-  public init(session: AliyunSession) { self.session = session }
+  public init(session: AliyunSession) {
+    self.init(session: session, taskTimeout: .seconds(RemoteTimeout.cloudRequest))
+  }
+  init(session: AliyunSession, taskTimeout: Duration, taskDeadline: HTTPProgressDeadline? = nil) {
+    self.session = session
+    self.taskTimeout = taskTimeout
+    self.taskDeadline = taskDeadline
+  }
   public func connect() async throws {
-    let account = try await session.account()
-    driveID = account.driveID
-    rootID = account.rootFolderID
+    cacheGeneration &+= 1
+    let generation = cacheGeneration
+    driveID = nil
     paths.removeAll()
     links.removeAll()
+    let account = try await session.account()
+    guard generation == cacheGeneration else { throw RemoteError.posix(EAGAIN) }
+    driveID = account.driveID
+    rootID = account.rootFolderID
   }
   public func disconnect() async {
+    cacheGeneration &+= 1
     driveID = nil
     paths.removeAll()
     links.removeAll()
@@ -45,7 +61,9 @@ public actor AliyunProvider: RemoteFileProvider {
         path: path, name: "/", isDirectory: true, size: 0, modified: Date(timeIntervalSince1970: 0))
     }
     let cached = try await resolve(path)
+    let generation = cacheGeneration
     let file: AliyunFile = try await rpc("get", ["file_id": cached.fileID])
+    guard generation == cacheGeneration else { throw RemoteError.posix(EAGAIN) }
     guard file.name == cached.name else {
       invalidate(parent(of: path))
       throw RemoteError.posix(ENOENT)
@@ -78,7 +96,7 @@ public actor AliyunProvider: RemoteFileProvider {
       guard link.method.uppercased() == "GET", link.url.scheme == "https" else {
         throw RemoteError.protocolError
       }
-      var request = URLRequest(url: link.url, timeoutInterval: 60)
+      var request = URLRequest(url: link.url, timeoutInterval: RemoteTimeout.transferIdle)
       if let requested {
         request.setValue(
           "bytes=\(requested.lowerBound)-\(requested.upperBound - 1)", forHTTPHeaderField: "Range")
@@ -102,6 +120,7 @@ public actor AliyunProvider: RemoteFileProvider {
     throw RemoteError.posix(EACCES)
   }
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let destination = parent(of: path)
     let name = basename(path)
@@ -115,6 +134,7 @@ public actor AliyunProvider: RemoteFileProvider {
     let size = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize
     guard let size, size >= 0 else { throw RemoteError.posix(EIO) }
     let parts = try AliyunMultipart.parts(size: Int64(size))
+    defer { invalidate(destination) }
     let created: AliyunCreatedFile = try await rpc(
       "create",
       [
@@ -157,10 +177,10 @@ public actor AliyunProvider: RemoteFileProvider {
           guard let url = urls[part.number], url.scheme == "https" else {
             throw RemoteError.protocolError
           }
-          var request = URLRequest(url: url, timeoutInterval: 60)
+          var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
           request.httpMethod = "PUT"
           request.httpBody = data
-          let response = try await session.authorized(request)
+          let response = try await session.authorized(request, upload: true)
           if [401, 403].contains(response.status), attempt == 0 {
             urls[part.number] = try await uploadURL(
               fileID: created.fileID, uploadID: uploadID, part: part.number)
@@ -177,7 +197,6 @@ public actor AliyunProvider: RemoteFileProvider {
     }
     guard uploaded.fileID == created.fileID, uploaded.type == "file", uploaded.size == Int64(size)
     else { throw RemoteError.protocolError }
-    invalidate(destination)
     if let previous = matches.first {
       do {
         let result: AliyunMutation = try await rpc("recyclebin/trash", ["file_id": previous.fileID])
@@ -197,17 +216,14 @@ public actor AliyunProvider: RemoteFileProvider {
       $0.name == basename(path)
     }
     guard matches.count <= 1 else { throw AliyunFileError.duplicateNames }
-    if let existing = matches.first {
-      guard existing.isDirectory else { throw RemoteError.posix(EEXIST) }
-      return
-    }
+    guard matches.isEmpty else { throw RemoteError.posix(EEXIST) }
+    defer { invalidate(destination) }
     let _: AliyunCreatedFile = try await rpc(
       "create",
       [
         "parent_file_id": parentFile.fileID, "name": basename(path), "type": "folder",
         "check_name_mode": "refuse",
       ])
-    invalidate(destination)
   }
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
     guard path.value != "/" else { throw RemoteError.posix(EACCES) }
@@ -215,8 +231,8 @@ public actor AliyunProvider: RemoteFileProvider {
     if file.isDirectory, !recursive, !(try await children(path, fileID: file.fileID)).isEmpty {
       throw RemoteError.posix(ENOTEMPTY)
     }
+    defer { invalidate(parent(of: path)) }
     let result: AliyunMutation = try await rpc("recyclebin/trash", ["file_id": file.fileID])
-    invalidate(parent(of: path))
     try await waitForTask(result.asyncTaskID)
   }
   public func move(_ from: RemotePath, to: RemotePath) async throws {
@@ -286,6 +302,12 @@ public actor AliyunProvider: RemoteFileProvider {
     return file
   }
   private func children(_ path: RemotePath, fileID: String) async throws -> [AliyunFile] {
+    let generation = cacheGeneration
+    let requestID = UUID()
+    listings[path.value] = requestID
+    defer {
+      if listings[path.value] == requestID { listings.removeValue(forKey: path.value) }
+    }
     var files: [AliyunFile] = []
     var marker = ""
     var visited: Set<String> = []
@@ -296,7 +318,10 @@ public actor AliyunProvider: RemoteFileProvider {
       marker = page.nextMarker ?? ""
       if !marker.isEmpty, !visited.insert(marker).inserted { throw RemoteError.protocolError }
     } while !marker.isEmpty
-    invalidate(path)
+    guard generation == cacheGeneration, listings[path.value] == requestID else {
+      throw RemoteError.posix(EAGAIN)
+    }
+    clearCachedPaths(path)
     let counts = Dictionary(grouping: files, by: \.name)
     for file in files {
       let child = try path.appending(file.name)
@@ -306,6 +331,10 @@ public actor AliyunProvider: RemoteFileProvider {
     return files
   }
   private func invalidate(_ directory: RemotePath) {
+    cacheGeneration &+= 1
+    clearCachedPaths(directory)
+  }
+  private func clearCachedPaths(_ directory: RemotePath) {
     let prefix = directory.value == "/" ? "/" : directory.value + "/"
     let removed = paths.filter { $0.key.hasPrefix(prefix) }
     for (path, file) in removed {
@@ -314,17 +343,19 @@ public actor AliyunProvider: RemoteFileProvider {
     }
   }
   private func parent(of path: RemotePath) -> RemotePath {
-    try! RemotePath("/" + path.value.split(separator: "/").dropLast().joined(separator: "/"))
+    path.parent
   }
   private func basename(_ path: RemotePath) -> String {
-    path.value.split(separator: "/").last.map(String.init) ?? ""
+    path.basename
   }
   private func downloadLink(fileID: String) async throws -> AliyunDownloadLink {
     if let link = links[fileID], let expiration = link.expiresAt, expiration > Date() {
       return link
     }
+    let generation = cacheGeneration
     let link: AliyunDownloadLink = try await rpc(
       "getDownloadUrl", ["file_id": fileID, "expire_sec": 900])
+    guard generation == cacheGeneration else { throw RemoteError.posix(EAGAIN) }
     guard link.expiresAt != nil else { throw RemoteError.protocolError }
     links[fileID] = link
     return link
@@ -340,24 +371,28 @@ public actor AliyunProvider: RemoteFileProvider {
   }
   private func waitForTask(_ id: String?) async throws {
     guard let id, !id.isEmpty else { return }
-    let deadline = ContinuousClock.now.advanced(by: .seconds(30))
-    while ContinuousClock.now < deadline {
-      let result: AliyunTaskState = try await rpc("async_task/get", ["async_task_id": id])
-      switch result.state {
-      case "Succeed": return
-      case "Failed": throw RemoteError.posix(EIO)
-      case "Running": try await Task.sleep(for: .seconds(1))
-      default: throw RemoteError.protocolError
+    do {
+      try await (taskDeadline ?? HTTPProgressDeadline(interval: taskTimeout)).run {
+        while true {
+          let result: AliyunTaskState = try await self.rpc("async_task/get", ["async_task_id": id])
+          switch result.state {
+          case "Succeed": return
+          case "Failed": throw RemoteError.posix(EIO)
+          case "Running": try await Task.sleep(for: .seconds(1))
+          default: throw RemoteError.protocolError
+          }
+        }
       }
+    } catch let error as URLError where error.code == .timedOut {
+      throw RemoteError.posix(ETIMEDOUT)
     }
-    throw RemoteError.posix(ETIMEDOUT)
   }
   private func rpc<T: Decodable>(_ endpoint: String, _ fields: [String: Any]) async throws -> T {
     var body = fields
     body["drive_id"] = try connectedDrive()
     var request = URLRequest(
       url: URL(string: "https://openapi.alipan.com/adrive/v1.0/openFile/" + endpoint)!,
-      timeoutInterval: 30)
+      timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -382,11 +417,6 @@ public actor AliyunProvider: RemoteFileProvider {
     }
   }
   static func validContentRange(_ header: String?, requested: Range<Int64>, size: Int64) -> Bool {
-    guard let header, header.hasPrefix("bytes ") else { return false }
-    let pieces = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
-    guard pieces.count == 2, Int64(pieces[1]) == size else { return false }
-    let bounds = pieces[0].split(separator: "-", omittingEmptySubsequences: false)
-    return bounds.count == 2 && Int64(bounds[0]) == requested.lowerBound
-      && Int64(bounds[1]) == requested.upperBound - 1
+    HTTPContentRange.matches(header, requested: requested, size: size)
   }
 }

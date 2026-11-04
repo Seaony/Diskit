@@ -7,6 +7,6 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "AliyunDrive", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "AliyunDriveTests", dependencies: ["AliyunDrive"]),
+    .testTarget(name: "AliyunDriveTests", dependencies: ["AliyunDrive", .product(name: "CoreTestSupport", package: "Core")]),
   ],
   swiftLanguageModes: [.v6])

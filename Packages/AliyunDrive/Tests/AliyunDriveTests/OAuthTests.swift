@@ -1,4 +1,5 @@
-import Core
+@testable import Core
+import CoreTestSupport
 import Foundation
 import Synchronization
 import Testing
@@ -8,31 +9,18 @@ import Testing
 private let oauthConfiguration = AliyunConfiguration(
   clientID: "test-client", clientSecret: "test-secret", redirectURI: "kayoi://oauth/callback")
 
-private final class OAuthSecrets: SecretStore, Sendable {
-  let nextRead = Mutex<AsyncStream<Void>.Continuation?>(nil)
-  let failWrites = Mutex(false)
-  let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? {
-    let value = values.withLock { $0[key] }
-    nextRead.withLock { observer in
-      observer?.yield(())
-      observer?.finish()
-      observer = nil
-    }
-    return value
-  }
-  func write(_ data: Data, for key: String) throws {
-    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
-    values.withLock { $0[key] = data }
-  }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-}
+private typealias OAuthSecrets = TestSecretStore
 
 private actor OAuthHTTP: HTTPTransport {
   var requests: [URLRequest] = []
+  var uploads: [URLRequest] = []
   let reply: @Sendable (URLRequest) async throws -> HTTPResponse
   init(_ reply: @escaping @Sendable (URLRequest) async throws -> HTTPResponse) {
     self.reply = reply
+  }
+  func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    uploads.append(request)
+    return try await send(request)
   }
   func send(_ request: URLRequest) async throws -> HTTPResponse {
     requests.append(request)
@@ -53,7 +41,7 @@ private func oauthRequest(_ path: String = "/test") -> URLRequest {
   URLRequest(url: URL(string: "https://openapi.alipan.com" + path)!)
 }
 private func oauthStore(
-  _ secrets: OAuthSecrets, key: String, expiry: TimeInterval = Date().timeIntervalSince1970 + 7200
+  _ secrets: OAuthSecrets, key: String, expiry: TimeInterval = Date.distantFuture.timeIntervalSince1970
 ) throws {
   let record = AliyunStoredAuthorization(
     accessToken: "old-access", refreshToken: "old-refresh", expiresAt: expiry,
@@ -104,13 +92,13 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
     return HTTPResponse(status: 200)
   }
   let session = AliyunSession(
-    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport, now: { Date(timeIntervalSince1970: 1_000) })
   try await session.exchange(code: "one-use-code")
   #expect(try await session.hasToken())
   let saved = try oauthRecord(secrets, key: key)
   #expect(saved.accessToken == "fresh-access" && saved.refreshToken == "fresh-refresh")
   #expect(saved.configuration == oauthConfiguration)
-  #expect(saved.expiresAt > Date().timeIntervalSince1970 + 7100)
+  #expect(saved.expiresAt == 8_200)
   let requests = await transport.requests
   let first = try #require(requests.first)
   let body = try #require(
@@ -139,9 +127,12 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
   let key = "concurrent-refresh.oauth"
   let secrets = OAuthSecrets()
   try oauthStore(secrets, key: key, expiry: 0)
+  let started = TestEvent()
+  let release = TestEvent()
   let transport = OAuthHTTP { request in
     if request.url?.path == "/oauth/access_token" {
-      try await Task.sleep(for: .milliseconds(15))
+      started.signal()
+      try await release.wait()
       return oauthToken()
     }
     #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer fresh-access")
@@ -150,7 +141,15 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
   let session = AliyunSession(
     secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
   try await withThrowingTaskGroup(of: Void.self) { group in
-    for _ in 0..<8 { group.addTask { _ = try await session.authorized(oauthRequest()) } }
+    group.addTask { _ = try await session.authorized(oauthRequest()) }
+    try await started.wait()
+    for _ in 0..<7 {
+      let read = AsyncStream<Void>.makeStream()
+      secrets.nextRead.withLock { $0 = read.continuation }
+      group.addTask { _ = try await session.authorized(oauthRequest()) }
+      for await _ in read.stream { break }
+    }
+    release.signal()
     try await group.waitForAll()
   }
   #expect(await transport.requests.filter { $0.url?.path == "/oauth/access_token" }.count == 1)
@@ -284,14 +283,35 @@ func oauthPermissionFailurePreservesLoginWithoutInvalidation(_ stream: Bool) asy
   #expect(account.total == 9_000_000_000 && account.used == 3_456_789_012)
 }
 
+private final class OAuthBatchGate: Sendable {
+  private let state = Mutex((entered: 0, queued: 0))
+  private let release = TestEvent()
+  func observeQueue(_ count: Int) {
+    let ready = state.withLock { value in
+      value.queued = count
+      return value.entered + value.queued >= 12 || value.entered > 4
+    }
+    if ready { release.signal() }
+  }
+  func enter() async throws {
+    let ready = state.withLock { value in
+      value.entered += 1
+      return value.entered + value.queued >= 12 || value.entered > 4
+    }
+    if ready { release.signal() }
+    try await release.wait()
+  }
+}
+
 private actor OAuthBurstHTTP: HTTPTransport {
+  let gate = OAuthBatchGate()
   var active = 0, maximum = 0, calls = 0
   func send(_ request: URLRequest) async throws -> HTTPResponse {
     active += 1
     maximum = max(maximum, active)
     calls += 1
     defer { active -= 1 }
-    try await Task.sleep(for: .milliseconds(20))
+    try await gate.enter()
     return HTTPResponse(status: 200)
   }
 }
@@ -303,6 +323,8 @@ private actor OAuthBurstHTTP: HTTPTransport {
   let transport = OAuthBurstHTTP()
   let session = AliyunSession(
     secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  let limit = HTTPConcurrencyLimit.shared(for: "aliyun:" + secrets.refreshLockLocation(for: "limit.oauth").path)
+  await limit.observeQueue { transport.gate.observeQueue($0) }
   try await withThrowingTaskGroup(of: Void.self) { group in
     for _ in 0..<12 { group.addTask { _ = try await session.authorized(oauthRequest()) } }
     try await group.waitForAll()
@@ -327,14 +349,18 @@ private actor OAuthStreamHTTP: HTTPTransport {
 
 @Test func oauthStreamingHoldsConcurrencySlotUntilBodyEnds() async throws {
   let transport = OAuthStreamHTTP()
+  let secrets = OAuthSecrets()
   let session = AliyunSession(
-    secretKey: "streams.oauth", secrets: OAuthSecrets(), configuration: AliyunConfiguration(),
+    secretKey: "streams.oauth", secrets: secrets, configuration: AliyunConfiguration(),
     transport: transport)
   let request = URLRequest(url: URL(string: "https://download.example.com/file")!)
   var responses: [HTTPStreamResponse] = []
   for _ in 0..<4 { responses.append(try await session.authorizedStream(request)) }
+  let queued = TestEvent()
+  let limit = HTTPConcurrencyLimit.shared(for: "aliyun:" + secrets.refreshLockLocation(for: "streams.oauth").path)
+  await limit.observeQueue { if $0 == 1 { queued.signal() } }
   let fifth = Task { try await session.authorizedStream(request) }
-  try await Task.sleep(for: .milliseconds(20))
+  try await queued.wait()
   #expect(await transport.count == 4)
   for try await _ in responses[0].body {}
   let extra = try await fifth.value
@@ -489,4 +515,112 @@ func aliyunSeparateSessionsShareRefresh(separateSessions: Bool) async throws {
   #expect(try await firstTask.value.status == 200)
   #expect(try await secondTask.value.status == 200)
   #expect(count.withLock { $0 } == 1)
+}
+
+@Test func aliyunUploadRetryKeepsTransferRouting() async throws {
+  let calls = Mutex(0)
+  let http = OAuthHTTP { _ in
+    let number = calls.withLock {
+      $0 += 1
+      return $0
+    }
+    return HTTPResponse(status: number == 1 ? 429 : 200, headers: ["Retry-After": "0"])
+  }
+  let session = AliyunSession(
+    secretKey: "local", secrets: MemorySecretStore(), configuration: oauthConfiguration,
+    transport: http)
+  var request = URLRequest(url: URL(string: "https://upload.example.invalid/file")!)
+  request.httpMethod = "PUT"
+  request.httpBody = Data()
+  #expect(try await session.authorized(request, upload: true).status == 200)
+  #expect(await http.uploads.count == 2)
+  _ = try await session.authorized(request)
+  #expect(await http.requests.count == 3)
+  #expect(await http.uploads.count == 2)
+}
+
+@Test func oauthDiscardedUnreadStreamReleasesConcurrencySlot() async throws {
+  let transport = OAuthStreamHTTP()
+  let secrets = OAuthSecrets()
+  let session = AliyunSession(
+    secretKey: "discard.oauth", secrets: secrets, configuration: AliyunConfiguration(),
+    transport: transport)
+  let request = URLRequest(url: URL(string: "https://download.example.invalid/file")!)
+  var responses: [HTTPStreamResponse] = []
+  for _ in 0..<4 { responses.append(try await session.authorizedStream(request)) }
+  let queued = TestEvent()
+  let limit = HTTPConcurrencyLimit.shared(for: "aliyun:" + secrets.refreshLockLocation(for: "discard.oauth").path)
+  await limit.observeQueue { if $0 == 1 { queued.signal() } }
+  let fifth = Task { try await session.authorizedStream(request) }
+  defer { fifth.cancel() }
+  try await queued.wait()
+  #expect(await transport.count == 4)
+  responses.removeLast()
+  let last = try await fifth.value
+  #expect(await transport.count == 5)
+  for response in responses { for try await _ in response.body {} }
+  for try await _ in last.body {}
+}
+
+@Test func aliyunSeparateSessionsShareRequestAllowance() async throws {
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: "shared-limit")
+  let transport = OAuthBurstHTTP()
+  let first = AliyunSession(
+    secretKey: "shared-limit", secrets: secrets, configuration: oauthConfiguration,
+    transport: transport)
+  let second = AliyunSession(
+    secretKey: "shared-limit", secrets: secrets, configuration: oauthConfiguration,
+    transport: transport)
+  let limit = HTTPConcurrencyLimit.shared(for: "aliyun:" + secrets.refreshLockLocation(for: "shared-limit").path)
+  await limit.observeQueue { transport.gate.observeQueue($0) }
+  try await withThrowingTaskGroup(of: Void.self) { group in
+    for index in 0..<12 {
+      group.addTask {
+        _ = try await (index.isMultiple(of: 2) ? first : second).authorized(oauthRequest())
+      }
+    }
+    try await group.waitForAll()
+  }
+  #expect(await transport.maximum <= 4)
+  #expect(await transport.maximum > 1)
+  #expect(await transport.calls == 12)
+}
+
+@Test(arguments: [false, true])
+func aliyunCancelledOrExpiredWaiterLeavesSharedRefreshRunning(cancel: Bool) async throws {
+  let secrets = OAuthSecrets()
+  let key = "cancel-shared"
+  try oauthStore(secrets, key: key, expiry: 0)
+  let entered = TestEvent()
+  let release = TestEvent()
+  let clock = ManualTestClock()
+  let count = Mutex(0)
+  defer { release.signal() }
+  let transport = OAuthHTTP { request in
+    if request.url?.path == "/test" { return HTTPResponse(status: 200) }
+    guard request.url?.path == "/oauth/access_token" else { throw RemoteError.protocolError }
+    count.withLock { $0 += 1 }
+    entered.signal()
+    try await release.wait()
+    #expect(!Task.isCancelled)
+    return oauthToken()
+  }
+  let session = AliyunSession(secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport, now: { Date() }, makeDeadline: {
+    HTTPProgressDeadline(interval: .seconds(30), clock: DeadlineClock(now: { clock.now }, sleepUntil: { try await clock.sleep(until: $0, tolerance: nil) }))
+  })
+  let caller = Task { try await session.authorized(oauthRequest()) }
+  try await entered.wait()
+  if cancel { caller.cancel() } else { await clock.waitForSleepRequests(1); clock.advance(by: .seconds(30)) }
+  do { _ = try await caller.value; Issue.record("等待者应及时退出") }
+  catch {
+    if cancel { #expect(error is CancellationError) }
+    else { #expect((error as? URLError)?.code == .timedOut) }
+  }
+  #expect(!release.isSignaled)
+  let survivor = Task { try await session.authorized(oauthRequest()) }
+  release.signal()
+  #expect(try await survivor.value.status == 200)
+  #expect(count.withLock { $0 } == 1)
+  #expect(try oauthRecord(secrets, key: key).refreshToken == "fresh-refresh")
 }

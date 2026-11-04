@@ -1,82 +1,6 @@
 import Core
 import Foundation
 
-public enum AliyunError: Error, Equatable, LocalizedError, Sendable {
-  case missingConfiguration, invalidState, loginRequired, invalidResponse, rateLimited
-  case authorizationFailed(Int)
-  public var errorDescription: String? {
-    switch self {
-    case .missingConfiguration: L("阿里云盘尚未在 Kayoi 中启用")
-    case .invalidState: L("授权状态无效，请重新登录")
-    case .loginRequired: L("阿里云盘需重新登录")
-    case .invalidResponse: L("阿里云盘返回了无效的数据")
-    case .rateLimited: L("阿里云盘请求过于频繁，请稍后重试")
-    case .authorizationFailed(let status): String(format: L("阿里云盘授权失败（%d）"), status)
-    }
-  }
-}
-
-public struct AliyunConfiguration: Codable, Equatable, Sendable {
-  public let clientID: String
-  public let clientSecret: String
-  public let redirectURI: String
-  public init(clientID: String = "", clientSecret: String = "", redirectURI: String = "") {
-    self.clientID = clientID
-    self.clientSecret = clientSecret
-    self.redirectURI = redirectURI
-  }
-  func validate() throws {
-    guard !clientID.isEmpty, !clientSecret.isEmpty,
-      let redirect = URL(string: redirectURI), redirect.scheme == "kayoi"
-    else {
-      throw AliyunError.missingConfiguration
-    }
-  }
-  public func authorizationURL(state: String) throws -> URL {
-    try validate()
-    guard !state.isEmpty else { throw AliyunError.invalidState }
-    var parts = URLComponents(string: "https://openapi.alipan.com/oauth/authorize")!
-    parts.queryItems = [
-      URLQueryItem(name: "client_id", value: clientID),
-      URLQueryItem(name: "redirect_uri", value: redirectURI),
-      URLQueryItem(name: "response_type", value: "code"),
-      URLQueryItem(name: "scope", value: "user:base,file:all:read,file:all:write"),
-      URLQueryItem(name: "style", value: "folder"),
-      URLQueryItem(name: "state", value: state),
-    ]
-    guard let url = parts.url else { throw AliyunError.missingConfiguration }
-    return url
-  }
-}
-
-public struct AliyunAccount: Sendable, Equatable {
-  public let driveID: String
-  public let userID: String
-  public let nickname: String
-  public let total: Int64
-  public let used: Int64
-  public let rootFolderID: String
-  public init(
-    driveID: String, userID: String, nickname: String, total: Int64, used: Int64,
-    rootFolderID: String = "root"
-  ) {
-    self.driveID = driveID
-    self.userID = userID
-    self.nickname = nickname
-    self.total = total
-    self.used = used
-    self.rootFolderID = rootFolderID
-  }
-}
-
-struct AliyunStoredAuthorization: Codable, Sendable {
-  var accessToken: String
-  var refreshToken: String
-  var expiresAt: TimeInterval
-  var configuration: AliyunConfiguration
-  var invalidated = false
-}
-
 public actor AliyunSession {
   public static let loginInvalidatedNotification = Notification.Name(
     "com.seaony.Kayoi.aliyunLoginInvalidated")
@@ -84,19 +8,37 @@ public actor AliyunSession {
   private let secrets: RecoverableSecretStore
   private let configuration: AliyunConfiguration
   private let transport: any HTTPTransport
+  private let now: @Sendable () -> Date
+  private let makeDeadline: @Sendable () -> HTTPProgressDeadline
   private var refreshTask: Task<AliyunStoredAuthorization, Error>?
   private var didNotifyInvalidation = false
-  private var activeRequests = 0
-  private var waiting: [(UUID, CheckedContinuation<Void, Error>)] = []
 
   public init(
     secretKey: String, secrets: any SecretStore = LoginKeychainStore(),
     configuration: AliyunConfiguration, transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
+    self.init(
+      secretKey: secretKey, secrets: secrets, configuration: configuration,
+      transport: transport, now: { Date() })
+  }
+
+  init(
+    secretKey: String, secrets: any SecretStore, configuration: AliyunConfiguration,
+    transport: any HTTPTransport, now: @escaping @Sendable () -> Date,
+    makeDeadline: @escaping @Sendable () -> HTTPProgressDeadline = {
+      HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))
+    }
+  ) {
+    self.now = now
+    self.makeDeadline = makeDeadline
     self.secretKey = secretKey
     self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.configuration = configuration
-    self.transport = transport
+    self.transport = DiagnosticHTTPTransport(
+      LimitedHTTPTransport(
+        transport, limit: .shared(for: "aliyun:" + secrets.refreshLockLocation(for: secretKey).path)
+      ),
+      category: .aliyunDrive)
   }
   public func authorizationURL(state: String) throws -> URL {
     try effectiveConfiguration().authorizationURL(state: state)
@@ -114,14 +56,23 @@ public actor AliyunSession {
     didNotifyInvalidation = false
   }
 
-  public func authorized(_ original: URLRequest) async throws -> HTTPResponse {
+  public func authorized(_ original: URLRequest, upload: Bool = false) async throws -> HTTPResponse
+  {
+    if upload { return try await performAuthorized(original, upload: true) }
+    return try await makeDeadline().run {
+      try await self.performAuthorized(original, upload: false)
+    }
+  }
+
+  private func performAuthorized(_ original: URLRequest, upload: Bool) async throws -> HTTPResponse
+  {
     let official = Self.isOfficial(original)
     var authRetries = 0
     var rateRetries = 0
     while true {
-      let authorization = official ? try await accessToken() : nil
+      let authorization = official ? try await boundedAccessToken() : nil
       let response = try await limitedSend(
-        Self.prepare(original, token: authorization?.accessToken))
+        Self.prepare(original, token: authorization?.accessToken), upload: upload)
       if response.status == 429 {
         guard rateRetries < 2 else { throw AliyunError.rateLimited }
         try await backoff(response, attempt: rateRetries)
@@ -131,7 +82,7 @@ public actor AliyunSession {
       if official {
         let action = Self.authAction(response)
         if action == .refresh, authRetries == 0, let authorization {
-          _ = try await accessToken(rejected: authorization.accessToken)
+          _ = try await boundedAccessToken(rejected: authorization.accessToken)
           authRetries += 1
           continue
         }
@@ -143,12 +94,16 @@ public actor AliyunSession {
   }
 
   public func authorizedStream(_ original: URLRequest) async throws -> HTTPStreamResponse {
+    try await makeDeadline().run { try await self.performAuthorizedStream(original) }
+  }
+
+  private func performAuthorizedStream(_ original: URLRequest) async throws -> HTTPStreamResponse {
     let official = Self.isOfficial(original)
     var authRetries = 0
     var rateRetries = 0
     while true {
-      let authorization = official ? try await accessToken() : nil
-      let stream = try await limitedStream(
+      let authorization = official ? try await boundedAccessToken() : nil
+      let stream = try await transport.stream(
         Self.prepare(original, token: authorization?.accessToken))
       if (200..<300).contains(stream.response.status) { return stream }
       var bytes = Data()
@@ -168,7 +123,7 @@ public actor AliyunSession {
       if official {
         let action = Self.authAction(response)
         if action == .refresh, authRetries == 0, let authorization {
-          _ = try await accessToken(rejected: authorization.accessToken)
+          _ = try await boundedAccessToken(rejected: authorization.accessToken)
           authRetries += 1
           continue
         }
@@ -228,19 +183,25 @@ public actor AliyunSession {
     try value.validate()
     return value
   }
+  private func boundedAccessToken(rejected: String? = nil) async throws -> AliyunStoredAuthorization
+  {
+    try await makeDeadline().run { try await self.accessToken(rejected: rejected) }
+  }
+
   private func accessToken(rejected: String? = nil) async throws -> AliyunStoredAuthorization {
     guard let stored = try load(), !stored.invalidated, !stored.refreshToken.isEmpty else {
       try invalidate()
       throw AliyunError.loginRequired
     }
     if let rejected, stored.accessToken != rejected { return stored }
-    if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+    if rejected == nil, stored.expiresAt > now().timeIntervalSince1970 + 60,
       !stored.accessToken.isEmpty
     {
       return stored
     }
-    if let refreshTask { return try await refreshTask.value }
+    if let refreshTask { return try await SharedTaskWaiter.value(of: refreshTask) }
     let task = Task {
+      defer { refreshTask = nil }
       let lease = try await secrets.acquireRefreshLock(for: secretKey)
       defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       do {
@@ -248,7 +209,7 @@ public actor AliyunSession {
           throw AliyunError.loginRequired
         }
         if let rejected, stored.accessToken != rejected { return stored }
-        if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+        if rejected == nil, stored.expiresAt > now().timeIntervalSince1970 + 60,
           !stored.accessToken.isEmpty
         {
           return stored
@@ -265,8 +226,7 @@ public actor AliyunSession {
       }
     }
     refreshTask = task
-    defer { refreshTask = nil }
-    return try await task.value
+    return try await SharedTaskWaiter.value(of: task)
   }
   private func invalidate() throws {
     if var record = try load(), !record.invalidated {
@@ -319,7 +279,7 @@ public actor AliyunSession {
       else { throw AliyunError.invalidResponse }
       return AliyunStoredAuthorization(
         accessToken: reply.access_token, refreshToken: reply.refresh_token,
-        expiresAt: Date().timeIntervalSince1970 + reply.expires_in, configuration: configuration)
+        expiresAt: now().timeIntervalSince1970 + reply.expires_in, configuration: configuration)
     }
   }
   private enum AuthAction { case none, refresh, invalid }
@@ -339,7 +299,7 @@ public actor AliyunSession {
     var request = original
     if let token {
       request.setValue("Bearer " + token, forHTTPHeaderField: "Authorization")
-      request.timeoutInterval = 30
+      request.timeoutInterval = RemoteTimeout.cloudRequest
     } else {
       request.setValue(nil, forHTTPHeaderField: "Authorization")
     }
@@ -348,7 +308,7 @@ public actor AliyunSession {
   static func jsonRequest(_ path: String, body: [String: String]) throws -> URLRequest {
     var request = URLRequest(url: URL(string: "https://openapi.alipan.com" + path)!)
     request.httpMethod = "POST"
-    request.timeoutInterval = 30
+    request.timeoutInterval = RemoteTimeout.cloudRequest
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = try JSONSerialization.data(withJSONObject: body)
     return request
@@ -375,88 +335,8 @@ public actor AliyunSession {
     guard delay <= 30 else { throw AliyunError.rateLimited }
     try await Task.sleep(for: .seconds(delay))
   }
-  private func acquire() async throws {
-    try Task.checkCancellation()
-    if activeRequests < 4 {
-      activeRequests += 1
-      return
-    }
-    let id = UUID()
-    try await withTaskCancellationHandler {
-      try await withCheckedThrowingContinuation {
-        (continuation: CheckedContinuation<Void, Error>) in
-        if Task.isCancelled {
-          continuation.resume(throwing: CancellationError())
-        } else {
-          waiting.append((id, continuation))
-        }
-      }
-    } onCancel: {
-      Task { await self.cancelWaiting(id) }
-    }
-    if Task.isCancelled {
-      release()
-      throw CancellationError()
-    }
-  }
-  private func cancelWaiting(_ id: UUID) {
-    guard let index = waiting.firstIndex(where: { $0.0 == id }) else { return }
-    waiting.remove(at: index).1.resume(throwing: CancellationError())
-  }
-  private func release() {
-    if waiting.isEmpty { activeRequests -= 1 } else { waiting.removeFirst().1.resume() }
-  }
-  private func limitedSend(_ request: URLRequest) async throws -> HTTPResponse {
-    try await acquire()
-    defer { release() }
-    return try await transport.send(request)
-  }
-  private func limitedStream(_ request: URLRequest) async throws -> HTTPStreamResponse {
-    try await acquire()
-    do {
-      let upstream = try await transport.stream(request)
-      let cursor = AliyunStreamCursor(upstream.body, release: { await self.release() })
-      return HTTPStreamResponse(
-        response: upstream.response,
-        body: AsyncThrowingStream(unfolding: { try await cursor.next() }))
-    } catch {
-      release()
-      throw error
-    }
-  }
-}
-
-private actor AliyunStreamCursor {
-  private var iterator: AsyncThrowingStream<Data, Error>.Iterator?
-  private let release: @Sendable () async -> Void
-  private var finished = false
-  init(_ stream: AsyncThrowingStream<Data, Error>, release: @escaping @Sendable () async -> Void) {
-    iterator = stream.makeAsyncIterator()
-    self.release = release
-  }
-  deinit {
-    if !finished {
-      let release = release
-      Task { await release() }
-    }
-  }
-  func next() async throws -> Data? {
-    if finished { return nil }
-    guard var current = iterator else { throw AliyunError.invalidResponse }
-    iterator = nil
-    do {
-      let data = try await current.next(isolation: self)
-      if data == nil {
-        finished = true
-        await release()
-      } else {
-        iterator = current
-      }
-      return data
-    } catch {
-      finished = true
-      await release()
-      throw error
-    }
+  private func limitedSend(_ request: URLRequest, upload: Bool = false) async throws -> HTTPResponse
+  {
+    try await (upload ? transport.upload(request) : transport.send(request))
   }
 }

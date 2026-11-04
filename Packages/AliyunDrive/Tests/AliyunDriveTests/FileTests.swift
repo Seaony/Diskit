@@ -1,16 +1,12 @@
-import Core
+@testable import Core
+import CoreTestSupport
 import Foundation
 import Synchronization
 import Testing
 
 @testable import AliyunDrive
 
-private final class FileSecrets: SecretStore, Sendable {
-  private let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-}
+private typealias FileSecrets = TestSecretStore
 
 private struct FileReply: Sendable {
   let endpoint: String
@@ -78,7 +74,7 @@ private func setup(_ replies: [FileReply]) throws -> (AliyunProvider, FileHTTP) 
   let config = AliyunConfiguration(
     clientID: "id", clientSecret: "secret", redirectURI: "kayoi://oauth")
   let authorization = AliyunStoredAuthorization(
-    accessToken: "access", refreshToken: "refresh", expiresAt: Date().timeIntervalSince1970 + 7200,
+    accessToken: "access", refreshToken: "refresh", expiresAt: Date.distantFuture.timeIntervalSince1970,
     configuration: config)
   try secrets.write(JSONEncoder().encode(authorization), for: "test.authorization")
   return (
@@ -362,4 +358,187 @@ private func created(_ id: String = "new", url: String = "https://files.example/
   }
   let requests = await http.fileRequests()
   #expect(requests.allSatisfy { !$0.url!.path.hasSuffix("/trash") })
+}
+
+@Test(arguments: [false, true])
+func aliyunMkdirReportsExistingNameForFilesAndDirectories(directory: Bool) async throws {
+  let (provider, http) = try setup([list([file("existing", "same", folder: directory)])])
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.makeDirectory(RemotePath("/same"))
+  }
+  #expect(await http.fileRequests().count == 1)
+}
+
+private actor CacheRaceHTTP: HTTPTransport {
+  let fresh: Bool
+  var listCount = 0
+  var removed = false
+  private var suspended: CheckedContinuation<HTTPResponse, Never>?
+  private var started: [CheckedContinuation<Void, Never>] = []
+  init(fresh: Bool = false) { self.fresh = fresh }
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    let endpoint = request.url?.lastPathComponent ?? ""
+    switch endpoint {
+    case "getDriveInfo":
+      return FileReply(
+        "",
+        json: ["default_drive_id": "drive", "user_id": "user", "name": "user", "folder_id": "root"]
+      ).response
+    case "getSpaceInfo":
+      return FileReply("", json: ["personal_space_info": ["total_size": 100, "used_size": 0]])
+        .response
+    case "list":
+      listCount += 1
+      if listCount == 2 {
+        return await withCheckedContinuation { continuation in
+          suspended = continuation
+          let waiting = started
+          started.removeAll()
+          waiting.forEach { $0.resume() }
+        }
+      }
+      return list(listCount == 1 ? [file("old", "old")] : (fresh ? [file("new", "new")] : []))
+        .response
+    case "trash":
+      removed = true
+      return FileReply("").response
+    case "get":
+      let id = try body(request)["file_id"] as? String
+      guard id == "new", fresh else { throw RemoteError.posix(ENOENT) }
+      return FileReply("", json: file("new", "new")).response
+    default: throw RemoteError.protocolError
+    }
+  }
+  func waitForSuspendedList() async {
+    if suspended != nil { return }
+    await withCheckedContinuation { started.append($0) }
+  }
+  func completeOldList() {
+    suspended?.resume(returning: list([file("old", "old")]).response)
+    suspended = nil
+  }
+}
+
+private func raceProvider(
+  _ http: any HTTPTransport, taskTimeout: Duration = .seconds(30),
+  taskDeadline: HTTPProgressDeadline? = nil
+) throws -> AliyunProvider {
+  let secrets = MemorySecretStore()
+  let configuration = AliyunConfiguration(
+    clientID: "id", clientSecret: "local", redirectURI: "kayoi://oauth")
+  let authorization = AliyunStoredAuthorization(
+    accessToken: "access", refreshToken: "refresh", expiresAt: Date.distantFuture.timeIntervalSince1970,
+    configuration: configuration)
+  try secrets.write(JSONEncoder().encode(authorization), for: "account")
+  return AliyunProvider(
+    session: AliyunSession(
+      secretKey: "account", secrets: secrets, configuration: configuration, transport: http),
+    taskTimeout: taskTimeout, taskDeadline: taskDeadline)
+}
+
+@Test func aliyunLateListingCannotRestoreDeletedFile() async throws {
+  let http = CacheRaceHTTP()
+  let provider = try raceProvider(http)
+  try await provider.connect()
+  _ = try await provider.list(RemotePath("/"))
+  let delayed = Task { try await provider.list(RemotePath("/")) }
+  await http.waitForSuspendedList()
+  try await provider.remove(RemotePath("/old"), recursive: false)
+  await http.completeOldList()
+  await #expect(throws: RemoteError.posix(EAGAIN)) { _ = try await delayed.value }
+  await #expect(throws: RemoteError.posix(ENOENT)) {
+    _ = try await provider.stat(RemotePath("/old"))
+  }
+  #expect(await http.removed)
+}
+
+@Test func aliyunOlderListingCannotReplaceNewerSnapshot() async throws {
+  let http = CacheRaceHTTP(fresh: true)
+  let provider = try raceProvider(http)
+  try await provider.connect()
+  _ = try await provider.list(RemotePath("/"))
+  let delayed = Task { try await provider.list(RemotePath("/")) }
+  await http.waitForSuspendedList()
+  #expect(try await provider.list(RemotePath("/")).map(\.name) == ["new"])
+  await http.completeOldList()
+  await #expect(throws: RemoteError.posix(EAGAIN)) { _ = try await delayed.value }
+  #expect(try await provider.stat(RemotePath("/new")).name == "new")
+  #expect(await http.listCount == 3)
+}
+
+@Test func aliyunOnlyExpiredAccountRequiresLogin() {
+  #expect(AliyunError.loginRequired.requiresLogin)
+  for error in [
+    AliyunError.invalidState, .missingConfiguration, .invalidResponse, .rateLimited,
+    .authorizationFailed(403), .authorizationFailed(500),
+  ] {
+    #expect(!error.requiresLogin)
+  }
+}
+
+@Test func aliyunRepeatedRangeReadReusesUnexpiredDownloadLink() async throws {
+  let record = file("video", "movie", size: 1024)
+  let (provider, http) = try setup([
+    list([record]), FileReply("get", json: record),
+    FileReply(
+      "getDownloadUrl",
+      json: [
+        "url": "https://files.example/current", "expiration": "2099-01-01T00:00:00Z",
+        "method": "GET",
+      ]),
+    FileReply(
+      "/current", status: 206, bytes: Data([1, 2]), headers: ["Content-Range": "bytes 0-1/1024"]),
+    FileReply("get", json: record),
+    FileReply(
+      "/current", status: 206, bytes: Data([3, 4]), headers: ["Content-Range": "bytes 2-3/1024"]),
+  ])
+  try await provider.connect()
+  let ranges: [Range<Int64>] = [0..<2, 2..<4]
+  for range in ranges {
+    var count = 0
+    for try await bytes in try await provider.read(RemotePath("/movie"), range: range) {
+      count += bytes.count
+    }
+    #expect(count == 2)
+  }
+  let requests = await http.fileRequests()
+  #expect(requests.filter { $0.url?.lastPathComponent == "getDownloadUrl" }.count == 1)
+}
+
+private actor SlowAliyunTaskHTTP: HTTPTransport {
+  nonisolated let pollStarted = TestEvent()
+  nonisolated let pollRelease = TestEvent()
+  let base = FileHTTP([
+    list([file("old", "file")]),
+    FileReply("recyclebin/trash", json: ["async_task_id": "task"]),
+  ])
+  var cancelled = false
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    if request.url?.path.hasSuffix("/async_task/get") == true {
+      pollStarted.signal()
+      do { try await pollRelease.wait() } catch {
+        cancelled = true
+        throw error
+      }
+      return FileReply("", json: ["state": "Succeed"]).response
+    }
+    return try await base.send(request)
+  }
+}
+
+@Test func aliyunTaskDeadlineCancelsSlowPollBeforeReportingSuccess() async throws {
+  let http = SlowAliyunTaskHTTP()
+  let clock = ManualTestClock()
+  let deadline = HTTPProgressDeadline(
+    interval: .seconds(30),
+    clock: DeadlineClock(now: { clock.now }, sleepUntil: { try await clock.sleep(until: $0) }))
+  let provider = try raceProvider(http, taskDeadline: deadline)
+  try await provider.connect()
+  let removal = Task { try await provider.remove(RemotePath("/file"), recursive: false) }
+  try await http.pollStarted.wait()
+  await clock.waitForSleepRequests(1)
+  clock.advance(by: .seconds(30))
+  await #expect(throws: RemoteError.posix(ETIMEDOUT)) { try await removal.value }
+  #expect(await http.cancelled)
 }
