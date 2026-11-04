@@ -8,6 +8,10 @@ public final class RecoverableSecretStore: SecretStore {
 
   public init(base: any SecretStore) { self.base = base }
 
+  public func refreshLockLocation(for key: String) -> URL {
+    base.refreshLockLocation(for: key)
+  }
+
   public func read(_ key: String) throws -> Data? {
     try pending.withLock { values in
       if let data = values[key] {

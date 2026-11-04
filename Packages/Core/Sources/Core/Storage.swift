@@ -39,9 +39,18 @@ public struct ConfigurationStore: Sendable {
 }
 
 public protocol SecretStore: Sendable {
+  func refreshLockLocation(for key: String) -> URL
   func read(_ key: String) throws -> Data?
   func write(_ data: Data, for key: String) throws
   func delete(_ key: String) throws
+}
+
+extension SecretStore {
+  public func refreshLockLocation(for key: String) -> URL {
+    CredentialRefreshLock.location(
+      directory: FileManager.default.temporaryDirectory.appending(path: "Kayoi-CredentialLocks"),
+      namespace: String(reflecting: Self.self), key: key)
+  }
 }
 
 public struct KeychainError: Error, Sendable {
@@ -51,6 +60,11 @@ public struct KeychainError: Error, Sendable {
 public struct LoginKeychainStore: SecretStore {
   public let service: String
   public init(service: String = "com.seaony.Kayoi") { self.service = service }
+  public func refreshLockLocation(for key: String) -> URL {
+    CredentialRefreshLock.location(
+      directory: LocalStorageLocation().dataDirectory.appending(path: "CredentialLocks"),
+      namespace: service, key: key)
+  }
   private func query(_ key: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,

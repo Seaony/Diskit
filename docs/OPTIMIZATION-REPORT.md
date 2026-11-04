@@ -158,3 +158,14 @@
 - 已检查同类路径：阿里云盘 `AliyunOAuth.swift:210`、PikPak `PikPakSession.swift:171` 原本每次读取存储，无该永久凭据缓存，未做无关改动。
 - 这些测试证明存储改变后的可见性，不证明并发刷新互斥或跨进程完整行为。FIX-07 仍未整体通过；下一步仍需在读取、刷新、持久化的整个区间进行账号级协调。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 289 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-storage-reload-gates.log`。
+
+## FIX-07：账号刷新文件锁与公共授权接入（部分）
+
+- `Packages/Core/Sources/Core/CredentialRefreshLock.swift:7` 使用系统 `flock` 的非阻塞独占锁，在异步等待时释放执行线程；取消或失败关闭描述符，正常释放可重复调用，拒绝最终路径为符号链接。锁文件内容为空；文件名使用系统 CryptoKit 的 SHA-256 派生，不包含原始账号键或令牌，没有手写密码学。
+- `Storage.swift:63` 为真实钥匙串的服务名与账号键生成稳定锁路径，放在应用数据目录以免清理缓存时破坏互斥；`MemorySecretStore.swift:11` 使用随机实例标识与临时目录；存储包装透传路径（`RecoverableSecretStore.swift:11`）。其他存储默认按类型及键在临时目录协调。测试只计算真实存储的路径，未打开真实钥匙串或创建真实存储目录。
+- `OAuthSession.swift:246` 在持锁期间重新读取当前记录、判断是否已有新令牌、执行刷新并保存；明确刷新拒绝导致的失效处理也在锁内。等待期间其他会话已保存新值时，普通过期刷新与显式强制刷新均复用新值。
+- `separateOAuthSessionsReuseRefreshCompletedWhileTheyWait`（`OAuthSessionTests.swift:518`）用读取观察点确定第二个会话已读到过期记录，才放行第一个会话的刷新响应；修复前重复刷新并返回另一份令牌，修复后普通与强制刷新两组均只刷新一次。`tenDelayedUnauthorizedRequestsShareOneRefresh`（`:400`）扩展为同会话/十个独立会话 × 普通/流式四组，十个请求均成功且只刷新一次。证据 `docs/evidence/v0.2/FIX-07-refresh-lock-regression.log`。
+- `CredentialRefreshLockTests.swift:19` 启动独立 Python 子进程尝试同文件的系统锁，父进程持锁时退出 7，释放后退出 0；`:31` 验证等待可取消且不释放别人的锁；`:43` 验证符号链接不改写目标；`:55` 验证存储实例、服务与账号的锁路径隔离。
+- 首次完整门禁发现 ADB 测试进程崩溃。一次 HEAD 对照通过，当前源码增量复测仍崩溃；系统栈落在旧测试模块的 SecretStore 协议见证调用。清理包缓存后当前源码 26 项通过，与新增协议方法后旧测试产物未重编译相符。证据 `docs/evidence/v0.2/FIX-07-refresh-lock-build-cache.log`；未把失败门禁计为通过，未修改无关包。
+- 边界：独立进程证据目前证明系统锁互斥，不等于 App 与命令行完整刷新流程验收。阿里云盘、PikPak、天翼仍待接入；保存失败的待写值仍需跨会话协调。FIX-07 尚未整体通过。
+- 清理构建缓存后的完整提交门禁通过：应用逻辑 9 项、包测试 294 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-refresh-lock-gates.log`。

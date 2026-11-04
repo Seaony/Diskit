@@ -3,9 +3,16 @@ import Synchronization
 
 /// 演示和测试使用独立内存，不访问系统钥匙串。
 public final class MemorySecretStore: SecretStore {
+  private let lockNamespace = UUID().uuidString
   private let values = Mutex<[String: Data]>([:])
 
   public init() {}
+
+  public func refreshLockLocation(for key: String) -> URL {
+    CredentialRefreshLock.location(
+      directory: FileManager.default.temporaryDirectory.appending(path: "Kayoi-CredentialLocks"),
+      namespace: lockNamespace, key: key)
+  }
 
   public func read(_ key: String) throws -> Data? {
     values.withLock { $0[key] }

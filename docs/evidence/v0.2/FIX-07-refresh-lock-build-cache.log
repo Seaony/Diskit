@@ -1,0 +1,13 @@
+首次完整门禁及单包复测在 ADB 测试进程收到 SIGBUS；未计为通过。
+kayoi-lock-test.log
+error: Process '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec/swift/pm/swiftpm-testing-helper --test-bundle-path /Users/seaony/code/Kayoi/Packages/ADB/.build/arm64-apple-macosx/debug/ADBPackageTests.xctest/Contents/MacOS/ADBPackageTests --package-path Packages/ADB /Users/seaony/code/Kayoi/Packages/ADB/.build/arm64-apple-macosx/debug/ADBPackageTests.xctest/Contents/MacOS/ADBPackageTests --testing-library swift-testing' exited with unexpected signal code 10
+kayoi-lock-adb-baseline.log
+􁁛  Test run with 26 tests in 0 suites passed after 0.579 seconds.
+kayoi-lock-adb-current.log
+error: Process '/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec/swift/pm/swiftpm-testing-helper --test-bundle-path /Users/seaony/code/Kayoi/Packages/ADB/.build/arm64-apple-macosx/debug/ADBPackageTests.xctest/Contents/MacOS/ADBPackageTests --package-path Packages/ADB /Users/seaony/code/Kayoi/Packages/ADB/.build/arm64-apple-macosx/debug/ADBPackageTests.xctest/Contents/MacOS/ADBPackageTests --testing-library swift-testing' exited with unexpected signal code 10
+kayoi-lock-adb-clean.log
+􁁛  Test run with 26 tests in 0 suites passed after 0.746 seconds.
+系统崩溃报告：swiftpm-testing-helper-2026-11-04-162920.ips，EXC_BAD_ACCESS / SIGBUS。
+触发栈：swift_retain → TestSecrets.write(_:for:) → SecretStore.write 协议见证 → ADBIdentity.key(regenerate:)。
+增量日志未重新编译 ADBTests；恢复 HEAD Core 后通过，恢复当前 Core 后增量仍崩溃，swift package clean 后当前源码 26 项通过。
+随后清理其他包构建缓存，重新运行完整门禁；未修改 ADB 源码或测试，也未改变 Makefile。

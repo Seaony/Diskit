@@ -396,8 +396,10 @@ private actor DelayedUnauthorizedHTTP: HTTPTransport {
   }
 }
 
-@Test(arguments: [false, true])
-func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws {
+@Test(arguments: [false, true], [false, true])
+func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool, separateSessions: Bool)
+  async throws
+{
   let secrets = MemorySecrets()
   try secrets.write(
     JSONEncoder().encode(
@@ -408,10 +410,15 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws 
     configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
   try await withThrowingTaskGroup(of: Int.self) { group in
     for _ in 0..<10 {
+      let requestSession =
+        separateSessions
+        ? OAuthSession(
+          configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+        : session
       group.addTask {
         let request = URLRequest(url: URL(string: "https://example.com/files")!)
-        if stream { return try await session.authorizedStream(request).response.status }
-        return try await session.authorized(request).status
+        if stream { return try await requestSession.authorizedStream(request).response.status }
+        return try await requestSession.authorized(request).status
       }
     }
     for try await status in group { #expect(status == 200) }
@@ -461,4 +468,73 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws 
   await second.invalidate()
   #expect(try await !first.hasToken())
   await #expect(throws: OAuthDriveError.loginRequired) { _ = try await first.accessToken() }
+}
+
+private actor HeldRefreshHTTP: HTTPTransport {
+  private var pending: CheckedContinuation<HTTPResponse, Never>?
+  private var started = false
+  private var observers: [CheckedContinuation<Void, Never>] = []
+  private(set) var refreshes = 0
+
+  func waitForRefresh() async {
+    if started { return }
+    await withCheckedContinuation { observers.append($0) }
+  }
+
+  func release() {
+    pending?.resume(returning: tokenResponse(access: "new", refresh: "rotated"))
+    pending = nil
+  }
+
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    refreshes += 1
+    if refreshes > 1 { return tokenResponse(access: "duplicate", refresh: "duplicate-refresh") }
+    return await withCheckedContinuation { continuation in
+      pending = continuation
+      started = true
+      for observer in observers { observer.resume() }
+      observers.removeAll()
+    }
+  }
+}
+
+private final class ObservedRefreshSecrets: SecretStore, Sendable {
+  private let base = MemorySecretStore()
+  let nextRead = Mutex<AsyncStream<Void>.Continuation?>(nil)
+  func read(_ key: String) throws -> Data? {
+    let value = try base.read(key)
+    nextRead.withLock { observer in
+      observer?.yield(())
+      observer?.finish()
+      observer = nil
+    }
+    return value
+  }
+  func write(_ data: Data, for key: String) throws { try base.write(data, for: key) }
+  func delete(_ key: String) throws { try base.delete(key) }
+}
+
+@Test(arguments: [false, true])
+func separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force: Bool) async throws {
+  let secrets = ObservedRefreshSecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(
+        accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)), for: "oauth")
+  let transport = HeldRefreshHTTP()
+  let first = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  let second = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  let firstTask = Task { try await force ? first.refreshNow() : first.accessToken() }
+  await transport.waitForRefresh()
+  let read = AsyncStream<Void>.makeStream()
+  secrets.nextRead.withLock { $0 = read.continuation }
+  let secondTask = Task { try await force ? second.refreshNow() : second.accessToken() }
+  // 第二个会话已读到过期记录后才放行首次刷新。
+  for await _ in read.stream { break }
+  await transport.release()
+  #expect(try await firstTask.value == "new")
+  #expect(try await secondTask.value == "new")
+  #expect(await transport.refreshes == 1)
 }

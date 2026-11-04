@@ -241,35 +241,49 @@ public actor OAuthSession {
       return token.accessToken
     }
     if let refreshing { return try await refreshing.value }
-    let stored: OAuthToken?
-    if let current {
-      stored = current
-    } else {
-      stored = try loadToken()
-    }
-    guard let refreshToken = stored?.refreshToken,
-      !refreshToken.isEmpty
-    else {
-      invalidate()
-      throw OAuthDriveError.loginRequired
-    }
+    let observed = try loadToken()
     let task = Task<String, Error> {
-      var fields = ["grant_type": "refresh_token", "refresh_token": refreshToken]
-      if configuration.refreshGrantIncludesClientCredentials {
-        fields["client_id"] = configuration.clientID
-        if !configuration.clientSecret.isEmpty {
-          fields["client_secret"] = configuration.clientSecret
+      let lease = try await CredentialRefreshLock.acquire(
+        at: secrets.refreshLockLocation(for: secretKey))
+      defer { lease.release() }
+      let stored = try loadToken()
+      if let stored {
+        if stored != observed, stored.expiresAt > Date().addingTimeInterval(60) {
+          return stored.accessToken
+        }
+        if let rejectedAccessToken, stored.accessToken != rejectedAccessToken {
+          return stored.accessToken
+        }
+        if !force, stored.expiresAt > Date().addingTimeInterval(60) {
+          return stored.accessToken
         }
       }
-      if configuration.refreshGrantIncludesRedirectURI {
-        fields["redirect_uri"] = configuration.redirectURI
+      guard let refreshToken = stored?.refreshToken, !refreshToken.isEmpty else {
+        invalidate()
+        throw OAuthDriveError.loginRequired
       }
-      let response = try await CloudDriveSupport.sendWithRetry(
-        transport,
-        tokenRequest(fields: fields, url: configuration.refreshTokenURL ?? configuration.tokenURL))
-      let next = try parseToken(response, previousRefresh: refreshToken)
-      try saveToken(next)
-      return next.accessToken
+      do {
+        var fields = ["grant_type": "refresh_token", "refresh_token": refreshToken]
+        if configuration.refreshGrantIncludesClientCredentials {
+          fields["client_id"] = configuration.clientID
+          if !configuration.clientSecret.isEmpty {
+            fields["client_secret"] = configuration.clientSecret
+          }
+        }
+        if configuration.refreshGrantIncludesRedirectURI {
+          fields["redirect_uri"] = configuration.redirectURI
+        }
+        let response = try await CloudDriveSupport.sendWithRetry(
+          transport,
+          tokenRequest(fields: fields, url: configuration.refreshTokenURL ?? configuration.tokenURL)
+        )
+        let next = try parseToken(response, previousRefresh: refreshToken)
+        try saveToken(next)
+        return next.accessToken
+      } catch {
+        if case OAuthDriveError.loginRequired = error { invalidate() }
+        throw error
+      }
     }
     refreshing = task
     do {
@@ -278,9 +292,6 @@ public actor OAuthSession {
       return value
     } catch {
       refreshing = nil
-      if case OAuthDriveError.loginRequired = error {
-        invalidate()
-      }
       throw error
     }
   }
