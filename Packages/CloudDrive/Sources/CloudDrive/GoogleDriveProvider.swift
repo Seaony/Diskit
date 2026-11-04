@@ -440,7 +440,7 @@ private struct GoogleFile: Decodable {
       path: try parent.appending(name), name: name,
       isDirectory: mimeType == "application/vnd.google-apps.folder",
       size: Int64(size ?? "0") ?? 0,
-      modified: modifiedTime.flatMap(ISO8601DateFormatter().date)
+      modified: RemoteTimestamp.parse(modifiedTime)
         ?? Date(timeIntervalSince1970: 0))
   }
 }

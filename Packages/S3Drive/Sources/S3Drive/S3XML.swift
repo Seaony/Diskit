@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 struct S3ListObject: Sendable {
@@ -59,7 +60,7 @@ final class S3ListParser: NSObject, XMLParserDelegate {
     case "Size" where stack.dropLast().last == "Contents": objectSize = Int64(value) ?? -1
     case "LastModified" where stack.dropLast().last == "Contents":
       objectDate =
-        ISO8601DateFormatter().date(from: value)
+        RemoteTimestamp.parse(value)
         ?? Date(timeIntervalSince1970: 0)
     case "Prefix" where stack.dropLast().last == "CommonPrefixes": prefixes.append(value)
     case "NextContinuationToken": nextToken = value.isEmpty ? nil : value

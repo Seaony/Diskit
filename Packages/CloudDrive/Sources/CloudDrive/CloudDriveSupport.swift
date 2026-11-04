@@ -292,9 +292,12 @@ enum CloudDriveSupport {
 
   static func parseDate(_ value: String?) -> Date {
     guard let value else { return Date(timeIntervalSince1970: 0) }
-    let iso = ISO8601DateFormatter()
-    if let date = iso.date(from: value) { return date }
-    for format in ["yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss"] {
+    if let date = RemoteTimestamp.parse(
+      value, assumedTimeZone: TimeZone(secondsFromGMT: 8 * 3_600)!)
+    {
+      return date
+    }
+    for format in ["yyyy-MM-dd HH:mm:ss.SSS", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss"] {
       let formatter = DateFormatter()
       formatter.locale = Locale(identifier: "en_US_POSIX")
       formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)

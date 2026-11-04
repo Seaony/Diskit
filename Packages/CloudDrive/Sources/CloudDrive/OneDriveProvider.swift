@@ -335,7 +335,7 @@ private struct OneDriveItem: Decodable {
   let folder: Folder?
   func item(parent: RemotePath) throws -> RemoteItem {
     let date =
-      lastModifiedDateTime.flatMap(ISO8601DateFormatter().date)
+      RemoteTimestamp.parse(lastModifiedDateTime)
       ?? Date(timeIntervalSince1970: 0)
     return RemoteItem(
       path: try parent.appending(name), name: name, isDirectory: folder != nil,

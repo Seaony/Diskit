@@ -1,0 +1,24 @@
+cloud-red
+􀢄  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) recorded an issue with 1 argument sample → ["2026-01-02 03:04:05.123", "1767294245.123"] at TimestampTests.swift:15:3: Expectation failed: (abs(value - Double(sample[1])!) → 1767294245.123) < (0.00001 → 1e-05)
+􀢄  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) recorded an issue with 1 argument sample → ["2026-01-02T03:04:05.123Z", "1767323045.123"] at TimestampTests.swift:15:3: Expectation failed: (abs(value - Double(sample[1])!) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) recorded an issue with 1 argument sample → ["2026-01-02T03:04:05.123", "1767294245.123"] at TimestampTests.swift:15:3: Expectation failed: (abs(value - Double(sample[1])!) → 1767294245.123) < (0.00001 → 1e-05)
+􀢄  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) recorded an issue with 1 argument sample → ["2026-01-02T03:04:05.123+08:00", "1767294245.123"] at TimestampTests.swift:15:3: Expectation failed: (abs(value - Double(sample[1])!) → 1767294245.123) < (0.00001 → 1e-05)
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 4 issues.
+s3-red
+􀢄  Test s3ObjectDatesPreserveMilliseconds(_:) recorded an issue with 1 argument timestamp → "2026-01-02T03:04:05.123" at TimestampTests.swift:10:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test s3ObjectDatesPreserveMilliseconds(_:) recorded an issue with 1 argument timestamp → "2026-01-02T03:04:05.123Z" at TimestampTests.swift:10:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test run with 1 test in 0 suites failed after 0.002 seconds with 2 issues.
+providers-red
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "dropbox", timestamp → "2026-01-02T03:04:05.123Z" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "google", timestamp → "2026-01-02T03:04:05.123Z" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "oneDrive", timestamp → "2026-01-02T03:04:05.123" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "oneDrive", timestamp → "2026-01-02T03:04:05.123Z" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "google", timestamp → "2026-01-02T03:04:05.123" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test officialProviderFileDatesPreserveMilliseconds(_:_:) recorded an issue with 2 arguments service → "dropbox", timestamp → "2026-01-02T03:04:05.123" at TimestampTests.swift:59:3: Expectation failed: (abs(item.modified.timeIntervalSince1970 - 1_767_323_045.123) → 1767323045.123) < (0.00001 → 1e-05)
+􀢄  Test run with 1 test in 0 suites failed after 0.006 seconds with 6 issues.
+cloud-green
+􁁛  Test run with 45 tests in 0 suites passed after 1.050 seconds.
+s3-green
+􁁛  Test run with 13 tests in 0 suites passed after 0.017 seconds.
+core-green
+􁁛  Test run with 34 tests in 0 suites passed after 0.028 seconds.

@@ -358,7 +358,7 @@ private struct DropboxEntry: Decodable {
   func item(parent: RemotePath) throws -> RemoteItem {
     guard tag == "file" || tag == "folder" else { throw RemoteError.unsupported }
     let date =
-      serverModified.flatMap(ISO8601DateFormatter().date)
+      RemoteTimestamp.parse(serverModified)
       ?? Date(timeIntervalSince1970: 0)
     return RemoteItem(
       path: try parent.appending(name), name: name, isDirectory: tag == "folder",

@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-04 已修复，FIX-05 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -92,3 +92,12 @@
 - 失败回归：`rangeReadUsesShortLivedURLAndValidatesContentRange` 增加 HTTPS 输入，原先抛 invalidResponse；`signedRequestsPreservePlusInQueryAndFormValues` 原先观察到查询与正文均为 `a+b`；`partialPagesContinueUntilReportedCountIsComplete` 原先只返回三项中的第一项。修复后通过；新增 `missingPageFailsInsteadOfReturningPartialDirectory`、`pagesWithoutCountContinueUntilEmptyPage` 验证不静默返回部分目录。证据：`Packages/TianyiDrive/Tests/TianyiDriveTests/TianyiDriveTests.swift:233`、`:704`、`:720`、`:742`、`:761` 和 `docs/evidence/v0.2/FIX-04-regression.log`。
 - 分页 count 的历史定义参考[天翼开放平台文件列表文档](https://id.dlife.cn/html/api_detail_135.html)。当前个人/家庭接口的真实分页边界与签名下载链接仍待用户账号验收，不把替身结果作为线上通过。
 - 完整门禁通过：应用逻辑 9 项、包测试 256 项，发布构建及签名校验通过；证据 `docs/evidence/v0.2/FIX-04-gates.log`。
+
+## FIX-05：毫秒时间和固定时区
+
+- 修复审查 1C 带毫秒时间退回 1970 的问题：`Packages/Core/Sources/Core/RemoteTimestamp.swift:3` 使用系统 ISO8601 格式策略统一解析有/无小数秒、有/无时区的日期；不依赖本机时区。Google、OneDrive、Dropbox 及 S3 的原单独解析入口全部接入。
+- 公共 CloudDrive 入口保留原有无时区日期按东八区解释的约定，并补上空格分隔的毫秒格式：`CloudDriveSupport.swift:293`。Google、OneDrive、Dropbox、S3 的无时区兜底为 UTC；显式时区始终优先。
+- 先失败后修复：`cloudTimestampsPreserveMillisecondsAndDefaultTimeZone` 六组样例原有四组失败，`officialProviderFileDatesPreserveMilliseconds` 三类 Provider × 两种时区格式原有六组失败，`s3ObjectDatesPreserveMilliseconds` 两组原均失败；修复后通过。证据：`Packages/CloudDrive/Tests/CloudDriveTests/TimestampTests.swift:15`、`:33`、`Packages/S3Drive/Tests/S3DriveTests/TimestampTests.swift:7`、`docs/evidence/v0.2/FIX-05-regression.log`。
+- Core 的 `remoteTimestampKeepsFractionAndUsesUTCByDefault`、`remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput` 另外验证默认时区、显式时区优先和非法输入。所有预期均为固定 Unix 时间，不等待真实时间、不修改系统时区。
+
+- FIX-05 完整门禁通过：应用逻辑 9 项、包测试 261 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-05-gates.log`。
