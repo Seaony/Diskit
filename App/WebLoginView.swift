@@ -26,6 +26,7 @@ struct WebLoginView: View {
             LF("当前网页：%@", state.pageURL?.host ?? state.service.domain))
       }.padding(20)
       if state.isLoading {
+        ProgressView(value: state.progress).nativeLinearProgressAppearance()
           .accessibilityLabel(L("正在加载登录网页"))
       } else {
         Divider()
