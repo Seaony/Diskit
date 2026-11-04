@@ -149,3 +149,12 @@
 - `OAuthRequestTokenTests.swift:6`、`:25` 额外验证表单加号解析、百分号编码、空字段和无关参数保持，以及 JSON、multipart、二进制正文不被解释为认证字段。失败与通过证据：`docs/evidence/v0.2/FIX-07-explicit-regression.log`。
 - 本次仍只证明同一会话内的重试行为。不同会话与 App/命令行跨进程刷新协调继续处理，FIX-07 尚未整体通过。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 287 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-explicit-gates.log`。仅存在已有的 AppIntents 元数据跳过提示。
+
+## FIX-07：其他会话更新、删除凭据后的可见性（部分）
+
+- `Packages/CloudDrive/Sources/CloudDrive/OAuthSession.swift:402` 不再用永久内存缓存替代存储读取；`Packages/TianyiDrive/Sources/TianyiDrive/TianyiSession.swift:516` 和 `:202` 同样每次从存储取得当前会话。移除相应缓存字段和赋值，仍保留 `RecoverableSecretStore` 的失败写入补存机制。
+- `commonOAuthObservesCredentialsChangedByAnotherSession`（`OAuthSessionTests.swift:444`）创建两个共用存储的真实授权会话：第一个已读旧令牌，第二个完成刷新后，第一个必须看到新访问令牌与新刷新令牌；第二个删除凭据后，第一个不能继续认证。修复前四条断言失败，修复后通过。
+- `tianyiObservesCredentialsChangedOutsideTheSession`（`TianyiDriveTests.swift:869`）验证已连接的会话在存储替换后发出新的 SessionKey，存储删除后直接返回未授权且不再发网络请求。修复前仍使用旧密钥并在删除后继续请求，修复后通过。两包全量测试也通过；证据 `docs/evidence/v0.2/FIX-07-storage-reload-regression.log`。
+- 已检查同类路径：阿里云盘 `AliyunOAuth.swift:210`、PikPak `PikPakSession.swift:171` 原本每次读取存储，无该永久凭据缓存，未做无关改动。
+- 这些测试证明存储改变后的可见性，不证明并发刷新互斥或跨进程完整行为。FIX-07 仍未整体通过；下一步仍需在读取、刷新、持久化的整个区间进行账号级协调。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 289 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-storage-reload-gates.log`。

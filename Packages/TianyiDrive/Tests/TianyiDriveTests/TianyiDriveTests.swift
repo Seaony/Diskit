@@ -865,3 +865,18 @@ func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
   #expect(saved.accessToken == "new-access" && saved.refreshToken == "rotated")
   #expect(await http.requests.filter { $0.url?.path == "/getSessionForPC.action" }.count == 1)
 }
+
+@Test func tianyiObservesCredentialsChangedOutsideTheSession() async throws {
+  let http = FakeHTTP { _ in capacity() }
+  let (session, secrets) = try session(http)
+  try await session.connect()
+  var saved = try JSONDecoder().decode(StoredTianyiSession.self, from: storedSession())
+  saved.personalCredentials = .init(
+    sessionKey: "replacement-key", sessionSecret: "replacement-secret")
+  try secrets.write(JSONEncoder().encode(saved), for: "tianyi.test")
+  _ = try await session.account()
+  #expect(await http.requests.last?.value(forHTTPHeaderField: "SessionKey") == "replacement-key")
+  try secrets.delete("tianyi.test")
+  await #expect(throws: RemoteError.unauthorized) { _ = try await session.account() }
+  #expect(await http.requests.count == 2)
+}

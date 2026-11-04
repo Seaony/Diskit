@@ -440,3 +440,25 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws 
   #expect(saved.refreshToken == "rotated")
   #expect(transport.requests.withLock { $0.count } == 1)
 }
+
+@Test func commonOAuthObservesCredentialsChangedByAnotherSession() async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(
+        accessToken: "old", refreshToken: "old-refresh", expiresAt: Date().addingTimeInterval(3600))
+    ),
+    for: "oauth")
+  let transport = FakeTransport([tokenResponse(access: "fresh", refresh: "rotated")])
+  let first = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  let second = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  #expect(try await first.accessToken() == "old")
+  _ = try await second.refreshNow()
+  #expect(try await first.accessToken() == "fresh")
+  #expect(try await first.tokenForTesting()?.refreshToken == "rotated")
+  await second.invalidate()
+  #expect(try await !first.hasToken())
+  await #expect(throws: OAuthDriveError.loginRequired) { _ = try await first.accessToken() }
+}

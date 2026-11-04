@@ -170,7 +170,6 @@ public actor TianyiSession {
   private let secretKey: String
   private let secrets: any SecretStore
   private let transport: any HTTPTransport
-  private var state: StoredTianyiSession?
   private var didNotifyInvalidation = false
 
   public init(
@@ -195,7 +194,6 @@ public actor TianyiSession {
     let jar = try TianyiCookieJar(header: cookie, domain: configuration.cookieDomain)
     let fresh = try await sessionFromCookie(jar)
     _ = try fresh.credentials(for: configuration.scope.credentialKind)
-    state = fresh
     try persist(fresh)
     didNotifyInvalidation = false
     return try await account()
@@ -203,8 +201,7 @@ public actor TianyiSession {
 
   public func connect() async throws {
     try validateConfiguredScope()
-    if state == nil { state = try load() }
-    guard let state else { throw RemoteError.unauthorized }
+    let state = try requireState()
     _ = try state.credentials(for: configuration.scope.credentialKind)
     _ = try await account()
   }
@@ -430,7 +427,6 @@ public actor TianyiSession {
         }
         throw error
       }
-      state = restored
       try persist(restored)
       response = try await send(build(restored))
       if TianyiHTTP.isAuthenticationFailure(response) {
@@ -518,11 +514,9 @@ public actor TianyiSession {
   }
 
   private func requireState() throws -> StoredTianyiSession {
-    if let state { return state }
     guard let loaded = try load() else {
       throw RemoteError.unauthorized
     }
-    state = loaded
     return loaded
   }
 
@@ -536,13 +530,10 @@ public actor TianyiSession {
   }
 
   private func persist(_ value: StoredTianyiSession) throws {
-    state = nil
     try secrets.write(JSONEncoder().encode(value), for: secretKey)
-    state = value
   }
 
   private func invalidate() throws {
-    state = nil
     try secrets.delete(secretKey)
     guard !didNotifyInvalidation else { return }
     didNotifyInvalidation = true

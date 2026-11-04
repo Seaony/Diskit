@@ -102,7 +102,6 @@ public actor OAuthSession {
   private let secretKey: String
   private let secrets: any SecretStore
   private let transport: any HTTPTransport
-  private var token: OAuthToken?
   private var refreshing: Task<String, Error>?
   private var codeVerifier: String?
 
@@ -202,7 +201,6 @@ public actor OAuthSession {
   }
 
   public func invalidate() {
-    token = nil
     try? secrets.delete(secretKey)
     NotificationCenter.default.post(
       name: Self.invalidationNotification,
@@ -271,7 +269,6 @@ public actor OAuthSession {
         tokenRequest(fields: fields, url: configuration.refreshTokenURL ?? configuration.tokenURL))
       let next = try parseToken(response, previousRefresh: refreshToken)
       try saveToken(next)
-      token = next
       return next.accessToken
     }
     refreshing = task
@@ -403,16 +400,12 @@ public actor OAuthSession {
   }
 
   private func loadToken() throws -> OAuthToken? {
-    if let token { return token }
     guard let data = try secrets.read(secretKey) else { return nil }
-    token = try JSONDecoder().decode(OAuthToken.self, from: data)
-    return token
+    return try JSONDecoder().decode(OAuthToken.self, from: data)
   }
 
   private func saveToken(_ token: OAuthToken) throws {
-    self.token = nil
     try secrets.write(JSONEncoder().encode(token), for: secretKey)
-    self.token = token
   }
 
   private static func pkceVerifier() throws -> String {
