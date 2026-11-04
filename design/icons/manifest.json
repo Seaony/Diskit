@@ -1,0 +1,46 @@
+{
+  "colors": {
+    "blue": "#427FE5",
+    "green": "#359363",
+    "orange": "#C97831",
+    "red": "#CF5960",
+    "purple": "#8863C2",
+    "pink": "#BA628E",
+    "teal": "#318F98",
+    "gray": "#748092"
+  },
+  "types": {
+    "androidUSB": "green",
+    "androidWiFi": "teal",
+    "smb": "blue",
+    "ricohGR": "gray",
+    "cameraUSB": "gray",
+    "webdav": "teal",
+    "nfs": "blue",
+    "aliyunDrive": "orange",
+    "quark": "purple",
+    "baiduDrive": "red",
+    "drive115": "blue",
+    "drive123": "teal",
+    "oneDrive": "blue",
+    "googleDrive": "green",
+    "dropbox": "blue",
+    "ucDrive": "orange",
+    "tianyiDrive": "orange",
+    "mobileCloud": "pink",
+    "thunderDrive": "purple",
+    "pikPak": "pink",
+    "lanzou": "teal",
+    "s3": "orange",
+    "cloudflareR2": "orange",
+    "aliyunOSS": "orange",
+    "tencentCOS": "blue",
+    "qiniuKodo": "red",
+    "minIO": "pink",
+    "backblazeB2": "green",
+    "emptyLink": "blue"
+  },
+  "aliases": {
+    "webdavHTTPS": "webdav"
+  }
+}

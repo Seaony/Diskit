@@ -540,7 +540,6 @@
       }
     },
     "Kayoi，没有挂载的位置": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -7964,6 +7963,62 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ejecting…"
+          }
+        }
+      }
+    },
+    "Kayoi，%d 个位置需要处理": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kayoi, %d location needs attention"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kayoi, %d locations need attention"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kayoi，%d 个位置需要处理"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Kayoi，%d 个位置需要处理"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Kayoi，正在连接位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayoi, connecting to a location"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayoi，正在连接位置"
           }
         }
       }
