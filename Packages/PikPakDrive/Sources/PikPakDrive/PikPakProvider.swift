@@ -8,8 +8,12 @@ public actor PikPakProvider: RemoteFileProvider {
   private let session: PikPakSession
   private let rootFolderID: String
   private let partSize: Int64
+  private let now: @Sendable () -> Date
   private var connected = false
   private var paths: [String: PikPakFile] = [:]
+  private var cacheGeneration: UInt64 = 0
+  private var listings: [String: UUID] = [:]
+  private var downloadLinks: [String: PikPakFile.Link] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -18,6 +22,17 @@ public actor PikPakProvider: RemoteFileProvider {
     self.session = session
     self.rootFolderID = rootFolderID
     self.partSize = partSize
+    now = { Date() }
+  }
+
+  init(
+    session: PikPakSession, rootFolderID: String = "root", partSize: Int64 = 5 * 1024 * 1024,
+    now: @escaping @Sendable () -> Date
+  ) {
+    self.session = session
+    self.rootFolderID = rootFolderID
+    self.partSize = partSize
+    self.now = now
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
@@ -25,14 +40,22 @@ public actor PikPakProvider: RemoteFileProvider {
   }
 
   public func connect() async throws {
-    _ = try await session.account()
-    connected = true
+    connected = false
+    cacheGeneration &+= 1
+    let generation = cacheGeneration
     paths.removeAll()
+    downloadLinks.removeAll()
+    _ = try await session.account()
+    guard cacheGeneration == generation else { throw CancellationError() }
+    connected = true
   }
 
   public func disconnect() async {
     connected = false
+    cacheGeneration &+= 1
     paths.removeAll()
+    downloadLinks.removeAll()
+    listings.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -75,31 +98,55 @@ public actor PikPakProvider: RemoteFileProvider {
       requested = nil
     }
     let file = try await resolve(path)
+    for attempt in 0..<2 {
+      let link = try await downloadLink(file.id)
+      var request = URLRequest(url: link.url, timeoutInterval: RemoteTimeout.transferIdle)
+      request.httpMethod = "GET"
+      if let requested {
+        request.setValue(
+          "bytes=\(requested.lowerBound)-\(requested.upperBound - 1)", forHTTPHeaderField: "Range")
+      }
+      let stream = try await session.streamSigned(request)
+      if [401, 403].contains(stream.response.status), attempt == 0 {
+        downloadLinks.removeValue(forKey: file.id)
+        continue
+      }
+      try PikPakHTTP.check(stream.response)
+      if let requested {
+        guard stream.response.status == 206,
+          Self.validContentRange(
+            stream.response.header("Content-Range"), requested: requested, size: item.size)
+        else { throw RemoteError.protocolError }
+      } else {
+        guard stream.response.status == 200 else { throw RemoteError.protocolError }
+      }
+      return stream.body
+    }
+    throw RemoteError.posix(EACCES)
+  }
+
+  private func downloadLink(_ id: String) async throws -> PikPakFile.Link {
+    if let cached = downloadLinks[id], let expires = cached.expiresAt,
+      expires > now().addingTimeInterval(10)
+    {
+      return cached
+    }
+    let generation = cacheGeneration
     let detailed: PikPakFile = try await rpc(
-      method: "GET", path: "/drive/v1/files/" + detailedID(file.id))
-    guard let linked = detailed.links?.original?.url, linked.scheme == "https" else {
-      throw PikPakError.invalidResponse
+      method: "GET", path: "/drive/v1/files/" + detailedID(id))
+    try requireConnection()
+    guard generation == cacheGeneration else { throw RemoteError.posix(EAGAIN) }
+    guard detailed.id == id, let link = detailed.links?.original,
+      link.url.scheme == "https", link.url.host != nil
+    else { throw PikPakError.invalidResponse }
+    if let expires = link.expiresAt, expires > now().addingTimeInterval(10) {
+      downloadLinks[id] = link
     }
-    var request = URLRequest(url: linked, timeoutInterval: 60)
-    request.httpMethod = "GET"
-    if let requested {
-      request.setValue(
-        "bytes=\(requested.lowerBound)-\(requested.upperBound - 1)", forHTTPHeaderField: "Range")
-    }
-    let stream = try await session.streamSigned(request)
-    try PikPakHTTP.check(stream.response)
-    if let requested {
-      guard stream.response.status == 206,
-        Self.validContentRange(
-          stream.response.header("Content-Range"), requested: requested, size: item.size)
-      else { throw RemoteError.protocolError }
-    } else {
-      guard stream.response.status == 200 else { throw RemoteError.protocolError }
-    }
-    return stream.body
+    return link
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let destination = parent(of: path)
     let folder = try await resolve(destination)
@@ -107,12 +154,22 @@ public actor PikPakProvider: RemoteFileProvider {
     let name = basename(path)
     let existing = try await children(destination, folderID: folder.id).filter { $0.name == name }
     guard existing.isEmpty else { throw RemoteError.posix(EEXIST) }
+    defer { invalidate(destination) }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0 else {
       throw RemoteError.posix(EIO)
     }
     let size = Int64(fileSize)
-    let hash = try PikPakDigest.gcid(localFile, size: size)
+    let generation = cacheGeneration
+    let hashing = Task.detached(priority: .utility) { try PikPakDigest.gcid(localFile, size: size) }
+    let hash = try await withTaskCancellationHandler {
+      try await hashing.value
+    } onCancel: {
+      hashing.cancel()
+    }
+    try Task.checkCancellation()
+    try requireConnection()
+    guard cacheGeneration == generation else { throw RemoteError.posix(EAGAIN) }
     struct CreateRequest: Encodable {
       let kind = "drive#file"
       let name: String
@@ -138,7 +195,7 @@ public actor PikPakProvider: RemoteFileProvider {
       throw PikPakError.invalidResponse
     }
     guard newFile.name == name else {
-      try? await discard(newFile.id)
+      await cleanupUpload(newFile, taskID: created.task?.id)
       throw RemoteError.posix(EEXIST)
     }
     do {
@@ -156,11 +213,9 @@ public actor PikPakProvider: RemoteFileProvider {
         throw PikPakError.invalidResponse
       }
     } catch {
-      try? await discard(newFile.id)
-      if let task = created.task { try? await deleteTask(task.id) }
+      await cleanupUpload(newFile, taskID: created.task?.id)
       throw error
     }
-    invalidate(destination)
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -175,10 +230,8 @@ public actor PikPakProvider: RemoteFileProvider {
       $0.name == basename(path)
     }
     guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-    if let existing = matches.first {
-      guard existing.isDirectory else { throw RemoteError.posix(EEXIST) }
-      return
-    }
+    guard matches.isEmpty else { throw RemoteError.posix(EEXIST) }
+    defer { invalidate(destination) }
     struct CreateFolder: Encodable {
       let kind = "drive#folder"
       let name: String
@@ -192,7 +245,6 @@ public actor PikPakProvider: RemoteFileProvider {
       method: "POST", path: "/drive/v1/files",
       body: try PikPakJSON.encode(
         CreateFolder(name: basename(path), parentID: requestParent(parentFile.id))))
-    invalidate(destination)
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -201,13 +253,13 @@ public actor PikPakProvider: RemoteFileProvider {
     if file.isDirectory, !recursive, !(try await children(path, folderID: file.id)).isEmpty {
       throw RemoteError.posix(ENOTEMPTY)
     }
+    defer { invalidate(parent(of: path)) }
     struct BatchRequest: Encodable {
       let ids: [String]
     }
     let mutation: PikPakMutation = try await rpc(
       method: "POST", path: "/drive/v1/files:batchTrash",
       body: try PikPakJSON.encode(BatchRequest(ids: [file.id])))
-    invalidate(parent(of: path))
     try await waitTask(mutation.taskID)
   }
 
@@ -298,6 +350,10 @@ public actor PikPakProvider: RemoteFileProvider {
   }
 
   private func children(_ path: RemotePath, folderID: String) async throws -> [PikPakFile] {
+    let generation = cacheGeneration
+    let listing = UUID()
+    listings[path.value] = listing
+    defer { if listings[path.value] == listing { listings.removeValue(forKey: path.value) } }
     var pageToken = ""
     var visited: Set<String> = []
     var files: [PikPakFile] = []
@@ -314,7 +370,7 @@ public actor PikPakProvider: RemoteFileProvider {
           value:
             #"{"phase":{"eq":"PHASE_TYPE_COMPLETE"},"trashed":{"eq":false}}"#),
       ]
-      if folderID != rootFolderID, folderID != "root" {
+      if folderID != "root", !folderID.isEmpty {
         query.append(URLQueryItem(name: "parent_id", value: folderID))
       }
       components.queryItems = query
@@ -326,7 +382,11 @@ public actor PikPakProvider: RemoteFileProvider {
         throw RemoteError.protocolError
       }
     } while !pageToken.isEmpty
-    invalidate(path)
+    try requireConnection()
+    guard cacheGeneration == generation, listings[path.value] == listing else {
+      throw RemoteError.posix(EAGAIN)
+    }
+    clearCachedChildren(path)
     let grouped = Dictionary(grouping: files, by: \.name)
     for file in files {
       let child = try path.appending(file.name)
@@ -360,25 +420,71 @@ public actor PikPakProvider: RemoteFileProvider {
 
   private func waitTask(_ id: String?) async throws {
     guard let id, !id.isEmpty else { return }
-    let deadline = ContinuousClock.now.advanced(by: .seconds(300))
-    while ContinuousClock.now < deadline {
+    try await waitTask(
+      id, deadline: HTTPProgressDeadline(interval: .seconds(RemoteTimeout.transferIdle)),
+      pollInterval: .milliseconds(500))
+  }
+
+  func waitTask(_ id: String, deadline: HTTPProgressDeadline, pollInterval: Duration) async throws {
+    do {
+      try await deadline.run {
+        try await self.pollTask(id, deadline: deadline, pollInterval: pollInterval)
+      }
+    } catch {
+      throw PikPakHTTP.transportError(error)
+    }
+  }
+
+  private func pollTask(_ id: String, deadline: HTTPProgressDeadline, pollInterval: Duration)
+    async throws
+  {
+    var progress: Int64 = 0
+    while true {
+      try Task.checkCancellation()
       let task: PikPakTask = try await rpc(
         method: "GET", path: "/drive/v1/tasks/" + detailedID(id))
       switch task.phase {
       case "PHASE_TYPE_COMPLETE": return
       case "PHASE_TYPE_ERROR": throw PikPakError.taskFailed
-      case "PHASE_TYPE_RUNNING", "PHASE_TYPE_PENDING": try await Task.sleep(for: .milliseconds(500))
+      case "PHASE_TYPE_RUNNING", "PHASE_TYPE_PENDING":
+        if let current = task.progress, current > progress {
+          progress = current
+          deadline.recordProgress()
+        }
+        try await Task.sleep(for: pollInterval)
       default: throw PikPakError.invalidResponse
       }
     }
-    throw RemoteError.posix(ETIMEDOUT)
+  }
+
+  func cleanupUpload(_ file: PikPakFile, taskID: String?) async {
+    // 上传已取消时也尝试回收，清理错误不能覆盖原始失败。
+    let cleanup = Task.detached { [self] in
+      let deadline = HTTPProgressDeadline(interval: .seconds(RemoteTimeout.transferIdle))
+      do {
+        try await deadline.run { await self.performUploadCleanup(file, taskID: taskID) }
+      } catch {
+        PackageDiagnostics.failure(error, category: .pikPakDrive, operation: .remove)
+      }
+    }
+    await cleanup.value
+  }
+
+  private func performUploadCleanup(_ file: PikPakFile, taskID: String?) async {
+    do { try await discard(file.id) }
+    catch { PackageDiagnostics.failure(error, category: .pikPakDrive, operation: .remove) }
+    if let taskID {
+      do { try await deleteTask(taskID) }
+      catch { PackageDiagnostics.failure(error, category: .pikPakDrive, operation: .remove) }
+    }
   }
 
   private func discard(_ id: String) async throws {
     struct BatchRequest: Encodable { let ids: [String] }
-    let _: PikPakMutation = try await rpc(
+    let mutation: PikPakMutation = try await rpc(
       method: "POST", path: "/drive/v1/files:batchDelete",
       body: try PikPakJSON.encode(BatchRequest(ids: [id])))
+    try await waitTask(mutation.taskID)
   }
 
   private func deleteTask(_ id: String) async throws {
@@ -395,20 +501,27 @@ public actor PikPakProvider: RemoteFileProvider {
   }
 
   private func requestParent(_ id: String) -> String {
-    id == rootFolderID || id == "root" ? "" : id
+    id == "root" ? "" : id
   }
 
   private func invalidate(_ directory: RemotePath) {
+    cacheGeneration &+= 1
+    clearCachedChildren(directory)
+  }
+
+  private func clearCachedChildren(_ directory: RemotePath) {
     let prefix = directory.value == "/" ? "/" : directory.value + "/"
-    for key in Array(paths.keys) where key.hasPrefix(prefix) { paths.removeValue(forKey: key) }
+    for key in Array(paths.keys) where key.hasPrefix(prefix) {
+      if let file = paths.removeValue(forKey: key) { downloadLinks.removeValue(forKey: file.id) }
+    }
   }
 
   private func parent(of path: RemotePath) -> RemotePath {
-    try! RemotePath("/" + path.value.split(separator: "/").dropLast().joined(separator: "/"))
+    path.parent
   }
 
   private func basename(_ path: RemotePath) -> String {
-    path.value.split(separator: "/").last.map(String.init) ?? ""
+    path.basename
   }
 
   private func detailedID(_ value: String) -> String {
@@ -418,11 +531,6 @@ public actor PikPakProvider: RemoteFileProvider {
   static func validContentRange(
     _ header: String?, requested: Range<Int64>, size: Int64
   ) -> Bool {
-    guard let header, header.hasPrefix("bytes ") else { return false }
-    let fields = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
-    guard fields.count == 2, Int64(fields[1]) == size else { return false }
-    let bounds = fields[0].split(separator: "-", omittingEmptySubsequences: false)
-    return bounds.count == 2 && Int64(bounds[0]) == requested.lowerBound
-      && Int64(bounds[1]) == requested.upperBound - 1
+    HTTPContentRange.matches(header, requested: requested, size: size)
   }
 }

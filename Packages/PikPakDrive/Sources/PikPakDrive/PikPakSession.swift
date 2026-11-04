@@ -24,6 +24,13 @@ public actor PikPakSession {
     }
   }
 
+  private struct CaptchaKey: Hashable {
+    let action: String
+    let deviceID: String
+    let userID: String
+    let username: String
+  }
+
   private struct CachedCaptcha {
     let token: String
     let expiresAt: Date
@@ -32,17 +39,31 @@ public actor PikPakSession {
   private let secretKey: String
   private let secrets: RecoverableSecretStore
   private let transport: any HTTPTransport
-  private var captcha: [String: CachedCaptcha] = [:]
+  private let now: @Sendable () -> Date
+  private var captcha: [CaptchaKey: CachedCaptcha] = [:]
   private var refreshTask: Task<StoredPikPakAuthorization, Error>?
   private var didNotifyInvalidation = false
+  private let makeDeadline: @Sendable () -> HTTPProgressDeadline
 
   public init(
     secretKey: String, secrets: any SecretStore = LoginKeychainStore(),
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
+    self.init(secretKey: secretKey, secrets: secrets, transport: transport, now: { Date() })
+  }
+
+  init(
+    secretKey: String, secrets: any SecretStore, transport: any HTTPTransport,
+    now: @escaping @Sendable () -> Date,
+    makeDeadline: @escaping @Sendable () -> HTTPProgressDeadline = {
+      HTTPProgressDeadline(interval: .seconds(RemoteTimeout.cloudRequest))
+    }
+  ) {
     self.secretKey = secretKey
     self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
-    self.transport = transport
+    self.transport = DiagnosticHTTPTransport(transport, category: .pikPakDrive)
+    self.now = now
+    self.makeDeadline = makeDeadline
   }
 
   public func hasToken() throws -> Bool {
@@ -53,6 +74,7 @@ public actor PikPakSession {
   public func login(username: String, password: String) async throws -> PikPakAccount {
     guard !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !password.isEmpty
     else { throw PikPakError.invalidCredentials }
+    captcha.removeAll()
     let deviceID = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
     let action = "POST:/v1/auth/signin"
     struct LoginRequest: Encodable {
@@ -70,7 +92,7 @@ public actor PikPakSession {
         action: action, username: username, deviceID: deviceID, userID: "", force: attempt > 0)
       var request = URLRequest(url: URL(string: Self.userRoot + "/v1/auth/signin")!)
       request.httpMethod = "POST"
-      request.timeoutInterval = 30
+      request.timeoutInterval = RemoteTimeout.cloudRequest
       request.setValue("application/json", forHTTPHeaderField: "Content-Type")
       request.setValue(captchaToken, forHTTPHeaderField: "x-captcha-token")
       setCommonHeaders(on: &request, deviceID: deviceID)
@@ -82,6 +104,7 @@ public actor PikPakSession {
       break
     }
     guard let response else { throw PikPakError.invalidResponse }
+    if PikPakHTTP.isCaptchaInvalid(response) { throw PikPakError.captchaRequired }
     guard (200..<300).contains(response.status) else {
       if response.status == 400 || response.status == 401 || response.status == 403 {
         throw PikPakError.invalidCredentials
@@ -93,9 +116,9 @@ public actor PikPakSession {
     guard !userID.isEmpty else { throw PikPakError.invalidResponse }
     let stored = StoredPikPakAuthorization(
       accessToken: token.accessToken, refreshToken: token.refreshToken,
-      expiresAt: Date().timeIntervalSince1970 + Double(token.expiresIn), deviceID: deviceID,
+      expiresAt: now().timeIntervalSince1970 + Double(token.expiresIn), deviceID: deviceID,
       userID: userID)
-    guard stored.expiresAt > Date().timeIntervalSince1970 else {
+    guard stored.expiresAt > now().timeIntervalSince1970 else {
       throw PikPakError.invalidResponse
     }
     try persist(stored)
@@ -123,6 +146,10 @@ public actor PikPakSession {
   }
 
   public func authorized(_ original: URLRequest) async throws -> HTTPResponse {
+    try await makeDeadline().run { try await self.performAuthorized(original) }
+  }
+
+  private func performAuthorized(_ original: URLRequest) async throws -> HTTPResponse {
     guard let url = original.url, Self.isAPI(url) else {
       throw PikPakError.invalidResponse
     }
@@ -137,8 +164,12 @@ public actor PikPakSession {
       let request = prepare(
         original, authorization: authorization, captchaToken: captchaToken)
       let response = try await send(request)
-      if captchaRetries == 0, PikPakHTTP.isCaptchaInvalid(response) {
-        captcha.removeValue(forKey: action)
+      if PikPakHTTP.isCaptchaInvalid(response) {
+        guard captchaRetries == 0 else { throw PikPakError.captchaRequired }
+        captcha.removeValue(
+          forKey: CaptchaKey(
+            action: action, deviceID: authorization.deviceID, userID: authorization.userID,
+            username: ""))
         captchaRetries += 1
         continue
       }
@@ -153,6 +184,10 @@ public actor PikPakSession {
   }
 
   public func streamSigned(_ original: URLRequest) async throws -> HTTPStreamResponse {
+    try await makeDeadline().run { try await self.performStreamSigned(original) }
+  }
+
+  private func performStreamSigned(_ original: URLRequest) async throws -> HTTPStreamResponse {
     var request = original
     request.setValue(nil, forHTTPHeaderField: "Authorization")
     do {
@@ -162,10 +197,10 @@ public actor PikPakSession {
     }
   }
 
-  public func sendSigned(_ original: URLRequest) async throws -> HTTPResponse {
-    var request = original
-    request.setValue(nil, forHTTPHeaderField: "Authorization")
-    return try await send(request)
+  public func sendSigned(_ original: URLRequest, upload: Bool = false) async throws -> HTTPResponse
+  {
+    if upload { return try await send(original, upload: true) }
+    return try await makeDeadline().run { try await self.send(original, upload: false) }
   }
 
   private func load() throws -> StoredPikPakAuthorization? {
@@ -187,7 +222,7 @@ public actor PikPakSession {
       throw PikPakError.loginRequired
     }
     if let rejected, stored.accessToken != rejected { return stored }
-    if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+    if rejected == nil, stored.expiresAt > now().timeIntervalSince1970 + 60,
       !stored.accessToken.isEmpty
     {
       return stored
@@ -199,8 +234,9 @@ public actor PikPakSession {
     if let stored = try load(), let rejected, stored.accessToken != rejected {
       return stored
     }
-    if let refreshTask { return try await refreshTask.value }
+    if let refreshTask { return try await SharedTaskWaiter.value(of: refreshTask) }
     let task = Task { [transport] in
+      defer { refreshTask = nil }
       let lease = try await secrets.acquireRefreshLock(for: secretKey)
       defer { secrets.releaseRefreshLock(lease, for: secretKey) }
       do {
@@ -208,14 +244,14 @@ public actor PikPakSession {
           throw PikPakError.loginRequired
         }
         if let rejected, stored.accessToken != rejected { return stored }
-        if rejected == nil, stored.expiresAt > Date().timeIntervalSince1970 + 60,
+        if rejected == nil, stored.expiresAt > now().timeIntervalSince1970 + 60,
           !stored.accessToken.isEmpty
         {
           return stored
         }
         var request = URLRequest(url: URL(string: Self.userRoot + "/v1/auth/token")!)
         request.httpMethod = "POST"
-        request.timeoutInterval = 30
+        request.timeoutInterval = RemoteTimeout.cloudRequest
         request.setValue(
           "application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         var form = URLComponents()
@@ -247,11 +283,11 @@ public actor PikPakSession {
         let userID = token.subject ?? stored.userID
         let fresh = StoredPikPakAuthorization(
           accessToken: token.accessToken, refreshToken: token.refreshToken,
-          expiresAt: Date().timeIntervalSince1970 + Double(token.expiresIn),
+          expiresAt: now().timeIntervalSince1970 + Double(token.expiresIn),
           deviceID: stored.deviceID, userID: userID)
         guard !fresh.accessToken.isEmpty, !fresh.refreshToken.isEmpty,
           fresh.expiresAt
-            > Date()
+            > now()
             .timeIntervalSince1970
         else { throw PikPakError.invalidResponse }
         try persist(fresh)
@@ -263,8 +299,7 @@ public actor PikPakSession {
       }
     }
     refreshTask = task
-    defer { refreshTask = nil }
-    return try await task.value
+    return try await SharedTaskWaiter.value(of: task)
   }
 
   private func invalidate() throws {
@@ -280,9 +315,9 @@ public actor PikPakSession {
     }
   }
 
-  private func send(_ request: URLRequest) async throws -> HTTPResponse {
+  private func send(_ request: URLRequest, upload: Bool = false) async throws -> HTTPResponse {
     do {
-      return try await transport.send(request)
+      return try await (upload ? transport.upload(request) : transport.send(request))
     } catch {
       throw PikPakHTTP.transportError(error)
     }
@@ -291,11 +326,12 @@ public actor PikPakSession {
   private func captchaToken(
     action: String, username: String, deviceID: String, userID: String, force: Bool = false
   ) async throws -> String {
-    if !force, let cached = captcha[action], cached.expiresAt > Date().addingTimeInterval(10) {
-      return cached.token
-    }
-    if force { captcha.removeValue(forKey: action) }
-    let timestamp = String(Int64(Date().timeIntervalSince1970 * 1000))
+    let key = CaptchaKey(action: action, deviceID: deviceID, userID: userID, username: username)
+    let validAfter = now().addingTimeInterval(10)
+    captcha = captcha.filter { $0.value.expiresAt > validAfter }
+    if !force, let cached = captcha[key] { return cached.token }
+    if force { captcha.removeValue(forKey: key) }
+    let timestamp = String(Int64(now().timeIntervalSince1970 * 1000))
     struct Meta: Encodable {
       let captchaSign: String?
       let clientVersion: String?
@@ -340,7 +376,7 @@ public actor PikPakSession {
     var request = URLRequest(
       url: URL(string: Self.userRoot + "/v1/shield/captcha/init")!)
     request.httpMethod = "POST"
-    request.timeoutInterval = 30
+    request.timeoutInterval = RemoteTimeout.cloudRequest
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     setCommonHeaders(on: &request, deviceID: deviceID)
     request.httpBody = try PikPakJSON.encode(
@@ -351,9 +387,14 @@ public actor PikPakSession {
     guard let reply = try? JSONDecoder().decode(CaptchaReply.self, from: response.body),
       !reply.token.isEmpty, reply.expiresIn > 0
     else { throw PikPakError.invalidResponse }
-    captcha[action] = CachedCaptcha(
+    if captcha[key] == nil, captcha.count >= 64,
+      let oldest = captcha.min(by: { $0.value.expiresAt < $1.value.expiresAt })?.key
+    {
+      captcha.removeValue(forKey: oldest)
+    }
+    captcha[key] = CachedCaptcha(
       token: reply.token,
-      expiresAt: Date().addingTimeInterval(Double(reply.expiresIn)))
+      expiresAt: now().addingTimeInterval(Double(reply.expiresIn)))
     return reply.token
   }
 
@@ -361,7 +402,7 @@ public actor PikPakSession {
     _ original: URLRequest, authorization: StoredPikPakAuthorization, captchaToken: String
   ) -> URLRequest {
     var request = original
-    request.timeoutInterval = 30
+    request.timeoutInterval = RemoteTimeout.cloudRequest
     request.setValue("Bearer " + authorization.accessToken, forHTTPHeaderField: "Authorization")
     request.setValue(captchaToken, forHTTPHeaderField: "x-captcha-token")
     request.setValue("https://mypikpak.com/", forHTTPHeaderField: "Referer")

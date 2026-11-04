@@ -70,6 +70,9 @@ struct PikPakS3Uploader: Sendable {
   ) async throws {
     let parts = try PikPakPart.split(size: size, requestedPartSize: partSize)
     guard !parts.isEmpty else {
+      let response = try await request(
+        method: "PUT", parameters: parameters, query: [], body: Data(), upload: true)
+      try PikPakHTTP.check(response)
       progress?(0, 0)
       return
     }
@@ -93,7 +96,7 @@ struct PikPakS3Uploader: Sendable {
           query: [
             URLQueryItem(name: "partNumber", value: String(part.number)),
             URLQueryItem(name: "uploadId", value: created.uploadID),
-          ], body: body)
+          ], body: body, upload: true)
         try PikPakHTTP.check(response)
         guard let etag = response.header("ETag"), !etag.isEmpty else {
           throw PikPakError.invalidResponse
@@ -111,9 +114,14 @@ struct PikPakS3Uploader: Sendable {
       let uploader = self
       let uploadID = created.uploadID
       let cleanup = Task.detached {
-        _ = try? await uploader.request(
-          method: "DELETE", parameters: parameters,
-          query: [URLQueryItem(name: "uploadId", value: uploadID)], body: Data())
+        do {
+          let response = try await uploader.request(
+            method: "DELETE", parameters: parameters,
+            query: [URLQueryItem(name: "uploadId", value: uploadID)], body: Data())
+          try PikPakHTTP.check(response)
+        } catch {
+          PackageDiagnostics.failure(error, category: .pikPakDrive, operation: .remove)
+        }
       }
       await cleanup.value
       throw error
@@ -136,7 +144,7 @@ struct PikPakS3Uploader: Sendable {
 
   private func request(
     method: String, parameters: PikPakResumable.Parameters, query: [URLQueryItem], body: Data,
-    contentType: String? = nil
+    contentType: String? = nil, upload: Bool = false
   ) async throws -> HTTPResponse {
     let endpoint = URL(string: "https://mypikpak.com/")!
     var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)!
@@ -144,7 +152,7 @@ struct PikPakS3Uploader: Sendable {
       "/" + parameters.bucket + "/" + parameters.key)
     components.percentEncodedQuery = Self.canonicalQuery(query)
     guard let url = components.url else { throw PikPakError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.httpMethod = method
     request.httpBody = body.isEmpty ? nil : body
     if let contentType { request.setValue(contentType, forHTTPHeaderField: "Content-Type") }
@@ -184,7 +192,7 @@ struct PikPakS3Uploader: Sendable {
     headers["authorization"] =
       "AWS4-HMAC-SHA256 Credential=\(parameters.accessKeyID)/\(scope), SignedHeaders=\(signedHeaders), Signature=\(signature)"
     for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
-    return try await session.sendSigned(request)
+    return try await session.sendSigned(request, upload: upload)
   }
 
   private func completeBody(_ parts: [(Int, String)]) -> Data {

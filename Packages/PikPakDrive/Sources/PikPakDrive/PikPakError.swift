@@ -1,17 +1,23 @@
 import Core
 import Foundation
 
-public enum PikPakError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+public enum PikPakError: Error, Equatable, LocalizedError, CustomNSError, LoginRequiredFailure,
+  Sendable
+{
   case invalidCredentials
   case loginRequired
   case invalidResponse
   case taskFailed
+  case captchaRequired
+
+  public var requiresLogin: Bool { self == .loginRequired }
 
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int {
     switch self {
     case .invalidCredentials, .loginRequired: Int(EACCES)
     case .invalidResponse, .taskFailed: Int(EIO)
+    case .captchaRequired: Int(EAGAIN)
     }
   }
 
@@ -21,6 +27,7 @@ public enum PikPakError: Error, Equatable, LocalizedError, CustomNSError, Sendab
     case .loginRequired: L("PikPak 登录已失效，请重新登录")
     case .invalidResponse: L("PikPak 返回了无法识别的数据，接口可能已经变化")
     case .taskFailed: L("PikPak 没有完成任务，请稍后重试")
+    case .captchaRequired: L("PikPak 验证未通过，请稍后重试")
     }
   }
 

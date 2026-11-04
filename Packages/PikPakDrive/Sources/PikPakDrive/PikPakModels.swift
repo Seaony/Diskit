@@ -108,6 +108,17 @@ struct PikPakFile: Decodable, Sendable {
 
   struct Link: Decodable, Sendable {
     let url: URL
+    let expire: String?
+
+    var expiresAt: Date? {
+      if let raw = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
+        .first(where: { $0.name == "expire" })?.value
+      {
+        guard let seconds = Double(raw), seconds.isFinite else { return nil }
+        return Date(timeIntervalSince1970: seconds)
+      }
+      return expire.flatMap { RemoteTimestamp.parse($0) }
+    }
   }
 
   init(
@@ -148,7 +159,7 @@ struct PikPakFile: Decodable, Sendable {
       guard let size, size >= 0 else { throw RemoteError.protocolError }
     }
     let timestamp = modifiedTime ?? createdTime
-    guard let timestamp, let modified = PikPakDate.parse(timestamp) else {
+    guard let timestamp, let modified = RemoteTimestamp.parse(timestamp) else {
       throw RemoteError.protocolError
     }
     return RemoteItem(
@@ -197,22 +208,22 @@ struct PikPakResumable: Decodable, Sendable {
 struct PikPakTask: Decodable, Sendable {
   let id: String
   let phase: String
+  let progress: Int64?
+
+  enum CodingKeys: String, CodingKey { case id, phase, progress }
+
+  init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    id = try values.decode(String.self, forKey: .id)
+    phase = try values.decode(String.self, forKey: .phase)
+    progress = try values.decodeFlexibleInt64IfPresent(forKey: .progress)
+  }
 }
 
 struct PikPakMutation: Decodable, Sendable {
   let taskID: String?
 
   enum CodingKeys: String, CodingKey { case taskID = "task_id" }
-}
-
-enum PikPakDate {
-  static func parse(_ text: String) -> Date? {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let date = formatter.date(from: text) { return date }
-    formatter.formatOptions = [.withInternetDateTime]
-    return formatter.date(from: text)
-  }
 }
 
 enum PikPakJSON {
