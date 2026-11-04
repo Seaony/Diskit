@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度、CloudDrive/S3 限流及全部应用层网盘会话复用已通过本地门禁，真实账号另待用户验收；FIX-18 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度、CloudDrive/S3 限流及全部应用层网盘会话复用已通过本地门禁，真实账号另待用户验收；FIX-18 已开始统一公共请求参数，实际计时与其余调用尚待处理；FIX-19 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -372,3 +372,13 @@
 - `appReusesConfiguredSessionsAndReplacesChangedCredentials`（`SessionReuseTests.swift:97`）覆盖蓝奏、移动、迅雷、S3 四组：重复调用及改名复用，凭据改变替换，放弃草稿后不复用旧对象。`appLanzouConfigurationChangeReplacesSharedSession`（`:126`）确认分享地址改变后的实际会话配置。只有内存样例凭据，未连接真实账号或共享链接。
 - 已核对 DevTool 的单命令控制流（`main.swift:170` 创建一个 provider，`:266` 连接后执行一个命令并断开），它没有同一次执行反复创建同账号 provider 的应用层路径，因此不另加进程内长期缓存；其 S3/CloudDrive 包级额度和跨进程刷新锁继续由对应包提供。
 - 回归证据 `docs/evidence/v0.2/FIX-17-share-regression.log`；完整提交门禁通过：应用逻辑 16 项、包测试 356 项，发布构建和签名校验通过，证据 `docs/evidence/v0.2/FIX-17-share-gates.log`。FIX-17 指定的本地限流与会话复用验收现已通过，真实账号项目进入 ACCEPTANCE。FIX-17 的账号边界为同一保存位置/凭据记录（S3 请求额度另按端点和访问标识合并），不同位置中独立登录记录不冒称为识别出了同一个服务端账号；本轮没有真实账号证据。
+
+
+## FIX-18：集中超时值与公共请求参数（部分）
+
+- `Packages/Core/Sources/Core/RemoteTimeout.swift:3` 集中定义设备请求 15 秒、网盘请求 30 秒、文件传输无进展 60 秒的约定。本提交先接入两个公共请求构造器，不冒称所有调用已经迁移。
+- `CloudDriveSupport.swift:75`、`:91` 的 JSON 和普通表单请求从 60 秒改为公共 30 秒值；`:105` 的 multipart 请求不再一律 120 秒。`MultipartFormData.addFile`（`:21`）记录实际是否包含文件字段，仅元数据 multipart 使用 30 秒，含文件使用 60 秒传输间隔，正文和 Content-Type 保持原样。
+- `ChinaWebDrive/Support.swift:48` 的 JSON 元数据请求也使用 30 秒公共值。平台自行创建的请求及默认 URLRequest 仍需逐处迁移，不能以公共工具已改为由漏掉它们。
+- `CloudDriveTests/RequestTimeoutTests.swift` 的 `cloudMetadataRequestsUseThirtySeconds`、`multipartMetadataDoesNotUseUploadTimeout`、`multipartFileUsesSixtySecondIdleInterval` 与 `ChinaWebDriveTests/RequestTimeoutTests.swift` 的 `chinaWebMetadataRequestUsesThirtySeconds` 先复现 60/120 秒错误值，修复后同时检查请求间隔、方法或正文未被改变。证据 `docs/evidence/v0.2/FIX-18-request-regression.log`；此为请求构造回归，不是实际等待时间测试。
+- 已核对 Apple 对 [请求等待间隔](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/timeoutintervalforrequest) 和 [资源总时限](https://developer.apple.com/documentation/foundation/urlsessionconfiguration/timeoutintervalforresource) 的定义：前者随新数据到来重置，后者约束整个传输。因此只设 timeoutInterval 不能证明普通远端调用总计 30 秒结束，也不能证明上传无进展计时正确；底层传输、取消、排队/刷新锁等待和持续进度场景仍待实现与验收。
+- 完整提交门禁通过：应用逻辑 16 项、包测试 360 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-18-request-gates.log`。未发出真实远端请求。FIX-18 尚未整体通过。

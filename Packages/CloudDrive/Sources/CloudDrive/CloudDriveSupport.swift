@@ -5,6 +5,7 @@ import Foundation
 struct MultipartFormData {
   let boundary = "kayoi-\(UUID().uuidString)"
   private(set) var body = Data()
+  private(set) var containsFile = false
 
   mutating func addText(_ name: String, _ value: String) {
     append("--\(boundary)\r\n")
@@ -17,6 +18,7 @@ struct MultipartFormData {
     _ name: String, filename: String, mimeType: String = "application/octet-stream",
     data: Data
   ) {
+    containsFile = true
     append("--\(boundary)\r\n")
     append(
       "Content-Disposition: form-data; name=\"\(escaped(name))\"; filename=\"\(escaped(filename))\"\r\n"
@@ -70,7 +72,7 @@ enum CloudDriveSupport {
   static func jsonRequest(
     _ url: URL, method: String = "GET", json: Any? = nil, headers: [String: String] = [:]
   ) throws -> URLRequest {
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = method
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     for (name, value) in headers {
@@ -86,7 +88,7 @@ enum CloudDriveSupport {
     _ url: URL, method: String = "POST", fields: [String: String],
     headers: [String: String] = [:]
   ) -> URLRequest {
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = method
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
     request.httpBody = encodedForm(fields).data(using: .utf8)
@@ -100,7 +102,9 @@ enum CloudDriveSupport {
     _ url: URL, method: String = "POST", form: MultipartFormData,
     headers: [String: String] = [:]
   ) -> URLRequest {
-    var request = URLRequest(url: url, timeoutInterval: 120)
+    var request = URLRequest(
+      url: url,
+      timeoutInterval: form.containsFile ? RemoteTimeout.transferIdle : RemoteTimeout.cloudRequest)
     request.httpMethod = method
     request.setValue(form.contentType, forHTTPHeaderField: "Content-Type")
     request.httpBody = form.finished()

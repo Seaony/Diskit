@@ -45,7 +45,7 @@ enum ChinaWebSupport {
   static func jsonRequest(
     _ url: URL, method: String = "POST", json: Any? = nil
   ) throws -> URLRequest {
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = method
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
