@@ -97,6 +97,7 @@ struct SettingsView: View {
       } footer: {
         Text(L("退出 Kayoi 不会推出已挂载的共享"))
       }
+      UpdateSettingsSection(updater: model.updates)
     }
   }
 

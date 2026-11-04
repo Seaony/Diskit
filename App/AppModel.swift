@@ -22,6 +22,7 @@ import UserNotifications
   let operations = AppOperations()
   let undoManager = UndoManager()
   let options: RuntimeOptions
+  let updates: UpdateController
   let preferences: UserDefaults
   let secrets: any SecretStore
   private let dependencies: AppModelDependencies?

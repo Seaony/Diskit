@@ -1,0 +1,50 @@
+{
+  "pins": [
+    {
+      "identity": "alibabacloud-oss-swift-sdk-v2",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/aliyun/alibabacloud-oss-swift-sdk-v2.git",
+      "state": {
+        "revision": "335c1777bf3c4aa86d7212c03e515de53b192418",
+        "version": "0.4.0"
+      }
+    },
+    {
+      "identity": "sparkle",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/sparkle-project/Sparkle",
+      "state": {
+        "revision": "ab7d71291238df6e0492143b120c9b696a35f603",
+        "version": "2.10.1"
+      }
+    },
+    {
+      "identity": "swift-asn1",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-asn1.git",
+      "state": {
+        "revision": "917b472dbe53ba699cbb0495f9a95a084bc6364d",
+        "version": "1.7.4"
+      }
+    },
+    {
+      "identity": "swift-crypto",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/apple/swift-crypto.git",
+      "state": {
+        "revision": "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
+        "version": "3.15.1"
+      }
+    },
+    {
+      "identity": "xmlcoder",
+      "kind": "remoteSourceControl",
+      "location": "https://github.com/CoreOffice/XMLCoder.git",
+      "state": {
+        "revision": "42f62383dbcd074440cb1f6a750b9c02df9e7325",
+        "version": "0.18.2"
+      }
+    }
+  ],
+  "version": 2
+}

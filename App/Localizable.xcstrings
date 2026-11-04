@@ -8239,6 +8239,22 @@
         }
       }
     },
+    "上次检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Checked"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上次检查"
+          }
+        }
+      }
+    },
     "不会。SMB、WebDAV 和 NFS 由系统保持挂载；需要断开时，请在 Kayoi 或 Finder 中推出。": {
       "localizations": {
         "en": {
@@ -8667,6 +8683,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "创建只允许访问目标存储桶的密钥，不要使用主账号密钥。"
+          }
+        }
+      }
+    },
+    "发现更新后自动下载安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically download and install updates when available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现更新后自动下载安装"
           }
         }
       }
@@ -9391,6 +9423,22 @@
         }
       }
     },
+    "尚未检查": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not checked yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未检查"
+          }
+        }
+      }
+    },
     "尚未计算": {
       "localizations": {
         "en": {
@@ -10097,6 +10145,22 @@
         }
       }
     },
+    "更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
+          }
+        }
+      }
+    },
     "服务商可能限制账号权限、分享访问、会员权益或请求频率。请先确认该账号在服务商页面能访问目标文件。": {
       "localizations": {
         "en": {
@@ -10253,6 +10317,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在读取许可证…"
+          }
+        }
+      }
+    },
+    "此版本尚未配置更新服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The update service is not configured for this version."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本尚未配置更新服务"
+          }
+        }
+      }
+    },
+    "此版本暂不支持自动安装更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This version does not support automatic update installation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本暂不支持自动安装更新"
           }
         }
       }
@@ -11137,6 +11233,38 @@
         }
       }
     },
+    "自动下载并安装": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically Download and Install"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动下载并安装"
+          }
+        }
+      }
+    },
+    "自动检查更新": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically Check for Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动检查更新"
+          }
+        }
+      }
+    },
     "致谢与许可证": {
       "localizations": {
         "en": {
@@ -11517,6 +11645,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "输入完整配对码后会自动配对。"
+          }
+        }
+      }
+    },
+    "还没有可用的更新信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No update information is available yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有可用的更新信息"
           }
         }
       }

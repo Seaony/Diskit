@@ -3,6 +3,9 @@ options:
   deploymentTarget:
     macOS: "26.0"
 packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.1
   Core:
     path: Packages/Core
   ADB:
@@ -32,6 +35,8 @@ configFiles:
   Release: ${KAYOI_BUILD_CONFIG}
 settings:
   base:
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_EMIT_LOC_STRINGS: YES
@@ -56,6 +61,7 @@ targets:
       - path: Packages/ADB/Vendor/BoringSSL/LICENSE
         buildPhase: resources
     dependencies:
+      - package: Sparkle
       - package: Core
       - package: ADB
       - package: AliyunDrive
@@ -96,8 +102,14 @@ targets:
         GOOGLE_CLIENT_ID: $(GOOGLE_CLIENT_ID)
         DROPBOX_CLIENT_ID: $(DROPBOX_CLIENT_ID)
         DROPBOX_REDIRECT_URI: $(DROPBOX_REDIRECT_URI)
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        SUFeedURL: https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml
+        SUPublicEDKey: FnPUWAEY6WKwo0yvQLOBvEt7xjuhAabwNu1Y9QalNQc=
+        SURequireSignedFeed: true
+        SUVerifyUpdateBeforeExtraction: true
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
         LSMinimumSystemVersion: "26.0"
         LSUIElement: true
         NSCameraUsageDescription: 发现并读取通过 USB 连接的相机。
@@ -132,7 +144,9 @@ targets:
       - Tests/KayoiTests
       - App/Logic
       - App/AppModel.swift
+      - App/UpdateController.swift
     dependencies:
+      - package: Sparkle
       - package: Core
       - package: Core
         product: CoreTestSupport
