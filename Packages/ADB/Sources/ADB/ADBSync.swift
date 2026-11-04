@@ -302,7 +302,23 @@ public actor ADBProvider: RemoteFileProvider {
     _ = try await shell("rm " + (recursive ? "-rf -- " : "-- ") + ADBShell.quote(mapped(path)))
   }
   public func move(_ from: RemotePath, to: RemotePath) async throws {
-    _ = try await shell("mv -- " + ADBShell.quote(mapped(from)) + " " + ADBShell.quote(mapped(to)))
+    let source = try ADBShell.quote(mapped(from))
+    let destination = try ADBShell.quote(mapped(to))
+    _ = try await shell(
+      """
+      if [ -e \(destination) ] || [ -L \(destination) ]; then
+        printf '%s\\n' 'File exists' >&2; exit 1
+      fi
+      mv -nT -- \(source) \(destination) || exit $?
+      if [ -e \(source) ] || [ -L \(source) ]; then
+        if [ -e \(destination) ] || [ -L \(destination) ]; then
+          printf '%s\\n' 'File exists' >&2
+        else
+          printf '%s\\n' 'Move did not complete' >&2
+        fi
+        exit 1
+      fi
+      """)
   }
   public func spaceInfo() async throws -> SpaceInfo {
     let output = String(decoding: try await shell("df -k /sdcard"), as: UTF8.self)
@@ -338,6 +354,9 @@ public actor ADBProvider: RemoteFileProvider {
       try await session.closeService()
       guard exitCode == 0 else {
         let error = String(decoding: errorOutput, as: UTF8.self)
+        if error.trimmingCharacters(in: .whitespacesAndNewlines) == "File exists" {
+          throw RemoteError.posix(EEXIST)
+        }
         if error.contains("Permission denied") { throw RemoteError.posix(EACCES) }
         if error.contains("No such file") { throw RemoteError.posix(ENOENT) }
         if error.contains("No space") { throw RemoteError.posix(ENOSPC) }

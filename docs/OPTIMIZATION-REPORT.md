@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突已修复，上传临时文件替换进行中；FIX-10 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -208,3 +208,13 @@
 - `ordinaryADBServiceErrorsAllowTheNextOperation`（`:379`）覆盖列表、下载、上传、shell 权限错误和未知 shell 退出错误五组；错误后下一次列目录成功，底层连接未关闭。与底层 EIO 重建测试共同证明不单凭错误码区分文件错误和传输故障。证据 `docs/evidence/v0.2/FIX-08-regression.log`。
 - 本地回归通过，未连接设备。USB 重插、无线端口改变、真实手机授权提示仍列入 ACCEPTANCE 待用户验收。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 306 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-08-gates.log`。
+
+
+## FIX-09：移动目标冲突处理（部分）
+
+- `Packages/ADB/Sources/ADB/ADBSync.swift:304` 移动前检查目标文件、目录及悬空链接；存在则返回 EEXIST。实际移动使用 `mv -nT --`，防止普通同名覆盖或移入目录；命令返回后仍检查源路径，避免将 `-n` 的跳过当成成功。shell 对本段脚本的完整冲突消息映射为 EEXIST，不凭文件名中的零散文字推断冲突。
+- 命令选择依据：[Toybox 官方 mv 实现](https://github.com/landley/toybox/blob/master/toys/posix/cp.c) 的 `-n`、`-T` 定义与跳过行为。其内部仍是存在性检查后调用 rename，不能据此宣称跨进程原子拒绝覆盖；本次没有虚构这种保证。
+- `adbMoveRejectsExistingTargetsWithoutChangingSource`（`MoveSafetyTests.swift:94`）覆盖已有普通文件、目录、悬空链接及进入 mv 时出现的新目标。假传输把实际发出的 shell 脚本放到本地临时目录执行，mv 替身模拟不覆盖时返回 0 的行为；修复前静默覆盖/移入、源路径消失，修复后 EEXIST 且源与目标保留。
+- `adbMoveQuotesPathsAndMovesToExactMissingTarget`（`:124`）验证中文、emoji、空格、引号及命令替换字符保持原义，成功后仅精确目标存在，没有执行文件名中的命令。所有 shell 测试的工作目录及文件操作都在临时目录，未调用设备 shell。失败与通过证据：`docs/evidence/v0.2/FIX-09-move-regression.log`。
+- FIX-09 尚未整体通过：上传仍需改为同目录临时文件完成后替换目标；真实设备的命令选项支持与并发外部改动行为另需用户验收。不支持选项时返回错误，不回退到无保护的普通 mv。
+- 本组完整提交门禁通过：应用逻辑 9 项、包测试 308 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-09-move-gates.log`。
