@@ -1,0 +1,6 @@
+{
+  "remove": "对象存储的删除可能无法恢复，取决于存储桶是否启用版本保留等保护。删除前请先确认备份。",
+  "add": {
+    "对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。": "Deleted objects do not go to a trash folder. Without bucket versioning, deletion is permanent. With versioning enabled, recovery depends on the versions retained by the service. Check your backup before deleting."
+  }
+}
