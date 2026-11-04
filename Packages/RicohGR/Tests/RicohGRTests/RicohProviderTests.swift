@@ -11,6 +11,7 @@ import Testing
     case delete([UInt32])
   }
   var calls: [Call] = []
+  var deadlines: [ContinuousClock.Instant] = []
   var available = true
   var opened = false
   var deleteFailure: Error?
@@ -49,6 +50,18 @@ import Testing
         size: Int64(dng.count), modified: date),
     ]
     data = [12: jpg, 22: dng]
+  }
+  func open(until deadline: ContinuousClock.Instant) async throws {
+    deadlines.append(deadline)
+    try await open()
+  }
+  func snapshot(until deadline: ContinuousClock.Instant) async throws -> RicohSnapshot {
+    deadlines.append(deadline)
+    return try await snapshot()
+  }
+  func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws {
+    deadlines.append(deadline)
+    try await delete(handles: handles)
   }
   func open() async throws {
     calls.append(.open)
@@ -190,7 +203,7 @@ import Testing
   let camera = CameraFixture()
   let subject = RicohProvider(adapter: camera)
   try await subject.connect()
-  camera.deleteFailure = NSError(domain: "Camera", code: 123)
+  camera.deleteFailure = NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))
   await expectPOSIX(EACCES) {
     try await subject.remove(RemotePath("/microSD/DCIM/100RICOH/R0000002.DNG"), recursive: false)
   }
@@ -279,4 +292,50 @@ import Testing
     {}
   }
   await subject.disconnect()
+}
+
+@MainActor @Test func cameraCompoundOperationsShareOneDeadline() async throws {
+  let fixture = CameraFixture()
+  let provider = RicohProvider(adapter: fixture)
+  try await provider.connect()
+  #expect(fixture.deadlines.count == 2)
+  #expect(fixture.deadlines[0] == fixture.deadlines[1])
+  fixture.deadlines.removeAll()
+  try await provider.remove(RemotePath("/内置存储/DCIM/100RICOH/R0000001.JPG"), recursive: false)
+  #expect(fixture.deadlines.count == 2)
+  #expect(fixture.deadlines[0] == fixture.deadlines[1])
+}
+
+@Test @MainActor func ricohDeletionPreservesCancellationAndMissingFile() async throws {
+  let camera = CameraFixture()
+  let provider = RicohProvider(adapter: camera)
+  try await provider.connect()
+  for error in [RemoteError.posix(ECANCELED), RemoteError.posix(ENOENT)] {
+    camera.deleteFailure = error
+    await #expect(throws: error) {
+      try await provider.remove(RemotePath("/microSD/DCIM/100RICOH/R0000002.DNG"), recursive: false)
+    }
+  }
+}
+
+@Test @MainActor func ricohDuplicatePathsCannotSelectAnotherFile() async throws {
+  let camera = CameraFixture()
+  camera.entries.append(camera.entries[2])
+  let provider = RicohProvider(adapter: camera)
+  try await provider.connect()
+  await #expect(throws: RemoteError.protocolError) {
+    try await provider.remove(RemotePath("/内置存储/DCIM/100RICOH/R0000001.JPG"), recursive: false)
+  }
+  #expect(!camera.calls.contains(.delete([12])))
+}
+
+@Test @MainActor func ricohProviderReconnectsWithoutReusingOpenState() async throws {
+  let camera = CameraFixture()
+  let provider = RicohProvider(adapter: camera)
+  try await provider.connect()
+  await provider.disconnect()
+  #expect(!provider.capabilities.canDelete)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).count == 2)
+  #expect(camera.calls.filter { $0 == .open }.count == 2)
 }

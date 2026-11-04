@@ -49,9 +49,33 @@ public struct RicohSnapshot: Sendable, Equatable {
 }
 
 @MainActor public protocol RicohCameraAdapter: AnyObject, Sendable {
+  var canDelete: Bool { get }
   func open() async throws
   func close() async
   func snapshot() async throws -> RicohSnapshot
   func read(handle: UInt32, offset: Int64, length: Int) async throws -> Data
   func delete(handles: [UInt32]) async throws
+  func open(until deadline: ContinuousClock.Instant) async throws
+  func snapshot(until deadline: ContinuousClock.Instant) async throws -> RicohSnapshot
+  func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws
+}
+
+extension RicohCameraAdapter {
+  public var canDelete: Bool { true }
+  public func open(until deadline: ContinuousClock.Instant) async throws {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    try await open()
+    _ = try RemoteTimeout.remaining(until: deadline)
+  }
+  public func snapshot(until deadline: ContinuousClock.Instant) async throws -> RicohSnapshot {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    let result = try await snapshot()
+    _ = try RemoteTimeout.remaining(until: deadline)
+    return result
+  }
+  public func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    try await delete(handles: handles)
+    _ = try RemoteTimeout.remaining(until: deadline)
+  }
 }

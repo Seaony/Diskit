@@ -1,17 +1,26 @@
 import Core
 import Foundation
+import Synchronization
 
 @MainActor public final class RicohProvider: RemoteFileProvider {
-  public nonisolated let capabilities = ProviderCapabilities(
-    canWrite: false, canRename: false, canMove: false, canDelete: true, supportsRangeRead: true)
+  private nonisolated let deletionAllowed = Mutex(false)
+  public nonisolated var capabilities: ProviderCapabilities {
+    ProviderCapabilities(
+      canWrite: false, canRename: false, canMove: false,
+      canDelete: deletionAllowed.withLock { $0 }, supportsRangeRead: true)
+  }
   private let adapter: any RicohCameraAdapter
   private var connected = false
   public init(adapter: any RicohCameraAdapter) { self.adapter = adapter }
 
   public static func make(serial: String) async throws -> RicohProvider {
+    try await make(identifier: serial)
+  }
+
+  public static func make(identifier: String) async throws -> RicohProvider {
     let discovery = RicohDiscovery()
     try await discovery.enumerate()
-    guard !serial.isEmpty, let camera = discovery.camera(serial: serial) else {
+    guard !identifier.isEmpty, let camera = discovery.camera(identifier: identifier) else {
       discovery.stop()
       throw RemoteError.notConnected
     }
@@ -20,10 +29,11 @@ import Foundation
 
   public func connect() async throws {
     guard !connected else { return }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(RemoteTimeout.deviceRequest))
     do {
-      try await adapter.open()
+      try await adapter.open(until: deadline)
       connected = true
-      _ = try await current()
+      _ = try await current(until: deadline)
     } catch {
       PackageDiagnostics.failure(error, category: .ricohGR, operation: .connect)
       await adapter.close()
@@ -33,6 +43,7 @@ import Foundation
   }
   public func disconnect() async {
     connected = false
+    deletionAllowed.withLock { $0 = false }
     await adapter.close()
   }
   public func spaceInfo() async throws -> SpaceInfo {
@@ -80,18 +91,28 @@ import Foundation
     throw RemoteError.posix(EROFS)
   }
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
-    guard let node = try index(await current())[path.value] else { throw RemoteError.posix(ENOENT) }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(RemoteTimeout.deviceRequest))
+    guard let node = try index(await current(until: deadline))[path.value] else {
+      throw RemoteError.posix(ENOENT)
+    }
     guard !node.item.isDirectory, let handle = node.handle else { throw RemoteError.posix(EACCES) }
-    do { try await adapter.delete(handles: [handle]) } catch {
-      if let remote = error as? RemoteError, [EIO, ETIMEDOUT].contains(remote.errno) {
-        throw remote
-      }
-      throw RemoteError.posix(EACCES)
+    guard adapter.canDelete else { throw RemoteError.posix(EACCES) }
+    do { try await adapter.delete(handles: [handle], until: deadline) } catch {
+      PackageDiagnostics.failure(error, category: .ricohGR, operation: .remove)
+      throw RicohErrorMapper.map(error)
     }
   }
-  private func current() async throws -> RicohSnapshot {
+  private func current(
+    until deadline: ContinuousClock.Instant = .now.advanced(
+      by: .seconds(RemoteTimeout.deviceRequest))
+  ) async throws -> RicohSnapshot {
     guard connected else { throw RemoteError.posix(EIO) }
-    let snapshot = try await adapter.snapshot()
+    let snapshot: RicohSnapshot
+    do { snapshot = try await adapter.snapshot(until: deadline) } catch {
+      PackageDiagnostics.failure(error, category: .ricohGR, operation: .snapshot)
+      throw error
+    }
+    deletionAllowed.withLock { $0 = adapter.canDelete }
     guard !snapshot.storages.isEmpty else { throw RemoteError.posix(ENODEV) }
     for storage in snapshot.storages {
       guard storage.total >= 0, storage.free >= 0, storage.free <= storage.total else {
@@ -119,15 +140,27 @@ import Foundation
       roots[storage.id] = root
       result[root] = Node(item: folder(try RemotePath(root)), handle: nil)
     }
+    var explicitPaths = Set<String>()
+    var handles = Set<UInt32>()
     for entry in snapshot.entries {
       guard let root = roots[entry.storageID], !entry.relativePath.isEmpty,
         !entry.relativePath.hasPrefix("/"), entry.size >= 0
       else { throw RemoteError.protocolError }
       let path = try RemotePath(root + "/" + entry.relativePath)
       guard path.value == root + "/" + entry.relativePath else { throw RemoteError.invalidPath }
+      guard explicitPaths.insert(path.value).inserted else { throw RemoteError.protocolError }
+      if let existing = result[path.value], !existing.item.isDirectory || !entry.isDirectory {
+        throw RemoteError.protocolError
+      }
+      if !entry.isDirectory, let handle = Optional(entry.handle) {
+        guard handle != 0, handles.insert(handle).inserted else { throw RemoteError.protocolError }
+      }
       var parent = ""
       for part in path.value.split(separator: "/").dropLast() {
         parent += "/" + part
+        if let existing = result[parent], !existing.item.isDirectory {
+          throw RemoteError.protocolError
+        }
         if result[parent] == nil {
           result[parent] = Node(item: folder(try RemotePath(parent)), handle: nil)
         }
@@ -156,9 +189,14 @@ private actor RicohReadCursor {
     try Task.checkCancellation()
     guard offset < end else { return nil }
     let length = Int(min(1_048_576, end - offset))
-    let data = try await adapter.read(handle: handle, offset: offset, length: length)
-    guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
-    offset += Int64(data.count)
-    return data
+    do {
+      let data = try await adapter.read(handle: handle, offset: offset, length: length)
+      guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
+      offset += Int64(data.count)
+      return data
+    } catch {
+      PackageDiagnostics.failure(error, category: .ricohGR, operation: .download)
+      throw error
+    }
   }
 }

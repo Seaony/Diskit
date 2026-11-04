@@ -7,6 +7,6 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "RicohGR", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "RicohGRTests", dependencies: ["RicohGR"]),
+    .testTarget(name: "RicohGRTests", dependencies: ["RicohGR", .product(name: "CoreTestSupport", package: "Core")]),
   ],
   swiftLanguageModes: [.v6])
