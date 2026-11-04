@@ -1,0 +1,41 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/RicohGR.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:4] Test Suite 'All tests' passed at 2026-11-04 20:40:54.242.
+[原日志:43] 􁁛  Test cameraIdentityRejectsAmbiguousSerialAndSupportsMissingSerial() passed after 0.001 seconds.
+[原日志:44] 􁁛  Test cameraGRIVBoundaryExcludesOtherModels() passed after 0.001 seconds.
+[原日志:45] 􁁛  Test ricohNativeErrorsKeepActionablePOSIXCodes() passed after 0.001 seconds.
+[原日志:47] 􁁛  Test ptpStorageInfoPreserves64BitCapacityAndStorageKind() passed after 0.001 seconds.
+[原日志:48] 􁁛  Test ptpStorageInfoRejectsUnknownTypeAndTruncation() passed after 0.001 seconds.
+[原日志:49] 􁁛  Test ptpObjectInfoAndStorageIDArrayUseLittleEndianFields() passed after 0.001 seconds.
+[原日志:50] 􁁛  Test ptpCommandAndResponsesKeepContainerFieldsAndMapErrors() passed after 0.001 seconds.
+[原日志:51] 􁁛  Test ptpRejectsErrorResponsesAndMalformedDeviceDatasets() passed after 0.001 seconds.
+[原日志:52] 􁁛  Test discoveryPublishesUniqueLocationsAndClearsOnStop() passed after 0.001 seconds.
+[原日志:53] 􁁛  Test ricohDeletesPhotoAndRefreshesListing() passed after 0.002 seconds.
+[原日志:54] 􁁛  Test cameraCompoundOperationsShareOneDeadline() passed after 0.002 seconds.
+[原日志:55] 􁁛  Test ricohRejectedDeletionReturnsPermissionErrorAndKeepsFile() passed after 0.002 seconds.
+[原日志:56] 􁁛  Test ricohCapacityUsesReportedTotalAndFreeBytes() passed after 0.002 seconds.
+[原日志:57] 􁁛  Test ricohMapsBothStoragesAndOriginalDCIMHierarchy() passed after 0.006 seconds.
+[原日志:58] 􁁛  Test ricohProviderReconnectsWithoutReusingOpenState() passed after 0.007 seconds.
+[原日志:59] 􁁛  Test ricohRejectsMissingPathsAndFileDirectoryMismatch() passed after 0.008 seconds.
+[原日志:60] 􁁛  Test ricohWriteOperationsFailReadOnlyWithoutCallingCamera() passed after 0.008 seconds.
+[原日志:61] 􁁛  Test expiredCameraPhaseNeverStartsNativeWork() passed after 0.011 seconds.
+[原日志:62] 􁁛  Test ricohDuplicatePathsCannotSelectAnotherFile() passed after 0.011 seconds.
+[原日志:63] 􁁛  Test discoveryEnumerationReportsCompletionFailureAndStopCancellation() passed after 0.011 seconds.
+[原日志:64] 􁁛  Test ricohDeletionPreservesCancellationAndMissingFile() passed after 0.012 seconds.
+[原日志:65] 􁁛  Test adapterConfirmsModelMapsStorageAndKeepsTransactionSequence() passed after 0.011 seconds.
+[原日志:66] 􁁛  Test ricohRangeReadReturnsOnlyRequestedBytes() passed after 0.012 seconds.
+[原日志:67] 􁁛  Test adapterRejectsWrongModelUnsupportedPTPAndCommandFailure() passed after 0.011 seconds.
+[原日志:68] 􁁛  Test adapterDefaultDeadlineForwardsAndRejectsExpiredOperations() passed after 0.012 seconds.
+[原日志:69] 􁁛  Test ricohDisconnectAndReadFailureSurfaceAsIOErrors() passed after 0.012 seconds.
+[原日志:70] 􁁛  Test ricohShortReadDoesNotSilentlyReturnTruncatedPhoto() passed after 0.012 seconds.
+[原日志:71] 􁁛  Test adapterReadAndDeleteKeepMissingPermissionAndCancellation() passed after 0.013 seconds.
+[原日志:72] 􁁛  Test cameraPhasesUseRemainingDeadline() passed after 0.013 seconds.
+[原日志:73] 􁁛  Test hardwareSessionProjectsTypesDatesAndReplacesHandleIndex() passed after 0.013 seconds.
+[原日志:74] 􁁛  Test hardwareSessionCloseReleasesCatalogWaitAndClearsFiles() passed after 0.013 seconds.
+[原日志:75] 􁁛  Test adapterRejectsMalformedCatalogWithoutPublishingHandles() passed after 0.013 seconds.
+[原日志:76] 􁁛  Test ricohReadsJPGAndDNGInBoundedChunksWithoutChangingBytes() passed after 0.013 seconds.
+[原日志:77] 􁁛  Test hardwareSessionOpensWaitsForCatalogAndHandlesRemoval() passed after 0.013 seconds.
+[原日志:78] 􁁛  Test hardwareSessionPropagatesFailuresAndNeverDropsFailedDeletionHandles() passed after 0.013 seconds.
+[原日志:79] 􁁛  Test run with 35 tests in 0 suites passed after 0.013 seconds.

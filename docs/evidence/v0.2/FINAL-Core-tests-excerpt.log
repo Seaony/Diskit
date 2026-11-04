@@ -1,0 +1,148 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/Core.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:5] Test Suite 'All tests' passed at 2026-11-04 20:40:47.428.
+[原日志:168] 􁁛  Test memorySecretsAreIsolatedBetweenRuns() passed after 0.006 seconds.
+[原日志:181] 􁁛  Test mountTableMatchesCanonicalUnicode(name:) with 2 test cases passed after 0.006 seconds.
+[原日志:183] 􁁛  Test pseudoLocalizationExpandsVisibleTextWithoutDroppingContent() passed after 0.007 seconds.
+[原日志:187] 􁁛  Test mountTableMatchesUppercaseSavedScheme() passed after 0.007 seconds.
+[原日志:194] 􁁛  Test memorySecretLifecycle() passed after 0.007 seconds.
+[原日志:200] 􁁛  Test smbDiscoveryClassifiesPermissionAndConnectivityFailures() passed after 0.007 seconds.
+[原日志:206] 􁁛  Test systemMountURLsCoverSMBWebDAVAndNFS() passed after 0.008 seconds.
+[原日志:208] 􁁛  Test mountTableMatchesWebDAVAndRawNFS() passed after 0.008 seconds.
+[原日志:214] 􁁛  Test cameraIdentityPrefersPortAndRejectsAmbiguousSerial() passed after 0.009 seconds.
+[原日志:223] 􁁛  Test nativeMountTableReadsOnlyLocalTemporaryFilesystem() passed after 0.013 seconds.
+[原日志:224] 􁁛  Test expiredRefreshDeadlineCannotAcquireFreeLock() passed after 0.013 seconds.
+[原日志:225] 􁁛  Test blockStreamHardLimitFailsExplicitlyAfterPreviouslyAcceptedBytes() passed after 0.014 seconds.
+[原日志:228] 􁁛  Test spaceInfoNeverProducesNegativeOrOverflowedAvailableCapacity() passed after 0.014 seconds.
+[原日志:229] 􁁛  Test diagnosticStreamRecordsOnlyFailureAndPreservesCancellation() passed after 0.014 seconds.
+[原日志:230] 􁁛  Test diagnosticTransportPreservesUploadAndRedactsResponse() passed after 0.014 seconds.
+[原日志:231] 􁁛  Test sharedHTTPAllowanceHasAccountIdentityAndReleasesUnusedEntries() passed after 0.014 seconds.
+[原日志:232] 􁁛  Test smbURLKeepsCredentialsOutOfMountURL() passed after 0.014 seconds.
+[原日志:233] 􁁛  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() passed after 0.015 seconds.
+[原日志:234] 􁁛  Test posixHTTPTransportMapsEveryRequestPhase(phase:) with 3 test cases passed after 0.014 seconds.
+[原日志:235] 􁁛  Test remotePathParentAndBasenamePreserveNormalizedNames() passed after 0.014 seconds.
+[原日志:236] 􁁛  Test mountTableMatchesEncodedChineseShare(scheme:) with 2 test cases passed after 0.014 seconds.
+[原日志:237] 􁁛  Test spaceInfoDistinguishesUnknownFromRealZero() passed after 0.014 seconds.
+[原日志:238] 􁁛  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() passed after 0.014 seconds.
+[原日志:239] 􁁛  Test usbTimeoutAdviceMatchesTheDeviceInsteadOfNetwork() passed after 0.015 seconds.
+[原日志:241] 􁁛  Test mountTableDecodesExactlyOnceAndPreservesPathCase() passed after 0.014 seconds.
+[原日志:242] 􁁛  Test credentialRefreshLockIdentityMatchesStorageScope() passed after 0.014 seconds.
+[原日志:243] 􁁛  Test diagnosticsExcludeUntrustedErrorMetadata() passed after 0.014 seconds.
+[原日志:244] 􁁛  Test unauthorizedCloudErrorsAskForLogin() passed after 0.015 seconds.
+[原日志:245] 􁁛  Test failedSecretWriteRemainsPendingUntilSaved() passed after 0.014 seconds.
+[原日志:246] 􁁛  Test httpAllowanceSurvivesResponseAndStreamErrors(stream:) with 2 test cases passed after 0.014 seconds.
+[原日志:247] 􁁛  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() passed after 0.015 seconds.
+[原日志:248] 􁁛  Test sharedMissingCheckPropagatesAllNonMissingFailures() passed after 0.014 seconds.
+[原日志:249] 􁁛  Test failedWriteIsSharedBetweenStoreWrappers() passed after 0.014 seconds.
+[原日志:250] 􁁛  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() passed after 0.014 seconds.
+[原日志:251] 􁁛  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() passed after 0.014 seconds.
+[原日志:252] 􁁛  Test localizationFallsBackToKeyAndFormatsArguments() passed after 0.014 seconds.
+[原日志:253] 􁁛  Test networkFailuresMapToPOSIXAndPreserveCancellation() passed after 0.015 seconds.
+[原日志:254] 􁁛  Test packageTranslationIsAvailableWithoutMainApplicationBundle() passed after 0.014 seconds.
+[原日志:255] 􁁛  Test blockStreamPreservesQueuedBytesBeforeCompletionAndError() passed after 0.011 seconds.
+[原日志:256] 􁁛  Test cancellingIdlePendingStateDoesNotStartRemoteWork(state:) with 2 test cases passed after 0.015 seconds.
+[原日志:257] 􁁛  Test mountedCapacityUnknownAndOverflowAreNotZero() passed after 0.011 seconds.
+[原日志:258] 􁁛  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) with 3 test cases passed after 0.011 seconds.
+[原日志:259] 􁁛  Test remoteErrorsBridgeToPOSIXWithoutLosingDescriptions() passed after 0.016 seconds.
+[原日志:260] 􁁛  Test sharedContentRangeRequiresExactBoundsAndTotal() passed after 0.014 seconds.
+[原日志:261] 􁁛  Test timeoutDetailsKeepTheCodeAndDeviceAdvice() passed after 0.014 seconds.
+[原日志:262] 􁁛  Test blockStreamCoalescesTinyCallbacksWithoutChangingBytes() passed after 0.011 seconds.
+[原日志:263] 􁁛  Test credentialRefreshLockRejectsSymlink() passed after 0.011 seconds.
+[原日志:264] 􁁛  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) with 2 test cases passed after 0.016 seconds.
+[原日志:265] 􁁛  Test clearingCacheCannotReachConnectionTestContents() passed after 0.014 seconds.
+[原日志:266] 􁁛  Test blockStreamActualProgressExtendsIdleDeadlineAndLateDataCannotReviveIt() passed after 0.016 seconds.
+[原日志:267] 􁁛  Test configurationLifecycle() passed after 0.011 seconds.
+[原日志:268] 􁁛  Test accountQueueDeadlineDoesNotLoseOrStealAllowance() passed after 0.016 seconds.
+[原日志:269] 􁁛  Test httpStreamHoldsAllowanceUntilFinishedOrDiscarded(discard:) with 2 test cases passed after 0.016 seconds.
+[原日志:270] 􁁛  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() passed after 0.016 seconds.
+[原日志:271] 􁁛  Test uploadProgressExtendsIdleDeadlineButLateProgressDoesNotReviveIt() passed after 0.012 seconds.
+[原日志:272] 􁁛  Test cancelledProgressDeadlineReleasesClockAndOperationWaiters() passed after 0.017 seconds.
+[原日志:273] 􁁛  Test sharedTaskWaiterPreservesFailureAndAlreadyCompletedResult() passed after 0.016 seconds.
+[原日志:274] 􁁛  Test cancelledHTTPWaiterDoesNotConsumeAllowance() passed after 0.017 seconds.
+[原日志:275] 􁁛  Test cancellingOneSharedTaskWaiterDoesNotCancelTheTaskOrOtherWaiters() passed after 0.017 seconds.
+[原日志:276] 􁁛  Test HTTPTransportPreservesErrorStatusAndHeaders() passed after 0.017 seconds.
+[原日志:277] 􁁛  Test blockStreamBackpressurePausesResumesAndExcludesConsumerWaitFromDeadline() passed after 0.014 seconds.
+[原日志:278] 􁁛  Test webDAVParticipatesInSaveMountAndAutoMount() passed after 0.019 seconds.
+[原日志:279] 􁁛  Test blockStreamAbandonedResponseStopsUnderlyingTask() passed after 0.020 seconds.
+[原日志:280] 􁁛  Test blockStreamHeaderTimeoutCancelsUnderlyingTask() passed after 0.015 seconds.
+[原日志:281] 􁁛  Test metadataDeadlineEndsEvenWhileResponseMakesProgress() passed after 0.019 seconds.
+[原日志:282] 􁁛  Test blockStreamCancellationDiscardsQueuedBytesAndStopsTask() passed after 0.016 seconds.
+[原日志:283] 􁁛  Test cameraRemovalClearsConnectionTestResult() passed after 0.020 seconds.
+[原日志:284] 􁁛  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() passed after 0.023 seconds.
+[原日志:285] 􁁛  Test normalSystemUnmountDoesNotReportUnexpectedDisconnect() passed after 0.025 seconds.
+[原日志:286] 􁁛  Test mountFailureCanRetryAndReportsOnce() passed after 0.026 seconds.
+[原日志:287] 􁁛  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn(status:) with 2 test cases passed after 0.027 seconds.
+[原日志:288] 􁁛  Test smbProcessPreservesExitStatusAndBoundsOutput() passed after 0.029 seconds.
+[原日志:289] 􁁛  Test removalUnmountsAndDeletesSecretsAndCache() passed after 0.032 seconds.
+[原日志:290] 􁁛  Test editingOnlyMountedNameKeepsVolume() passed after 0.039 seconds.
+[原日志:291] 􁁛  Test deletingOfficialCloudRemovesItsOAuthToken() passed after 0.041 seconds.
+[原日志:292] 􁁛  Test smbProcessWritesPasswordOnlyToNonEchoingTerminal() passed after 0.046 seconds.
+[原日志:293] 􁁛  Test resourcePermissionErrorsDoNotRequireLogin() passed after 0.048 seconds.
+[原日志:294] 􁁛  Test smbBrowserFailureAllowsRestartAndIgnoresOldEvents() passed after 0.049 seconds.
+[原日志:295] 􁁛  Test refreshLockReleasedBeforeDeadlineCanBeReacquired() passed after 0.049 seconds.
+[原日志:296] 􁁛  Test credentialRefreshLockWaitCanBeCancelled() passed after 0.050 seconds.
+[原日志:297] 􁁛  Test credentialRefreshWaitStopsAtDeadline() passed after 0.050 seconds.
+[原日志:298] 􁁛  Test explicitlyClearingSharePasswordIsPersistedAfterSuccessfulTest() passed after 0.052 seconds.
+[原日志:299] 􁁛  Test smbProcessDrainsTerminalAfterChildExit() passed after 0.053 seconds.
+[原日志:300] 􁁛  Test successfulOperationsRemoveStaleDetailedErrors(operation:) with 3 test cases passed after 0.055 seconds.
+[原日志:301] 􁁛  Test presentationUndoChangesOnlyNameAndColor() passed after 0.057 seconds.
+[原日志:302] 􁁛  Test webDriveAuthenticationFailureAsksForLogin() passed after 0.065 seconds.
+[原日志:303] 􁁛  Test credentialRefreshLockExcludesOtherProcessesAndReleases() passed after 0.067 seconds.
+[原日志:304] 􁁛  Test smbProcessDeadlineIncludesBlockedPasswordInput() passed after 0.071 seconds.
+[原日志:305] 􁁛  Test expectedSystemUnmountIsQuietBeforeDidUnmountNotification() passed after 0.072 seconds.
+[原日志:306] 􁁛  Test refreshWaitTimeoutPreservesPendingCredentialAndOwnerLock() passed after 0.073 seconds.
+[原日志:307] 􁁛  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() passed after 0.082 seconds.
+[原日志:308] 􁁛  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() passed after 0.085 seconds.
+[原日志:309] 􁁛  Test networkPermissionFailureDoesNotRequireLogin(code:) with 2 test cases passed after 0.086 seconds.
+[原日志:310] 􁁛  Test editSortAndRestartPreserveConfiguration() passed after 0.094 seconds.
+[原日志:311] 􁁛  Test devicePresenceUsesSavedIdentityInsteadOfDuplicateSerial(kind:) with 3 test cases passed after 0.096 seconds.
+[原日志:312] 􁁛  Test reorderToEndAndUndoPreservesPersistentOrder() passed after 0.097 seconds.
+[原日志:313] 􁁛  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) with 2 test cases passed after 0.097 seconds.
+[原日志:314] 􁁛  Test genericCameraRemovalClearsConnectionTestResult() passed after 0.099 seconds.
+[原日志:315] 􁁛  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) with 2 test cases passed after 0.100 seconds.
+[原日志:316] 􁁛  Test cancelledEjectionRestoresActualMountedState(explicit:) with 2 test cases passed after 0.100 seconds.
+[原日志:317] 􁁛  Test explicitEjectNeverMountsAnAlreadyGoneVolume() passed after 0.100 seconds.
+[原日志:318] 􁁛  Test deliveredMountIsNotEjectedByLaterFailure() passed after 0.102 seconds.
+[原日志:319] 􁁛  Test credentialRollbackFailureDoesNotReplaceConfigurationError() passed after 0.107 seconds.
+[原日志:320] 􁁛  Test explicitEjectFailureKeepsVolumeAvailableForRetry() passed after 0.108 seconds.
+[原日志:321] 􁁛  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() passed after 0.108 seconds.
+[原日志:322] 􁁛  Test startupMountsOnlyEnabledUnMountedConnections() passed after 0.110 seconds.
+[原日志:323] 􁁛  Test connectionLogsNeverIncludeUnknownErrorDetails() passed after 0.111 seconds.
+[原日志:324] 􁁛  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() passed after 0.117 seconds.
+[原日志:325] 􁁛  Test usbTimeoutAdviceSurvivesSaveAndRetestErrorEntrypoints() passed after 0.118 seconds.
+[原日志:326] 􁁛  Test testingExistingConnectionDoesNotUnmountIt() passed after 0.118 seconds.
+[原日志:327] 􁁛  Test futureConfigIsNotOverwritten() passed after 0.122 seconds.
+[原日志:328] 􁁛  Test removalSaveFailurePreservesCredentialsAndCache(kind:) with 12 test cases passed after 0.127 seconds.
+[原日志:329] 􁁛  Test rejectsWrongPasswordBeforeSaving() passed after 0.127 seconds.
+[原日志:330] 􁁛  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() passed after 0.129 seconds.
+[原日志:331] 􁁛  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) with 8 test cases passed after 0.130 seconds.
+[原日志:332] 􁁛  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() passed after 0.131 seconds.
+[原日志:333] 􁁛  Test removedSMBServiceCancelsPendingResolutionRetry() passed after 0.131 seconds.
+[原日志:334] 􁁛  Test failedUnmountKeepsConnectionAndSecret() passed after 0.131 seconds.
+[原日志:335] 􁁛  Test clearingSharePasswordRollsBackWhenConfigurationCannotBeSaved() passed after 0.131 seconds.
+[原日志:336] 􁁛  Test lateMountCleanupFailureDoesNotSkipOtherMounts() passed after 0.131 seconds.
+[原日志:337] 􁁛  Test saveFailureWithEmptyPasswordKeepsExistingCredential() passed after 0.129 seconds.
+[原日志:338] 􁁛  Test rejectsMissingShareAndInvalidFields() passed after 0.134 seconds.
+[原日志:339] 􁁛  Test mountedCapacityCompletionDoesNotNeedTimerToExpire() passed after 0.134 seconds.
+[原日志:340] 􁁛  Test systemMountTestNeverRecursivelyDeletesRemoteFiles() passed after 0.133 seconds.
+[原日志:341] 􁁛  Test smbResolutionRetriesAndKeepsSuccessfulHost() passed after 0.134 seconds.
+[原日志:342] 􁁛  Test autoMountUsesCurrentConfigurationAfterAwait(operation:) with 3 test cases passed after 0.135 seconds.
+[原日志:343] 􁁛  Test lateCapacityRefreshCannotRestoreRemovedConnection() passed after 0.136 seconds.
+[原日志:344] 􁁛  Test testedOrConnectingDeviceDisconnectNotifiesOnce(kind:connecting:) with 8 test cases passed after 0.136 seconds.
+[原日志:345] 􁁛  Test capacityRefreshUpdatesCurrentMountWithoutDuplicateRequest() passed after 0.136 seconds.
+[原日志:346] 􁁛  Test concurrentAutoMountRequestsDoNotMountTwice() passed after 0.137 seconds.
+[原日志:347] 􁁛  Test cancelledConnectionTestCannotSaveLateResult() passed after 0.140 seconds.
+[原日志:348] 􁁛  Test systemMountDelegatesCredentialsAndParsesSharesWithoutNetwork() passed after 0.139 seconds.
+[原日志:349] 􁁛  Test connectionFailuresLogOnceWithoutExtraMountNotifications() passed after 0.140 seconds.
+[原日志:350] 􁁛  Test cameraCallExpiresWithoutStartingAndRejectsLateSuccess() passed after 0.136 seconds.
+[原日志:351] 􁁛  Test cameraCallCompletesOnceAndPreservesFailure() passed after 0.140 seconds.
+[原日志:352] 􁁛  Test mountRequestRejectsEmptySuccessfulResponse() passed after 0.140 seconds.
+[原日志:353] 􁁛  Test smbResolutionStopsRetryingAfterThreeAttempts() passed after 0.140 seconds.
+[原日志:354] 􁁛  Test systemMountCapacityUsesFreshMatchingIdentityAndClearsOldCache() passed after 0.140 seconds.
+[原日志:355] 􁁛  Test mountedCapacityQueryRunsOffMainActorAndHasDeadline() passed after 0.136 seconds.
+[原日志:356] 􁁛  Test mountRequestBuildsOptionsAndDeliversNativeResult() passed after 0.140 seconds.
+[原日志:357] 􁁛  Test cameraCallTimeoutAndCancellationFinishPendingRequest() passed after 0.139 seconds.
+[原日志:358] 􁁛  Test mountRequestNativeFailureTimeoutAndCancellation() passed after 0.138 seconds.
+[原日志:359] 􁁛  Test run with 142 tests in 0 suites passed after 0.141 seconds.

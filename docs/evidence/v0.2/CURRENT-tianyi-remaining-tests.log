@@ -1,0 +1,49 @@
+Building for debugging...
+[Planning deferred tasks]
+[13 / 43] CoreNative
+[14 / 43] Core
+[32 / 61] Core
+[37 / 60] Core
+[46 / 69] Core
+[52 / 65] TianyiDrive
+[54 / 65] TianyiDrive
+[56 / 65] TianyiDriveTests-product
+[60 / 69] TianyiDriveTests-product
+[64 / 68] TianyiDriveTests-product
+[66 / 68] TianyiDriveTests-product
+Build complete! (4.30秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) started.
+􀟈  Test tianyiDelayedListCannotRestoreDeletedEntryInCache() started.
+􀟈  Test tianyiLoginSendsScopedCookieAndFollowsRedirectLocation() started.
+􀟈  Test malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) started.
+􀟈  Test tianyiCompletedTaskWithFailedItemsIsNotSuccess() started.
+􀟈  Test tianyiRepeatedTaskProgressStillTimesOut() started.
+􀟈  Test tianyiRepeatedFileIdentityDoesNotProduceDuplicatePaths() started.
+􀟈  Test tianyiCrossDirectoryRenameAvoidsBothIntermediateNameConflicts() started.
+􀟈  Test tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails:) started.
+􀟈  Test case passing 1 argument reason → "captcha_required" to tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) started.
+􀟈  Test case passing 1 argument problem → "negative-size" to malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) started.
+􀟈  Test case passing 1 argument problem → "missing-size" to malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) started.
+􀟈  Test case passing 1 argument problem → "invalid-name" to malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) started.
+􀟈  Test case passing 1 argument reason → "risk_control" to tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) started.
+􀟈  Test case passing 1 argument problem → "missing-id" to malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) started.
+􀟈  Test tianyiTaskProgressExtendsIdleDeadline() started.
+􀟈  Test case passing 1 argument rollbackFails → false to tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails:) started.
+􀟈  Test case passing 1 argument rollbackFails → true to tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails:) started.
+􀟈  Test case passing 1 argument reason → "需要验证码" to tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) started.
+􀟈  Test tianyiLoginValidatesBeforeReplacingSavedCredentials() started.
+􁁛  Test tianyiLoginValidatesBeforeReplacingSavedCredentials() passed after 0.007 seconds.
+􁁛  Test tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) with 3 test cases passed after 0.008 seconds.
+􁁛  Test tianyiCompletedTaskWithFailedItemsIsNotSuccess() passed after 0.008 seconds.
+􁁛  Test tianyiLoginSendsScopedCookieAndFollowsRedirectLocation() passed after 0.009 seconds.
+􁁛  Test tianyiRepeatedFileIdentityDoesNotProduceDuplicatePaths() passed after 0.013 seconds.
+􁁛  Test malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) with 4 test cases passed after 0.013 seconds.
+􁁛  Test tianyiDelayedListCannotRestoreDeletedEntryInCache() passed after 0.015 seconds.
+􁁛  Test tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails:) with 2 test cases passed after 0.020 seconds.
+􁁛  Test tianyiCrossDirectoryRenameAvoidsBothIntermediateNameConflicts() passed after 0.021 seconds.
+􁁛  Test tianyiRepeatedTaskProgressStillTimesOut() passed after 0.119 seconds.
+􁁛  Test tianyiTaskProgressExtendsIdleDeadline() passed after 0.277 seconds.
+􁁛  Test run with 11 tests in 0 suites passed after 0.278 seconds.

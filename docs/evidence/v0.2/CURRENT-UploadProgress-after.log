@@ -1,0 +1,15 @@
+Building for debugging...
+[2 / 12] S3Drive
+[4 / 14] S3Drive
+[8 / 18] S3Drive
+[14 / 25] S3DriveTests-product
+[20 / 31] S3DriveTests-product
+[22 / 28] S3DriveTests-product
+[24 / 28] S3DriveTests-product
+Build complete! (2.70秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test concurrentUploadsKeepTheirInitialProgressCallback() started.
+􁁛  Test concurrentUploadsKeepTheirInitialProgressCallback() passed after 0.006 seconds.
+􁁛  Test run with 1 test in 0 suites passed after 0.006 seconds.

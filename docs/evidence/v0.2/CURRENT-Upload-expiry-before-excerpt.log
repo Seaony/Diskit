@@ -1,0 +1,12 @@
+# 失败基线摘录，原日志/tmp/kayoi-upload-expiry-red.log；保留测试错误和终结结果，省略编译器长命令。
+[原日志:25] 􁁛  Test drive123ExpiredAccessTokenRetriesSameSliceWithoutRestarting(businessCode:) with 2 test cases passed after 0.009 seconds.
+[原日志:26] 􀢄  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) recorded an issue with 1 argument code → "SecurityTokenExpired" at UploadExpiryRecoveryTests.swift:109:3: Expectation failed: tokens.withLock { $0 } == (code == "SecurityTokenExpired" ? 2 : 1)
+[原日志:30] 􀢄  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) recorded an issue with 1 argument code → "SecurityTokenExpired" at UploadExpiryRecoveryTests.swift:110:3: Expectation failed: uploads.withLock { $0 } == (code == "SecurityTokenExpired" ? 2 : 1)
+[原日志:34] 􀢄  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) with 3 test cases failed after 0.010 seconds with 2 issues.
+[原日志:35] 􀢄  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) recorded an issue with 1 argument stage → "complete" at UploadExpiryRecoveryTests.swift:38:2: Caught error: .posix(13)
+[原日志:36] 􀢄  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) recorded an issue with 1 argument stage → "part" at UploadExpiryRecoveryTests.swift:38:2: Caught error: .posix(13)
+[原日志:37] 􀢄  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) recorded an issue with 1 argument stage → "single" at UploadExpiryRecoveryTests.swift:38:2: Caught error: .posix(13)
+[原日志:38] 􀢄  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) recorded an issue with 1 argument stage → "initiate" at UploadExpiryRecoveryTests.swift:38:2: Caught error: .posix(13)
+[原日志:39] 􀢄  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) with 4 test cases failed after 0.012 seconds with 4 issues.
+[原日志:40] 􁁛  Test baiduExpiredAccessTokenRetriesSamePartWithoutRestarting(businessCode:) with 2 test cases passed after 0.028 seconds.
+[原日志:41] 􀢄  Test run with 4 tests in 0 suites failed after 0.028 seconds with 6 issues.

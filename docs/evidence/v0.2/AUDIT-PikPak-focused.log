@@ -1,0 +1,32 @@
+六项审计回归：仅定向 swift test，退出 0。
+􀟈  Test run started.
+􀟈  Test customPikPakRootRemainsParentForListingAndCreation() started.
+􀟈  Test persistentCaptchaFailureDoesNotBlamePasswordOrInvalidateLogin() started.
+􀟈  Test pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􀟈  Test pikPakMkdirRejectsExistingDirectory() started.
+􀟈  Test captchaCacheIsBoundedAndChangesWithStoredIdentity() started.
+􀟈  Test pikPakMoveRenamesByIdentityAfterDestinationAutoRename() started.
+􀟈  Test case passing 1 argument disconnect → true to pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􀟈  Test case passing 1 argument disconnect → false to pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􁁛  Test persistentCaptchaFailureDoesNotBlamePasswordOrInvalidateLogin() passed after 0.004 seconds.
+􁁛  Test pikPakMkdirRejectsExistingDirectory() passed after 0.007 seconds.
+􁁛  Test customPikPakRootRemainsParentForListingAndCreation() passed after 0.007 seconds.
+􁁛  Test pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test pikPakMoveRenamesByIdentityAfterDestinationAutoRename() passed after 0.008 seconds.
+􁁛  Test captchaCacheIsBoundedAndChangesWithStoredIdentity() passed after 0.027 seconds.
+􁁛  Test run with 6 tests in 0 suites passed after 0.027 seconds.
+
+链接缓存与任务无进展回归：仅定向 swift test，退出 0。
+􀟈  Test run started.
+􀟈  Test pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "advancing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument reject → false to pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "stalled" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument reject → true to pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "regressing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument mode → "missing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument mode → "slow" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􁁛  Test pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) with 5 test cases passed after 0.176 seconds.
+􁁛  Test run with 2 tests in 0 suites passed after 0.177 seconds.

@@ -1,0 +1,42 @@
+# 集中验收前交接（不表示运行通过）
+
+实现已交中央集成，编译/测试/截图/性能尚未通过；下列已有局部或静态证据只适用于交接注明的时点。
+
+# FEAT-07 / FEAT-08 交接
+
+## 实际拆分
+
+- Core/RemoteFileProvider.swift 仅协议与同语义ensureMissing扩展；RemotePath、ProviderCapabilities、SpaceInfo、RemoteItem、RemoteError、HumanError各移同名文件。
+- 原Core/SMB.swift移除，MountedShare、SMBServing（含默认refreshMounted）、SMBAddress、SystemMountAddress、SystemSMBService、MountRequest、UnmountRequest各同名文件。UnmountRequest由private改internal供跨文件引用；filesystemID仍internal，CapacityKey仍嵌套private。日志所有者device_timeouts已获知新路径并继续在新文件追加安全日志。
+- CloudDrive/OAuthSession.swift保留主体、同类型extension及私有Data编码；OAuthConfiguration、OAuthTokenRequestPlacement、OAuthToken、OAuthProfile、OAuthProfileProviding、OAuthDriveError各同名文件。完整保留oauth代理最新SharedTaskWaiter/deadline改动。
+- AliyunOAuth.swift移除，AliyunSession、AliyunError、AliyunConfiguration、AliyunAccount、AliyunStoredAuthorization各同名文件。完整保留刷新/时钟注入及LF翻译修改。
+- QuarkSession.swift仅session；QuarkError、QuarkAccount、QuarkCookie、QuarkCloudService、QuarkCloudConfiguration各同名文件。QuarkCookie与QuarkSession.trusted由文件私有改internal以跨文件复用，无公开API扩张。
+- ADBProvider与私有ADBReadCursor移ADBProvider.swift；ADBSync.swift保留帧编解码。既有业务回归保留，旧证据文件附迁移说明。
+
+## 实际去重
+
+- Core/RemotePath.swift集中parent/basename；各provider原私有同名入口仅一行委托，保留调用位置避免大规模重写；不再重复try!构造。规范化路径内部初始化不重新抛错。RemoteSupportTests.remotePathParentAndBasenamePreserveNormalizedNames覆盖根、单级、多级、空格与加号。
+- Core/HTTPContentRange.swift集中精确边界/已知总长校验；Aliyun/PikPak/Tianyi/Quark/ChinaWeb共用，ChinaWeb先lowercased保留原大小写语义。S3校验允许请求超过EOF、蓝奏支持未知总长*并返回真实读取长度，语义不同明确保留。sharedContentRangeRequiresExactBoundsAndTotal回归。
+- Core/RemoteFileProvider.ensureMissing集中仅ENOENT/HTTP404表示缺失的规则；Baidu/115/123/OneDrive/Dropbox删五段复制实现。Google按真实显示名查询并支持稳定身份路径，S3区分对象与目录占位，不能替换为相同stat规则。sharedMissingCheckPropagatesAllNonMissingFailures覆盖存在/缺失/权限/协议/超时。
+- Core/CameraIdentity.swift由两包逐字相同实现合并，生产两包直接用Core类型，原IdentityTests保留并import Core。
+- Core/CameraCall.swift合并两份相同回调/取消/截止桥接；保留international最新假时钟注入，public无参数init生产默认、internal注入init供@testable Core的现有DeadlineTests。Provider/Discovery及适配器不强行合并：Ricoh走GR IV专用PTP/transaction与唯一型号过滤，CameraUSB使用通用ICCameraFile访问/不同设备过滤；目前相同桥接与身份逻辑均已实际合Core。
+- CoreTestSupport依赖Core，新增TestSecretStore，合并Aliyun两份、Quark两份、Cloud三份、PikPak/Tianyi共九份存储替身；保留failWrites、nextRead事件、values及string原测试接口。三Cloud文件FakeTransport/ProviderFakeTransport提为ScriptedHTTPTransport，保留FIFO响应/记录/上传记录/流正文。各包特有端点断言、重试时序/主动阻塞probe保留，不能退化为无差别200。
+
+## 列明死代码逐条
+
+删除 WirelessSelection.select、其孤立WirelessRoute及仅调用select的断言；保留真实生产用matches/serial与ID端口稳定测试，真正USB优先路径是ADBProviderFactory.makeSession。
+保留 ADBSession.readChunk：ADBProvider.executeShell旧协议生产仍用，原审计已过时。
+删除 ConfigurationStore.delete及仅测试此无生产入口的三行调用断言；read/write生命周期断言保留。
+百度downloadLinks此前百度修复已删除（旧缓存没有读取使用）。
+删除 Drive115DownloadEnvelope、TianyiCreatedNode，无任何生产引用。
+删除 ChinaWebSupport.jsonRequest和仅覆盖它的RequestTimeoutTests.swift，不能再把该测试报告成生产超时证据；真实session请求timeout由其本身设置与现有回归覆盖。
+删除 MobileCloudSession.loginURL、XunleiSession.loginURL，真正网页登录URL由App/Logic/WebLoginService提供。
+删除只有import Core的AliyunDrive.swift、Quark.swift。
+未删除仍在生产使用的Quark配置、ADB旧shell、各业务resolve/children/invalidate；后者涉及不同ID模型、缓存代次、业务分页和冲突规则，不属于可无损共用的相同算法。
+
+## 验证与归属
+
+swift format仅整理拆分文件；swiftc -frontend -parse所列新Core类型、CoreTestSupport、Quark、Aliyun、OAuth类型、ADBProvider/ADBSync和新RemoteSupportTests通过。git diff --check -- Packages通过。无构建/测试/提交，完整语义编译与测试交root统一执行，不宣称通过。
+CoreTestSupport扩展已与international协调；SMB释放已与device_timeouts确认；OAuth/Aliyun等oauth代理最新修复交回后才拆；ADB/camera已与drive115_123确认；App大视图/UI文件未修改。仅另应posix_errors请求将Baidu profile默认“百度网盘”用L包装。
+
+FEAT07/08本组原证据行号因为文件迁移须统一报告以最终路径为准；全部新文件尚未暂存，不要漏掉git add新类型/测试支持。

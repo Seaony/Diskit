@@ -1,0 +1,23 @@
+Building for debugging...
+[Pre-planning 1 / 214]
+[Planning deferred tasks]
+[8 / 37]
+[10 / 35] Core
+[27 / 52] Core
+[31 / 58] CoreTestSupport
+[45 / 72] CoreTestSupport
+[47 / 72] CoreTestSupport
+[52 / 72] TianyiDrive
+[55 / 72] CoreTestSupport
+[55 / 72] TianyiDrive
+[60 / 71] TianyiDriveTests-product
+[65 / 76] TianyiDriveTests-product
+[69 / 75] TianyiDriveTests-product
+[71 / 75] TianyiDriveTests-product
+Build complete! (6.85秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test tianyiSharedDateParsersPreserveFormatsUnderConcurrency() started.
+􁁛  Test tianyiSharedDateParsersPreserveFormatsUnderConcurrency() passed after 0.029 seconds.
+􁁛  Test run with 1 test in 0 suites passed after 0.029 seconds.

@@ -1,0 +1,49 @@
+Building for debugging...
+[Pre-planning 1 / 155]
+[Planning deferred tasks]
+[11 / 40] Core
+[20 / 49] Core
+[21 / 50] Core
+[22 / 49] Core
+[26 / 49] Quark
+[31 / 54] Core
+[37 / 50] Quark
+[41 / 50] QuarkTests-product
+[46 / 55] QuarkTests-product
+[50 / 54] QuarkTests-product
+[52 / 54] QuarkTests-product
+Build complete! (3.43秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test quarkRangesReuseLinkForUnchangedFileMetadata() started.
+􀟈  Test quarkUploadUsesDestinationExtensionForFormat() started.
+􀟈  Test quarkTemporaryRejectionKeepsCookieAndCanRecover() started.
+􀟈  Test quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers:) started.
+􀟈  Test quarkCrossDirectoryRenameAvoidsUnrelatedOriginalName() started.
+􀟈  Test quarkDeleteTaskFailureIsNotReportedAsSuccess() started.
+􀟈  Test quarkFailedFinalRenameMovesBackBeforeRestoringOriginalName() started.
+􀟈  Test quarkFailedMoveAndRecoveryPreserveBothErrors() started.
+􀟈  Test quarkServerFailureCannotDeleteCookieThroughLoginLikeBody() started.
+􀟈  Test quarkLateListingCannotUndoDeletion() started.
+􀟈  Test quarkMoveWaitsForTaskBeforeRenaming() started.
+􀟈  Test quarkExistingDirectoryReportsConflict() started.
+􀟈  Test quarkFailedStagedMoveRestoresOriginalName() started.
+􀟈  Test case passing 1 argument recovers → true to quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers:) started.
+􀟈  Test case passing 1 argument recovers → false to quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers:) started.
+􀟈  Test quarkLatestListingWinsAndDisconnectRejectsLateReplies() started.
+􁁛  Test quarkServerFailureCannotDeleteCookieThroughLoginLikeBody() passed after 0.003 seconds.
+􁁛  Test quarkTemporaryRejectionKeepsCookieAndCanRecover() passed after 0.003 seconds.
+􁁛  Test quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test quarkExistingDirectoryReportsConflict() passed after 0.005 seconds.
+􁁛  Test quarkLateListingCannotUndoDeletion() passed after 0.006 seconds.
+􁁛  Test quarkDeleteTaskFailureIsNotReportedAsSuccess() passed after 0.006 seconds.
+􁁛  Test quarkMoveWaitsForTaskBeforeRenaming() passed after 0.006 seconds.
+􁁛  Test quarkFailedMoveAndRecoveryPreserveBothErrors() passed after 0.006 seconds.
+􁁛  Test quarkFailedStagedMoveRestoresOriginalName() passed after 0.006 seconds.
+􁁛  Test quarkRangesReuseLinkForUnchangedFileMetadata() passed after 0.006 seconds.
+􁁛  Test quarkFailedFinalRenameMovesBackBeforeRestoringOriginalName() passed after 0.006 seconds.
+􁁛  Test quarkCrossDirectoryRenameAvoidsUnrelatedOriginalName() passed after 0.006 seconds.
+􁁛  Test quarkLatestListingWinsAndDisconnectRejectsLateReplies() passed after 0.006 seconds.
+􁁛  Test quarkUploadUsesDestinationExtensionForFormat() passed after 0.007 seconds.
+􁁛  Test run with 14 tests in 0 suites passed after 0.007 seconds.

@@ -1,0 +1,4 @@
+# 定向证据摘录；原日志/tmp/kayoi-quark-name-focused.log；省略编译命令，不代表最新整轮回归。
+[原日志:22] 􁁛  Test quarkNameEntitiesPreserveUnsupportedInputAndUnicodeBoundaries() passed after 0.001 seconds.
+[原日志:23] 􁁛  Test quarkFilesPaginationAndDecodedNames() passed after 0.005 seconds.
+[原日志:24] 􁁛  Test run with 2 tests in 0 suites passed after 0.005 seconds.

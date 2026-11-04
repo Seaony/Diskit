@@ -1,0 +1,114 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/CloudDrive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:19] Test Suite 'All tests' passed at 2026-11-04 20:41:18.143.
+[原日志:197] 􁁛  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) with 6 test cases passed after 0.005 seconds.
+[原日志:202] 􁁛  Test businessErrorsUseExactCodesAndDoNotTreatEveryConflictAsDuplicate() passed after 0.005 seconds.
+[原日志:233] 􁁛  Test multipartMetadataDoesNotUseUploadTimeout() passed after 0.007 seconds.
+[原日志:238] 􁁛  Test drive115OSSCallbackHeadersEncodeJSONAndEmptySubresource() passed after 0.007 seconds.
+[原日志:239] 􁁛  Test googleDesktopRedirectRejectsInvalidClientIdentifier(_:) with 7 test cases passed after 0.007 seconds.
+[原日志:240] 􁁛  Test cloudMetadataRequestsUseThirtySeconds() passed after 0.007 seconds.
+[原日志:241] 􁁛  Test oauthTokenReplacementDoesNotInterpretUnrelatedBodies() passed after 0.007 seconds.
+[原日志:242] 􁁛  Test oauthTokenReplacementPreservesUnrelatedEncodedFields() passed after 0.007 seconds.
+[原日志:243] 􁁛  Test onlyExplicitOAuthLoginFailureRequiresReauthentication() passed after 0.007 seconds.
+[原日志:244] 􁁛  Test multipartFileUsesSixtySecondIdleInterval() passed after 0.007 seconds.
+[原日志:245] 􁁛  Test googleDesktopRedirectUsesReversedClientIdentifierAndSingleSlash() passed after 0.006 seconds.
+[原日志:246] 􁁛  Test drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) with 3 test cases passed after 0.007 seconds.
+[原日志:247] 􁁛  Test explicitNonReplayableGetIsNotRetried() passed after 0.017 seconds.
+[原日志:248] 􁁛  Test streamRetryReleasesRejectedBodyBeforeNextRequest() passed after 0.017 seconds.
+[原日志:249] 􁁛  Test pkceChallengeMatchesTheVerifierSentWithTheCode() passed after 0.017 seconds.
+[原日志:250] 􁁛  Test successfulCloudDataIsNotAnErrorBecauseOfItsFilename(_:) with 6 test cases passed after 0.017 seconds.
+[原日志:251] 􁁛  Test uploadDoesNotAcquireMetadataTotalDeadline() passed after 0.015 seconds.
+[原日志:252] 􁁛  Test retryAfterBeyondBudgetIsNotShortened() passed after 0.017 seconds.
+[原日志:253] 􁁛  Test nonIdempotentCloudPostIsNeverAutomaticallyReplayed(status:upload:) with 6 test cases passed after 0.015 seconds.
+[原日志:254] 􁁛  Test buildsAuthorizationURLAndExchangesCode() passed after 0.017 seconds.
+[原日志:255] 􁁛  Test rateLimitedUploadRetryKeepsTransferRoute() passed after 0.018 seconds.
+[原日志:256] 􁁛  Test transientNetworkRetryIsLimitedToReplayableRequests(read:) with 2 test cases passed after 0.020 seconds.
+[原日志:257] 􁁛  Test readRetriesHonorDeadlineIncludingBackoff(stream:) with 2 test cases passed after 0.019 seconds.
+[原日志:258] 􁁛  Test repeatedReadRequestsShareOneDeadline() passed after 0.022 seconds.
+[原日志:259] 􁁛  Test drive115RefreshRateLimitKeepsLoginWithoutReplayingGrant() passed after 0.025 seconds.
+[原日志:260] 􁁛  Test publicPKCEClientNeverSendsConfiguredSecret(refresh:) with 2 test cases passed after 0.027 seconds.
+[原日志:261] 􁁛  Test drive115RefreshTokenErrorInvalidatesLogin() passed after 0.026 seconds.
+[原日志:262] 􁁛  Test commonOAuthTransientRefreshPreservesLogin(_:) with 4 test cases passed after 0.028 seconds.
+[原日志:263] 􁁛  Test rateLimitedRequestRetriesAfterHeaderDelay() passed after 0.028 seconds.
+[原日志:264] 􁁛  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) with 2 test cases passed after 0.030 seconds.
+[原日志:265] 􁁛  Test baiduRejectsAmbiguousPathLookups() passed after 0.032 seconds.
+[原日志:266] 􁁛  Test drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst:) with 2 test cases passed after 0.033 seconds.
+[原日志:267] 􁁛  Test baiduMalformedListingCannotAuthorizeCreatingAnExistingPath() passed after 0.033 seconds.
+[原日志:268] 􁁛  Test drive123UsesTheOfficialTenBillionByteLimit() passed after 0.034 seconds.
+[原日志:269] 􁁛  Test commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.034 seconds.
+[原日志:270] 􁁛  Test cancelledOAuthWaiterDoesNotLoseRotatedTokenAfterStorageFailure() passed after 0.037 seconds.
+[原日志:271] 􁁛  Test missingRefreshTokenInvalidatesLogin() passed after 0.039 seconds.
+[原日志:272] 􁁛  Test drive115NumericBusinessStateRefreshesAuthentication() passed after 0.039 seconds.
+[原日志:273] 􁁛  Test drive115SpaceRefreshesAfterConnection() passed after 0.039 seconds.
+[原日志:274] 􁁛  Test cancelledOAuthWaiterKeepsOneSharedRefreshForOtherCallers() passed after 0.038 seconds.
+[原日志:275] 􁁛  Test googleQuotaRejectsMalformedByteCounts(_:) with 3 test cases passed after 0.040 seconds.
+[原日志:276] 􁁛  Test googleWorkspaceNativeFilesRejectMediaReads() passed after 0.039 seconds.
+[原日志:277] 􁁛  Test googleDriveRefusesToUploadOverAnExistingName() passed after 0.040 seconds.
+[原日志:278] 􁁛  Test dropboxRootUsesEmptyPath() passed after 0.040 seconds.
+[原日志:279] 􁁛  Test oneDriveRefusesToReplaceAnExistingName() passed after 0.037 seconds.
+[原日志:280] 􁁛  Test dropboxUnknownLookupFailureNeverMoves() passed after 0.037 seconds.
+[原日志:281] 􁁛  Test OAuthUploadRetryKeepsTransferRoute() passed after 0.039 seconds.
+[原日志:282] 􁁛  Test drive115FindsDuplicateAcrossShortPages() passed after 0.040 seconds.
+[原日志:283] 􁁛  Test dropboxProfileDecodesDocumentedDisplayName() passed after 0.041 seconds.
+[原日志:284] 􁁛  Test baiduStatUsesParentListAndDoesNotReuseStaleIdentity() passed after 0.038 seconds.
+[原日志:285] 􁁛  Test temporaryRefreshFailureKeepsExistingToken() passed after 0.043 seconds.
+[原日志:286] 􁁛  Test commonOAuthRefreshRecoversAfterServerFailure() passed after 0.043 seconds.
+[原日志:287] 􁁛  Test officialProviderFileDatesPreserveMilliseconds(_:_:) with 6 test cases passed after 0.040 seconds.
+[原日志:288] 􁁛  Test OAuthCallerDeadlineDoesNotWaitForSharedRefreshToFinish(entry:) with 5 test cases passed after 0.042 seconds.
+[原日志:289] 􁁛  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) with 2 test cases passed after 0.044 seconds.
+[原日志:290] 􁁛  Test googleDriveSmallUploadUsesMultipartEndpoint() passed after 0.045 seconds.
+[原日志:291] 􁁛  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) with 4 test cases passed after 0.045 seconds.
+[原日志:292] 􁁛  Test dropboxContentHeadersRoundTripUnicodeAndDEL() passed after 0.044 seconds.
+[原日志:293] 􁁛  Test commonOAuthObservesCredentialsChangedByAnotherSession() passed after 0.042 seconds.
+[原日志:294] 􁁛  Test baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID:) with 2 test cases passed after 0.046 seconds.
+[原日志:295] 􁁛  Test sameDirectoryRenameDoesNotIssueMove(kind:) with 2 test cases passed after 0.046 seconds.
+[原日志:296] 􁁛  Test refreshUsesItsOwnEndpoint() passed after 0.046 seconds.
+[原日志:297] 􁁛  Test drive123ChecksEverySliceBeforePublishing(status:) with 2 test cases passed after 0.044 seconds.
+[原日志:298] 􁁛  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) with 2 test cases passed after 0.046 seconds.
+[原日志:299] 􁁛  Test unauthorizedResponseRefreshesAndRetriesOnlyOnce() passed after 0.045 seconds.
+[原日志:300] 􁁛  Test dropboxMissingDestinationAllowsMove() passed after 0.047 seconds.
+[原日志:301] 􁁛  Test googleDriveFollowsPageToken() passed after 0.047 seconds.
+[原日志:302] 􁁛  Test oneDriveFollowsNextLink() passed after 0.047 seconds.
+[原日志:303] 􁁛  Test oneDrivePreconditionFailureIsNameConflict() passed after 0.046 seconds.
+[原日志:304] 􁁛  Test baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) with 5 test cases passed after 0.048 seconds.
+[原日志:305] 􁁛  Test googleAboutUsesExactDocumentedURLAndStringQuota() passed after 0.047 seconds.
+[原日志:306] 􁁛  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() passed after 0.046 seconds.
+[原日志:307] 􁁛  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() passed after 0.049 seconds.
+[原日志:308] 􁁛  Test baiduListsOnlyTheConfiguredAppDirectoryAndReadsRanges() passed after 0.049 seconds.
+[原日志:309] 􁁛  Test drive115UploadCallbackFailureNeverReportsSuccess(status:) with 2 test cases passed after 0.047 seconds.
+[原日志:310] 􁁛  Test baiduFetchesEveryThousandEntryPage() passed after 0.050 seconds.
+[原日志:311] 􁁛  Test drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() passed after 0.049 seconds.
+[原日志:312] 􁁛  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) with 3 test cases passed after 0.048 seconds.
+[原日志:313] 􁁛  Test dropboxUploadSessionHandlesLastPartialChunk() passed after 0.049 seconds.
+[原日志:314] 􁁛  Test oneDriveBoundsDirectUploadMemoryEvenBelowServiceLimit() passed after 0.047 seconds.
+[原日志:315] 􁁛  Test drive123CompletionDeadlineCancelsSlowPollRequest() passed after 0.048 seconds.
+[原日志:316] 􁁛  Test oneDriveRangeReadAndErrorsAreMapped() passed after 0.050 seconds.
+[原日志:317] 􁁛  Test googleIdentityPathCannotEscapeItsListedParent() passed after 0.050 seconds.
+[原日志:318] 􁁛  Test dropboxFollowsCursorAndRejectsMissingRange() passed after 0.050 seconds.
+[原日志:319] 􁁛  Test googleIdentityPathRemainsUsableWhenDuplicateDisappears() passed after 0.050 seconds.
+[原日志:320] 􁁛  Test googleSameFolderRenameOmitsParentMutationAndEncodesPlus() passed after 0.048 seconds.
+[原日志:321] 􁁛  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases passed after 0.051 seconds.
+[原日志:322] 􁁛  Test baiduRateLimitAndDuplicatePathNeverTriggerMutation() passed after 0.051 seconds.
+[原日志:323] 􁁛  Test oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) with 3 test cases passed after 0.050 seconds.
+[原日志:324] 􁁛  Test googleMovingIdentityPathKeepsOriginalRemoteName() passed after 0.051 seconds.
+[原日志:325] 􁁛  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesQueryToken() passed after 0.049 seconds.
+[原日志:326] 􁁛  Test emptyRangesReturnWithoutNetworkForAllProviders() passed after 0.050 seconds.
+[原日志:327] 􁁛  Test cloudProvidersShareAccountRequestAllowance(kind:) with 6 test cases passed after 0.052 seconds.
+[原日志:328] 􁁛  Test baiduUploadUsesOfficialBlocksAndRefusesExistingTargets() passed after 0.049 seconds.
+[原日志:329] 􁁛  Test googleDriveResumableUploadSplitsAtEightMegabytes() passed after 0.053 seconds.
+[原日志:330] 􁁛  Test drive123PaginatesAndUsesServerSliceSize() passed after 0.053 seconds.
+[原日志:331] 􁁛  Test rejectedStreamReleasesAllowanceBeforeRefresh() passed after 0.054 seconds.
+[原日志:332] 􁁛  Test internationalDriveMissingQuotaIsUnknownInsteadOfZero() passed after 0.054 seconds.
+[原日志:333] 􁁛  Test drive115PaginatesAndUploadsConfiguredSlices() passed after 0.054 seconds.
+[原日志:334] 􁁛  Test drive115CapacityPreservesMissingFields() passed after 0.054 seconds.
+[原日志:335] 􁁛  Test providerPreflightOnlyTreatsExplicitNotFoundAsMissing() passed after 0.054 seconds.
+[原日志:336] 􁁛  Test googleListingPreservesEveryUnusualNameWithStableIdentity() passed after 0.058 seconds.
+[原日志:337] 􁁛  Test oneDriveDirectUploadsShareOAuthAccountAllowance() passed after 0.060 seconds.
+[原日志:338] 􁁛  Test removeUsesEachProvidersOfficialDeletionSemantics() passed after 0.060 seconds.
+[原日志:339] 􁁛  Test tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) with 4 test cases passed after 0.067 seconds.
+[原日志:340] 􁁛  Test processesCoordinateOAuthRefresh() passed after 0.080 seconds.
+[原日志:341] 􁁛  Test googleResumableUploadUsesAcknowledgedBytes(missingRange:) with 2 test cases passed after 0.303 seconds.
+[原日志:342] 􁁛  Test drive123UploadCompletionStopsAtItsLimit() passed after 1.047 seconds.
+[原日志:343] 􁁛  Test run with 108 tests in 0 suites passed after 1.051 seconds.

@@ -1,0 +1,19 @@
+Building for debugging...
+[3 / 11] CoreNative
+[5 / 14] Core
+[23 / 32] Core
+[27 / 36] Core
+[35 / 44] AliyunDrive
+[39 / 45] AliyunDrive
+[42 / 45] AliyunDriveTests-product
+[48 / 51] AliyunDriveTests-product
+[54 / 56] AliyunDriveTests-product
+Build complete! (3.03秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test aliyunRepeatedRangeReadReusesUnexpiredDownloadLink() started.
+􀟈  Test aliyunTaskDeadlineCancelsSlowPollBeforeReportingSuccess() started.
+􁁛  Test aliyunRepeatedRangeReadReusesUnexpiredDownloadLink() passed after 0.004 seconds.
+􁁛  Test aliyunTaskDeadlineCancelsSlowPollBeforeReportingSuccess() passed after 0.040 seconds.
+􁁛  Test run with 2 tests in 0 suites passed after 0.040 seconds.

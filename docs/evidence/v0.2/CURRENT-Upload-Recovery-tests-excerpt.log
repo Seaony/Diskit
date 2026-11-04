@@ -1,0 +1,23 @@
+# 六平台上传恢复定向测试摘录
+# 原日志 /tmp/kayoi-upload-recovery-final.log；只保留测试结果，省略编译器命令。
+[原日志:67] 􁁛  Test dropboxUploadRejectsImpossibleServerOffset(offset:) with 2 test cases passed after 0.015 seconds.
+[原日志:68] 􁁛  Test dropboxRepeatedIncorrectOffsetHasBoundedRecovery() passed after 0.018 seconds.
+[原日志:69] 􁁛  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() passed after 0.018 seconds.
+[原日志:70] 􁁛  Test dropboxClosedUploadSessionNeverCreatesAnotherFile() passed after 0.018 seconds.
+[原日志:71] 􁁛  Test dropboxRepeatedExpiredSessionStopsAfterOneRestart() passed after 0.019 seconds.
+[原日志:72] 􁁛  Test oneDriveBoundsDirectUploadMemoryEvenBelowServiceLimit() passed after 0.019 seconds.
+[原日志:73] 􁁛  Test dropboxUploadSessionHandlesLastPartialChunk() passed after 0.020 seconds.
+[原日志:74] 􁁛  Test dropboxLostAppendResponseRetriesSameCursorThenResumes() passed after 0.020 seconds.
+[原日志:75] 􁁛  Test googleResumableUploadUsesAcknowledgedBytes(missingRange:) with 2 test cases passed after 0.020 seconds.
+[原日志:76] 􁁛  Test dropboxUploadResumesAtServerConfirmedOffset(finish:) with 2 test cases passed after 0.021 seconds.
+[原日志:77] 􁁛  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) with 3 test cases passed after 0.021 seconds.
+[原日志:78] 􁁛  Test oneDriveRecoversUploadSessionFromServerOffset(mode:) with 4 test cases passed after 0.022 seconds.
+[原日志:79] 􁁛  Test dropboxExpiredUploadSessionRestartsWithoutOverwriting(finish:) with 2 test cases passed after 0.022 seconds.
+[原日志:80] 􁁛  Test oneDriveRecoveryIsBoundedAndNeverOverwrites(mode:) with 4 test cases passed after 0.023 seconds.
+[原日志:81] 􁁛  Test drive115ExpiredCredentialsResignOnlyRejectedUploadStep(stage:) with 4 test cases passed after 0.023 seconds.
+[原日志:82] 􁁛  Test drive123ExpiredAccessTokenRetriesSameSliceWithoutRestarting(businessCode:) with 2 test cases passed after 0.023 seconds.
+[原日志:83] 􁁛  Test googleUploadRecoversSessionAndServerOffset(_:) with 4 test cases passed after 0.024 seconds.
+[原日志:84] 􁁛  Test oneDriveDirectUploadsShareOAuthAccountAllowance() passed after 0.027 seconds.
+[原日志:85] 􁁛  Test googleUploadRecoveryIsBoundedAndDoesNotOverwrite(_:) with 6 test cases passed after 0.028 seconds.
+[原日志:86] 􁁛  Test baiduExpiredAccessTokenRetriesSamePartWithoutRestarting(businessCode:) with 2 test cases passed after 0.034 seconds.
+[原日志:87] 􁁛  Test run with 20 tests in 0 suites passed after 0.035 seconds.

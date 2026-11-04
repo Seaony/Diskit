@@ -1,0 +1,15 @@
+Window: "Unknown", App: Kayoi.
+0 表单 Description: 警告, Secondary Actions: Raise
+	1 text 删除“Demo baiduDrive”？ 会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。
+	2 按钮 Description: 取消, ID: action-button-2
+	3 按钮 Description: 删除, ID: action-button-1
+4 menu bar
+	5 Kayoi
+	6 文件
+	7 编辑
+	8 显示
+	9 演示
+	10 窗口
+	11 帮助
+
+The focused UI element is 0 表单 Description: 警告, Secondary Actions: Raise

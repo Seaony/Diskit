@@ -1,0 +1,15 @@
+{
+  "engineUnmodified": true,
+  "engineSHA256": "01120674590e0a3e5bd7d53bc232ae97a95505a0b3d0f4b6e05abeb057823def",
+  "typeGlyphs": 28,
+  "emptyGlyphs": 1,
+  "colors": 8,
+  "imageSets": 232,
+  "SVGFiles": 464,
+  "appIconSlots": 10,
+  "actoolExitCode": 0,
+  "appScreenshots": "pending Computer Use",
+  "actoolDiagnostics": [],
+  "coreSVGOffscreenRender": "native-google-256.png",
+  "coreSVGCompatibility": "feMerge replaced by equivalent SourceGraphic-over-shadow feComposite during export"
+}

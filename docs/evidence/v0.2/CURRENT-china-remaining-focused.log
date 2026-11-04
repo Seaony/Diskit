@@ -1,0 +1,79 @@
+Building for debugging...
+[Pre-planning 1 / 273]
+[Planning deferred tasks]
+[14 / 50] CoreNative
+[16 / 50] Core
+[34 / 68] Core
+[39 / 67] Core
+[49 / 77] Core
+[55 / 73] ChinaWebDrive
+[57 / 73] ChinaWebDrive
+[60 / 71] ChinaWebDriveTests-product
+[67 / 78] ChinaWebDriveTests-product
+[71 / 77] ChinaWebDriveTests-product
+[73 / 77] ChinaWebDriveTests-product
+Build complete! (4.21秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test xunleiMutationFailureInvalidatesCachedDirectory() started.
+􀟈  Test chinaWebCompactDateIsNotMillisecondsSinceEpoch() started.
+􀟈  Test xunleiForbiddenPermissionDoesNotForceLogin() started.
+􀟈  Test mobileCrossDirectoryRenamePreservesBothExistingNames() started.
+􀟈  Test xunleiSDKWrappedNetworkErrorKeepsPOSIXMeaning() started.
+􀟈  Test mobileConcurrentRejectionsShareOneRefresh() started.
+􀟈  Test mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􀟈  Test xunleiDuplicateIDsAreReportedInsteadOfAmbiguousCache() started.
+􀟈  Test xunleiEmptyErrorDoesNotRejectSuccess() started.
+􀟈  Test xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test mobileFailedFinalRenameRestoresOriginalLocation() started.
+􀟈  Test mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test xunleiServerFailureDoesNotRefreshEvenWithTokenText() started.
+􀟈  Test xunleiConcurrentUnauthorizedResponsesShareRefresh() started.
+􀟈  Test xunleiMalformedListingFailsWithoutKeepingStaleEntries() started.
+􀟈  Test xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test mobileFailedRollbackReportsLastConfirmedLocation() started.
+􀟈  Test xunleiPartFileCopiesOnlyBoundedRangeAndCleansUp() started.
+􀟈  Test mobileServerFailureDoesNotRefreshEvenWithStaleLoginCode() started.
+􀟈  Test case passing 1 argument message → "captcha required" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument message → "请完成人机验证" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument disconnect → false to mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􀟈  Test case passing 1 argument message → "risk_control" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument disconnect → true to mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􀟈  Test xunleiFilenameCannotInvalidateLogin() started.
+􀟈  Test xunleiLateListingCannotRefillOlderCache() started.
+􀟈  Test case passing 1 argument progresses → false to xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test case passing 1 argument contradictory → false to mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test case passing 1 argument progresses → true to xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test case passing 1 argument contradictory → true to mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test case passing 1 argument status → 401 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test case passing 1 argument directory → false to mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test case passing 1 argument status → 403 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test case passing 1 argument directory → true to mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test case passing 1 argument status → 200 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􁁛  Test xunleiEmptyErrorDoesNotRejectSuccess() passed after 0.004 seconds.
+􁁛  Test xunleiSDKWrappedNetworkErrorKeepsPOSIXMeaning() passed after 0.004 seconds.
+􁁛  Test xunleiDuplicateIDsAreReportedInsteadOfAmbiguousCache() passed after 0.004 seconds.
+􁁛  Test xunleiServerFailureDoesNotRefreshEvenWithTokenText() passed after 0.004 seconds.
+􁁛  Test xunleiForbiddenPermissionDoesNotForceLogin() passed after 0.004 seconds.
+􁁛  Test xunleiMutationFailureInvalidatesCachedDirectory() passed after 0.004 seconds.
+􁁛  Test xunleiMalformedListingFailsWithoutKeepingStaleEntries() passed after 0.004 seconds.
+􁁛  Test xunleiVerificationDoesNotRefreshLogin(status:) with 3 test cases passed after 0.004 seconds.
+􁁛  Test xunleiFilenameCannotInvalidateLogin() passed after 0.004 seconds.
+􁁛  Test chinaWebCompactDateIsNotMillisecondsSinceEpoch() passed after 0.005 seconds.
+􁁛  Test xunleiLateListingCannotRefillOlderCache() passed after 0.005 seconds.
+􁁛  Test mobileServerFailureDoesNotRefreshEvenWithStaleLoginCode() passed after 0.006 seconds.
+􁁛  Test mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) with 3 test cases passed after 0.007 seconds.
+􁁛  Test mobileLateDirectoryCannotReplaceNewerState(disconnect:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test mobileExistingCreateResultIsNeverDeleted(directory:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test mobileCrossDirectoryRenamePreservesBothExistingNames() passed after 0.008 seconds.
+􁁛  Test mobileFailedRollbackReportsLastConfirmedLocation() passed after 0.010 seconds.
+􁁛  Test mobileFailedFinalRenameRestoresOriginalLocation() passed after 0.011 seconds.
+􁁛  Test xunleiConcurrentUnauthorizedResponsesShareRefresh() passed after 0.022 seconds.
+􁁛  Test mobileConcurrentRejectionsShareOneRefresh() passed after 0.032 seconds.
+􁁛  Test xunleiPartFileCopiesOnlyBoundedRangeAndCleansUp() passed after 0.038 seconds.
+􁁛  Test xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) with 2 test cases passed after 0.147 seconds.
+􁁛  Test run with 23 tests in 0 suites passed after 0.147 seconds.

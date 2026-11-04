@@ -1,0 +1,16 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/DevTool.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:54] Test Suite 'All tests' passed at 2026-11-04 20:41:58.197.
+[原日志:70] 􁁛  Test progressIncludesUnknownAndCompleteTotals() passed after 0.001 seconds.
+[原日志:72] 􁁛  Test environmentOnlyReadsExplicitFileAndDoesNotDamageURLs() passed after 0.001 seconds.
+[原日志:73] 􁁛  Test argumentsPreservePositionsAndDashOperands() passed after 0.001 seconds.
+[原日志:74] 􁁛  Test downloadsReportEachChunkRegardlessOfRangeCapability(range:) with 2 test cases passed after 0.001 seconds.
+[原日志:75] 􁁛  Test downloadRejectsDuplicateNamesAndCancellationAndAllowsEmptyFiles() passed after 0.002 seconds.
+[原日志:76] 􁁛  Test recursiveTransfersRejectUnsafeNamesAndSymlinks() passed after 0.002 seconds.
+[原日志:77] 􁁛  Test downloadPreservesExistingFilesAndCleansPartialResults() passed after 0.003 seconds.
+[原日志:78] 􁁛  Test listingAndErrorsDoNotLoseIdentityOrLeakSecrets() passed after 0.003 seconds.
+[原日志:79] 􁁛  Test routingDisconnectsAndHonorsHiddenAndRange() passed after 0.004 seconds.
+[原日志:80] 􁁛  Test providerConstructionUsesOnlyInjectedCredentials() passed after 0.007 seconds.
+[原日志:81] 􁁛  Test run with 10 tests in 0 suites passed after 0.007 seconds.

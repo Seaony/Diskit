@@ -1,0 +1,27 @@
+Building for debugging...
+[2 / 6] Core
+[4 / 8] Core
+[8 / 12] PikPakDrive
+[9 / 13] PikPakDrive
+[29 / 32] Core
+[34 / 38] PikPakDrive
+[39 / 42] PikPakDrive
+[42 / 46] PikPakDriveTests-product
+[45 / 49] PikPakDriveTests-product
+[51 / 53] PikPakDriveTests-product
+Build complete! (4.38秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "advancing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument reject → false to pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "stalled" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument reject → true to pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) started.
+􀟈  Test case passing 1 argument mode → "regressing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument mode → "missing" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􀟈  Test case passing 1 argument mode → "slow" to pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) started.
+􁁛  Test pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) with 5 test cases passed after 0.176 seconds.
+􁁛  Test run with 2 tests in 0 suites passed after 0.177 seconds.

@@ -1,0 +1,26 @@
+Building for debugging...
+[2 / 19] Core
+[4 / 21] Core
+[8 / 23] S3Drive
+[14 / 29] S3Drive
+[20 / 27] S3Drive
+[24 / 27] S3DriveTests-product
+[30 / 33] S3DriveTests-product
+[35 / 37] S3DriveTests-product
+Build complete! (3.25秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3RangeAcceptsServerClippingAtEOF() started.
+􀟈  Test s3Retries503BeforeReturningFailure() started.
+􀟈  Test s3RecursiveDeleteReportsAlreadyDeletedCount() started.
+􀟈  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() started.
+􀟈  Test s3ListPreservesSignificantXMLWhitespace() started.
+􀟈  Test s3DirectoryStatStopsAfterFirstMatchingObject() started.
+􁁛  Test s3RangeAcceptsServerClippingAtEOF() passed after 0.001 seconds.
+􁁛  Test s3ListPreservesSignificantXMLWhitespace() passed after 0.001 seconds.
+􁁛  Test s3Retries503BeforeReturningFailure() passed after 0.004 seconds.
+􁁛  Test s3DirectoryStatStopsAfterFirstMatchingObject() passed after 0.004 seconds.
+􁁛  Test s3RecursiveDeleteReportsAlreadyDeletedCount() passed after 0.006 seconds.
+􁁛  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() passed after 0.006 seconds.
+􁁛  Test run with 6 tests in 0 suites passed after 0.007 seconds.

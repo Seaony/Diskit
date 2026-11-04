@@ -1,0 +1,108 @@
+Building for debugging...
+[Planning deferred tasks]
+[3 / 12]
+[4 / 13] Core
+[5 / 14] Core
+[10 / 19] S3Drive
+[16 / 25] S3Drive
+[20 / 26] S3Drive
+[25 / 33] Core
+[30 / 33] S3DriveTests-product
+[36 / 39] S3DriveTests-product
+[42 / 44] S3DriveTests-product
+Build complete! (4.05秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test conditionalPutRetryChecksForNewObject() started.
+􀟈  Test multipartConditionalConflictReuploadsOnce() started.
+􀟈  Test rangeRequiresMatchingContentRange() started.
+􀟈  Test s3FailedMultipartCopyNeverDeletesSource(cleanupFails:) started.
+􀟈  Test s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) started.
+􀟈  Test statInfersDirectoryWithoutTrailingSlash() started.
+􀟈  Test xmlAndHTTPErrorsMapToRemoteErrors() started.
+􀟈  Test s3DirectoryStatStopsAfterFirstMatchingObject() started.
+􀟈  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test multipartThresholdAndLastPartBoundaries() started.
+􀟈  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() started.
+􀟈  Test s3RetryDoesNotRepeatMultipartCreation() started.
+􀟈  Test s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() started.
+􀟈  Test s3MalformedMultipartXMLCannotSupplyAnUploadID() started.
+􀟈  Test s3RetryCancellationDoesNotSendAgain() started.
+􀟈  Test s3ReadReturnsOnlyRemainingBytesAtEOF(range:) started.
+􀟈  Test signedVirtualHostRequestPercentEncodesPathOnce() started.
+􀟈  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test s3RangeAcceptsServerClippingAtEOF() started.
+􀟈  Test truncatedPageWithoutTokenFails() started.
+􀟈  Test recursiveRemoveDeletesEveryNestedObject() started.
+􀟈  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test s3ListPreservesSignificantXMLWhitespace() started.
+􀟈  Test s3Retries503BeforeReturningFailure() started.
+􀟈  Test s3MultipartChecksAgainBeforePublishing() started.
+􀟈  Test case passing 1 argument operation → "upload" to s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument cleanupFails → false to s3FailedMultipartCopyNeverDeletesSource(cleanupFails:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument cleanupFails → true to s3FailedMultipartCopyNeverDeletesSource(cleanupFails:) started.
+􀟈  Test s3RecursiveDeleteReportsAlreadyDeletedCount() started.
+􀟈  Test case passing 1 argument operation → "empty" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "stream" to s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() started.
+􀟈  Test case passing 1 argument operation → "send" to s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 0 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument example → 1 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "empty" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 2 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument example → 3 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123Z" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument status → 403 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument pathStyle → true to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument status → 500 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument range → 8 ..< 20 to s3ReadReturnsOnlyRemainingBytesAtEOF(range:) started.
+􀟈  Test case passing 1 argument pathStyle → false to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument configurationVariant → 0 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument range → 10 ..< 20 to s3ReadReturnsOnlyRemainingBytesAtEOF(range:) started.
+􀟈  Test case passing 1 argument configurationVariant → 1 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument configurationVariant → 2 to s3AccountLimitsRequestsAcrossProviders(configurationVariant:) started.
+􀟈  Test case passing 1 argument range → 20 ..< 30 to s3ReadReturnsOnlyRemainingBytesAtEOF(range:) started.
+􁁛  Test s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) with 3 test cases passed after 0.005 seconds.
+􁁛  Test s3RetryDoesNotRepeatMultipartCreation() passed after 0.004 seconds.
+􁁛  Test s3ObjectDatesPreserveMilliseconds(_:) with 2 test cases passed after 0.004 seconds.
+􁁛  Test s3MalformedMultipartXMLCannotSupplyAnUploadID() passed after 0.004 seconds.
+􁁛  Test s3RangeAcceptsServerClippingAtEOF() passed after 0.004 seconds.
+􁁛  Test s3ListPreservesSignificantXMLWhitespace() passed after 0.004 seconds.
+􁁛  Test s3RetryCancellationDoesNotSendAgain() passed after 0.004 seconds.
+􁁛  Test s3ReadReturnsOnlyRemainingBytesAtEOF(range:) with 3 test cases passed after 0.007 seconds.
+􁁛  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) with 4 test cases passed after 0.007 seconds.
+􁁛  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) with 4 test cases passed after 0.007 seconds.
+􁁛  Test s3PreflightFailureNeverWrites(status:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test statInfersDirectoryWithoutTrailingSlash() passed after 0.007 seconds.
+􁁛  Test s3Retries503BeforeReturningFailure() passed after 0.007 seconds.
+􁁛  Test s3DirectoryStatStopsAfterFirstMatchingObject() passed after 0.007 seconds.
+􁁛  Test rangeRequiresMatchingContentRange() passed after 0.007 seconds.
+􁁛  Test truncatedPageWithoutTokenFails() passed after 0.007 seconds.
+􁁛  Test signedVirtualHostRequestPercentEncodesPathOnce() passed after 0.008 seconds.
+􁁛  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases passed after 0.010 seconds.
+􁁛  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() passed after 0.010 seconds.
+􁁛  Test conditionalPutRetryChecksForNewObject() passed after 0.010 seconds.
+􁁛  Test s3RecursiveDeleteReportsAlreadyDeletedCount() passed after 0.010 seconds.
+􁁛  Test s3MissingObjectIsWrittenWithConditions(operation:) with 4 test cases passed after 0.011 seconds.
+􁁛  Test s3MultipartChecksAgainBeforePublishing() passed after 0.011 seconds.
+􁁛  Test recursiveRemoveDeletesEveryNestedObject() passed after 0.013 seconds.
+􁁛  Test s3FailedMultipartCopyNeverDeletesSource(cleanupFails:) with 2 test cases passed after 0.013 seconds.
+􁁛  Test xmlAndHTTPErrorsMapToRemoteErrors() passed after 0.014 seconds.
+􁁛  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() passed after 0.014 seconds.
+􁁛  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() passed after 0.015 seconds.
+􁁛  Test multipartConditionalConflictReuploadsOnce() passed after 0.018 seconds.
+􁁛  Test multipartThresholdAndLastPartBoundaries() passed after 0.024 seconds.
+􁁛  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) with 3 test cases passed after 0.139 seconds.
+􁁛  Test run with 31 tests in 0 suites passed after 0.140 seconds.

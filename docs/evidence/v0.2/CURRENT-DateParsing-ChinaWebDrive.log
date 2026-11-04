@@ -1,0 +1,37 @@
+Building for debugging...
+[Computing dependencies]
+[Pre-planning 1 / 332]
+[Planning deferred tasks]
+[1 / 28] Crypto
+[11 / 48]
+[12 / 46] CoreNative
+[13 / 46] Crypto
+[30 / 80] Core
+[44 / 80] Crypto
+[47 / 81] Crypto
+[52 / 84] AlibabaCloudOSS
+[53 / 84] Core
+[68 / 101] Core
+[69 / 101] AlibabaCloudOSS
+[73 / 104]
+[77 / 109] CoreTestSupport
+[80 / 109] AlibabaCloudOSS
+[82 / 109] Core
+[84 / 109] AlibabaCloudOSS
+[88 / 113] ChinaWebDrive
+[98 / 123] AlibabaCloudOSS
+[98 / 123] ChinaWebDrive
+[104 / 123] ChinaWebDrive
+[109 / 120] ChinaWebDriveTests-product
+[119 / 130] ChinaWebDriveTests-product
+[123 / 129] ChinaWebDriveTests-product
+[125 / 129] ChinaWebDriveTests-product
+Build complete! (6.77秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test chinaSharedDateParsersKeepStrictCompactAndTimezoneRules() started.
+􀟈  Test chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() started.
+􁁛  Test chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() passed after 0.011 seconds.
+􁁛  Test chinaSharedDateParsersKeepStrictCompactAndTimezoneRules() passed after 0.018 seconds.
+􁁛  Test run with 2 tests in 0 suites passed after 0.018 seconds.

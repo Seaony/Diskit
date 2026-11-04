@@ -1,0 +1,45 @@
+Building for debugging...
+[Planning deferred tasks]
+[5 / 24] Core
+[8 / 27] Core
+[13 / 32] CloudDrive
+[22 / 41] Core
+[24 / 41] CloudDrive
+[28 / 41] CloudDrive
+[29 / 42] CloudDrive
+[33 / 42] CloudDriveTests-product
+[49 / 58] CloudDriveTests-product
+[53 / 57] CloudDriveTests-product
+[55 / 57] CloudDriveTests-product
+Build complete! (4.44秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test baiduRejectsAmbiguousPathLookups() started.
+􀟈  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() started.
+􀟈  Test baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID:) started.
+􀟈  Test baiduListsOnlyTheConfiguredAppDirectoryAndReadsRanges() started.
+􀟈  Test baiduFetchesEveryThousandEntryPage() started.
+􀟈  Test baiduRateLimitAndDuplicatePathNeverTriggerMutation() started.
+􀟈  Test case passing 1 argument mode → 0 to baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test case passing 1 argument mode → 1 to baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test baiduStatUsesParentListAndDoesNotReuseStaleIdentity() started.
+􀟈  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesQueryToken() started.
+􀟈  Test baiduUploadUsesOfficialBlocksAndRefusesExistingTargets() started.
+􀟈  Test case passing 1 argument mode → 2 to baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test case passing 1 argument mode → 3 to baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test case passing 1 argument mode → 4 to baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) started.
+􀟈  Test case passing 1 argument wrongID → true to baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID:) started.
+􀟈  Test case passing 1 argument wrongID → false to baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID:) started.
+􁁛  Test baiduRejectsAmbiguousPathLookups() passed after 0.008 seconds.
+􁁛  Test baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test baiduListsOnlyTheConfiguredAppDirectoryAndReadsRanges() passed after 0.008 seconds.
+􁁛  Test baiduStatUsesParentListAndDoesNotReuseStaleIdentity() passed after 0.008 seconds.
+􁁛  Test baiduRateLimitAndDuplicatePathNeverTriggerMutation() passed after 0.008 seconds.
+􁁛  Test baiduUploadUsesOfficialWireContractAndValidatesParts(mode:) with 5 test cases passed after 0.009 seconds.
+􁁛  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() passed after 0.009 seconds.
+􁁛  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesQueryToken() passed after 0.009 seconds.
+􁁛  Test baiduUploadUsesOfficialBlocksAndRefusesExistingTargets() passed after 0.021 seconds.
+􁁛  Test baiduFetchesEveryThousandEntryPage() passed after 0.043 seconds.
+􁁛  Test run with 10 tests in 0 suites passed after 0.043 seconds.

@@ -1,0 +1,57 @@
+Building for debugging...
+[2 / 11] Core
+[4 / 13] Core
+[11 / 20] S3Drive
+[13 / 21] S3Drive
+[16 / 19] S3DriveTests-product
+[18 / 21] S3DriveTests-product
+[24 / 26] S3DriveTests-product
+Build complete! (1.73秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3RecursiveDeleteReportsAlreadyDeletedCount() started.
+􀟈  Test s3RangeAcceptsServerClippingAtEOF() started.
+􀟈  Test s3ListPreservesSignificantXMLWhitespace() started.
+􀟈  Test s3DirectoryStatStopsAfterFirstMatchingObject() started.
+􀟈  Test s3Retries503BeforeReturningFailure() started.
+􀟈  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() started.
+􀢄  Test s3ListPreservesSignificantXMLWhitespace() recorded an issue at AuditRegressionTests.swift:45:3: Expectation failed: page.objects.first?.key == " file "
+􀄵  page.objects.first?.key == " file " → false
+􀄵    page.objects.first?.key → "file"
+􀄵      some → "file"
+􀄵      some → " file "
+􀢄  Test s3RangeAcceptsServerClippingAtEOF() recorded an issue at AuditRegressionTests.swift:33:3: Expectation failed: S3Provider.validContentRange("bytes 8-9/10", requested: 8..<20)
+􀄵  S3Provider.validContentRange("bytes 8-9/10", requested: 8..<20) → false
+􀄵      some → "bytes 8-9/10"
+􀄵    8..<20 → 8 ..< 20
+􀄵      lowerBound → 8
+􀄵      upperBound → 20
+􀢄  Test s3RangeAcceptsServerClippingAtEOF() failed after 0.001 seconds with 1 issue.
+􀢄  Test s3ListPreservesSignificantXMLWhitespace() recorded an issue at AuditRegressionTests.swift:46:3: Expectation failed: page.prefixes == [" folder /"]
+􀄵  page.prefixes == [" folder /"] → false
+􀄵    page.prefixes → ["folder /"]
+􀢄  Test s3ListPreservesSignificantXMLWhitespace() recorded an issue at AuditRegressionTests.swift:47:3: Expectation failed: page.nextToken == " token "
+􀄵  page.nextToken == " token " → false
+􀄵    page.nextToken → "token"
+􀄵      some → "token"
+􀄵      some → " token "
+􀢄  Test s3ListPreservesSignificantXMLWhitespace() failed after 0.001 seconds with 3 issues.
+􀢄  Test s3Retries503BeforeReturningFailure() recorded an issue at AuditRegressionTests.swift:105:2: Caught error: .rateLimited
+􀢄  Test s3Retries503BeforeReturningFailure() failed after 0.005 seconds with 1 issue.
+􀢄  Test s3DirectoryStatStopsAfterFirstMatchingObject() recorded an issue at AuditRegressionTests.swift:50:2: Caught error: .protocolError
+􀢄  Test s3DirectoryStatStopsAfterFirstMatchingObject() failed after 0.005 seconds with 1 issue.
+􀢄  Test s3RecursiveDeleteReportsAlreadyDeletedCount() recorded an issue at AuditRegressionTests.swift:99:5: Expectation failed: error.localizedDescription.contains("1")
+􀄵  error.localizedDescription.contains("1") → false
+􀄵    error.localizedDescription → "没有访问权限"
+􀢄  Test s3RecursiveDeleteReportsAlreadyDeletedCount() recorded an issue at AuditRegressionTests.swift:100:5: Expectation failed: error.localizedDescription.contains("3")
+􀄵  error.localizedDescription.contains("3") → false
+􀄵    error.localizedDescription → "没有访问权限"
+􀢄  Test s3RecursiveDeleteReportsAlreadyDeletedCount() failed after 0.005 seconds with 2 issues.
+􀢄  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() recorded an issue at AuditRegressionTests.swift:78:7: Expectation failed: requests.count == 10
+􀄵  requests.count == 10 → false
+􀄵    requests.count → 6
+􀢄  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() failed after 0.005 seconds with 1 issue.
+􀢄  Test run with 6 tests in 0 suites failed after 0.006 seconds with 9 issues.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)

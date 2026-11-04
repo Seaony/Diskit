@@ -1,0 +1,50 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/AliyunDrive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:18] Test Suite 'All tests' passed at 2026-11-04 20:40:59.530.
+[原日志:81] 􁁛  Test aliyunOnlyExpiredAccountRequiresLogin() passed after 0.004 seconds.
+[原日志:82] 􁁛  Test aliyunMultipartZeroExactAndRemainderBoundaries() passed after 0.004 seconds.
+[原日志:83] 􁁛  Test OAuthCallbackRejectsOtherRoutesStatesAndRepeatedCodes() passed after 0.004 seconds.
+[原日志:84] 􁁛  Test oauthConfigurationAndStateAreRequiredBeforeNetwork() passed after 0.004 seconds.
+[原日志:85] 􁁛  Test oauthAuthorizationURLHasExactScopesStateAndFolderStyle() passed after 0.004 seconds.
+[原日志:86] 􁁛  Test aliyunErrorsPreservePOSIXMeaningAndDescription() passed after 0.007 seconds.
+[原日志:87] 􁁛  Test oauthSignedURLDoesNotReceiveBearerOrTriggerTokenRefresh() passed after 0.007 seconds.
+[原日志:88] 􁁛  Test aliyunUploadRetryKeepsTransferRouting() passed after 0.008 seconds.
+[原日志:89] 􁁛  Test oauthExplicitInvalidGrantRequiresNewLogin() passed after 0.011 seconds.
+[原日志:90] 􁁛  Test oauthAccountUsesAuthorizedFolderAndExactQuota() passed after 0.012 seconds.
+[原日志:91] 􁁛  Test oauthExchangePersistsRotatingTokensAndProtectedCLIConfiguration() passed after 0.013 seconds.
+[原日志:92] 􁁛  Test oauthRateLimitUsesMillisecondHeaderAndStopsAfterThreeAttempts() passed after 0.013 seconds.
+[原日志:93] 􁁛  Test oauthDiscardedUnreadStreamReleasesConcurrencySlot() passed after 0.013 seconds.
+[原日志:94] 􁁛  Test oauthStreamingHoldsConcurrencySlotUntilBodyEnds() passed after 0.014 seconds.
+[原日志:95] 􁁛  Test oauthTransientRefreshFailurePreservesLogin(_:) with 4 test cases passed after 0.014 seconds.
+[原日志:96] 􁁛  Test aliyunMultipleExistingNamesRejectWithoutCreatingOrDeleting() passed after 0.014 seconds.
+[原日志:97] 􁁛  Test oauthPermissionFailurePreservesLoginWithoutInvalidation(_:) with 2 test cases passed after 0.014 seconds.
+[原日志:98] 􁁛  Test aliyunMkdirReportsExistingNameForFilesAndDirectories(directory:) with 2 test cases passed after 0.014 seconds.
+[原日志:99] 􁁛  Test oauthRefreshFailureKeepsProtectedRecordButRequiresNewLogin() passed after 0.014 seconds.
+[原日志:100] 􁁛  Test oauthRefreshRecoversAfterTemporaryFailureWithoutLogin() passed after 0.015 seconds.
+[原日志:101] 􁁛  Test aliyunCancelledOrExpiredWaiterLeavesSharedRefreshRunning(cancel:) with 2 test cases passed after 0.015 seconds.
+[原日志:102] 􁁛  Test aliyunRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.016 seconds.
+[原日志:103] 􁁛  Test oauthSecondUnauthorizedResponseStopsAndNeedsLogin() passed after 0.016 seconds.
+[原日志:104] 􁁛  Test aliyunReplacementCompletesNewFileBeforeTrashingOldFile() passed after 0.017 seconds.
+[原日志:105] 􁁛  Test aliyunFailedNewUploadNeverTrashesOriginal() passed after 0.017 seconds.
+[原日志:106] 􁁛  Test aliyunLateListingCannotRestoreDeletedFile() passed after 0.017 seconds.
+[原日志:107] 􁁛  Test aliyunUploadRefreshesExpiredPartURLBeforeCompleting() passed after 0.018 seconds.
+[原日志:108] 􁁛  Test oauthInvalidAccessTokenRefreshesOnlyOnceThenRetriesRequest() passed after 0.017 seconds.
+[原日志:109] 􁁛  Test aliyunInvalidCompletedSizeNeverTrashesOriginal() passed after 0.018 seconds.
+[原日志:110] 􁁛  Test oauthExpiredTokenRefreshIsSharedAcrossConcurrentRequests() passed after 0.018 seconds.
+[原日志:111] 􁁛  Test aliyunFailedOldTrashReportsWithoutRemovingNewUpload() passed after 0.018 seconds.
+[原日志:112] 􁁛  Test aliyunTaskDeadlineCancelsSlowPollBeforeReportingSuccess() passed after 0.018 seconds.
+[原日志:113] 􁁛  Test aliyunPaginationReadsAllMarkersAndHonorsAuthorizedRoot() passed after 0.018 seconds.
+[原日志:114] 􁁛  Test aliyunOlderListingCannotReplaceNewerSnapshot() passed after 0.018 seconds.
+[原日志:115] 􁁛  Test aliyunCrossDirectoryRenameAvoidsOriginalNameCollision() passed after 0.018 seconds.
+[原日志:116] 􁁛  Test aliyunRangeSurvivesExpiredURLAndNeverSendsBearerToStorage() passed after 0.019 seconds.
+[原日志:117] 􁁛  Test aliyunRemoveUsesRecyclebinAndWaitsForAsyncTask() passed after 0.019 seconds.
+[原日志:118] 􁁛  Test oauthRequestConcurrencyNeverExceedsFour() passed after 0.019 seconds.
+[原日志:119] 􁁛  Test aliyunRepeatedRangeReadReusesUnexpiredDownloadLink() passed after 0.020 seconds.
+[原日志:120] 􁁛  Test aliyunSeparateSessionsShareRequestAllowance() passed after 0.020 seconds.
+[原日志:121] 􁁛  Test aliyunRenameInvalidatesOldPathAndKeepsNewIdentity() passed after 0.020 seconds.
+[原日志:122] 􁁛  Test aliyunMultipartUploadSendsOrderedExactPartBytes() passed after 0.020 seconds.
+[原日志:123] 􁁛  Test aliyunRejectsRangeWithFullBodyOrWrongContentRange() passed after 0.020 seconds.
+[原日志:124] 􁁛  Test aliyunSeparateSessionsShareRefresh(separateSessions:) with 2 test cases passed after 0.020 seconds.
+[原日志:125] 􁁛  Test run with 44 tests in 0 suites passed after 0.020 seconds.

@@ -1,0 +1,40 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/S3Drive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:18] Test Suite 'All tests' passed at 2026-11-04 20:41:10.884.
+[原日志:86] 􁁛  Test s3ListPreservesSignificantXMLWhitespace() passed after 0.005 seconds.
+[原日志:87] 􁁛  Test s3MalformedMultipartXMLCannotSupplyAnUploadID() passed after 0.005 seconds.
+[原日志:88] 􁁛  Test servicePresetsUseOfficialAddressing() passed after 0.005 seconds.
+[原日志:89] 􁁛  Test s3ObjectDatesPreserveMilliseconds(_:) with 2 test cases passed after 0.005 seconds.
+[原日志:90] 􁁛  Test s3RetryBackoffIsBoundedAndUsesInjectedClock(operation:) with 3 test cases passed after 0.005 seconds.
+[原日志:91] 􁁛  Test s3RangeAcceptsServerClippingAtEOF() passed after 0.005 seconds.
+[原日志:92] 􁁛  Test s3RetryCancellationDoesNotSendAgain() passed after 0.006 seconds.
+[原日志:93] 􁁛  Test s3RetryDoesNotRepeatMultipartCreation() passed after 0.006 seconds.
+[原日志:94] 􁁛  Test s3Retries503BeforeReturningFailure() passed after 0.008 seconds.
+[原日志:95] 􁁛  Test s3PreflightFailureNeverWrites(status:) with 2 test cases passed after 0.008 seconds.
+[原日志:96] 􁁛  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) with 4 test cases passed after 0.008 seconds.
+[原日志:97] 􁁛  Test s3ReadReturnsOnlyRemainingBytesAtEOF(range:) with 3 test cases passed after 0.008 seconds.
+[原日志:98] 􁁛  Test s3DirectoryStatStopsAfterFirstMatchingObject() passed after 0.008 seconds.
+[原日志:99] 􁁛  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) with 4 test cases passed after 0.008 seconds.
+[原日志:100] 􁁛  Test truncatedPageWithoutTokenFails() passed after 0.009 seconds.
+[原日志:101] 􁁛  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() passed after 0.010 seconds.
+[原日志:102] 􁁛  Test signedVirtualHostRequestPercentEncodesPathOnce() passed after 0.010 seconds.
+[原日志:103] 􁁛  Test concurrentUploadsKeepTheirInitialProgressCallback() passed after 0.010 seconds.
+[原日志:104] 􁁛  Test statInfersDirectoryWithoutTrailingSlash() passed after 0.010 seconds.
+[原日志:105] 􁁛  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() passed after 0.010 seconds.
+[原日志:106] 􁁛  Test rangeRequiresMatchingContentRange() passed after 0.010 seconds.
+[原日志:107] 􁁛  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases passed after 0.011 seconds.
+[原日志:108] 􁁛  Test conditionalPutRetryChecksForNewObject() passed after 0.011 seconds.
+[原日志:109] 􁁛  Test s3MissingObjectIsWrittenWithConditions(operation:) with 4 test cases passed after 0.012 seconds.
+[原日志:110] 􁁛  Test s3MultipartChecksAgainBeforePublishing() passed after 0.013 seconds.
+[原日志:111] 􁁛  Test s3RecursiveDeleteReportsAlreadyDeletedCount() passed after 0.013 seconds.
+[原日志:112] 􁁛  Test s3FailedMultipartCopyNeverDeletesSource(cleanupFails:) with 2 test cases passed after 0.014 seconds.
+[原日志:113] 􁁛  Test recursiveRemoveDeletesEveryNestedObject() passed after 0.014 seconds.
+[原日志:114] 􁁛  Test xmlAndHTTPErrorsMapToRemoteErrors() passed after 0.015 seconds.
+[原日志:115] 􁁛  Test s3LargeMoveUsesMultipartCopyBeforeDeletingSource() passed after 0.016 seconds.
+[原日志:116] 􁁛  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() passed after 0.016 seconds.
+[原日志:117] 􁁛  Test s3AccountLimitsRequestsAcrossProviders(configurationVariant:) with 3 test cases passed after 0.017 seconds.
+[原日志:118] 􁁛  Test multipartConditionalConflictReuploadsOnce() passed after 0.019 seconds.
+[原日志:119] 􁁛  Test multipartThresholdAndLastPartBoundaries() passed after 0.027 seconds.
+[原日志:120] 􁁛  Test run with 34 tests in 0 suites passed after 0.028 seconds.

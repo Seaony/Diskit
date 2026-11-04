@@ -1,0 +1,123 @@
+import Foundation
+import Synchronization
+enum TianyiDate {
+  static func parse(_ value: String?) -> Date? {
+    guard let value, !value.isEmpty else { return nil }
+    let normalized =
+      value.replacingOccurrences(of: "\u{202f}", with: " ")
+      .replacingOccurrences(of: "\u{00a0}", with: " ")
+    let iso = ISO8601DateFormatter()
+    if let date = iso.date(from: normalized) { return date }
+    let formats = [
+      "yyyy-MM-dd HH:mm:ss",
+      "yyyy-MM-dd",
+      "MMM d, yyyy h:mm:ss a Z",
+      "MMM d, yyyy, h:mm:ss a Z",
+      "MMM d, yyyy h:mm:ss a",
+      "MMM d, yyyy, h:mm:ss a",
+    ]
+    for format in formats {
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
+      formatter.dateFormat = format
+      if let date = formatter.date(from: normalized) { return date }
+    }
+    return nil
+  }
+}
+enum LanzouValues {
+  static func parseDate(_ value: String?, relativeTo referenceDate: Date = Date()) -> Date {
+    guard let value, !value.isEmpty else { return Date(timeIntervalSince1970: 0) }
+    for format in ["yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd"] {
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
+      formatter.dateFormat = format
+      if let date = formatter.date(from: value) { return date }
+    }
+    let iso = ISO8601DateFormatter()
+    if let date = iso.date(from: value) { return date }
+    guard let match = LanzouHTML.firstMatch(#"([0-9]+)\s*([秒分小]|小时|分钟|天)前"#, in: value),
+      let numberText = match[1], let number = Double(numberText)
+    else {
+      if value.contains("昨天") { return referenceDate.addingTimeInterval(-86_400) }
+      if value.contains("前天") { return referenceDate.addingTimeInterval(-172_800) }
+      return Date(timeIntervalSince1970: 0)
+    }
+    let seconds =
+      number
+      * (match[2] == "秒"
+        ? 1
+        : match[2] == "分" || match[2] == "分钟"
+          ? 60 : match[2] == "小" || match[2] == "小时" ? 3600 : 86_400)
+    return referenceDate.addingTimeInterval(-seconds)
+  }
+}
+struct LanzouHTMLMatch {
+  private let groups: [String?]
+
+  init(_ groups: [String?]) {
+    self.groups = groups
+  }
+
+  subscript(index: Int) -> String? {
+    guard groups.indices.contains(index) else { return nil }
+    return groups[index]
+  }
+}
+enum LanzouHTML {
+  static func firstMatch(_ pattern: String, in text: String) -> LanzouHTMLMatch? {
+    guard
+      let expression = try? NSRegularExpression(
+        pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators])
+    else { return nil }
+    let range = NSRange(text.startIndex..., in: text)
+    guard let match = expression.firstMatch(in: text, range: range) else { return nil }
+    return LanzouHTMLMatch(
+      (0..<match.numberOfRanges).map { index in
+        Range(match.range(at: index), in: text).map { String(text[$0]) }
+      })
+  }
+}
+enum ChinaWebSupport {
+  static func parseDate(_ value: String?) -> Date {
+    guard let value, !value.isEmpty else { return Date(timeIntervalSince1970: 0) }
+    if value.count == 14, value.utf8.allSatisfy({ (48...57).contains($0) }) {
+      let formatter = DateFormatter()
+      formatter.calendar = Calendar(identifier: .gregorian)
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)
+      formatter.dateFormat = "yyyyMMddHHmmss"
+      formatter.isLenient = false
+      guard let date = formatter.date(from: value), formatter.string(from: date) == value else {
+        return Date(timeIntervalSince1970: 0)
+      }
+      return date
+    }
+    if let seconds = Int64(value) {
+      return Date(timeIntervalSince1970: Double(seconds) / (value.count > 10 ? 1_000 : 1))
+    }
+    let iso = ISO8601DateFormatter()
+    iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    if let date = iso.date(from: value) { return date }
+    iso.formatOptions = [.withInternetDateTime]
+    if let date = iso.date(from: value) { return date }
+    for format in ["yyyyMMddHHmmss", "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd'T'HH:mm:ss"] {
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 3_600)
+      formatter.dateFormat = format
+      if let date = formatter.date(from: value) { return date }
+    }
+    return Date(timeIntervalSince1970: 0)
+  }
+}
+
+let inputs = ["2026-11-04 15:30:00", "2026-11-04T07:30:00Z", "2026-11-04", "invalid"]
+for (name, parse) in [("Tianyi", { TianyiDate.parse($0)?.timeIntervalSince1970 ?? 0 }), ("Lanzou", { LanzouValues.parseDate($0).timeIntervalSince1970 }), ("China", { ChinaWebSupport.parseDate($0).timeIntervalSince1970 })] as [(String, (String) -> Double)] {
+ var sum = 0.0
+ let start = ContinuousClock.now
+ for _ in 0..<500 { for input in inputs { sum += parse(input) } }
+ print("\(name): 2000 parses, \(start.duration(to: .now)), checksum \(sum)")
+}

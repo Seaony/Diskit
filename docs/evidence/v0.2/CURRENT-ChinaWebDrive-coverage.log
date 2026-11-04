@@ -1,0 +1,235 @@
+Building for debugging...
+[Provisioning 4 / 16]
+[2 / 31] Core
+[10 / 39] Core
+[12 / 41] Core
+[18 / 45] CoreTestSupport
+[24 / 50] Core
+[37 / 58] CoreTestSupport
+[38 / 57] ChinaWebDrive
+[43 / 54] ChinaWebDriveTests-product
+[51 / 62] ChinaWebDriveTests-product
+[55 / 61] ChinaWebDriveTests-product
+[57 / 61] ChinaWebDriveTests-product
+Build complete! (3.74秒)
+Test Suite 'All tests' started at 2026-11-04 20:27:47.640.
+Test Suite 'All tests' passed at 2026-11-04 20:27:47.641.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test xunleiRefreshesUnauthorizedRequestOnce() started.
+􀟈  Test xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test mobileConcurrentRejectionsShareOneRefresh() started.
+􀟈  Test mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test mobileCloudSignerMatchesMitGoldenVector() started.
+􀟈  Test mobileMoveRecoveryFailureKeepsExplicitLoginSemantics() started.
+􀟈  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() started.
+􀟈  Test mobileSessionRefreshesRouteAndAccountWithoutReplayingForever() started.
+􀟈  Test xunleiUploadRejectsExistingNameBeforeCreatingTask() started.
+􀟈  Test xunleiLateListingCannotRefillOlderCache() started.
+􀟈  Test chinaWebCompactDateIsNotMillisecondsSinceEpoch() started.
+􀟈  Test xunleiUploadPartSplitHandlesBoundaries() started.
+􀟈  Test xunleiConcurrentUnauthorizedResponsesShareRefresh() started.
+􀟈  Test mobileRecoveryErrorKeepsBothCausesAndConfirmedPath() started.
+􀟈  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() started.
+􀟈  Test xunleiServerFailureDoesNotRefreshEvenWithTokenText() started.
+􀟈  Test mobileCloudExistingNameNeverUploadsOrRenames() started.
+􀟈  Test mobileSessionFallsBackOnlyWhenRouteIsMissing() started.
+􀟈  Test xunleiCapacityPreservesMissingQuotaAndRealZero() started.
+􀟈  Test xunleiInputAndRefreshValidationNeverSendsInvalidRequests() started.
+􀟈  Test mobileCloudPartSplitHandlesZeroExactAndRemainder() started.
+􀟈  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() started.
+􀟈  Test mobileRefreshFailureDoesNotRetainBrokenTask(mode:) started.
+􀟈  Test xunleiPaginatesAndUsesTokenHeaders() started.
+􀟈  Test mobileCloudPaginatesAndUsesRecordedHeaders() started.
+􀟈  Test xunleiExpiredDownloadLinkRefreshesDetailWithoutLeakingAuth(missingReplacement:) started.
+􀟈  Test mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test xunleiUploadUsesAliyunMultipartWithoutSendingLoginToVendor() started.
+􀟈  Test mobileListingRejectsInvalidRemoteMetadata(problem:) started.
+􀟈  Test mobileEmptyRangeDoesNotRequestDownloadURL() started.
+􀟈  Test xunleiBusinessFailurePreservesActionableError(reason:) started.
+􀟈  Test xunleiDuplicateIDsAreReportedInsteadOfAmbiguousCache() started.
+􀟈  Test xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test mobileSha1DigestMatchesKnownBytesAndRejectsUnknownAlgorithms() started.
+􀟈  Test xunleiSDKWrappedNetworkErrorKeepsPOSIXMeaning() started.
+􀟈  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() started.
+􀟈  Test xunleiForbiddenPermissionDoesNotForceLogin() started.
+􀟈  Test xunleiMalformedListingFailsWithoutKeepingStaleEntries() started.
+􀟈  Test mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test mobileCloudRangeValidatesContentRangeAndDoesNotSendAuthToCDN() started.
+􀟈  Test xunleiHTTPConflictMapsToEEXIST() started.
+􀟈  Test mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) started.
+􀟈  Test chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() started.
+􀟈  Test mobileDownloadRejectsWrongFullResponseAndRetriesExpiredLink(ranged:) started.
+􀟈  Test chinaWebBusinessErrorsKeepTheirPOSIXMeaning() started.
+􀟈  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test mobileFailedRollbackReportsLastConfirmedLocation() started.
+􀟈  Test mobileCloudUploadUsesServerPartBoundariesAndFinishes() started.
+􀟈  Test case passing 1 argument problem → "renamed" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test case passing 1 argument mode → "complete" to xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test case passing 1 argument mode → "renamed" to xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test xunleiFilenameCannotInvalidateLogin() started.
+􀟈  Test mobileFailedFinalRenameRestoresOriginalLocation() started.
+􀟈  Test case passing 1 argument mobile → false to trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test case passing 1 argument problem → "empty-id" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test case passing 1 argument problem → "missing-upload" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() started.
+􀟈  Test xunleiEmptyErrorDoesNotRejectSuccess() started.
+􀟈  Test mobileCloudRequestsLaterUploadURLBatches() started.
+􀟈  Test mobileRootAndFileTraversalKeepPOSIXSemantics() started.
+􀟈  Test mobileCloudMkdirAndMoveUseDocumentedOperations() started.
+􀟈  Test case passing 1 argument mobile → true to trashFailureNeverFallsBackToPermanentDeletion(mobile:) started.
+􀟈  Test case passing 1 argument mode → "unsupported" to xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test case passing 1 argument problem → "missing-parts" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test mobileServerFailureDoesNotRefreshEvenWithStaleLoginCode() started.
+􀟈  Test case passing 1 argument mode → "missing-key" to xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test mobileCloudSpaceUsesAccountEndpointAndUserDomain() started.
+􀟈  Test case passing 1 argument problem → "wrong-count" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test case passing 1 argument mode → "small-part" to xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) started.
+􀟈  Test chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􀟈  Test case passing 1 argument problem → "wrong-size" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test mobileRejectsInvalidLocalCredentialsNonceAndDownloadURL() started.
+􀟈  Test xunleiUploadFailureTrashesOnlyTheNewFile() started.
+􀟈  Test mobileCloudRefreshesOnceAndRepeatsRoute() started.
+􀟈  Test case passing 1 argument problem → "unsafe-url" to mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) started.
+􀟈  Test mobileCapacityRejectsInconsistentOrMalformedValues(problem:) started.
+􀟈  Test xunleiMutationFailureInvalidatesCachedDirectory() started.
+􀟈  Test xunleiRangeUsesDetailLinkWithoutLeakingLoginHeaders() started.
+􀟈  Test mobileCapacityPreservesPartialAndUnknownValues() started.
+􀟈  Test mobileSplitRejectsInvalidSizesAndExcessiveParts() started.
+􀟈  Test xunleiExistingDirectoryNameFailsBeforeCreate() started.
+􀟈  Test xunleiWrappedDirectoryCreationValidatesReturnedName(renamed:) started.
+􀟈  Test mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test mobileCrossDirectoryRenamePreservesBothExistingNames() started.
+􀟈  Test httpErrorsMapToExpectedPOSIXCodes() started.
+􀟈  Test xunleiBusinessErrorsMapToPOSIX() started.
+􀟈  Test xunleiRootAndCachedAncestorRespectDisconnect() started.
+􀟈  Test xunleiPartFileCopiesOnlyBoundedRangeAndCleansUp() started.
+􀟈  Test xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test case passing 1 argument mode → "empty" to mobileRefreshFailureDoesNotRetainBrokenTask(mode:) started.
+􀟈  Test case passing 1 argument mode → "throw" to mobileRefreshFailureDoesNotRetainBrokenTask(mode:) started.
+􀟈  Test case passing 1 argument missingReplacement → false to xunleiExpiredDownloadLinkRefreshesDetailWithoutLeakingAuth(missingReplacement:) started.
+􀟈  Test case passing 1 argument missingReplacement → true to xunleiExpiredDownloadLinkRefreshesDetailWithoutLeakingAuth(missingReplacement:) started.
+􀟈  Test case passing 1 argument reason → "not_found" to xunleiBusinessFailurePreservesActionableError(reason:) started.
+􀟈  Test case passing 1 argument reason → "too_many_requests" to xunleiBusinessFailurePreservesActionableError(reason:) started.
+􀟈  Test case passing 1 argument reason → "not_allowed" to xunleiBusinessFailurePreservesActionableError(reason:) started.
+􀟈  Test case passing 1 argument reason → "invalid_params" to xunleiBusinessFailurePreservesActionableError(reason:) started.
+􀟈  Test case passing 1 argument problem → "negative-size" to mobileListingRejectsInvalidRemoteMetadata(problem:) started.
+􀟈  Test case passing 1 argument directory → false to mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test case passing 1 argument problem → "unknown-type" to mobileListingRejectsInvalidRemoteMetadata(problem:) started.
+􀟈  Test case passing 1 argument message → "captcha required" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument directory → true to mobileExistingCreateResultIsNeverDeleted(directory:) started.
+􀟈  Test case passing 1 argument message → "请完成人机验证" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument problem → "empty-id" to mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) started.
+􀟈  Test case passing 1 argument message → "risk_control" to mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) started.
+􀟈  Test case passing 1 argument problem → "existing" to mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) started.
+􀟈  Test case passing 1 argument problem → "renamed" to mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) started.
+􀟈  Test case passing 1 argument ranged → false to mobileDownloadRejectsWrongFullResponseAndRetriesExpiredLink(ranged:) started.
+􀟈  Test case passing 1 argument progresses → false to xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test case passing 1 argument ranged → true to mobileDownloadRejectsWrongFullResponseAndRetriesExpiredLink(ranged:) started.
+􀟈  Test case passing 1 argument progresses → true to xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) started.
+􀟈  Test case passing 2 arguments mobile → false, directory → false to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → false, directory → true to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → true, directory → false to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􀟈  Test case passing 2 arguments mobile → true, directory → true to cloudRemovalUsesRecoverableEndpoint(mobile:directory:) started.
+􁁛  Test mobileMoveRecoveryFailureKeepsExplicitLoginSemantics() passed after 0.013 seconds.
+􁁛  Test mobileCloudSignerMatchesMitGoldenVector() passed after 0.013 seconds.
+􁁛  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) with 2 test cases passed after 0.014 seconds.
+􁁛  Test xunleiUploadRejectsExistingNameBeforeCreatingTask() passed after 0.013 seconds.
+􀟈  Test case passing 2 arguments kind → "mobile", phase → "send" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "mobile", phase → "stream" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "mobile", phase → "body" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "mobile", phase → "refresh" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "xunlei", phase → "send" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "xunlei", phase → "stream" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "xunlei", phase → "body" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 2 arguments kind → "xunlei", phase → "refresh" to chinaWebNetworkErrorsRemainPOSIX(kind:phase:) started.
+􀟈  Test case passing 1 argument disconnect → false to mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􀟈  Test case passing 1 argument disconnect → true to mobileLateDirectoryCannotReplaceNewerState(disconnect:) started.
+􁁛  Test xunleiUploadPartSplitHandlesBoundaries() passed after 0.015 seconds.
+􁁛  Test xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) with 5 test cases passed after 0.015 seconds.
+􀟈  Test case passing 1 argument problem → "negative" to mobileCapacityRejectsInconsistentOrMalformedValues(problem:) started.
+􀟈  Test case passing 1 argument problem → "free-over-total" to mobileCapacityRejectsInconsistentOrMalformedValues(problem:) started.
+􀟈  Test case passing 1 argument problem → "malformed" to mobileCapacityRejectsInconsistentOrMalformedValues(problem:) started.
+􁁛  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() passed after 0.016 seconds.
+􁁛  Test xunleiServerFailureDoesNotRefreshEvenWithTokenText() passed after 0.016 seconds.
+􀟈  Test case passing 1 argument renamed → false to xunleiWrappedDirectoryCreationValidatesReturnedName(renamed:) started.
+􀟈  Test case passing 1 argument renamed → true to xunleiWrappedDirectoryCreationValidatesReturnedName(renamed:) started.
+􀟈  Test case passing 1 argument contradictory → false to mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test case passing 1 argument contradictory → true to mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) started.
+􀟈  Test case passing 1 argument status → 401 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test case passing 1 argument status → 403 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􀟈  Test case passing 1 argument status → 200 to xunleiVerificationDoesNotRefreshLogin(status:) started.
+􁁛  Test mobileCloudPartSplitHandlesZeroExactAndRemainder() passed after 0.017 seconds.
+􁁛  Test xunleiCapacityPreservesMissingQuotaAndRealZero() passed after 0.017 seconds.
+􁁛  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() passed after 0.017 seconds.
+􁁛  Test mobileRecoveryErrorKeepsBothCausesAndConfirmedPath() passed after 0.018 seconds.
+􁁛  Test xunleiExpiredDownloadLinkRefreshesDetailWithoutLeakingAuth(missingReplacement:) with 2 test cases passed after 0.017 seconds.
+􁁛  Test xunleiDuplicateIDsAreReportedInsteadOfAmbiguousCache() passed after 0.017 seconds.
+􁁛  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() passed after 0.018 seconds.
+􁁛  Test xunleiBusinessFailurePreservesActionableError(reason:) with 4 test cases passed after 0.017 seconds.
+􁁛  Test mobileCloudExistingNameNeverUploadsOrRenames() passed after 0.018 seconds.
+􁁛  Test xunleiForbiddenPermissionDoesNotForceLogin() passed after 0.017 seconds.
+􁁛  Test xunleiSDKWrappedNetworkErrorKeepsPOSIXMeaning() passed after 0.017 seconds.
+􁁛  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() passed after 0.017 seconds.
+􁁛  Test xunleiHTTPConflictMapsToEEXIST() passed after 0.017 seconds.
+􁁛  Test xunleiMalformedListingFailsWithoutKeepingStaleEntries() passed after 0.017 seconds.
+􁁛  Test mobileSha1DigestMatchesKnownBytesAndRejectsUnknownAlgorithms() passed after 0.018 seconds.
+􁁛  Test mobileSessionFallsBackOnlyWhenRouteIsMissing() passed after 0.018 seconds.
+􁁛  Test mobileEmptyRangeDoesNotRequestDownloadURL() passed after 0.018 seconds.
+􁁛  Test chinaWebCompactDateIsNotMillisecondsSinceEpoch() passed after 0.018 seconds.
+􁁛  Test chinaWebBusinessErrorsKeepTheirPOSIXMeaning() passed after 0.018 seconds.
+􁁛  Test mobileListingRejectsInvalidRemoteMetadata(problem:) with 2 test cases passed after 0.018 seconds.
+􁁛  Test mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) with 3 test cases passed after 0.019 seconds.
+􁁛  Test xunleiPaginatesAndUsesTokenHeaders() passed after 0.019 seconds.
+􁁛  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) with 4 test cases passed after 0.018 seconds.
+􁁛  Test xunleiFilenameCannotInvalidateLogin() passed after 0.018 seconds.
+􁁛  Test mobileCloudRangeValidatesContentRangeAndDoesNotSendAuthToCDN() passed after 0.019 seconds.
+􁁛  Test xunleiEmptyErrorDoesNotRejectSuccess() passed after 0.018 seconds.
+􁁛  Test mobileExistingCreateResultIsNeverDeleted(directory:) with 2 test cases passed after 0.019 seconds.
+􁁛  Test mobileDownloadRejectsWrongFullResponseAndRetriesExpiredLink(ranged:) with 2 test cases passed after 0.019 seconds.
+􁁛  Test mobileRootAndFileTraversalKeepPOSIXSemantics() passed after 0.019 seconds.
+􁁛  Test mobileServerFailureDoesNotRefreshEvenWithStaleLoginCode() passed after 0.018 seconds.
+􁁛  Test mobileCloudSpaceUsesAccountEndpointAndUserDomain() passed after 0.016 seconds.
+􁁛  Test xunleiMutationFailureInvalidatesCachedDirectory() passed after 0.014 seconds.
+􁁛  Test xunleiRangeUsesDetailLinkWithoutLeakingLoginHeaders() passed after 0.014 seconds.
+􁁛  Test mobileRejectsInvalidLocalCredentialsNonceAndDownloadURL() passed after 0.014 seconds.
+􁁛  Test xunleiExistingDirectoryNameFailsBeforeCreate() passed after 0.014 seconds.
+􁁛  Test mobileSplitRejectsInvalidSizesAndExcessiveParts() passed after 0.014 seconds.
+􁁛  Test xunleiWrappedDirectoryCreationValidatesReturnedName(renamed:) with 2 test cases passed after 0.014 seconds.
+􁁛  Test httpErrorsMapToExpectedPOSIXCodes() passed after 0.014 seconds.
+􁁛  Test mobileCapacityRejectsInconsistentOrMalformedValues(problem:) with 3 test cases passed after 0.014 seconds.
+􁁛  Test xunleiBusinessErrorsMapToPOSIX() passed after 0.014 seconds.
+􁁛  Test xunleiRootAndCachedAncestorRespectDisconnect() passed after 0.014 seconds.
+􁁛  Test mobileCloudUploadUsesServerPartBoundariesAndFinishes() passed after 0.019 seconds.
+􁁛  Test xunleiVerificationDoesNotRefreshLogin(status:) with 3 test cases passed after 0.014 seconds.
+􁁛  Test mobileCloudRequestsLaterUploadURLBatches() passed after 0.019 seconds.
+􁁛  Test xunleiUploadFailureTrashesOnlyTheNewFile() passed after 0.015 seconds.
+􁁛  Test mobileCloudPaginatesAndUsesRecordedHeaders() passed after 0.020 seconds.
+􁁛  Test mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) with 7 test cases passed after 0.020 seconds.
+􁁛  Test mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) with 3 test cases passed after 0.020 seconds.
+􁁛  Test xunleiLateListingCannotRefillOlderCache() passed after 0.020 seconds.
+􁁛  Test xunleiUploadUsesAliyunMultipartWithoutSendingLoginToVendor() passed after 0.020 seconds.
+􁁛  Test xunleiRefreshesUnauthorizedRequestOnce() passed after 0.021 seconds.
+􁁛  Test xunleiInputAndRefreshValidationNeverSendsInvalidRequests() passed after 0.020 seconds.
+􁁛  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() passed after 0.020 seconds.
+􁁛  Test mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) with 2 test cases passed after 0.016 seconds.
+􁁛  Test xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) with 2 test cases passed after 0.021 seconds.
+􁁛  Test xunleiConcurrentUnauthorizedResponsesShareRefresh() passed after 0.021 seconds.
+􁁛  Test mobileCloudRefreshesOnceAndRepeatsRoute() passed after 0.017 seconds.
+􁁛  Test mobileRefreshFailureDoesNotRetainBrokenTask(mode:) with 2 test cases passed after 0.021 seconds.
+􁁛  Test chinaWebNetworkErrorsRemainPOSIX(kind:phase:) with 8 test cases passed after 0.017 seconds.
+􁁛  Test mobileLateDirectoryCannotReplaceNewerState(disconnect:) with 2 test cases passed after 0.017 seconds.
+􁁛  Test mobileCloudMkdirAndMoveUseDocumentedOperations() passed after 0.022 seconds.
+􁁛  Test mobileFailedRollbackReportsLastConfirmedLocation() passed after 0.022 seconds.
+􁁛  Test mobileCrossDirectoryRenamePreservesBothExistingNames() passed after 0.018 seconds.
+􁁛  Test chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() passed after 0.023 seconds.
+􁁛  Test mobileSessionRefreshesRouteAndAccountWithoutReplayingForever() passed after 0.023 seconds.
+􁁛  Test mobileCapacityPreservesPartialAndUnknownValues() passed after 0.019 seconds.
+􁁛  Test mobileFailedFinalRenameRestoresOriginalLocation() passed after 0.023 seconds.
+􁁛  Test mobileConcurrentRejectionsShareOneRefresh() passed after 0.026 seconds.
+􁁛  Test xunleiPartFileCopiesOnlyBoundedRangeAndCleansUp() passed after 0.044 seconds.
+􁁛  Test run with 77 tests in 0 suites passed after 0.050 seconds.

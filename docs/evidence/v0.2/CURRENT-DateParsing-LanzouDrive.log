@@ -1,0 +1,25 @@
+Building for debugging...
+[Pre-planning 1 / 214]
+[Planning deferred tasks]
+[8 / 38]
+[10 / 35] Core
+[27 / 52] Core
+[31 / 58] CoreTestSupport
+[46 / 73] CoreTestSupport
+[48 / 73] CoreTestSupport
+[53 / 73] LanzouDrive
+[53 / 73] Core
+[56 / 73] LanzouDrive
+[61 / 72] LanzouDriveTests-product
+[66 / 77] LanzouDriveTests-product
+[70 / 76] LanzouDriveTests-product
+[72 / 76] LanzouDriveTests-product
+Build complete! (5.46秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test relativeFileDatesStayStableWithinSession() started.
+􀟈  Test lanzouSharedDateParsersPreserveAbsoluteAndRelativeDates() started.
+􁁛  Test relativeFileDatesStayStableWithinSession() passed after 0.030 seconds.
+􁁛  Test lanzouSharedDateParsersPreserveAbsoluteAndRelativeDates() passed after 0.032 seconds.
+􁁛  Test run with 2 tests in 0 suites passed after 0.032 seconds.

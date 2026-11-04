@@ -19,7 +19,7 @@ open build/DerivedData/Build/Products/Release/Kayoi.app
 `make build` 构建 Debug；`make format` 使用 Xcode 自带 swift-format。
 工程由 `project.yml` 生成，不提交 `.xcodeproj`、构建缓存或本地密钥配置。
 
-阶段一主 App 和开发工具使用本机 `Apple Development: seaony@outlook.com` 身份签名，不需要 Team ID、付费能力或描述文件。可通过 `SIGN_IDENTITY` 指定自己的 Apple Development 身份。钥匙串首次提示访问时，请核对程序后允许；开发工具需要单独允许。测试使用随机 service，结束时删除测试条目。
+阶段一主 App 和开发工具使用本机 `Apple Development: seaony@outlook.com` 身份签名，不需要 Team ID、付费能力或描述文件。可通过 `SIGN_IDENTITY` 指定自己的 Apple Development 身份。钥匙串首次提示访问时，请核对程序后允许；开发工具需要单独允许。单元测试使用内存密钥存储，不读写真实钥匙串。
 
 配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
 
@@ -31,13 +31,13 @@ SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Pro
 
 添加位置选择 SMB，填写主机、用户名、密码与共享名。“列出共享”使用系统 smbutil，密码通过终端交互输入，不放入命令行或环境变量；保存前另用 NetFS 验证所填密码和共享，在独立路径临时挂载后推出。已有挂载不变，验证失败不会保存。
 
-Windows 需开启文件和打印机共享；微软账户填邮箱与账户密码，不使用 PIN。保存后可挂载、推出、编辑、拖动排序、删除；密码存登录钥匙串，配置不存密码。App 退出保留系统托管的 SMB 挂载。开机启动通过系统登录项控制，需要使用稳定位置的 App。
+Windows 需开启文件和打印机共享；微软账户填邮箱与账户密码，不使用 PIN。保存后可挂载、推出、编辑、拖动排序、删除；密码存登录钥匙串，配置不存密码。App 退出取消正在进行的测试、登录和配对，保留系统托管的 SMB、WebDAV、NFS 挂载。开机启动通过系统登录项控制，需要使用稳定位置的 App。
 
 日志在数据目录的 `Logs/` 内，保留最近 7 天的错误日志。界面和真机验证步骤见验收记录；目前没有真实 Windows 共享的通过结论。
 
 ## WebDAV 与 NFS
 
-WebDAV 支持 HTTP、HTTPS 和常见服务预设，使用完整服务器 URL、用户名与密码；NFS 使用服务器地址和导出路径。两者都声明为系统挂载类型，保存前的密码测试会临时挂载到独立路径，成功后推出。
+WebDAV 支持 HTTP、HTTPS 和常见服务预设，使用完整服务器 URL、用户名与密码；NFS 使用服务器地址和导出路径。两者都声明为系统挂载类型，保存前的连接测试会临时挂载到独立路径，成功后推出。
 
 本机对临时 WebDAV 服务的 `mount_webdav` 直接挂载和推出成功，但 `NetFSMountURLAsync` 对该测试服务返回认证错误。实现保留 NetFS 路线，实际坚果云、Nextcloud、ownCloud、群晖、威联通与 NFS 导出仍需用户按验收清单测试。
 
@@ -92,7 +92,7 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 - OneDrive 大文件使用上传会话；Google Drive 小于或等于 5 MiB 使用 multipart，大文件使用 resumable；Dropbox 大文件使用 upload session。
 - 六个平台遇到同名文件都报错，不改动旧文件。
 
-在 `Config/Secrets.xcconfig` 填写各平台 client ID、client secret 和已登记的 `kayoi://oauth/...` 回调地址。百度上传还需要 App ID。凭据缺失时界面只说明“此网盘尚未在 Kayoi 中启用”，不会显示开发字段。真实授权、令牌刷新、网页端结果和回收站仍待用户验收。
+OneDrive、Google Drive、Dropbox 使用公共客户端 PKCE，只需配置 client ID，不携带 client secret。OneDrive 和 Dropbox 的回调须与平台登记一致；Google 按其 macOS 客户端约定，将 `IDENTIFIER.apps.googleusercontent.com` 派生为 `com.googleusercontent.apps.IDENTIFIER:/oauth2redirect/google`，不再读取旧的 `GOOGLE_REDIRECT_URI`。实际 Google 客户端类型及回调兼容性需用账号验收。其他平台按要求配置 client ID、client secret 和回调地址，百度上传还需要 App ID；桌面应用不能保密内置 secret。凭据缺失时界面只说明“此网盘尚未在 Kayoi 中启用”，不会显示开发字段。真实授权、令牌刷新、网页端结果和回收站仍待用户验收。
 
 ## 实验性网页网盘
 
@@ -108,4 +108,6 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 
 只做本地界面检查时，用 `KAYOI_DEMO=1 KAYOI_PANEL_WINDOW=1 build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi`。该路径使用随机临时配置目录、独立设置域和内存密钥，不启动设备发现、局域网浏览、真实通知与真实挂载；测试、保存、配对使用假操作。模拟共享密码填写 `error` 可触发认证失败。
 
-`KAYOI_DEMO_STATE` 支持 `mixed`（默认 20 个位置）、`empty`、`discovered`、`disconnected`、`unavailable`、`connecting`、`authorization`、`tested`、`mounted`、`ejecting`、`failed`、`login`；`types` 展示全部底层类型。20 行无法同时容纳全部类型，因此完整类型覆盖用 `types` 场景补充。`KAYOI_DEMO_APPEARANCE=light|dark` 只切换演示进程外观，不改系统设置。伪语言开关尚在接入，当前不作为布局验收证据。
+`KAYOI_DEMO_STATE` 支持 `mixed`（默认 20 个位置）、`empty`、`discovered`、`disconnected`、`unavailable`、`connecting`、`authorization`、`tested`、`mounted`、`ejecting`、`failed`、`login`；`types` 展示全部底层类型。20 行无法同时容纳全部类型，因此完整类型覆盖用 `types` 场景补充。`KAYOI_DEMO_APPEARANCE=light|dark` 只切换演示进程外观，不改系统设置。`KAYOI_PSEUDO_LOCALE=1` 在演示模式下强制英文并扩展约 40% 长度，用于检查长文案布局；不改变系统语言。实际截图结果记录在验收报告中。
+
+固定表单验收可设置 `KAYOI_DEMO_EDITOR_TYPE=<ConnectionKind 原始值>`、`KAYOI_DEMO_EDITOR_STATE=blank|filled|error|testing|success`，应用会打开对应演示窗口。设置页可用 `KAYOI_DEMO_SETTINGS_TAB` 选择。设置 `KAYOI_LAYOUT_DIR=<绝对目录>` 会导出演示窗口的布局测量，`APP_GRID=1` 显示辅助网格；这些开关在正式模式下忽略。运行 `tools/grid-lint.sh` 检查网格常量，再用 `swift tools/check-layout.swift <布局 JSON 路径>` 检查实际布局。

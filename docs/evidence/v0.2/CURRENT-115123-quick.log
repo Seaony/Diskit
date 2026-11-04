@@ -1,0 +1,55 @@
+Building for debugging...
+[2 / 11] CloudDrive
+[6 / 15] CloudDrive
+[10 / 16] CloudDrive
+[13 / 16] CloudDriveTests-product
+[18 / 21] CloudDriveTests-product
+[24 / 26] CloudDriveTests-product
+Build complete! (3.54秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test drive115RefreshTokenErrorInvalidatesLogin() started.
+􀟈  Test drive115SpaceRefreshesAfterConnection() started.
+􀟈  Test drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() started.
+􀟈  Test drive115UploadCallbackFailureNeverReportsSuccess(status:) started.
+􀟈  Test drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) started.
+􀟈  Test drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() started.
+􀟈  Test drive115PaginatesAndUploadsConfiguredSlices() started.
+􀟈  Test drive123UploadCompletionStopsAtItsLimit() started.
+􀟈  Test drive123ChecksEverySliceBeforePublishing(status:) started.
+􀟈  Test drive115NumericBusinessStateRefreshesAuthentication() started.
+􀟈  Test drive115OSSCallbackHeadersEncodeJSONAndEmptySubresource() started.
+􀟈  Test drive123UsesTheOfficialTenBillionByteLimit() started.
+􀟈  Test sameDirectoryRenameDoesNotIssueMove(kind:) started.
+􀟈  Test drive123PaginatesAndUsesServerSliceSize() started.
+􀟈  Test case passing 1 argument endpoint → "http://oss-cn-hangzhou.aliyuncs.com" to drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "https://bucket.oss-cn-hangzhou.aliyuncs.com" to drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) started.
+􀟈  Test drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst:) started.
+􀟈  Test case passing 1 argument endpoint → "oss-cn-hangzhou.aliyuncs.com" to drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) started.
+􀟈  Test case passing 1 argument status → 203 to drive115UploadCallbackFailureNeverReportsSuccess(status:) started.
+􀟈  Test case passing 1 argument status → 500 to drive123ChecksEverySliceBeforePublishing(status:) started.
+􀟈  Test drive115FindsDuplicateAcrossShortPages() started.
+􀟈  Test case passing 1 argument status → 200 to drive123ChecksEverySliceBeforePublishing(status:) started.
+􀟈  Test case passing 1 argument status → 200 to drive115UploadCallbackFailureNeverReportsSuccess(status:) started.
+􀟈  Test case passing 1 argument kind → "115" to sameDirectoryRenameDoesNotIssueMove(kind:) started.
+􀟈  Test case passing 1 argument kind → "123" to sameDirectoryRenameDoesNotIssueMove(kind:) started.
+􀟈  Test case passing 1 argument listFirst → true to drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst:) started.
+􀟈  Test case passing 1 argument listFirst → false to drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst:) started.
+􁁛  Test drive115OSSCallbackHeadersEncodeJSONAndEmptySubresource() passed after 0.005 seconds.
+􁁛  Test drive115SpaceRefreshesAfterConnection() passed after 0.005 seconds.
+􁁛  Test drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint:) with 3 test cases passed after 0.005 seconds.
+􁁛  Test sameDirectoryRenameDoesNotIssueMove(kind:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test drive115FindsDuplicateAcrossShortPages() passed after 0.005 seconds.
+􁁛  Test drive123UsesTheOfficialTenBillionByteLimit() passed after 0.006 seconds.
+􁁛  Test drive115NumericBusinessStateRefreshesAuthentication() passed after 0.006 seconds.
+􁁛  Test drive115UploadCallbackFailureNeverReportsSuccess(status:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() passed after 0.006 seconds.
+􁁛  Test drive115RefreshTokenErrorInvalidatesLogin() passed after 0.007 seconds.
+􁁛  Test drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() passed after 0.007 seconds.
+􁁛  Test drive123ChecksEverySliceBeforePublishing(status:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test drive123PaginatesAndUsesServerSliceSize() passed after 0.010 seconds.
+􁁛  Test drive115PaginatesAndUploadsConfiguredSlices() passed after 0.033 seconds.
+􁁛  Test drive123UploadCompletionStopsAtItsLimit() passed after 1.041 seconds.
+􁁛  Test run with 16 tests in 0 suites passed after 1.041 seconds.

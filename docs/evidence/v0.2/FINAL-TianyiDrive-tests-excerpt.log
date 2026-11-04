@@ -1,0 +1,43 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/TianyiDrive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:18] Test Suite 'All tests' passed at 2026-11-04 20:41:38.662.
+[原日志:83] 􁁛  Test uploadPlanCoversZeroExactAndRemainderBoundaries() passed after 0.022 seconds.
+[原日志:84] 􁁛  Test signedRequestsPreservePlusInQueryAndFormValues() passed after 0.022 seconds.
+[原日志:85] 􁁛  Test cookieLoginExchangesSessionAndRestrictsDomains() passed after 0.022 seconds.
+[原日志:86] 􁁛  Test familyScopeRefusesToReusePersonalCredentials() passed after 0.022 seconds.
+[原日志:87] 􁁛  Test tianyiLoginSendsScopedCookieAndFollowsRedirectLocation() passed after 0.022 seconds.
+[原日志:88] 􁁛  Test tianyiTransientRestorationPreservesLogin(_:) with 4 test cases passed after 0.022 seconds.
+[原日志:89] 􁁛  Test tianyiLoginValidatesBeforeReplacingSavedCredentials() passed after 0.022 seconds.
+[原日志:90] 􁁛  Test tianyiObservesCredentialsChangedOutsideTheSession() passed after 0.023 seconds.
+[原日志:91] 􁁛  Test missingPageFailsInsteadOfReturningPartialDirectory() passed after 0.022 seconds.
+[原日志:92] 􁁛  Test familySessionKeyFailurePreservesRecoverableLogin() passed after 0.023 seconds.
+[原日志:93] 􁁛  Test tianyiFileChunkUsesUploadProgressDeadlineRoute() passed after 0.022 seconds.
+[原日志:94] 􁁛  Test tianyiRetriesPersistingRecoveredSessionBeforeUsingIt(newSession:) with 2 test cases passed after 0.023 seconds.
+[原日志:95] 􁁛  Test existingNameFailsBeforeUploadTicket() passed after 0.024 seconds.
+[原日志:96] 􁁛  Test tianyiVerificationChallengeDoesNotInvalidateLogin(reason:) with 3 test cases passed after 0.024 seconds.
+[原日志:97] 􁁛  Test tianyiRestorationRecoversAfterServerFailure() passed after 0.024 seconds.
+[原日志:98] 􁁛  Test tianyiExplicitInvalidGrantInvalidatesLogin() passed after 0.024 seconds.
+[原日志:99] 􁁛  Test listFollowsEveryPageAndSortsEntries() passed after 0.028 seconds.
+[原日志:100] 􁁛  Test httpAndServiceErrorsMapToPOSIXAndHTTP() passed after 0.028 seconds.
+[原日志:101] 􁁛  Test rangeReadUsesShortLivedURLAndValidatesContentRange(_:) with 2 test cases passed after 0.028 seconds.
+[原日志:102] 􁁛  Test partialPagesContinueUntilReportedCountIsComplete() passed after 0.028 seconds.
+[原日志:103] 􁁛  Test tianyiRepeatedFileIdentityDoesNotProduceDuplicatePaths() passed after 0.028 seconds.
+[原日志:104] 􁁛  Test authenticationFailureWithoutExplicitRejectionPreservesStoredCookieSession() passed after 0.028 seconds.
+[原日志:105] 􁁛  Test pagesWithoutCountContinueUntilEmptyPage() passed after 0.028 seconds.
+[原日志:106] 􁁛  Test multipartUploadSendsExactPartsAndCommitsInOrder() passed after 0.029 seconds.
+[原日志:107] 􁁛  Test tianyiCompletedTaskWithFailedItemsIsNotSuccess(state:) with 2 test cases passed after 0.030 seconds.
+[原日志:108] 􁁛  Test malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem:) with 4 test cases passed after 0.031 seconds.
+[原日志:109] 􁁛  Test tianyiTaskProgressExtendsIdleDeadline() passed after 0.033 seconds.
+[原日志:110] 􁁛  Test tianyiRepeatedTaskProgressStillTimesOut() passed after 0.034 seconds.
+[原日志:111] 􁁛  Test familyUsesSeparateCredentialsRootPaginationAndRange() passed after 0.035 seconds.
+[原日志:112] 􁁛  Test tianyiDelayedListCannotRestoreDeletedEntryInCache() passed after 0.036 seconds.
+[原日志:113] 􁁛  Test familyUploadUsesFamilyPrefixAndRejectsDuplicateName() passed after 0.038 seconds.
+[原日志:114] 􁁛  Test tianyiSeparateSessionsShareRestoration(separateSessions:) with 2 test cases passed after 0.043 seconds.
+[原日志:115] 􁁛  Test tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails:) with 2 test cases passed after 0.044 seconds.
+[原日志:116] 􁁛  Test tianyiCrossDirectoryRenameAvoidsBothIntermediateNameConflicts() passed after 0.045 seconds.
+[原日志:117] 􁁛  Test familyMutationsUseFamilyParametersAndPersonalTaskCheck() passed after 0.045 seconds.
+[原日志:118] 􁁛  Test mutationsUseFolderBatchAndRenameEndpoints() passed after 0.046 seconds.
+[原日志:119] 􁁛  Test tianyiTenConcurrentRejectionsShareRestoration(separateSessions:) with 2 test cases passed after 0.141 seconds.
+[原日志:120] 􁁛  Test run with 37 tests in 0 suites passed after 0.142 seconds.

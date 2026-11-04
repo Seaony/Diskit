@@ -1,0 +1,10 @@
+ChinaWebDrive: 1833/2066 = 88.72% (minimum 85%)
+16/17 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudMoveFailure.swift
+517/535 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudProvider.swift
+9/9 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession+Upload.swift
+349/367 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession.swift
+202/203 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/Support.swift
+33/33 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiPartFile.swift
+475/491 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiProvider.swift
+193/195 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiSession.swift
+39/216 /Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiUpload.swift

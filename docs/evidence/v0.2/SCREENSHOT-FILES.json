@@ -1,0 +1,3009 @@
+{
+  "note": "文件库存与矩阵核对；所有目检结论均来自根任务明确确认，文档整理者未重新目检。",
+  "forms": {
+    "zhTypes": [
+      "aliyunDrive",
+      "aliyunOSS",
+      "androidUSB",
+      "androidWiFi",
+      "backblazeB2",
+      "baiduDrive",
+      "cameraUSB",
+      "cloudflareR2",
+      "drive115",
+      "drive123",
+      "dropbox",
+      "googleDrive",
+      "lanzou",
+      "minIO",
+      "mobileCloud",
+      "nfs",
+      "oneDrive",
+      "pikPak",
+      "qiniuKodo",
+      "quark",
+      "ricohGR",
+      "s3",
+      "smb",
+      "tencentCOS",
+      "thunderDrive",
+      "tianyiDrive",
+      "ucDrive",
+      "webdav",
+      "webdavHTTPS"
+    ],
+    "enTypes": [
+      "aliyunDrive",
+      "androidUSB",
+      "androidWiFi",
+      "quark",
+      "s3",
+      "smb"
+    ],
+    "count": 350,
+    "missing": []
+  },
+  "files": [
+    {
+      "path": "docs/screenshots/v0.2/A11Y-panel-high-contrast-light-zh.png",
+      "bytes": 124959,
+      "scope": "其他截图",
+      "visual_review": "未通过：未证明系统增强对比度生效；根任务已询问临时系统设置授权，尚未收到答复，不可用图片文件名推断通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/A11Y-settings-high-contrast-light-zh.png",
+      "bytes": 64954,
+      "scope": "其他截图",
+      "visual_review": "未通过：未证明系统增强对比度生效；根任务已询问临时系统设置授权，尚未收到答复，不可用图片文件名推断通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/DS-11-panel-empty-dark-zh.png",
+      "bytes": 48613,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/DS-11-panel-empty-light-zh.png",
+      "bytes": 48917,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/FEAT-06-panel-baseline-dark-zh.png",
+      "bytes": 112384,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/FEAT-06-panel-cancel-light-zh.png",
+      "bytes": 105885,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/FEAT-06-panel-discovered-light-zh.png",
+      "bytes": 87465,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/ICON-05-gallery-light-zh.png",
+      "scope": "其他截图",
+      "bytes": 309293,
+      "visual_review": "根任务通过Dia原生打开本地总览并目检全部图标；截图含浏览器框架，无纯页面截图；后续getTab(file:)被URL policy拒绝后已停止该路径"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-all-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 211958,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-all-light-en.png",
+      "scope": "其他截图",
+      "bytes": 214903,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-all-light-zh.png",
+      "bytes": 193894,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-empty-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 70975,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-empty-light-en.png",
+      "scope": "其他截图",
+      "bytes": 70091,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-empty-light-zh.png",
+      "bytes": 68434,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-keyboard-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 211857,
+      "visual_review": "根任务确认修复后覆盖截图通过：只有实际选中tile粗边，有内边距，长副标题help完整；旧失败见before归档"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-keyboard-light-en.png",
+      "scope": "其他截图",
+      "bytes": 213305,
+      "visual_review": "根任务确认修复后覆盖截图通过：只有实际选中tile粗边，有内边距，长副标题help完整；旧失败见before归档"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-keyboard-light-zh.png",
+      "bytes": 84044,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-search-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 72968,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-search-light-en.png",
+      "scope": "其他截图",
+      "bytes": 72776,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-01-picker-search-light-zh.png",
+      "bytes": 69875,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-blank-dark-en.png",
+      "bytes": 104050,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-blank-dark-zh.png",
+      "bytes": 96348,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-blank-light-en.png",
+      "bytes": 103550,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-blank-light-zh.png",
+      "bytes": 95972,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-error-dark-en.png",
+      "bytes": 127461,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-error-dark-zh.png",
+      "bytes": 114950,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-error-light-en.png",
+      "bytes": 125570,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-error-light-zh.png",
+      "bytes": 112889,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-filled-dark-en.png",
+      "bytes": 100177,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-filled-dark-zh.png",
+      "bytes": 94796,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-filled-light-en.png",
+      "bytes": 100133,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-filled-light-zh.png",
+      "bytes": 94664,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-success-dark-en.png",
+      "bytes": 106656,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-success-dark-zh.png",
+      "bytes": 99048,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-success-light-en.png",
+      "bytes": 106537,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-success-light-zh.png",
+      "bytes": 98791,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-testing-dark-en.png",
+      "bytes": 98070,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-testing-dark-zh.png",
+      "bytes": 92924,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-testing-light-en.png",
+      "bytes": 97388,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunDrive-testing-light-zh.png",
+      "bytes": 92134,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-blank-dark-zh.png",
+      "bytes": 125854,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-blank-light-zh.png",
+      "bytes": 125780,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-error-dark-zh.png",
+      "bytes": 127741,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-error-light-zh.png",
+      "bytes": 127170,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-filled-dark-zh.png",
+      "bytes": 131046,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-filled-light-zh.png",
+      "bytes": 132040,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-options-dark-zh.png",
+      "bytes": 140394,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-success-dark-zh.png",
+      "bytes": 129604,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-success-light-zh.png",
+      "bytes": 131163,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-testing-dark-zh.png",
+      "bytes": 123482,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-aliyunOSS-testing-light-zh.png",
+      "bytes": 123819,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-blank-dark-en.png",
+      "bytes": 107988,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-blank-dark-zh.png",
+      "bytes": 100712,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-blank-light-en.png",
+      "bytes": 107692,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-blank-light-zh.png",
+      "bytes": 100050,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-error-dark-en.png",
+      "bytes": 135763,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-error-dark-zh.png",
+      "bytes": 122831,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-error-light-en.png",
+      "bytes": 133990,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-error-light-zh.png",
+      "bytes": 120665,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-filled-dark-en.png",
+      "bytes": 105302,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-filled-dark-zh.png",
+      "bytes": 99144,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-filled-light-en.png",
+      "bytes": 105382,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-filled-light-zh.png",
+      "bytes": 98911,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-success-dark-en.png",
+      "bytes": 111781,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-success-dark-zh.png",
+      "bytes": 103396,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-success-light-en.png",
+      "bytes": 111789,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-success-light-zh.png",
+      "bytes": 103033,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-testing-dark-en.png",
+      "bytes": 98770,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-testing-dark-zh.png",
+      "bytes": 93033,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-testing-light-en.png",
+      "bytes": 98476,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidUSB-testing-light-zh.png",
+      "bytes": 92484,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-blank-dark-en.png",
+      "bytes": 133560,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-blank-dark-zh.png",
+      "bytes": 119040,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-blank-light-en.png",
+      "bytes": 132876,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-blank-light-zh.png",
+      "bytes": 118385,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-error-dark-en.png",
+      "bytes": 135008,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-error-dark-zh.png",
+      "bytes": 119253,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-error-light-en.png",
+      "bytes": 133076,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-error-light-zh.png",
+      "bytes": 117154,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-filled-dark-en.png",
+      "bytes": 132644,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-filled-dark-zh.png",
+      "bytes": 120387,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-filled-light-en.png",
+      "bytes": 132098,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-filled-light-zh.png",
+      "bytes": 119908,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-success-dark-en.png",
+      "bytes": 114203,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-success-dark-zh.png",
+      "bytes": 103351,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-success-light-en.png",
+      "bytes": 114046,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-success-light-zh.png",
+      "bytes": 103051,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-testing-dark-en.png",
+      "bytes": 102761,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-testing-dark-zh.png",
+      "bytes": 94730,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-testing-light-en.png",
+      "bytes": 102298,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-androidWiFi-testing-light-zh.png",
+      "bytes": 94103,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-blank-dark-zh.png",
+      "bytes": 125376,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-blank-light-zh.png",
+      "bytes": 125306,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-error-dark-zh.png",
+      "bytes": 127263,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-error-light-zh.png",
+      "bytes": 126696,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-filled-dark-zh.png",
+      "bytes": 130568,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-filled-light-zh.png",
+      "bytes": 131566,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-success-dark-zh.png",
+      "bytes": 129126,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-success-light-zh.png",
+      "bytes": 130686,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-testing-dark-zh.png",
+      "bytes": 123125,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-backblazeB2-testing-light-zh.png",
+      "bytes": 123442,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-blank-dark-zh.png",
+      "bytes": 96717,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-blank-light-zh.png",
+      "bytes": 96291,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-error-dark-zh.png",
+      "bytes": 115244,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-error-light-zh.png",
+      "bytes": 113161,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-filled-dark-zh.png",
+      "bytes": 95090,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-filled-light-zh.png",
+      "bytes": 94936,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-success-dark-zh.png",
+      "bytes": 99342,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-success-light-zh.png",
+      "bytes": 99057,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-testing-dark-zh.png",
+      "bytes": 93152,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-baiduDrive-testing-light-zh.png",
+      "bytes": 92355,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-blank-dark-zh.png",
+      "bytes": 101814,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-blank-light-zh.png",
+      "bytes": 101030,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-error-dark-zh.png",
+      "bytes": 123452,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-error-light-zh.png",
+      "bytes": 121071,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-filled-dark-zh.png",
+      "bytes": 99861,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-filled-light-zh.png",
+      "bytes": 99463,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-success-dark-zh.png",
+      "bytes": 104113,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-success-light-zh.png",
+      "bytes": 103583,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-testing-dark-zh.png",
+      "bytes": 96531,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cameraUSB-testing-light-zh.png",
+      "bytes": 95696,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-blank-dark-zh.png",
+      "bytes": 125530,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-blank-light-zh.png",
+      "bytes": 125436,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-error-dark-zh.png",
+      "bytes": 127417,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-error-light-zh.png",
+      "bytes": 126826,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-filled-dark-zh.png",
+      "bytes": 130722,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-filled-light-zh.png",
+      "bytes": 131696,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-success-dark-zh.png",
+      "bytes": 129280,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-success-light-zh.png",
+      "bytes": 130808,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-testing-dark-zh.png",
+      "bytes": 123265,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-cloudflareR2-testing-light-zh.png",
+      "bytes": 123539,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-blank-dark-zh.png",
+      "bytes": 96080,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-blank-light-zh.png",
+      "bytes": 95681,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-error-dark-zh.png",
+      "bytes": 114916,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-error-light-zh.png",
+      "bytes": 112858,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-filled-dark-zh.png",
+      "bytes": 94762,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-filled-light-zh.png",
+      "bytes": 94633,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-success-dark-zh.png",
+      "bytes": 99014,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-success-light-zh.png",
+      "bytes": 98745,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-testing-dark-zh.png",
+      "bytes": 92970,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive115-testing-light-zh.png",
+      "bytes": 92207,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-blank-dark-zh.png",
+      "bytes": 96379,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-blank-light-zh.png",
+      "bytes": 96071,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-error-dark-zh.png",
+      "bytes": 115058,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-error-light-zh.png",
+      "bytes": 113008,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-filled-dark-zh.png",
+      "bytes": 94904,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-filled-light-zh.png",
+      "bytes": 94783,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-success-dark-zh.png",
+      "bytes": 99156,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-success-light-zh.png",
+      "bytes": 98901,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-testing-dark-zh.png",
+      "bytes": 93085,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-drive123-testing-light-zh.png",
+      "bytes": 92336,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-blank-dark-zh.png",
+      "bytes": 95279,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-blank-light-zh.png",
+      "bytes": 94879,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-error-dark-zh.png",
+      "bytes": 113963,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-error-light-zh.png",
+      "bytes": 111896,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-filled-dark-zh.png",
+      "bytes": 93809,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-filled-light-zh.png",
+      "bytes": 93671,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-success-dark-zh.png",
+      "bytes": 98061,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-success-light-zh.png",
+      "bytes": 97786,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-testing-dark-zh.png",
+      "bytes": 92104,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-dropbox-testing-light-zh.png",
+      "bytes": 91370,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-blank-dark-zh.png",
+      "bytes": 98222,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-blank-light-zh.png",
+      "bytes": 98026,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-error-dark-zh.png",
+      "bytes": 115764,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-error-light-zh.png",
+      "bytes": 113761,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-filled-dark-zh.png",
+      "bytes": 95610,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-filled-light-zh.png",
+      "bytes": 95536,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-success-dark-zh.png",
+      "bytes": 99862,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-success-light-zh.png",
+      "bytes": 99651,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-testing-dark-zh.png",
+      "bytes": 93568,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-googleDrive-testing-light-zh.png",
+      "bytes": 92843,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-blank-dark-zh.png",
+      "bytes": 117487,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-blank-light-zh.png",
+      "bytes": 117217,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-error-dark-zh.png",
+      "bytes": 131324,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-error-light-zh.png",
+      "bytes": 129239,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-filled-dark-zh.png",
+      "bytes": 111170,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-filled-light-zh.png",
+      "bytes": 111014,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-success-dark-zh.png",
+      "bytes": 115422,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-success-light-zh.png",
+      "bytes": 115138,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-testing-dark-zh.png",
+      "bytes": 107537,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-lanzou-testing-light-zh.png",
+      "bytes": 106784,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-blank-dark-zh.png",
+      "bytes": 122261,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-blank-light-zh.png",
+      "bytes": 122075,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-error-dark-zh.png",
+      "bytes": 124148,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-error-light-zh.png",
+      "bytes": 123465,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-filled-dark-zh.png",
+      "bytes": 127453,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-filled-light-zh.png",
+      "bytes": 128335,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-success-dark-zh.png",
+      "bytes": 126011,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-success-light-zh.png",
+      "bytes": 127447,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-testing-dark-zh.png",
+      "bytes": 120531,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-minIO-testing-light-zh.png",
+      "bytes": 120754,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-blank-dark-zh.png",
+      "bytes": 109205,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-blank-light-zh.png",
+      "bytes": 108229,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-error-dark-zh.png",
+      "bytes": 124484,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-error-light-zh.png",
+      "bytes": 122163,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-filled-dark-zh.png",
+      "bytes": 104330,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-filled-light-zh.png",
+      "bytes": 103938,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-success-dark-zh.png",
+      "bytes": 108582,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-success-light-zh.png",
+      "bytes": 108052,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-testing-dark-zh.png",
+      "bytes": 102434,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-mobileCloud-testing-light-zh.png",
+      "bytes": 101427,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-blank-dark-zh.png",
+      "bytes": 112828,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-blank-light-zh.png",
+      "bytes": 112495,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-error-dark-zh.png",
+      "bytes": 116819,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-error-light-zh.png",
+      "bytes": 115398,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-filled-dark-zh.png",
+      "bytes": 112546,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-filled-light-zh.png",
+      "bytes": 112822,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-success-dark-zh.png",
+      "bytes": 115967,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-success-light-zh.png",
+      "bytes": 116082,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-testing-dark-zh.png",
+      "bytes": 109609,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-nfs-testing-light-zh.png",
+      "bytes": 109176,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-blank-dark-zh.png",
+      "bytes": 95526,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-blank-light-zh.png",
+      "bytes": 95182,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-error-dark-zh.png",
+      "bytes": 114152,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-error-light-zh.png",
+      "bytes": 112102,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-filled-dark-zh.png",
+      "bytes": 93998,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-filled-light-zh.png",
+      "bytes": 93877,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-success-dark-zh.png",
+      "bytes": 98250,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-success-light-zh.png",
+      "bytes": 98003,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-testing-dark-zh.png",
+      "bytes": 92289,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-oneDrive-testing-light-zh.png",
+      "bytes": 91526,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-blank-dark-zh.png",
+      "bytes": 112554,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-blank-light-zh.png",
+      "bytes": 112597,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-error-dark-zh.png",
+      "bytes": 122489,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-error-light-zh.png",
+      "bytes": 119659,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-filled-dark-zh.png",
+      "bytes": 102335,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-filled-light-zh.png",
+      "bytes": 101434,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-success-dark-zh.png",
+      "bytes": 106587,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-success-light-zh.png",
+      "bytes": 106067,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-testing-dark-zh.png",
+      "bytes": 100788,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-pikPak-testing-light-zh.png",
+      "bytes": 99310,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-blank-dark-zh.png",
+      "bytes": 123943,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-blank-light-zh.png",
+      "bytes": 123768,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-error-dark-zh.png",
+      "bytes": 125830,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-error-light-zh.png",
+      "bytes": 125158,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-filled-dark-zh.png",
+      "bytes": 129135,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-filled-light-zh.png",
+      "bytes": 130028,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-success-dark-zh.png",
+      "bytes": 127693,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-success-light-zh.png",
+      "bytes": 129146,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-testing-dark-zh.png",
+      "bytes": 121899,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-qiniuKodo-testing-light-zh.png",
+      "bytes": 122134,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-blank-dark-en.png",
+      "bytes": 127188,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-blank-dark-zh.png",
+      "bytes": 109184,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-blank-light-en.png",
+      "bytes": 126265,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-blank-light-zh.png",
+      "bytes": 108239,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-error-dark-en.png",
+      "bytes": 141493,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-error-dark-zh.png",
+      "bytes": 124414,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-error-light-en.png",
+      "bytes": 139391,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-error-light-zh.png",
+      "bytes": 122125,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-filled-dark-en.png",
+      "bytes": 114209,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-filled-dark-zh.png",
+      "bytes": 104260,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-filled-light-en.png",
+      "bytes": 113954,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-filled-light-zh.png",
+      "bytes": 103900,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-success-dark-en.png",
+      "bytes": 120688,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-success-dark-zh.png",
+      "bytes": 108512,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-success-light-en.png",
+      "bytes": 120362,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-success-light-zh.png",
+      "bytes": 108012,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-testing-dark-en.png",
+      "bytes": 111979,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-testing-dark-zh.png",
+      "bytes": 102319,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-testing-light-en.png",
+      "bytes": 111131,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-quark-testing-light-zh.png",
+      "bytes": 101373,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-blank-dark-zh.png",
+      "bytes": 101266,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-blank-light-zh.png",
+      "bytes": 100455,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-error-dark-zh.png",
+      "bytes": 121333,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-error-light-zh.png",
+      "bytes": 118907,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-filled-dark-zh.png",
+      "bytes": 97742,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-filled-light-zh.png",
+      "bytes": 97299,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-success-dark-zh.png",
+      "bytes": 101994,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-success-light-zh.png",
+      "bytes": 101420,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-testing-dark-zh.png",
+      "bytes": 94669,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ricohGR-testing-light-zh.png",
+      "bytes": 93725,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-blank-dark-en.png",
+      "bytes": 127740,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-blank-dark-zh.png",
+      "bytes": 124222,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-blank-light-en.png",
+      "bytes": 128172,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-blank-light-zh.png",
+      "bytes": 124139,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-error-dark-en.png",
+      "bytes": 138110,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-error-dark-zh.png",
+      "bytes": 126109,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-error-light-en.png",
+      "bytes": 137549,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-error-light-zh.png",
+      "bytes": 125529,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-filled-dark-en.png",
+      "bytes": 134211,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-filled-dark-zh.png",
+      "bytes": 129414,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-filled-light-en.png",
+      "bytes": 135395,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-filled-light-zh.png",
+      "bytes": 130399,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-success-dark-en.png",
+      "bytes": 135252,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-success-dark-zh.png",
+      "bytes": 127972,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-success-light-en.png",
+      "bytes": 136853,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-success-light-zh.png",
+      "bytes": 129512,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-testing-dark-en.png",
+      "bytes": 126945,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-testing-dark-zh.png",
+      "bytes": 122187,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-testing-light-en.png",
+      "bytes": 127389,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-s3-testing-light-zh.png",
+      "bytes": 122520,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-blank-dark-en.png",
+      "bytes": 124415,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-blank-dark-zh.png",
+      "bytes": 118171,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-blank-light-en.png",
+      "bytes": 124311,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-blank-light-zh.png",
+      "bytes": 118125,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-error-dark-en.png",
+      "bytes": 142872,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-error-dark-zh.png",
+      "bytes": 129734,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-error-light-en.png",
+      "bytes": 141191,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-error-light-zh.png",
+      "bytes": 128070,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-filled-dark-en.png",
+      "bytes": 131850,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-filled-dark-zh.png",
+      "bytes": 124702,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-filled-light-en.png",
+      "bytes": 132166,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-filled-light-zh.png",
+      "bytes": 125114,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-options-dark-en.png",
+      "bytes": 139128,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-success-dark-en.png",
+      "bytes": 135835,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-success-dark-zh.png",
+      "bytes": 126481,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-success-light-en.png",
+      "bytes": 136354,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-success-light-zh.png",
+      "bytes": 126732,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-testing-dark-en.png",
+      "bytes": 122924,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-testing-dark-zh.png",
+      "bytes": 116600,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-testing-light-en.png",
+      "bytes": 122960,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-smb-testing-light-zh.png",
+      "bytes": 116284,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-blank-dark-zh.png",
+      "bytes": 126100,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-blank-light-zh.png",
+      "bytes": 126048,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-error-dark-zh.png",
+      "bytes": 127987,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-error-light-zh.png",
+      "bytes": 127438,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-filled-dark-zh.png",
+      "bytes": 131292,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-filled-light-zh.png",
+      "bytes": 132308,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-success-dark-zh.png",
+      "bytes": 129850,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-success-light-zh.png",
+      "bytes": 131415,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-testing-dark-zh.png",
+      "bytes": 123664,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tencentCOS-testing-light-zh.png",
+      "bytes": 124034,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-blank-dark-zh.png",
+      "bytes": 109040,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-blank-light-zh.png",
+      "bytes": 108143,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-error-dark-zh.png",
+      "bytes": 124295,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-error-light-zh.png",
+      "bytes": 121988,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-filled-dark-zh.png",
+      "bytes": 104141,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-filled-light-zh.png",
+      "bytes": 103763,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-success-dark-zh.png",
+      "bytes": 108393,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-success-light-zh.png",
+      "bytes": 107895,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-testing-dark-zh.png",
+      "bytes": 102243,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-thunderDrive-testing-light-zh.png",
+      "bytes": 101282,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-blank-dark-zh.png",
+      "bytes": 116997,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-blank-light-zh.png",
+      "bytes": 115889,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-error-dark-zh.png",
+      "bytes": 130221,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-error-light-zh.png",
+      "bytes": 127767,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-family-dark-zh.png",
+      "bytes": 117422,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-filled-dark-zh.png",
+      "bytes": 110067,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-filled-light-zh.png",
+      "bytes": 109542,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-success-dark-zh.png",
+      "bytes": 114319,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-success-light-zh.png",
+      "bytes": 113651,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-testing-dark-zh.png",
+      "bytes": 106921,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-tianyiDrive-testing-light-zh.png",
+      "bytes": 105863,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-blank-dark-zh.png",
+      "bytes": 108054,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-blank-light-zh.png",
+      "bytes": 107120,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-error-dark-zh.png",
+      "bytes": 123561,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-error-light-zh.png",
+      "bytes": 121260,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-filled-dark-zh.png",
+      "bytes": 103407,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-filled-light-zh.png",
+      "bytes": 103035,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-success-dark-zh.png",
+      "bytes": 107659,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-success-light-zh.png",
+      "bytes": 107153,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-testing-dark-zh.png",
+      "bytes": 101628,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-ucDrive-testing-light-zh.png",
+      "bytes": 100692,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-blank-dark-zh.png",
+      "bytes": 120380,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-blank-light-zh.png",
+      "bytes": 120347,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-error-dark-zh.png",
+      "bytes": 129586,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-error-light-zh.png",
+      "bytes": 127607,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-filled-dark-zh.png",
+      "bytes": 129701,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-filled-light-zh.png",
+      "bytes": 130438,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-success-dark-zh.png",
+      "bytes": 125285,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-success-light-zh.png",
+      "bytes": 126280,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-testing-dark-zh.png",
+      "bytes": 121891,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdav-testing-light-zh.png",
+      "bytes": 122050,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-blank-dark-zh.png",
+      "bytes": 120599,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-blank-light-zh.png",
+      "bytes": 121033,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-error-dark-zh.png",
+      "bytes": 129888,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-error-light-zh.png",
+      "bytes": 128343,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-filled-dark-zh.png",
+      "bytes": 129941,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-filled-light-zh.png",
+      "bytes": 131172,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-success-dark-zh.png",
+      "bytes": 125596,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-success-light-zh.png",
+      "bytes": 127018,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-testing-dark-zh.png",
+      "bytes": 122044,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-02-webdavHTTPS-testing-light-zh.png",
+      "bytes": 122640,
+      "scope": "表单五状态矩阵",
+      "visual_review": "根任务本轮确认Computer Use完成"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-03-existing-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 103904,
+      "visual_review": "根任务Computer Use确认：通过：编辑Demo百度连接正确带入名称及绿色"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-EDIT-03-from-discovery-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 99553,
+      "visual_review": "根任务Computer Use确认：失败：Pixel8表单正确，但窗口标题残留编辑百度；待修复重拍"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-HELP-window-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 221692,
+      "visual_review": "根任务Computer Use确认：通过：根任务已目检帮助窗口布局"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-HELP-window-light-zh.png",
+      "scope": "其他截图",
+      "bytes": 217848,
+      "visual_review": "根任务Computer Use确认：通过：根任务已目检帮助窗口布局"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-attention-light-zh.png",
+      "bytes": 130452,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-authorization-dark-en.png",
+      "bytes": 135380,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-authorization-dark-zh.png",
+      "bytes": 127384,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-authorization-light-en.png",
+      "bytes": 136941,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-authorization-light-zh.png",
+      "bytes": 129397,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-cold-dark-zh.png",
+      "bytes": 106979,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-dark-en.png",
+      "bytes": 111006,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-dark-zh.png",
+      "bytes": 106761,
+      "scope": "其他截图",
+      "visual_review": "旧图深色失败；已由connecting-fixed系列替代，不作为通过证据"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-fixed-dark-zh.png",
+      "bytes": 107646,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-fixed-light-return-zh.png",
+      "bytes": 108603,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-fixed-light-zh.png",
+      "bytes": 108580,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-light-en.png",
+      "bytes": 111455,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-connecting-light-zh.png",
+      "bytes": 108793,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-dark-en.png",
+      "bytes": 124526,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-dark-zh.png",
+      "bytes": 121729,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-light-en.png",
+      "bytes": 126353,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-light-zh.png",
+      "bytes": 122550,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-rows-dark-zh.png",
+      "bytes": 111845,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-disconnected-rows-light-zh.png",
+      "bytes": 114556,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-discovered-dark-en.png",
+      "bytes": 108167,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-discovered-dark-zh.png",
+      "bytes": 105967,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-discovered-light-en.png",
+      "bytes": 111668,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-discovered-light-zh.png",
+      "bytes": 107926,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-ejecting-dark-en.png",
+      "bytes": 97531,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-ejecting-dark-zh.png",
+      "bytes": 96629,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-ejecting-light-en.png",
+      "bytes": 97954,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-ejecting-light-zh.png",
+      "bytes": 97436,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-empty-dark-en.png",
+      "bytes": 48999,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-empty-dark-zh.png",
+      "bytes": 44254,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-empty-light-en.png",
+      "bytes": 46119,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-empty-light-zh.png",
+      "bytes": 41395,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-failed-dark-en.png",
+      "bytes": 169666,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-failed-dark-zh.png",
+      "bytes": 151226,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-failed-light-en.png",
+      "bytes": 174459,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-failed-light-zh.png",
+      "bytes": 155420,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-login-dark-en.png",
+      "bytes": 133421,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-login-dark-zh.png",
+      "bytes": 123848,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-login-light-en.png",
+      "bytes": 134522,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-login-light-zh.png",
+      "bytes": 125277,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-scroll-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 132004,
+      "visual_review": "根任务Computer Use确认通过：英文20位置滚动"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-scroll-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 120691,
+      "visual_review": "根任务Computer Use确认：通过：根任务实际将20位置滚到底；长中英名称截断有help，紧凑添加可见"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-scroll-light-en.png",
+      "scope": "其他截图",
+      "bytes": 135304,
+      "visual_review": "根任务Computer Use确认通过：英文20位置滚动"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-scroll-light-zh.png",
+      "scope": "其他截图",
+      "bytes": 124376,
+      "visual_review": "根任务Computer Use确认：通过：根任务实际将20位置滚到底；长中英名称截断有help，紧凑添加可见"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-top-dark-en.png",
+      "bytes": 134534,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-top-dark-zh.png",
+      "bytes": 126134,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-top-light-en.png",
+      "bytes": 136257,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mixed-top-light-zh.png",
+      "bytes": 128986,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mounted-dark-en.png",
+      "bytes": 133599,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mounted-dark-zh.png",
+      "bytes": 123514,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mounted-light-en.png",
+      "bytes": 136325,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-mounted-light-zh.png",
+      "bytes": 125836,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-tested-dark-en.png",
+      "bytes": 133632,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-tested-dark-zh.png",
+      "bytes": 126075,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-tested-light-en.png",
+      "bytes": 135786,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-tested-light-zh.png",
+      "bytes": 128478,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-unavailable-dark-en.png",
+      "bytes": 136619,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-unavailable-dark-zh.png",
+      "bytes": 124776,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-unavailable-light-en.png",
+      "bytes": 138385,
+      "scope": "其他截图",
+      "visual_review": "根任务确认Computer Use滚动0.6页实际看到已保存行并目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-unavailable-light-zh.png",
+      "bytes": 126127,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-usb-error-detail-dark-zh.png",
+      "bytes": 150330,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-04-wifi-error-detail-dark-zh.png",
+      "bytes": 156358,
+      "scope": "其他截图",
+      "visual_review": "单窗口截图裁切弹窗，视觉不通过；AX文案正确仍不能替代完整弹窗重拍"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-permission-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 71951,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-permission-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 63736,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-permission-light-en.png",
+      "scope": "其他截图",
+      "bytes": 71618,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-permission-light-zh.png",
+      "scope": "其他截图",
+      "bytes": 62963,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-usb-error-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 63356,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-07-usb-error-light-zh.png",
+      "scope": "其他截图",
+      "bytes": 62539,
+      "visual_review": "根任务明确确认Computer Use目检通过"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-09-drag-icon-result-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 136129,
+      "visual_review": "根任务实际拖动未通过：两次拖动仍不排序，第二次源淡化停留，Esc可恢复；待继续修复"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-09-drag-result-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 139290,
+      "visual_review": "根任务实际拖动未通过：两次拖动仍不排序，第二次源淡化停留，Esc可恢复；待继续修复"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-09-drag-second-attempt-dark-en.png",
+      "scope": "其他截图",
+      "bytes": 127475,
+      "visual_review": "根任务实际拖动未通过：两次拖动仍不排序，第二次源淡化停留，Esc可恢复；待继续修复"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-PANEL-delete-confirm-dark-zh.png",
+      "scope": "其他截图",
+      "bytes": 6591,
+      "visual_review": "根任务Computer Use确认：视觉未通过：工具连续三次返回白图；真实AX文案正确，取消后保留20位置已实际操作，不能替代截图验收"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-01-general-dark-en.png",
+      "bytes": 78359,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-01-general-dark-zh.png",
+      "bytes": 66377,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-01-general-light-en.png",
+      "bytes": 80305,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-01-general-light-zh.png",
+      "bytes": 66932,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-01-login-item-error-light-zh.png",
+      "bytes": 87816,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-authorized-light-zh.png",
+      "bytes": 66840,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-dark-en.png",
+      "bytes": 90939,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-dark-zh.png",
+      "bytes": 72394,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-denied-light-zh.png",
+      "bytes": 72839,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-light-en.png",
+      "bytes": 93285,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-light-zh.png",
+      "bytes": 71998,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-03-notification-notDetermined-light-zh.png",
+      "bytes": 71740,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-04-storage-dark-en.png",
+      "bytes": 61148,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-04-storage-dark-zh.png",
+      "bytes": 55437,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-04-storage-light-en.png",
+      "bytes": 61153,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-04-storage-light-zh.png",
+      "bytes": 54312,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-05-android-dark-en.png",
+      "bytes": 112339,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件；新Debug重拍，AX不再崩溃且英文标签正确"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-05-android-dark-zh.png",
+      "bytes": 93662,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件；新Debug重拍，AX不再崩溃且英文标签正确"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-05-android-light-en.png",
+      "bytes": 110105,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件；新Debug重拍，AX不再崩溃且英文标签正确"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-05-android-light-zh.png",
+      "bytes": 91152,
+      "scope": "其他截图",
+      "visual_review": "根任务明确确认已通过Computer Use目检；本记录作者只核对文件；新Debug重拍，AX不再崩溃且英文标签正确"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-06-about-dark-en.png",
+      "bytes": 102278,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-06-about-dark-zh.png",
+      "bytes": 87910,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-06-about-light-en.png",
+      "bytes": 102418,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-SET-06-about-light-zh.png",
+      "bytes": 86822,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-WEB-01-loading-dark-zh.png",
+      "bytes": 96583,
+      "scope": "其他截图",
+      "visual_review": "未通过：浅色切深色后线性进度错误变为系统蓝色；布局可读，仍需修复重拍"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-WEB-01-loading-light-zh.png",
+      "bytes": 97537,
+      "scope": "其他截图",
+      "visual_review": "根任务Computer Use确认布局通过；加载失败实际重试恢复离线登录页，详见CURRENT-Web-Visual.md"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-WEB-02-error-dark-zh.png",
+      "bytes": 82814,
+      "scope": "其他截图",
+      "visual_review": "根任务Computer Use确认布局通过；加载失败实际重试恢复离线登录页，详见CURRENT-Web-Visual.md"
+    },
+    {
+      "path": "docs/screenshots/v0.2/UI-WEB-02-error-light-zh.png",
+      "bytes": 81755,
+      "scope": "其他截图",
+      "visual_review": "根任务Computer Use确认布局通过；加载失败实际重试恢复离线登录页，详见CURRENT-Web-Visual.md"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/app-directions-dark.png",
+      "bytes": 76745,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/app-directions-light.png",
+      "bytes": 78728,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/light-accent.png",
+      "bytes": 43274,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/native-google-256.png",
+      "bytes": 34552,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/overview-dark.png",
+      "bytes": 100870,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/overview-light.png",
+      "bytes": 100239,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-0.png",
+      "bytes": 42805,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-1.png",
+      "bytes": 42917,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-2.png",
+      "bytes": 43142,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-3.png",
+      "bytes": 42805,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-4.png",
+      "bytes": 43091,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/palette-5.png",
+      "bytes": 43083,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/rest-dark.png",
+      "bytes": 90065,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/rest.png",
+      "bytes": 86910,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/size-24.png",
+      "bytes": 47740,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    },
+    {
+      "path": "docs/screenshots/v0.2/icons/size-28.png",
+      "bytes": 52104,
+      "scope": "其他截图",
+      "visual_review": "本轮未收到逐张目检确认，不由文件存在推断"
+    }
+  ],
+  "evidence_aliases": {
+    "panel.discovery-error": {
+      "zh-light": "docs/screenshots/v0.2/UI-PANEL-07-permission-light-zh.png",
+      "zh-dark": "docs/screenshots/v0.2/UI-PANEL-07-permission-dark-zh.png",
+      "en-light": "docs/screenshots/v0.2/UI-PANEL-07-permission-light-en.png",
+      "en-dark": "docs/screenshots/v0.2/UI-PANEL-07-permission-dark-en.png",
+      "note": "内部矩阵旧预期UI-PANEL-04，真实证据使用UI-PANEL-07；没有复制或伪造别名截图。"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/Quark.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:18] Test Suite 'All tests' passed at 2026-11-04 20:41:04.856.
+[原日志:76] 􁁛  Test quarkPartZeroExactRemainderAndOver100MB() passed after 0.006 seconds.
+[原日志:77] 􁁛  Test quarkServerFailureCannotDeleteCookieThroughLoginLikeBody() passed after 0.006 seconds.
+[原日志:78] 􁁛  Test quarkExpiredDownloadSignatureDoesNotInvalidateLoginCookie() passed after 0.006 seconds.
+[原日志:79] 􁁛  Test quarkTransferRoutingDoesNotChangeMetadataOrLeakCookie() passed after 0.006 seconds.
+[原日志:80] 􁁛  Test webCookiesRequireLoginPairAndExcludeOtherDomainsAndExpiredValues() passed after 0.006 seconds.
+[原日志:81] 􁁛  Test quarkMissingUserIDIsNotFabricatedFromCookieOrNickname() passed after 0.006 seconds.
+[原日志:82] 􁁛  Test quarkTemporaryRejectionKeepsCookieAndCanRecover() passed after 0.006 seconds.
+[原日志:83] 􁁛  Test quarkCookieInvalidationPropagatesFromList() passed after 0.006 seconds.
+[原日志:84] 􁁛  Test quarkDeletedAuthCookieRequiresLogin() passed after 0.006 seconds.
+[原日志:85] 􁁛  Test quarkNonLoginBusinessErrorKeepsSavedCookie() passed after 0.006 seconds.
+[原日志:86] 􁁛  Test quarkCandidateRefreshIsKeptLocalUntilCapacityValidationSucceeds() passed after 0.006 seconds.
+[原日志:87] 􁁛  Test quarkLoginCannotBeValidatedByRedirectedForeignAccountResponse() passed after 0.006 seconds.
+[原日志:88] 􁁛  Test quarkHTTPAndBusinessUnauthorizedResponsesPreserveCookieForRecovery() passed after 0.006 seconds.
+[原日志:89] 􁁛  Test quarkExternalRedirectCannotRefreshCookieForBufferedOrStreamedDownload() passed after 0.006 seconds.
+[原日志:90] 􁁛  Test quarkServerFailureIsNotMistakenForExpiredLogin() passed after 0.006 seconds.
+[原日志:91] 􁁛  Test quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers:) with 2 test cases passed after 0.006 seconds.
+[原日志:92] 􁁛  Test quarkExpiredDownloadRefreshPreservesRange() passed after 0.006 seconds.
+[原日志:93] 􁁛  Test ucLoginUsesUCEndpointsAndCookies() passed after 0.006 seconds.
+[原日志:94] 􁁛  Test quarkMultipleSetCookiesMergeWithoutTreatingExpiresCommaAsSeparator() passed after 0.006 seconds.
+[原日志:95] 􁁛  Test quarkStreamDetectsUnauthorizedBusinessEnvelope() passed after 0.006 seconds.
+[原日志:96] 􁁛  Test quarkSetCookieRefreshPreservesOtherValuesAndWritesBack() passed after 0.006 seconds.
+[原日志:97] 􁁛  Test quarkExistingDirectoryReportsConflict() passed after 0.006 seconds.
+[原日志:98] 􁁛  Test quarkRejectsMissingOrMalformedCookieBeforeNetwork() passed after 0.006 seconds.
+[原日志:99] 􁁛  Test quarkMissingCookieReturnsEACCESAndOneRedactedNotification() passed after 0.006 seconds.
+[原日志:100] 􁁛  Test quarkCookieNeverLeaksToOSSOrLookalikeHostsAndSignatureHeadersSurvive() passed after 0.006 seconds.
+[原日志:101] 􁁛  Test quarkInvalidCandidateDoesNotReplaceValidSavedCookieOrNotify() passed after 0.006 seconds.
+[原日志:102] 􁁛  Test quarkTrustedDownloadKeepsCookieAndUsesSameBrowserUA() passed after 0.006 seconds.
+[原日志:103] 􁁛  Test quarkExistingNameNeverStartsUploadOrChangesOldFile() passed after 0.006 seconds.
+[原日志:104] 􁁛  Test quarkLoginVerifiesIdentityAndQuotaBeforeSavingCookie() passed after 0.006 seconds.
+[原日志:105] 􁁛  Test quarkRangesReuseLinkForUnchangedFileMetadata() passed after 0.006 seconds.
+[原日志:106] 􁁛  Test quarkCrossDirectoryRenameNeverTouchesExistingFinalName() passed after 0.006 seconds.
+[原日志:107] 􁁛  Test quarkHashesKnownVectorsAndChunkBoundary() passed after 0.006 seconds.
+[原日志:108] 􁁛  Test quarkMkdirRenameAndTrashInvalidatePaths() passed after 0.006 seconds.
+[原日志:109] 􁁛  Test quarkFailedMoveAndRecoveryPreserveBothErrors() passed after 0.006 seconds.
+[原日志:110] 􁁛  Test quarkDeleteTaskFailureIsNotReportedAsSuccess() passed after 0.007 seconds.
+[原日志:111] 􁁛  Test quarkMoveWaitsForTaskBeforeRenaming() passed after 0.007 seconds.
+[原日志:112] 􁁛  Test quarkMoveAcrossDirectoriesThenRename() passed after 0.006 seconds.
+[原日志:113] 􁁛  Test quarkCrossDirectoryRenameAvoidsUnrelatedOriginalName() passed after 0.007 seconds.
+[原日志:114] 􁁛  Test quarkRapidUploadSkipsOSS() passed after 0.007 seconds.
+[原日志:115] 􁁛  Test quarkLateListingCannotUndoDeletion() passed after 0.007 seconds.
+[原日志:116] 􁁛  Test quarkFailedFinalRenameMovesBackBeforeRestoringOriginalName() passed after 0.007 seconds.
+[原日志:117] 􁁛  Test quarkFailedStagedMoveRestoresOriginalName() passed after 0.007 seconds.
+[原日志:118] 􁁛  Test quarkRangeRequestsAndValidation() passed after 0.007 seconds.
+[原日志:119] 􁁛  Test quarkLatestListingWinsAndDisconnectRejectsLateReplies() passed after 0.007 seconds.
+[原日志:120] 􁁛  Test quarkFailedPartDoesNotFinish() passed after 0.008 seconds.
+[原日志:121] 􁁛  Test quarkUploadUsesDestinationExtensionForFormat() passed after 0.008 seconds.
+[原日志:122] 􁁛  Test quarkMultipartSignsExactHeadersAndFinishesInOrder() passed after 0.009 seconds.
+[原日志:123] 􁁛  Test quarkFilesPaginationAndDecodedNames() passed after 0.014 seconds.
+[原日志:124] 􁁛  Test quarkPendingTaskIsPolledUntilCompleted(status:) with 2 test cases passed after 0.531 seconds.
+[原日志:125] 􁁛  Test run with 49 tests in 0 suites passed after 0.531 seconds.

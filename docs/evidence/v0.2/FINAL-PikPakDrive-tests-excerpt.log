@@ -1,0 +1,32 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/PikPakDrive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:18] Test Suite 'All tests' passed at 2026-11-04 20:41:27.291.
+[原日志:67] 􁁛  Test multipartBoundarySplitsZeroExactAndRemainder() passed after 0.003 seconds.
+[原日志:68] 􁁛  Test errorMappingCoversHTTPAndPikPakReasons() passed after 0.003 seconds.
+[原日志:70] 􁁛  Test contentRangeMustMatchRequestedSliceAndSize() passed after 0.006 seconds.
+[原日志:71] 􁁛  Test persistentCaptchaFailureDoesNotBlamePasswordOrInvalidateLogin() passed after 0.006 seconds.
+[原日志:72] 􁁛  Test emptyPikPakObjectIsActuallyUploaded() passed after 0.006 seconds.
+[原日志:73] 􁁛  Test authorizationRefreshesRejectedTokenAndRetries() passed after 0.011 seconds.
+[原日志:74] 􁁛  Test pikPakSecondResourceRejectionPreservesRefreshedLogin() passed after 0.013 seconds.
+[原日志:75] 􁁛  Test loginUsesAccountPasswordAndPersistsReturnedToken() passed after 0.013 seconds.
+[原日志:76] 􁁛  Test loginRefreshesCaptchaOnceWhenServerRejectsIt() passed after 0.014 seconds.
+[原日志:77] 􁁛  Test pikPakExplicitInvalidGrantRequiresNewLogin() passed after 0.014 seconds.
+[原日志:78] 􁁛  Test existingNameFailsBeforeUploadTicket() passed after 0.014 seconds.
+[原日志:79] 􁁛  Test pikPakMkdirRejectsExistingDirectory() passed after 0.014 seconds.
+[原日志:80] 􁁛  Test rangeUsesSignedDownloadURLWithoutAuthorization() passed after 0.015 seconds.
+[原日志:81] 􁁛  Test pikPakRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.015 seconds.
+[原日志:82] 􁁛  Test pikPakTransientRefreshFailurePreservesLogin(_:) with 4 test cases passed after 0.016 seconds.
+[原日志:83] 􁁛  Test pikPakRefreshRecoversAfterTemporaryFailureWithoutLogin() passed after 0.016 seconds.
+[原日志:84] 􁁛  Test pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) with 2 test cases passed after 0.016 seconds.
+[原日志:85] 􁁛  Test pikPakRangeReusesExpiringLinksAndRefreshesRejectedURL(reject:) with 2 test cases passed after 0.017 seconds.
+[原日志:86] 􁁛  Test customPikPakRootRemainsParentForListingAndCreation() passed after 0.018 seconds.
+[原日志:87] 􁁛  Test pikPakTaskDeadlineTracksOnlyIncreasingProgress(mode:) with 5 test cases passed after 0.018 seconds.
+[原日志:88] 􁁛  Test pikPakMoveRenamesByIdentityAfterDestinationAutoRename() passed after 0.018 seconds.
+[原日志:89] 􁁛  Test pikPakCancelledOrExpiredWaiterLeavesSharedRefreshRunning(cancel:) with 2 test cases passed after 0.018 seconds.
+[原日志:90] 􁁛  Test paginationReadsEveryPageWithPageTokens() passed after 0.018 seconds.
+[原日志:91] 􁁛  Test pikPakSeparateSessionsShareRefresh(separateSessions:) with 2 test cases passed after 0.025 seconds.
+[原日志:92] 􁁛  Test uploadWritesEveryPartAndCompletesInOrder() passed after 0.025 seconds.
+[原日志:93] 􁁛  Test captchaCacheIsBoundedAndChangesWithStoredIdentity() passed after 0.040 seconds.
+[原日志:94] 􁁛  Test run with 26 tests in 0 suites passed after 0.040 seconds.

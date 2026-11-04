@@ -1,0 +1,34 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/CameraUSB.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:4] Test Suite 'All tests' passed at 2026-11-04 20:41:21.364.
+[原日志:37] 􁁛  Test cameraGRIVBoundaryExcludesOtherModels() passed after 0.001 seconds.
+[原日志:38] 􁁛  Test discoveryKeepsOnlyLocalUSBCamerasAndHandlesRemoval() passed after 0.001 seconds.
+[原日志:39] 􁁛  Test cameraIdentityRejectsAmbiguousSerialAndSupportsMissingSerial() passed after 0.001 seconds.
+[原日志:40] 􁁛  Test discoveryRejectsMissingIdentityAndUpdatesKnownDevice() passed after 0.001 seconds.
+[原日志:41] 􁁛  Test errorMapperPreservesPOSIXAndMapsCameraFailures() passed after 0.001 seconds.
+[原日志:42] 􁁛  Test errorMapperUsesIOForUnknownAndCancellationForCancelledWork() passed after 0.001 seconds.
+[原日志:43] 􁁛  Test cameraErrorMappingCoversMalformedPOSIXAndNativeCodes() passed after 0.001 seconds.
+[原日志:44] 􁁛  Test providerDeletesWhenDeviceReportsCapability() passed after 0.001 seconds.
+[原日志:45] 􁁛  Test discoveryInjectedLifecyclePublishesAndStopsWithoutHardware() passed after 0.006 seconds.
+[原日志:46] 􁁛  Test cameraCatalogPreservesHierarchyAndRejectsAmbiguity() passed after 0.006 seconds.
+[原日志:47] 􁁛  Test providerMapsStoragesAndOriginalDCIMFolders() passed after 0.006 seconds.
+[原日志:48] 􁁛  Test providerRejectsAllWriteOperationsBeforeConnecting() passed after 0.006 seconds.
+[原日志:49] 􁁛  Test cameraProviderReconnectsWithoutReusingOpenState() passed after 0.007 seconds.
+[原日志:50] 􁁛  Test cameraCompoundOperationsShareOneDeadline() passed after 0.007 seconds.
+[原日志:51] 􁁛  Test cameraDeletionCapabilityRefreshesAfterOpen() passed after 0.007 seconds.
+[原日志:52] 􁁛  Test providerHonorsReadOnlyDeleteCapability() passed after 0.007 seconds.
+[原日志:53] 􁁛  Test providerMapsRejectedDeleteToPermissionError() passed after 0.007 seconds.
+[原日志:54] 􁁛  Test cameraCapacityPreservesUnknownFieldsWithoutPartialSums() passed after 0.008 seconds.
+[原日志:55] 􁁛  Test expiredCameraPhaseNeverStartsNativeWork() passed after 0.008 seconds.
+[原日志:56] 􁁛  Test cameraDuplicatePathsCannotSelectAnotherFile() passed after 0.008 seconds.
+[原日志:57] 􁁛  Test providerReadsRequestedRangeWithoutReturningExtraBytes() passed after 0.008 seconds.
+[原日志:58] 􁁛  Test discoveryTimeoutReportsFailureWithoutHardware() passed after 0.009 seconds.
+[原日志:59] 􁁛  Test cameraNativeCatalogWaitCompletesOnReadyAndRemoval() passed after 0.009 seconds.
+[原日志:60] 􁁛  Test providerDoesNotTreatShortReadAsEndOfFile() passed after 0.009 seconds.
+[原日志:61] 􁁛  Test providerSurfacesDisconnectAndPartialReadFailureAsIO() passed after 0.009 seconds.
+[原日志:62] 􁁛  Test cameraPhasesUseRemainingDeadline() passed after 0.009 seconds.
+[原日志:63] 􁁛  Test cameraAccessUsesSessionAndRetainsFailures() passed after 0.009 seconds.
+[原日志:64] 􁁛  Test cameraNativeSessionProjectsRawItemsAndControlsIndex() passed after 0.009 seconds.
+[原日志:65] 􁁛  Test run with 28 tests in 0 suites passed after 0.009 seconds.

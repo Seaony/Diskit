@@ -1,0 +1,30 @@
+Building for debugging...
+[Planning deferred tasks]
+[8 / 31] Core
+[17 / 40] Core
+[18 / 41] Core
+[22 / 42] AliyunDrive
+[23 / 42] AliyunDrive
+[28 / 47] AliyunDrive
+[34 / 47] AliyunDrive
+[38 / 47] AliyunDriveTests-product
+[43 / 52] AliyunDriveTests-product
+[47 / 51] AliyunDriveTests-product
+[49 / 51] AliyunDriveTests-product
+Build complete! (3.33秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test oauthDiscardedUnreadStreamReleasesConcurrencySlot() started.
+􀟈  Test aliyunMkdirReportsExistingNameForFilesAndDirectories(directory:) started.
+􀟈  Test aliyunOlderListingCannotReplaceNewerSnapshot() started.
+􀟈  Test aliyunOnlyExpiredAccountRequiresLogin() started.
+􀟈  Test aliyunLateListingCannotRestoreDeletedFile() started.
+􀟈  Test case passing 1 argument directory → false to aliyunMkdirReportsExistingNameForFilesAndDirectories(directory:) started.
+􀟈  Test case passing 1 argument directory → true to aliyunMkdirReportsExistingNameForFilesAndDirectories(directory:) started.
+􁁛  Test aliyunOnlyExpiredAccountRequiresLogin() passed after 0.001 seconds.
+􁁛  Test aliyunMkdirReportsExistingNameForFilesAndDirectories(directory:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test aliyunLateListingCannotRestoreDeletedFile() passed after 0.007 seconds.
+􁁛  Test aliyunOlderListingCannotReplaceNewerSnapshot() passed after 0.008 seconds.
+􁁛  Test oauthDiscardedUnreadStreamReleasesConcurrencySlot() passed after 0.028 seconds.
+􁁛  Test run with 5 tests in 0 suites passed after 0.028 seconds.

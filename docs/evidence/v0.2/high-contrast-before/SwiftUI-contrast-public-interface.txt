@@ -1,0 +1,13 @@
+extension SwiftUICore::EnvironmentValues {
+  public var colorScheme: SwiftUICore::ColorScheme {
+    get
+    set
+  }
+  public var colorSchemeContrast: SwiftUICore::ColorSchemeContrast {
+    get
+  }
+  public var _colorSchemeContrast: SwiftUICore::ColorSchemeContrast {
+    get
+    set
+  }
+}

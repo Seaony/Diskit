@@ -1,0 +1,31 @@
+Building for debugging...
+[Planning deferred tasks]
+[4 / 8] Core
+[5 / 9] Core
+[10 / 14] PikPakDrive
+[11 / 15] PikPakDrive
+[24 / 29] Core
+[25 / 30] Core
+[32 / 36] PikPakDrive
+[36 / 40] PikPakDriveTests-product
+[38 / 42] PikPakDriveTests-product
+[44 / 46] PikPakDriveTests-product
+Build complete! (4.46秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test customPikPakRootRemainsParentForListingAndCreation() started.
+􀟈  Test persistentCaptchaFailureDoesNotBlamePasswordOrInvalidateLogin() started.
+􀟈  Test pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􀟈  Test pikPakMkdirRejectsExistingDirectory() started.
+􀟈  Test captchaCacheIsBoundedAndChangesWithStoredIdentity() started.
+􀟈  Test pikPakMoveRenamesByIdentityAfterDestinationAutoRename() started.
+􀟈  Test case passing 1 argument disconnect → true to pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􀟈  Test case passing 1 argument disconnect → false to pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) started.
+􁁛  Test persistentCaptchaFailureDoesNotBlamePasswordOrInvalidateLogin() passed after 0.004 seconds.
+􁁛  Test pikPakMkdirRejectsExistingDirectory() passed after 0.007 seconds.
+􁁛  Test customPikPakRootRemainsParentForListingAndCreation() passed after 0.007 seconds.
+􁁛  Test pikPakLateDirectoryResponseCannotRepopulateInvalidatedCache(disconnect:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test pikPakMoveRenamesByIdentityAfterDestinationAutoRename() passed after 0.008 seconds.
+􁁛  Test captchaCacheIsBoundedAndChangesWithStoredIdentity() passed after 0.027 seconds.
+􁁛  Test run with 6 tests in 0 suites passed after 0.027 seconds.

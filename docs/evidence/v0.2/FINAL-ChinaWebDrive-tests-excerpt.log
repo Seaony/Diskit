@@ -1,0 +1,83 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/ChinaWebDrive.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:6] Test Suite 'All tests' passed at 2026-11-04 20:41:42.342.
+[原日志:148] 􁁛  Test mobileCloudPartSplitHandlesZeroExactAndRemainder() passed after 0.019 seconds.
+[原日志:149] 􁁛  Test xunleiFilenameCannotInvalidateLogin() passed after 0.019 seconds.
+[原日志:150] 􁁛  Test xunleiUploadTicketBranchesPreserveProgressAndCleanup(mode:) with 5 test cases passed after 0.019 seconds.
+[原日志:151] 􁁛  Test xunleiMalformedListingFailsWithoutKeepingStaleEntries() passed after 0.019 seconds.
+[原日志:152] 􁁛  Test xunleiSDKWrappedNetworkErrorKeepsPOSIXMeaning() passed after 0.019 seconds.
+[原日志:153] 􁁛  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) with 4 test cases passed after 0.019 seconds.
+[原日志:154] 􁁛  Test mobileRecoveryErrorKeepsBothCausesAndConfirmedPath() passed after 0.019 seconds.
+[原日志:155] 􁁛  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() passed after 0.019 seconds.
+[原日志:156] 􁁛  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) with 2 test cases passed after 0.019 seconds.
+[原日志:157] 􁁛  Test xunleiForbiddenPermissionDoesNotForceLogin() passed after 0.019 seconds.
+[原日志:158] 􁁛  Test xunleiExistingDirectoryNameFailsBeforeCreate() passed after 0.019 seconds.
+[原日志:159] 􁁛  Test mobileCapacityRejectsInconsistentOrMalformedValues(problem:) with 3 test cases passed after 0.019 seconds.
+[原日志:160] 􁁛  Test mobileSplitRejectsInvalidSizesAndExcessiveParts() passed after 0.019 seconds.
+[原日志:161] 􁁛  Test chinaWebCompactDateIsNotMillisecondsSinceEpoch() passed after 0.019 seconds.
+[原日志:162] 􁁛  Test xunleiHTTPConflictMapsToEEXIST() passed after 0.019 seconds.
+[原日志:163] 􁁛  Test mobileServerFailureDoesNotRefreshEvenWithStaleLoginCode() passed after 0.019 seconds.
+[原日志:164] 􁁛  Test xunleiEmptyErrorDoesNotRejectSuccess() passed after 0.019 seconds.
+[原日志:165] 􁁛  Test xunleiDuplicateIDsAreReportedInsteadOfAmbiguousCache() passed after 0.019 seconds.
+[原日志:166] 􁁛  Test mobileCloudRangeValidatesContentRangeAndDoesNotSendAuthToCDN() passed after 0.019 seconds.
+[原日志:167] 􁁛  Test mobileMoveRecoveryFailureKeepsExplicitLoginSemantics() passed after 0.019 seconds.
+[原日志:168] 􁁛  Test xunleiBusinessFailurePreservesActionableError(reason:) with 4 test cases passed after 0.019 seconds.
+[原日志:169] 􁁛  Test mobileRejectsInvalidLocalCredentialsNonceAndDownloadURL() passed after 0.019 seconds.
+[原日志:170] 􁁛  Test mobileSessionFallsBackOnlyWhenRouteIsMissing() passed after 0.019 seconds.
+[原日志:171] 􁁛  Test mobileListingRejectsInvalidRemoteMetadata(problem:) with 2 test cases passed after 0.019 seconds.
+[原日志:172] 􁁛  Test xunleiRootAndCachedAncestorRespectDisconnect() passed after 0.019 seconds.
+[原日志:173] 􁁛  Test mobileDirectoryRejectsContradictoryDuplicateIDs(contradictory:) with 2 test cases passed after 0.019 seconds.
+[原日志:174] 􁁛  Test xunleiServerFailureDoesNotRefreshEvenWithTokenText() passed after 0.019 seconds.
+[原日志:175] 􁁛  Test xunleiUploadRejectsExistingNameBeforeCreatingTask() passed after 0.019 seconds.
+[原日志:176] 􁁛  Test xunleiUploadPartSplitHandlesBoundaries() passed after 0.019 seconds.
+[原日志:177] 􁁛  Test mobileSha1DigestMatchesKnownBytesAndRejectsUnknownAlgorithms() passed after 0.019 seconds.
+[原日志:178] 􁁛  Test mobileCloudSignerMatchesMitGoldenVector() passed after 0.019 seconds.
+[原日志:179] 􁁛  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() passed after 0.019 seconds.
+[原日志:180] 􁁛  Test xunleiBusinessErrorsMapToPOSIX() passed after 0.019 seconds.
+[原日志:181] 􁁛  Test xunleiPaginatesAndUsesTokenHeaders() passed after 0.019 seconds.
+[原日志:182] 􁁛  Test mobileCloudSpaceUsesAccountEndpointAndUserDomain() passed after 0.019 seconds.
+[原日志:183] 􁁛  Test xunleiMutationFailureInvalidatesCachedDirectory() passed after 0.019 seconds.
+[原日志:184] 􁁛  Test mobileVerificationFailureDoesNotRefreshOrRequireLogin(message:) with 3 test cases passed after 0.019 seconds.
+[原日志:185] 􁁛  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() passed after 0.019 seconds.
+[原日志:186] 􁁛  Test xunleiRangeUsesDetailLinkWithoutLeakingLoginHeaders() passed after 0.019 seconds.
+[原日志:187] 􁁛  Test xunleiVerificationDoesNotRefreshLogin(status:) with 3 test cases passed after 0.019 seconds.
+[原日志:188] 􁁛  Test mobileProviderDisconnectKeepsOtherSessionUserConnected() passed after 0.019 seconds.
+[原日志:189] 􁁛  Test mobileCloudRequestsLaterUploadURLBatches() passed after 0.019 seconds.
+[原日志:190] 􁁛  Test httpErrorsMapToExpectedPOSIXCodes() passed after 0.019 seconds.
+[原日志:191] 􁁛  Test xunleiExpiredDownloadLinkRefreshesDetailWithoutLeakingAuth(missingReplacement:) with 2 test cases passed after 0.019 seconds.
+[原日志:192] 􁁛  Test xunleiCapacityPreservesMissingQuotaAndRealZero() passed after 0.019 seconds.
+[原日志:193] 􁁛  Test xunleiWrappedDirectoryCreationValidatesReturnedName(renamed:) with 2 test cases passed after 0.019 seconds.
+[原日志:194] 􁁛  Test chinaWebBusinessErrorsKeepTheirPOSIXMeaning() passed after 0.019 seconds.
+[原日志:195] 􁁛  Test mobileRootAndFileTraversalKeepPOSIXSemantics() passed after 0.019 seconds.
+[原日志:196] 􁁛  Test mobileCrossDirectoryRenamePreservesBothExistingNames() passed after 0.019 seconds.
+[原日志:197] 􁁛  Test mobileCloudUploadUsesServerPartBoundariesAndFinishes() passed after 0.019 seconds.
+[原日志:198] 􁁛  Test mobileExistingCreateResultIsNeverDeleted(directory:) with 2 test cases passed after 0.019 seconds.
+[原日志:199] 􁁛  Test mobileFailedFinalRenameRestoresOriginalLocation() passed after 0.020 seconds.
+[原日志:200] 􁁛  Test mobileCloudPaginatesAndUsesRecordedHeaders() passed after 0.020 seconds.
+[原日志:201] 􁁛  Test mobileCloudMkdirAndMoveUseDocumentedOperations() passed after 0.019 seconds.
+[原日志:202] 􁁛  Test mobileCloudExistingNameNeverUploadsOrRenames() passed after 0.020 seconds.
+[原日志:203] 􁁛  Test mobileEmptyRangeDoesNotRequestDownloadURL() passed after 0.020 seconds.
+[原日志:204] 􁁛  Test xunleiUploadFailureTrashesOnlyTheNewFile() passed after 0.020 seconds.
+[原日志:205] 􁁛  Test mobileDirectoryCreateValidatesIdentityAndDoesNotDeleteExistingObject(problem:) with 3 test cases passed after 0.020 seconds.
+[原日志:206] 􁁛  Test mobileDownloadRejectsWrongFullResponseAndRetriesExpiredLink(ranged:) with 2 test cases passed after 0.020 seconds.
+[原日志:207] 􁁛  Test xunleiUploadUsesAliyunMultipartWithoutSendingLoginToVendor() passed after 0.021 seconds.
+[原日志:208] 􁁛  Test xunleiLateListingCannotRefillOlderCache() passed after 0.021 seconds.
+[原日志:209] 􁁛  Test xunleiInputAndRefreshValidationNeverSendsInvalidRequests() passed after 0.021 seconds.
+[原日志:210] 􁁛  Test xunleiRefreshesUnauthorizedRequestOnce() passed after 0.021 seconds.
+[原日志:211] 􁁛  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() passed after 0.021 seconds.
+[原日志:212] 􁁛  Test xunleiCompletionPollingTracksProgressRatherThanRequestCount(progresses:) with 2 test cases passed after 0.021 seconds.
+[原日志:213] 􁁛  Test xunleiConcurrentUnauthorizedResponsesShareRefresh() passed after 0.021 seconds.
+[原日志:214] 􁁛  Test mobileCloudRefreshesOnceAndRepeatsRoute() passed after 0.021 seconds.
+[原日志:215] 􁁛  Test mobileRefreshFailureDoesNotRetainBrokenTask(mode:) with 2 test cases passed after 0.022 seconds.
+[原日志:216] 􁁛  Test mobileCapacityPreservesPartialAndUnknownValues() passed after 0.022 seconds.
+[原日志:217] 􁁛  Test mobileLateDirectoryCannotReplaceNewerState(disconnect:) with 2 test cases passed after 0.022 seconds.
+[原日志:218] 􁁛  Test mobileUploadRejectsInvalidCreatedObjectAndCleansOnlyOwnedObject(problem:) with 7 test cases passed after 0.022 seconds.
+[原日志:219] 􁁛  Test chinaWebNetworkErrorsRemainPOSIX(kind:phase:) with 8 test cases passed after 0.022 seconds.
+[原日志:220] 􁁛  Test mobileFailedRollbackReportsLastConfirmedLocation() passed after 0.022 seconds.
+[原日志:221] 􁁛  Test chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() passed after 0.023 seconds.
+[原日志:222] 􁁛  Test mobileSessionRefreshesRouteAndAccountWithoutReplayingForever() passed after 0.023 seconds.
+[原日志:223] 􁁛  Test mobileConcurrentRejectionsShareOneRefresh() passed after 0.026 seconds.
+[原日志:224] 􁁛  Test xunleiPartFileCopiesOnlyBoundedRangeAndCleansUp() passed after 0.041 seconds.
+[原日志:225] 􁁛  Test run with 77 tests in 0 suites passed after 0.041 seconds.

@@ -1,0 +1,21 @@
+Building for debugging...
+[2 / 11] Core
+[4 / 13] Core
+[10 / 19] AliyunDrive
+[13 / 22] AliyunDrive
+[17 / 23] AliyunDrive
+[18 / 24] AliyunDrive
+[21 / 24] AliyunDriveTests-product
+[26 / 29] AliyunDriveTests-product
+[32 / 34] AliyunDriveTests-product
+Build complete! (3.26秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test aliyunSeparateSessionsShareRequestAllowance() started.
+􀟈  Test oauthDiscardedUnreadStreamReleasesConcurrencySlot() started.
+􀟈  Test oauthStreamingHoldsConcurrencySlotUntilBodyEnds() started.
+􁁛  Test oauthStreamingHoldsConcurrencySlotUntilBodyEnds() passed after 0.028 seconds.
+􁁛  Test oauthDiscardedUnreadStreamReleasesConcurrencySlot() passed after 0.030 seconds.
+􁁛  Test aliyunSeparateSessionsShareRequestAllowance() passed after 0.078 seconds.
+􁁛  Test run with 3 tests in 0 suites passed after 0.078 seconds.

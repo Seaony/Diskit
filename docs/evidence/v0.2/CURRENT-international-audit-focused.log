@@ -1,0 +1,43 @@
+Building for debugging...
+[Planning deferred tasks]
+[4 / 26]
+[5 / 22] CloudDrive
+[11 / 28] CloudDrive
+[15 / 28] CloudDrive
+[19 / 28] CloudDriveTests-product
+[23 / 32] CloudDriveTests-product
+[27 / 31] CloudDriveTests-product
+[28 / 32] CloudDriveTests-product
+[30 / 32] CloudDriveTests-product
+Build complete! (3.10秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test googleDriveResumableUploadSplitsAtEightMegabytes() started.
+􀟈  Test googleListingPreservesEveryUnusualNameWithStableIdentity() started.
+􀟈  Test googleSameFolderRenameOmitsParentMutationAndEncodesPlus() started.
+􀟈  Test googleResumableUploadUsesAcknowledgedBytes(missingRange:) started.
+􀟈  Test oneDriveBoundsDirectUploadMemoryEvenBelowServiceLimit() started.
+􀟈  Test googleDriveSmallUploadUsesMultipartEndpoint() started.
+􀟈  Test googleIdentityPathCannotEscapeItsListedParent() started.
+􀟈  Test oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) started.
+􀟈  Test internationalDriveMissingQuotaIsUnknownInsteadOfZero() started.
+􀟈  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() started.
+􀟈  Test oneDrivePreconditionFailureIsNameConflict() started.
+􀟈  Test case passing 1 argument missingRange → false to googleResumableUploadUsesAcknowledgedBytes(missingRange:) started.
+􀟈  Test case passing 1 argument missingRange → true to googleResumableUploadUsesAcknowledgedBytes(missingRange:) started.
+􀟈  Test case passing 1 argument destination → "/new" to oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) started.
+􀟈  Test case passing 1 argument destination → "/target/new" to oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) started.
+􀟈  Test case passing 1 argument destination → "/source/new" to oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) started.
+􁁛  Test oneDrivePreconditionFailureIsNameConflict() passed after 0.004 seconds.
+􁁛  Test googleSameFolderRenameOmitsParentMutationAndEncodesPlus() passed after 0.005 seconds.
+􁁛  Test googleIdentityPathCannotEscapeItsListedParent() passed after 0.005 seconds.
+􁁛  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() passed after 0.005 seconds.
+􁁛  Test oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination:) with 3 test cases passed after 0.006 seconds.
+􁁛  Test googleDriveSmallUploadUsesMultipartEndpoint() passed after 0.006 seconds.
+􁁛  Test googleDriveResumableUploadSplitsAtEightMegabytes() passed after 0.007 seconds.
+􁁛  Test internationalDriveMissingQuotaIsUnknownInsteadOfZero() passed after 0.007 seconds.
+􁁛  Test googleListingPreservesEveryUnusualNameWithStableIdentity() passed after 0.007 seconds.
+􁁛  Test oneDriveBoundsDirectUploadMemoryEvenBelowServiceLimit() passed after 0.007 seconds.
+􁁛  Test googleResumableUploadUsesAcknowledgedBytes(missingRange:) with 2 test cases passed after 0.276 seconds.
+􁁛  Test run with 11 tests in 0 suites passed after 0.276 seconds.

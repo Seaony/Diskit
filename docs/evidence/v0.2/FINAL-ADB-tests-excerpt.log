@@ -1,0 +1,95 @@
+# 最终覆盖率运行测试结果摘录（不是完整编译日志）
+# 原日志: build/Coverage/ADB.log
+# 运行入口: make coverage -> scripts/coverage.py；仅读取已完成日志，本次文档处理没有运行验证。
+# 保留全部测试成功终结行与整体结果；省略编译器命令/逐文件编译。
+[原日志:6] Test Suite 'All tests' passed at 2026-11-04 20:40:49.919.
+[原日志:124] 􁁛  Test usbCatalogAcceptsOnlyADBInterfacesAndPreservesMissingSerial() passed after 0.006 seconds.
+[原日志:156] 􁁛  Test usbDescriptorRejectsMissingTruncatedOrDuplicatePipes(bytes:) with 4 test cases passed after 0.018 seconds.
+[原日志:160] 􁁛  Test PairingCipherHasSeparateCountersAndOmitsNonceFromPayload() passed after 0.019 seconds.
+[原日志:163] 􁁛  Test wirelessGUIDMatchesWholeConnectServiceName() passed after 0.019 seconds.
+[原日志:164] 􁁛  Test shellArgumentsAndRemotePathsRejectTraversal() passed after 0.019 seconds.
+[原日志:169] 􁁛  Test usbWriteTerminatesOnlyFullPackets(count:) with 4 test cases passed after 0.020 seconds.
+[原日志:170] 􁁛  Test fixedWirePacketAndChecksumRules() passed after 0.020 seconds.
+[原日志:171] 􁁛  Test missingUSBSerialUsesPhysicalIdentity() passed after 0.020 seconds.
+[原日志:172] 􁁛  Test ordinaryADBDeadlineDoesNotRenewOnProgress() passed after 0.020 seconds.
+[原日志:173] 􁁛  Test adbAvailableSpaceExcludesReservedBlocks() passed after 0.020 seconds.
+[原日志:174] 􁁛  Test usbTransportPreservesTimeoutAndCancellation() passed after 0.020 seconds.
+[原日志:175] 􁁛  Test adbLegacyStatRecoversSizeAboveFourGiB() passed after 0.020 seconds.
+[原日志:176] 􁁛  Test listingV1AndV2DecodeDirectoryEntries() passed after 0.020 seconds.
+[原日志:177] 􁁛  Test legacyTransferRejectsLargeFilesBeforeUpload() passed after 0.020 seconds.
+[原日志:178] 􁁛  Test interruptedTransferReturnsError() passed after 0.020 seconds.
+[原日志:179] 􁁛  Test adbEmptyShellExitFailsImmediately() passed after 0.020 seconds.
+[原日志:180] 􁁛  Test androidPublicKeyMatchesOfficialADB() passed after 0.020 seconds.
+[原日志:181] 􁁛  Test adbCanReconnectAfterTransportFailure(factoryFailsOnce:failure:) with 6 test cases passed after 0.020 seconds.
+[原日志:182] 􁁛  Test adbProductionFactoryPrefersOnlyUnambiguousUSB(duplicate:) with 2 test cases passed after 0.020 seconds.
+[原日志:183] 􁁛  Test wirelessGUIDSerialExtractionRequiresAOSPFormat() passed after 0.020 seconds.
+[原日志:184] 􁁛  Test missingPathDoesNotDiscardADBConnection(v2:) with 2 test cases passed after 0.020 seconds.
+[原日志:185] 􁁛  Test startTLSOnlyAcceptsExpectedADBHandshake() passed after 0.020 seconds.
+[原日志:186] 􁁛  Test startTLSHelloAdvertisesOnlySupportedSyncFeatures() passed after 0.020 seconds.
+[原日志:187] 􁁛  Test adbDownloadReportsActualReceivedBytes() passed after 0.020 seconds.
+[原日志:188] 􁁛  Test streamedDownloadReadsChunksAndClosesService() passed after 0.020 seconds.
+[原日志:189] 􁁛  Test syncUploadWritesDataAndDoneWithoutWholeFileBuffer() passed after 0.020 seconds.
+[原日志:190] 􁁛  Test usbDescriptorSelectsCurrentAlternateAndMasksPacketBits() passed after 0.020 seconds.
+[原日志:191] 􁁛  Test adbStatConvertsLinuxErrnoBeforeBridging() passed after 0.020 seconds.
+[原日志:192] 􁁛  Test PairingWrongCodeAndWrongExporterCannotAuthenticate() passed after 0.020 seconds.
+[原日志:193] 􁁛  Test networkInvalidDeadlineNeverStartsIO(timeout:) with 4 test cases passed after 0.020 seconds.
+[原日志:194] 􁁛  Test PairingSPAKEAgreesAndUsesFreshContext() passed after 0.020 seconds.
+[原日志:195] 􁁛  Test adbUploadRetainsOriginalModificationTime() passed after 0.020 seconds.
+[原日志:196] 􁁛  Test adbMoveQuotesPathsAndMovesToExactMissingTarget(modern:) with 2 test cases passed after 0.021 seconds.
+[原日志:197] 􁁛  Test fragmentedADBHeaderUsesOneConnectDeadline() passed after 0.020 seconds.
+[原日志:198] 􁁛  Test shellExitCodeIsCheckedAndSDCardAppears() passed after 0.020 seconds.
+[原日志:199] 􁁛  Test usbWriteRejectsShortTransfersAndInvalidZeroPacket() passed after 0.020 seconds.
+[原日志:200] 􁁛  Test usbErrorsKeepTheirPOSIXMeaning() passed after 0.020 seconds.
+[原日志:201] 􁁛  Test usbReadIgnoresZeroPacketAndEnforcesRequestedLength() passed after 0.020 seconds.
+[原日志:202] 􁁛  Test adbMoveRejectsExistingTargetsWithoutChangingSource(kind:modern:) with 8 test cases passed after 0.020 seconds.
+[原日志:203] 􁁛  Test ordinaryADBServiceErrorsAllowTheNextOperation(operation:) with 5 test cases passed after 0.027 seconds.
+[原日志:204] 􁁛  Test networkExporterRejectsMissingOrWrongLength(secret:) with 4 test cases passed after 0.027 seconds.
+[原日志:205] 􁁛  Test uniqueSerialSurvivesUSBPortChange() passed after 0.027 seconds.
+[原日志:206] 􁁛  Test adbFingerprintMatchesAndroidPublicKeyBytes() passed after 0.027 seconds.
+[原日志:207] 􁁛  Test usbAsyncEnqueueFailureReturnsError() passed after 0.028 seconds.
+[原日志:208] 􁁛  Test PairingFrameUsesAOSPBigEndianLengthAndRejectsInvalidHeader() passed after 0.027 seconds.
+[原日志:209] 􁁛  Test transferADBDeadlineRenewsOnlyForBytes() passed after 0.027 seconds.
+[原日志:210] 􁁛  Test usbCloseIsIdempotentAndStopsFurtherRequests() passed after 0.027 seconds.
+[原日志:211] 􁁛  Test syncV1AndV2PreserveSizesAndErrors() passed after 0.027 seconds.
+[原日志:212] 􁁛  Test duplicateUSBSerialRequiresPhysicalSelection() passed after 0.027 seconds.
+[原日志:213] 􁁛  Test adbVirtualPathsCannotEscapeInternalRoot() passed after 0.027 seconds.
+[原日志:214] 􁁛  Test adbPairingErrorsBridgeToPOSIX() passed after 0.027 seconds.
+[原日志:215] 􁁛  Test adbSDCardAliasRejectsRealDirectoryCollision() passed after 0.027 seconds.
+[原日志:216] 􁁛  Test wirelessSelectionUsesNewPortAfterRediscovery() passed after 0.027 seconds.
+[原日志:217] 􁁛  Test adbCapacityRejectsNegativeAndOverflowingUsedBytes(used:) with 2 test cases passed after 0.027 seconds.
+[原日志:218] 􁁛  Test wirelessLifecycleCombinesSnapshotsAndRetainsResolvedAddress() passed after 0.028 seconds.
+[原日志:219] 􁁛  Test wirelessDiscoveryClassifiesTypedFailures() passed after 0.028 seconds.
+[原日志:220] 􁁛  Test usbDiscoveryReportsPermissionAndRecoversAfterRetry() passed after 0.028 seconds.
+[原日志:221] 􁁛  Test wirelessInvalidResolvedPortsAndTypedFailuresAreVisible() passed after 0.028 seconds.
+[原日志:222] 􁁛  Test stoppingWirelessDiscoveryClearsPublishedState() passed after 0.028 seconds.
+[原日志:223] 􁁛  Test usbDiscoveryPublishesHotplugAndRejectsLateCallbacks() passed after 0.028 seconds.
+[原日志:224] 􁁛  Test usbAsyncCancelledBeforeStartDoesNotEnqueue() passed after 0.028 seconds.
+[原日志:225] 􁁛  Test PairingRejectsInvalidCodeAndUnexpectedFrameBeforePeerInfo() passed after 0.027 seconds.
+[原日志:226] 􁁛  Test PairingRejectsTamperedCiphertextAndEmptyGUID() passed after 0.027 seconds.
+[原日志:227] 􁁛  Test PairingCorrectCodeReturnsGUIDAndSendsPublicKey() passed after 0.027 seconds.
+[原日志:228] 􁁛  Test adbUploadNeverMovesTemporaryFileInsideTargetDirectory(modern:) with 2 test cases passed after 0.027 seconds.
+[原日志:229] 􁁛  Test wirelessLateCallbacksCannotReviveStoppedOrReplacedDevices() passed after 0.028 seconds.
+[原日志:230] 􁁛  Test usbDiscoveryReleasesMonitorWhenOwnerDisappears() passed after 0.028 seconds.
+[原日志:231] 􁁛  Test adbCancellationBeforePublishKeepsOriginal() passed after 0.028 seconds.
+[原日志:232] 􁁛  Test usbAsyncCompletionReturnsOnce() passed after 0.029 seconds.
+[原日志:233] 􁁛  Test usbAsyncCancellationAbortsAndIgnoresDuplicateCompletion() passed after 0.028 seconds.
+[原日志:234] 􁁛  Test networkCancelledConnectionCannotStart() passed after 0.029 seconds.
+[原日志:235] 􁁛  Test networkRejectsInvalidReceiveLength() passed after 0.029 seconds.
+[原日志:236] 􁁛  Test networkStartIgnoresPreparingAndCompletesOnlyOnce() passed after 0.029 seconds.
+[原日志:237] 􁁛  Test networkEmptyReceiveIsDisconnected(data:) with 2 test cases passed after 0.029 seconds.
+[原日志:238] 􁁛  Test networkIOErrorsKeepPOSIXMeaning(write:) with 2 test cases passed after 0.028 seconds.
+[原日志:239] 􁁛  Test networkStartReportsRefusalWithoutWaiting(waiting:) with 2 test cases passed after 0.028 seconds.
+[原日志:240] 􁁛  Test networkCallerCancellationDoesNotWaitForCallback() passed after 0.029 seconds.
+[原日志:241] 􁁛  Test wirelessResolverMatchesFullGUIDAndStopsAfterSuccess() passed after 0.028 seconds.
+[原日志:242] 􁁛  Test networkDeadlineCancelsSuspendedOperation(operation:) with 3 test cases passed after 0.029 seconds.
+[原日志:243] 􁁛  Test networkReadsAndWritesExactBytes() passed after 0.029 seconds.
+[原日志:244] 􁁛  Test wirelessResolverRejectsInvalidBusyAndBrowserFailure() passed after 0.029 seconds.
+[原日志:245] 􁁛  Test wirelessResolverTimeoutAndCancellationStopDriver() passed after 0.029 seconds.
+[原日志:246] 􁁛  Test adbFailedUploadKeepsOriginal(modern:failure:) with 6 test cases passed after 0.031 seconds.
+[原日志:247] 􁁛  Test adbUploadPublishesOnlyAfterCompletion(modern:contents:) with 4 test cases passed after 0.082 seconds.
+[原日志:248] 􁁛  Test concurrentFirstIdentityUsesOneStoredKey() passed after 1.081 seconds.
+[原日志:249] 􁁛  Test authorizationExchangesSignatureThenPublicKey() passed after 1.082 seconds.
+[原日志:250] 􁁛  Test adbAuthorizationTimeoutAsksForPhoneApproval() passed after 1.082 seconds.
+[原日志:251] 􁁛  Test certificateUsesExistingRSAKeyAndValidSystemSignature() passed after 1.082 seconds.
+[原日志:252] 􁁛  Test systemSignatureAndIdentityPersist() passed after 1.401 seconds.
+[原日志:253] 􁁛  Test run with 89 tests in 0 suites passed after 1.401 seconds.

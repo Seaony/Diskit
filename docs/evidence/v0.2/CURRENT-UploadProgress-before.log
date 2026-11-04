@@ -1,0 +1,31 @@
+Building for debugging...
+[Pre-planning 1 / 214]
+[Planning deferred tasks]
+[32 / 70]
+[36 / 71] CoreNative
+[37 / 89]
+[54 / 89] Core
+[61 / 92] S3Drive
+[67 / 98] S3Drive
+[71 / 100] CoreTestSupport
+[84 / 105] CoreTestSupport
+[86 / 103] S3Drive
+[92 / 103] S3DriveTests-product
+[100 / 111] S3DriveTests-product
+[104 / 110] S3DriveTests-product
+[106 / 110] S3DriveTests-product
+Build complete! (3.80秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test concurrentUploadsKeepTheirInitialProgressCallback() started.
+􀢄  Test concurrentUploadsKeepTheirInitialProgressCallback() recorded an issue at ProgressIsolationTests.swift:47:3: Expectation failed: firstProgress.withLock { $0 } == [3]
+􀄵  firstProgress.withLock { $0 } == [3] → false
+􀄵    firstProgress.withLock { $0 } → []
+􀢄  Test concurrentUploadsKeepTheirInitialProgressCallback() recorded an issue at ProgressIsolationTests.swift:48:3: Expectation failed: secondProgress.withLock { $0 } == [7]
+􀄵  secondProgress.withLock { $0 } == [7] → false
+􀄵    secondProgress.withLock { $0 } → [7, 3]
+􀢄  Test concurrentUploadsKeepTheirInitialProgressCallback() failed after 0.007 seconds with 2 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.007 seconds with 2 issues.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)
