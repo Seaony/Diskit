@@ -1,0 +1,9 @@
+正常锁路径：swift test --package-path Packages/CloudDrive --filter processesCoordinateOAuthRefresh；退出 0。
+􁁛  Test processesCoordinateOAuthRefresh() passed after 0.028 seconds.
+􁁛  Test run with 1 test in 0 suites passed after 0.028 seconds.
+负向对照：仅将测试存储的共享 refresh.lock 暂时改为各进程独立锁，执行同一测试后恢复原文件；退出 1。
+􀢄  Test processesCoordinateOAuthRefresh() recorded an issue at ProcessRefreshTests.swift:141:5: Expectation failed: (child.terminationStatus → 1) == 0
+   􀢄 Test processesCoordinateOAuthRefresh() recorded an issue at ProcessRefreshTests.swift:75:2: Caught error: .loginRequired
+   􀢄 Test run with 1 test in 0 suites failed after 0.003 seconds with 1 issue.
+􀢄  Test processesCoordinateOAuthRefresh() recorded an issue at ProcessRefreshTests.swift:146:3: Expectation failed: (events.count → 2) == 1
+􀢄  Test run with 1 test in 0 suites failed after 0.089 seconds with 2 issues.
