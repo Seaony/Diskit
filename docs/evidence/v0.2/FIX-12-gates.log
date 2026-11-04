@@ -1,0 +1,21 @@
+命令：git diff --check && make gen && make test && make release
+退出：0；默认 Config/Validation.xcconfig。
+2026-11-04 17:54:45.429 appintentsmetadataprocessor[71080:1422437] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+􁁛 Test run with 9 tests in 0 suites passed after 0.009 seconds.
+** TEST SUCCEEDED **
+􁁛  Test run with 47 tests in 0 suites passed after 0.082 seconds.
+􁁛  Test run with 35 tests in 0 suites passed after 0.967 seconds.
+􁁛  Test run with 14 tests in 0 suites passed after 0.006 seconds.
+􁁛  Test run with 33 tests in 0 suites passed after 0.086 seconds.
+􁁛  Test run with 32 tests in 0 suites passed after 0.013 seconds.
+􁁛  Test run with 13 tests in 0 suites passed after 0.018 seconds.
+􁁛  Test run with 59 tests in 0 suites passed after 1.058 seconds.
+􁁛  Test run with 12 tests in 0 suites passed after 0.004 seconds.
+􁁛  Test run with 16 tests in 0 suites passed after 0.024 seconds.
+􁁛  Test run with 16 tests in 0 suites passed after 0.011 seconds.
+􁁛  Test run with 24 tests in 0 suites passed after 0.032 seconds.
+􁁛  Test run with 27 tests in 0 suites passed after 0.010 seconds.
+2026-11-04 17:55:28.450 appintentsmetadataprocessor[73838:1433347] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+** BUILD SUCCEEDED **
+build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
+build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement

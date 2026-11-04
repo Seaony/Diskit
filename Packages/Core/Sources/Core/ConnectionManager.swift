@@ -187,7 +187,13 @@ public enum ConnectionState: Equatable, Sendable {
         reportOperationError(error)
         throw error
       }
+      states[connection.id] = .disconnected
     }
+    var updated = connections.filter { $0.id != connection.id }
+    for index in updated.indices { updated[index].order = index }
+    try repository.save(updated)
+    connections = updated
+    states.removeValue(forKey: connection.id)
     let deletingSecrets = RecoverableSecretStore(base: secrets)
     try deletingSecrets.delete(connection.passwordKey)
     switch connection.kind {
@@ -206,11 +212,6 @@ public enum ConnectionState: Equatable, Sendable {
     if FileManager.default.fileExists(atPath: cache.path) {
       try FileManager.default.removeItem(at: cache)
     }
-    var updated = connections.filter { $0.id != connection.id }
-    for index in updated.indices { updated[index].order = index }
-    try repository.save(updated)
-    connections = updated
-    states.removeValue(forKey: connection.id)
   }
   public func toggle(_ connection: Connection) async {
     guard !busy.contains(connection.id) else { return }

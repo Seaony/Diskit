@@ -6,13 +6,19 @@ import Testing
 
 private final class MemorySecrets: SecretStore, Sendable {
   let failWrites = Mutex(false)
+  let failDeletes = Mutex(false)
+  let deletions = Mutex<[String]>([])
   let values = Mutex<[String: Data]>([:])
   func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
   func write(_ data: Data, for key: String) throws {
     if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
     values.withLock { $0[key] = data }
   }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
+  func delete(_ key: String) throws {
+    deletions.withLock { $0.append(key) }
+    if failDeletes.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
+    _ = values.withLock { $0.removeValue(forKey: key) }
+  }
 }
 
 @MainActor private final class FakeSMB: SMBServing {
@@ -572,4 +578,63 @@ private func sample(_ name: String = "Windows") -> Connection {
   try await manager.remove(connection)
   #expect(try sessionStore.read(key) == nil)
   #expect(try f.secrets.read(key) == nil)
+}
+
+@Test(arguments: [
+  ConnectionKind.smb, .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
+  .googleDrive, .dropbox, .pikPak, .tianyiDrive,
+])
+@MainActor func removalSaveFailurePreservesCredentialsAndCache(kind: ConnectionKind) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
+  let connection =
+    kind == .smb ? sample() : Connection(kind: kind, name: "网盘", params: ["nickname": "测试账号"])
+  try await manager.save(connection, password: "password")
+  if kind == .smb { await manager.toggle(connection) }
+  let prefix = connection.id.uuidString
+  let keys = [
+    connection.passwordKey, prefix + ".oauth", prefix + ".cookie",
+    prefix + ".oauth." + kind.rawValue,
+  ]
+  for key in keys { try f.secrets.write(Data("saved".utf8), for: key) }
+  let cache = f.location.cacheDirectory.appending(path: prefix)
+  try FileManager.default.createDirectory(at: cache, withIntermediateDirectories: true)
+  let cachedFile = cache.appending(path: "cached")
+  try Data("cached data".utf8).write(to: cachedFile)
+  let config = f.location.dataDirectory.appending(path: "connections.json")
+  let backup = f.location.dataDirectory.appending(path: "saved.json")
+  try FileManager.default.moveItem(at: config, to: backup)
+  try FileManager.default.createDirectory(at: config, withIntermediateDirectories: false)
+  try Data().write(to: config.appending(path: "block-write"))
+  await #expect(throws: CocoaError.self) { try await manager.remove(connection) }
+  #expect(manager.connections.contains { $0.id == connection.id })
+  #expect(f.secrets.deletions.withLock { $0.isEmpty })
+  for key in keys { #expect(try f.secrets.read(key) == Data("saved".utf8)) }
+  #expect(try Data(contentsOf: cachedFile) == Data("cached data".utf8))
+  if kind == .smb {
+    #expect(f.smb.mounted(connection) == nil)
+    #expect(manager.states[connection.id] == .disconnected)
+  }
+  try FileManager.default.removeItem(at: config)
+  try FileManager.default.moveItem(at: backup, to: config)
+  #expect(try ConnectionRepository(location: f.location).load().map(\.id) == [connection.id])
+}
+
+@Test @MainActor func removalCleanupFailureKeepsPublishedConfigurationConsistent() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "saved")
+  f.secrets.failDeletes.withLock { $0 = true }
+  await #expect(throws: CocoaError.self) { try await manager.remove(connection) }
+  #expect(manager.connections.isEmpty)
+  #expect(manager.states[connection.id] == nil)
+  #expect(try ConnectionRepository(location: f.location).load().isEmpty)
+  #expect(try f.secrets.read(connection.passwordKey) == Data("saved".utf8))
+  f.secrets.failDeletes.withLock { $0 = false }
+  try await manager.remove(connection)
+  #expect(try f.secrets.read(connection.passwordKey) == nil)
 }
