@@ -1542,12 +1542,11 @@
       }
     },
     "其他登录方式": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Other Sign-in Methods"
+            "value": "Other Sign-In Methods"
           }
         },
         "zh-Hans": {
@@ -4193,12 +4192,11 @@
       }
     },
     "正在读取共享列表…": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reading Shared Folders…"
+            "value": "Reading shares…"
           }
         },
         "zh-Hans": {
@@ -5280,12 +5278,11 @@
       }
     },
     "等待浏览器授权…": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting for Browser Sign-in…"
+            "value": "Waiting for browser sign-in…"
           }
         },
         "zh-Hans": {
@@ -5314,12 +5311,11 @@
       }
     },
     "等待网页登录…": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Waiting for Web Sign-in…"
+            "value": "Waiting for web sign-in…"
           }
         },
         "zh-Hans": {
@@ -7421,12 +7417,11 @@
       }
     },
     "选择共享": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select a share"
+            "value": "Choose a share"
           }
         },
         "zh-Hans": {
@@ -7964,6 +7959,38 @@
         }
       }
     },
+    "%@（%@）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (%@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（%@）"
+          }
+        }
+      }
+    },
+    "HTTP 会以明文传输密码和文件，请只在可信网络中使用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP sends passwords and files in plain text. Use it only on trusted networks."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HTTP 会以明文传输密码和文件，请只在可信网络中使用。"
+          }
+        }
+      }
+    },
     "Kayoi %@": {
       "localizations": {
         "en": {
@@ -8036,6 +8063,38 @@
         }
       }
     },
+    "Mac 或 NAS 请先开启 SMB 文件共享。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable SMB file sharing on your Mac or NAS first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac 或 NAS 请先开启 SMB 文件共享。"
+          }
+        }
+      }
+    },
+    "MinIO 等自建服务通常需要路径形式；其他服务请按提供商设置选择": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Self-hosted services such as MinIO usually require path-style access. For other services, follow your provider’s settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MinIO 等自建服务通常需要路径形式；其他服务请按提供商设置选择"
+          }
+        }
+      }
+    },
     "SMB 共享": {
       "localizations": {
         "en": {
@@ -8048,6 +8107,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "SMB 共享"
+          }
+        }
+      }
+    },
+    "Windows、Mac、NAS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows, Mac, NAS"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Windows、Mac、NAS"
           }
         }
       }
@@ -8116,6 +8191,102 @@
         }
       }
     },
+    "位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "位置"
+          }
+        }
+      }
+    },
+    "使用 HTTPS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use HTTPS"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 HTTPS"
+          }
+        }
+      }
+    },
+    "使用站点的 WebDAV 地址和账户，确保账户拥有相应存储权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the site’s WebDAV address and account. Make sure the account has access to the storage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用站点的 WebDAV 地址和账户，确保账户拥有相应存储权限。"
+          }
+        }
+      }
+    },
+    "使用能传输数据的数据线，并在手机上允许这台 Mac；无线连接需输入手机当前显示的配对码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a cable that supports data transfer and allow this Mac on your phone. For a wireless connection, enter the pairing code currently shown on the phone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用能传输数据的数据线，并在手机上允许这台 Mac；无线连接需输入手机当前显示的配对码。"
+          }
+        }
+      }
+    },
+    "使用路径形式访问存储桶": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Path-Style Bucket Access"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用路径形式访问存储桶"
+          }
+        }
+      }
+    },
+    "使用非官方接口，可能随时失效": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses unofficial APIs that may stop working at any time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用非官方接口，可能随时失效"
+          }
+        }
+      }
+    },
     "修改位置名称和颜色": {
       "localizations": {
         "en": {
@@ -8148,6 +8319,502 @@
         }
       }
     },
+    "其他登录方式…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other Sign-In Methods…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他登录方式…"
+          }
+        }
+      }
+    },
+    "准备存储桶、区域和完整服务地址。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have your bucket, region, and full service endpoint ready."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备存储桶、区域和完整服务地址。"
+          }
+        }
+      }
+    },
+    "准备服务商账号，在服务商自己的登录页面完成授权。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Have your provider account ready and authorize access on the provider’s own sign-in page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备服务商账号，在服务商自己的登录页面完成授权。"
+          }
+        }
+      }
+    },
+    "分享链接以只读方式打开。清空提取码后保存，会删除之前保存的提取码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share links open as read-only. Clearing the password and saving removes the previously saved share password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享链接以只读方式打开。清空提取码后保存，会删除之前保存的提取码。"
+          }
+        }
+      }
+    },
+    "分享链接需要使用 HTTPS": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share links must use HTTPS."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享链接需要使用 HTTPS"
+          }
+        }
+      }
+    },
+    "创建只允许访问目标存储桶的密钥，不要使用主账号密钥。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a key that can access only the target bucket. Do not use your main account key."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建只允许访问目标存储桶的密钥，不要使用主账号密钥。"
+          }
+        }
+      }
+    },
+    "可以从浏览器复制当前网盘的登录信息并粘贴到这里。不要把它发给其他人。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the current drive’s sign-in information from a browser and paste it here. Do not share it with anyone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可以从浏览器复制当前网盘的登录信息并粘贴到这里。不要把它发给其他人。"
+          }
+        }
+      }
+    },
+    "可用 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可用 %@"
+          }
+        }
+      }
+    },
+    "可登录账号，或填写公开分享链接；有分享密码时一并填写。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to an account or enter a public share link. Include the share password if one is required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可登录账号，或填写公开分享链接；有分享密码时一并填写。"
+          }
+        }
+      }
+    },
+    "向服务提供商确认完整 WebDAV 地址和登录方式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ask your provider for the full WebDAV address and sign-in method."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "向服务提供商确认完整 WebDAV 地址和登录方式。"
+          }
+        }
+      }
+    },
+    "在 NAS 上启用 WebDAV Server 的 HTTPS 服务，并允许此账户访问目标共享。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable HTTPS in WebDAV Server on your NAS and grant this account access to the target share."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 NAS 上启用 WebDAV Server 的 HTTPS 服务，并允许此账户访问目标共享。"
+          }
+        }
+      }
+    },
+    "在 NAS 上开启 WebDAV，并使用实际配置的端口与共享路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable WebDAV on your NAS and use its configured port and share path."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 NAS 上开启 WebDAV，并使用实际配置的端口与共享路径。"
+          }
+        }
+      }
+    },
+    "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on File and Printer Sharing in Windows network settings and grant the account access to the target folder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。"
+          }
+        }
+      }
+    },
+    "在%@网页完成登录后，从浏览器开发者工具的网络请求中复制 Cookie 请求头，再粘贴到这里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in on the %@ website, copy the Cookie header from a network request in your browser’s developer tools and paste it here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在%@网页完成登录后，从浏览器开发者工具的网络请求中复制 Cookie 请求头，再粘贴到这里。"
+          }
+        }
+      }
+    },
+    "在个人设置中创建应用密码，并复制服务器提供的 WebDAV 地址。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create an app password in your personal settings and copy the WebDAV address supplied by the server."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在个人设置中创建应用密码，并复制服务器提供的 WebDAV 地址。"
+          }
+        }
+      }
+    },
+    "在个人设置的安全页面创建应用密码，并从文件页面复制 WebDAV 地址。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create an app password on the security page in your personal settings, then copy the WebDAV address from the files page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在个人设置的安全页面创建应用密码，并从文件页面复制 WebDAV 地址。"
+          }
+        }
+      }
+    },
+    "在坚果云账号的安全设置中创建应用密码，用户名填写账号邮箱。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create an app password in your Nutstore account’s security settings. Use your account email as the username."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在坚果云账号的安全设置中创建应用密码，用户名填写账号邮箱。"
+          }
+        }
+      }
+    },
+    "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Developer Options in your phone’s settings, then enable USB debugging or Wireless Debugging."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。"
+          }
+        }
+      }
+    },
+    "在移动云盘网页完成登录后，从浏览器开发者工具的网络请求中复制 Authorization 请求头，保留 Basic 前缀或只粘贴后面的内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in on the Mobile Cloud website, copy the Authorization header from a network request in your browser’s developer tools. Keep the Basic prefix or paste only the value after it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在移动云盘网页完成登录后，从浏览器开发者工具的网络请求中复制 Authorization 请求头，保留 Basic 前缀或只粘贴后面的内容。"
+          }
+        }
+      }
+    },
+    "在迅雷云盘网页完成登录后，从浏览器开发者工具的网络请求中复制 Authorization 请求头，保留 Token 前缀或只粘贴后面的内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in on the Xunlei Drive website, copy the Authorization header from a network request in your browser’s developer tools. Keep the Token prefix or paste only the value after it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在迅雷云盘网页完成登录后，从浏览器开发者工具的网络请求中复制 Authorization 请求头，保留 Token 前缀或只粘贴后面的内容。"
+          }
+        }
+      }
+    },
+    "复制服务提供商给出的完整 WebDAV 地址；它通常包含文件夹路径。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy the full WebDAV address from your provider. It usually includes a folder path."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制服务提供商给出的完整 WebDAV 地址；它通常包含文件夹路径。"
+          }
+        }
+      }
+    },
+    "如果服务提供应用密码，请使用应用密码而不是网页登录密码。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If the service offers app passwords, use one instead of your web sign-in password."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果服务提供应用密码，请使用应用密码而不是网页登录密码。"
+          }
+        }
+      }
+    },
+    "威联通": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QNAP"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "威联通"
+          }
+        }
+      }
+    },
+    "存储桶与对象": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buckets and objects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储桶与对象"
+          }
+        }
+      }
+    },
+    "家庭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Family"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家庭"
+          }
+        }
+      }
+    },
+    "家庭 ID": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Family ID"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "家庭 ID"
+          }
+        }
+      }
+    },
+    "容量暂不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage information unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "容量暂不可用"
+          }
+        }
+      }
+    },
+    "密码或私密密钥": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password or secret key"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "密码或私密密钥"
+          }
+        }
+      }
+    },
+    "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索“开发者选项”和“USB 调试”。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The settings may be in different places on Xiaomi, OPPO, vivo, and Samsung phones. Search your phone’s settings for “Developer Options” and “USB debugging”."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索“开发者选项”和“USB 调试”。"
+          }
+        }
+      }
+    },
+    "已保存的相机（当前未发现）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved camera (not currently discovered)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的相机（当前未发现）"
+          }
+        }
+      }
+    },
+    "已保存的设备（当前未发现）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved device (not currently discovered)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的设备（当前未发现）"
+          }
+        }
+      }
+    },
     "已挂载": {
       "extractionState": "manual",
       "localizations": {
@@ -8161,6 +8828,54 @@
           "stringUnit": {
             "state": "translated",
             "value": "已挂载"
+          }
+        }
+      }
+    },
+    "已用 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ used"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 %@"
+          }
+        }
+      }
+    },
+    "已用 %@ / 总容量 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ used / %@ total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已用 %@ / 总容量 %@"
+          }
+        }
+      }
+    },
+    "已登录": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已登录"
           }
         }
       }
@@ -8245,6 +8960,22 @@
         }
       }
     },
+    "已选择的配对设备（当前未发现）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected pairing device (not currently discovered)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选择的配对设备（当前未发现）"
+          }
+        }
+      }
+    },
     "帮助 · ⌘?": {
       "localizations": {
         "en": {
@@ -8257,6 +8988,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "帮助 · ⌘?"
+          }
+        }
+      }
+    },
+    "当前网页：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current page: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前网页：%@"
+          }
+        }
+      }
+    },
+    "微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For a Microsoft account, enter its email and account password, not the PIN used to sign in to the computer."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"
+          }
+        }
+      }
+    },
+    "必填信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required information"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "必填信息"
+          }
+        }
+      }
+    },
+    "总容量 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "总容量 %@"
+          }
+        }
+      }
+    },
+    "手动填写的共享：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manually entered share: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动填写的共享：%@"
+          }
+        }
+      }
+    },
+    "手动填写的家庭：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manually entered family: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动填写的家庭：%@"
+          }
+        }
+      }
+    },
+    "手动粘贴登录信息": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paste Sign-In Information Manually"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动粘贴登录信息"
+          }
+        }
+      }
+    },
+    "手动输入…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter Manually…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手动输入…"
           }
         }
       }
@@ -8277,6 +9136,22 @@
         }
       }
     },
+    "提取码": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share Password"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提取码"
+          }
+        }
+      }
+    },
     "插上手机、打开无线调试，或添加网络共享和网盘": {
       "localizations": {
         "en": {
@@ -8289,6 +9164,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "插上手机、打开无线调试，或添加网络共享和网盘"
+          }
+        }
+      }
+    },
+    "搜索类型，例如 网盘、SMB、相机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search types, such as cloud drives, SMB, or cameras"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索类型，例如 网盘、SMB、相机"
+          }
+        }
+      }
+    },
+    "数据线或无线调试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB or wireless debugging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据线或无线调试"
           }
         }
       }
@@ -8309,6 +9216,150 @@
         }
       }
     },
+    "模拟加载失败": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate Loading Failure"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟加载失败"
+          }
+        }
+      }
+    },
+    "模拟登录成功": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simulate Successful Sign-In"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模拟登录成功"
+          }
+        }
+      }
+    },
+    "正在加载登录网页": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading sign-in page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在加载登录网页"
+          }
+        }
+      }
+    },
+    "没有发现安卓设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Android Device Found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有发现安卓设备"
+          }
+        }
+      }
+    },
+    "没有发现配对设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Pairing Device Found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有发现配对设备"
+          }
+        }
+      }
+    },
+    "没有提取码时留空": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave blank if no share password is required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有提取码时留空"
+          }
+        }
+      }
+    },
+    "注册用户": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Registered User"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "注册用户"
+          }
+        }
+      }
+    },
+    "测试并保存（Return / ⌘Return）": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test and Save (Return / ⌘Return)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "测试并保存（Return / ⌘Return）"
+          }
+        }
+      }
+    },
+    "浏览账号或分享链接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Browse an account or share link"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浏览账号或分享链接"
+          }
+        }
+      }
+    },
     "添加位置…": {
       "localizations": {
         "en": {
@@ -8321,6 +9372,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "添加位置…"
+          }
+        }
+      }
+    },
+    "清除搜索": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear Search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清除搜索"
+          }
+        }
+      }
+    },
+    "演示账号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demo account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示账号"
           }
         }
       }
@@ -8341,6 +9424,166 @@
         }
       }
     },
+    "用支持数据传输的 USB 线连接相机，并在相机上允许访问存储卡。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect the camera with a USB cable that supports data transfer and allow access to its memory card on the camera."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用支持数据传输的 USB 线连接相机，并在相机上允许访问存储卡。"
+          }
+        }
+      }
+    },
+    "登录%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In to %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录%@"
+          }
+        }
+      }
+    },
+    "登录%@…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In to %@…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录%@…"
+          }
+        }
+      }
+    },
+    "登录信息只保存在这台 Mac 的钥匙串中。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in information is stored only in this Mac’s Keychain."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录信息只保存在这台 Mac 的钥匙串中。"
+          }
+        }
+      }
+    },
+    "登录信息已失效，请重新登录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your sign-in information has expired. Sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录信息已失效，请重新登录。"
+          }
+        }
+      }
+    },
+    "登录信息格式不正确，请重新复制完整内容。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The sign-in information is not in the correct format. Copy the complete information again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录信息格式不正确，请重新复制完整内容。"
+          }
+        }
+      }
+    },
+    "登录信息相当于密码，请勿分享给他人。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treat sign-in information like a password. Do not share it with anyone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录信息相当于密码，请勿分享给他人。"
+          }
+        }
+      }
+    },
+    "登录后仅能访问此应用的专属目录。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in, you can access only this app’s dedicated folder."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录后仅能访问此应用的专属目录。"
+          }
+        }
+      }
+    },
+    "登录后即可测试连接并保存位置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After signing in, you can test the connection and save the location."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录后即可测试连接并保存位置。"
+          }
+        }
+      }
+    },
+    "登录后选择或填写家庭 ID": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select or enter a family ID after signing in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录后选择或填写家庭 ID"
+          }
+        }
+      }
+    },
     "登录已过期": {
       "localizations": {
         "en": {
@@ -8357,6 +9600,86 @@
         }
       }
     },
+    "登录成功，登录窗口将自动关闭。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signed in. This window will close automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录成功，登录窗口将自动关闭。"
+          }
+        }
+      }
+    },
+    "登录方式": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-In Method"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录方式"
+          }
+        }
+      }
+    },
+    "登录网页未能加载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t Load Sign-In Page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录网页未能加载"
+          }
+        }
+      }
+    },
+    "登录账号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In to Account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录账号"
+          }
+        }
+      }
+    },
+    "登录账号的手机号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone number for the account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录账号的手机号"
+          }
+        }
+      }
+    },
     "相机未连接": {
       "localizations": {
         "en": {
@@ -8369,6 +9692,118 @@
           "stringUnit": {
             "state": "translated",
             "value": "相机未连接"
+          }
+        }
+      }
+    },
+    "确认服务器的导出路径，并允许这台 Mac 访问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm the server’s export path and allow this Mac to access it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认服务器的导出路径，并允许这台 Mac 访问。"
+          }
+        }
+      }
+    },
+    "系统权限尚未开启，请在系统设置中允许 Kayoi 访问。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Access has not been granted. Allow Kayoi access in System Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统权限尚未开启，请在系统设置中允许 Kayoi 访问。"
+          }
+        }
+      }
+    },
+    "网络文件共享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Network file sharing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网络文件共享"
+          }
+        }
+      }
+    },
+    "网页文件服务": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Web file service"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网页文件服务"
+          }
+        }
+      }
+    },
+    "网页暂时无法加载，请重新加载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The page could not be loaded. Try reloading it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "网页暂时无法加载，请重新加载。"
+          }
+        }
+      }
+    },
+    "群晖": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synology"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "群晖"
+          }
+        }
+      }
+    },
+    "蓝奏云在当前版本中只读。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lanzou Cloud is read-only in this version."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "蓝奏云在当前版本中只读。"
           }
         }
       }
@@ -8405,6 +9840,70 @@
         }
       }
     },
+    "访客": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "访客"
+          }
+        }
+      }
+    },
+    "请先填写主机地址，并选择访客或填写用户名": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the host address first, then choose Guest or enter a username."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先填写主机地址，并选择访客或填写用户名"
+          }
+        }
+      }
+    },
+    "请先登录账号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to your account first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先登录账号"
+          }
+        }
+      }
+    },
+    "请在下方登录%@。Kayoi 只把登录信息保存在本机钥匙串里。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to %@ below. Kayoi stores sign-in information only in your local Keychain."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在下方登录%@。Kayoi 只把登录信息保存在本机钥匙串里。"
+          }
+        }
+      }
+    },
     "请在手机上点“允许 USB 调试”": {
       "localizations": {
         "en": {
@@ -8417,6 +9916,166 @@
           "stringUnit": {
             "state": "translated",
             "value": "请在手机上点“允许 USB 调试”"
+          }
+        }
+      }
+    },
+    "请填写%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter %@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写%@"
+          }
+        }
+      }
+    },
+    "请填写完整的服务器地址，例如 https://nas.local/dav/": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a complete server address, such as https://nas.local/dav/."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请填写完整的服务器地址，例如 https://nas.local/dav/"
+          }
+        }
+      }
+    },
+    "请打开相机，使用数据线连接 Mac，并在相机上选择 PTP 或图像传输模式。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on the camera, connect it to your Mac by cable, and select PTP or image transfer mode on the camera."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请打开相机，使用数据线连接 Mac，并在相机上选择 PTP 或图像传输模式。"
+          }
+        }
+      }
+    },
+    "请把地址模板替换为自己的账号和地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace the address template with your own account and address."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请把地址模板替换为自己的账号和地址"
+          }
+        }
+      }
+    },
+    "读取主机上的共享文件夹": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read the shared folders on the host."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取主机上的共享文件夹"
+          }
+        }
+      }
+    },
+    "读取照片与视频": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read photos and videos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读取照片与视频"
+          }
+        }
+      }
+    },
+    "账号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "账号"
+          }
+        }
+      }
+    },
+    "输入完整配对码后会自动配对。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pairing starts automatically when you enter the complete code."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输入完整配对码后会自动配对。"
+          }
+        }
+      }
+    },
+    "还需要填写：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Still required: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还需要填写：%@"
+          }
+        }
+      }
+    },
+    "这是离线演示页面，不会连接服务商或读取真实账号。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is an offline demo page. It does not connect to the provider or access real accounts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这是离线演示页面，不会连接服务商或读取真实账号。"
           }
         }
       }
@@ -8437,6 +10096,70 @@
         }
       }
     },
+    "连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接"
+          }
+        }
+      }
+    },
+    "连接云端文件": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect to cloud files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接云端文件"
+          }
+        }
+      }
+    },
+    "连接未完成": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection Incomplete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接未完成"
+          }
+        }
+      }
+    },
+    "连接测试只读取相机信息，不会修改照片。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing the connection only reads camera information. It does not change your photos."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接测试只读取相机信息，不会修改照片。"
+          }
+        }
+      }
+    },
     "退出 · ⌘Q": {
       "localizations": {
         "en": {
@@ -8453,6 +10176,206 @@
         }
       }
     },
+    "退出图像捕捉或其他正在占用相机的应用。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Image Capture or any other app using the camera."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出图像捕捉或其他正在占用相机的应用。"
+          }
+        }
+      }
+    },
+    "选择家庭": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a family"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择家庭"
+          }
+        }
+      }
+    },
+    "选择相机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a camera"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择相机"
+          }
+        }
+      }
+    },
+    "选择设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择设备"
+          }
+        }
+      }
+    },
+    "选择配对设备": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a pairing device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择配对设备"
+          }
+        }
+      }
+    },
+    "选项": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Options"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选项"
+          }
+        }
+      }
+    },
+    "通过 USB 读取相机": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read a camera over USB"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过 USB 读取相机"
+          }
+        }
+      }
+    },
+    "邮箱或手机号": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email or phone number"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邮箱或手机号"
+          }
+        }
+      }
+    },
+    "配对成功": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paired successfully"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配对成功"
+          }
+        }
+      }
+    },
+    "配对码第 %lld 位": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pairing code digit %lld"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Pairing code digit %lld"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "配对码第 %lld 位"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "配对码第 %lld 位"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "重新加载": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reload"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新加载"
+          }
+        }
+      }
+    },
     "重新测试": {
       "localizations": {
         "en": {
@@ -8465,6 +10388,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新测试"
+          }
+        }
+      }
+    },
+    "非会员账号可能受到服务商的下载速度和文件大小限制。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free accounts may have download speed and file size limits set by the provider."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "非会员账号可能受到服务商的下载速度和文件大小限制。"
+          }
+        }
+      }
+    },
+    "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "HarmonyOS NEXT does not support ADB and cannot connect this way."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。"
           }
         }
       }
