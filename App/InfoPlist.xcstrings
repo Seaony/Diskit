@@ -24,13 +24,13 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "发现并读取通过 USB 连接的相机。"
+            "value": "发现并读取通过 USB 连接的相机中的照片。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discover and read cameras connected over USB."
+            "value": "Discover and read photos from cameras connected over USB."
           }
         }
       }

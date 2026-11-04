@@ -141,7 +141,7 @@ private actor PairingBytes: ADBTransport {
     }
     #expect(await phone.publicKey == nil)
   }
-  #expect(PairingError.wrongCode.errorDescription == "配对码错误")
+  #expect(PairingError.wrongCode.errorDescription == L("配对码错误"))
 }
 
 @Test func PairingRejectsTamperedCiphertextAndEmptyGUID() async throws {

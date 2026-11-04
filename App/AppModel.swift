@@ -262,7 +262,7 @@ import UserNotifications
       self?.sendNotification(
         .disconnect,
         title: L("位置意外断开"),
-        body: String.localizedStringWithFormat(L("“%@”的连接已断开。"), connection.name))
+        body: LF("“%@”的连接已断开。", connection.name))
     }
     connections.testRemote = { [weak self] connection in
       guard let self else { throw ConnectionError.notImplemented }

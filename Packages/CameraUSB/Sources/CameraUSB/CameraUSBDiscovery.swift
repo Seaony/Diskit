@@ -47,7 +47,7 @@ extension CameraUSBDevice {
     let name = descriptor.name.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !CameraIdentity.isGRIV(name) else { return nil }
     self.init(
-      id: id, serial: descriptor.serial, name: name.isEmpty ? "USB 相机" : name,
+      id: id, serial: descriptor.serial, name: name.isEmpty ? L("USB 相机") : name,
       vendorID: descriptor.vendorID, productID: descriptor.productID)
   }
 }

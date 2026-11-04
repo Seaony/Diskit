@@ -13,6 +13,9 @@ LIMITS = {
     "PikPakDrive": 85, "LanzouDrive": 85, "TianyiDrive": 85,
     "ChinaWebDrive": 85, "DevTool": 70,
 }
+EXCEPTIONS = {
+    "ADB/Sources/ADB/SystemUSBMonitor.swift": "IOKit 通知注册、句柄释放和回调转发；发现状态与错误分类在 USBDiscovery 中测试",
+}
 
 
 def run(command, log):
@@ -23,9 +26,13 @@ def run(command, log):
 
 def package_lines(document, source):
     covered = count = 0
+    excluded = {ROOT / "Packages" / name for name in EXCEPTIONS}
     for record in document["data"]:
         for file in record["files"]:
-            if Path(file["filename"]).is_relative_to(source):
+            path = Path(file["filename"])
+            if (path.is_relative_to(source)
+                    and not path.is_relative_to(source / "CoreTestSupport")
+                    and path not in excluded):
                 lines = file["summary"]["lines"]
                 covered += lines["covered"]
                 count += lines["count"]
@@ -34,6 +41,14 @@ def package_lines(document, source):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    (OUT / "summary.txt").unlink(missing_ok=True)
+    exceptions = []
+    for relative, reason in EXCEPTIONS.items():
+        path = ROOT / "Packages" / relative
+        count = len(path.read_text().splitlines())
+        if count > 150:
+            raise ValueError(f"覆盖率例外超过 150 行，须重新审核：{relative} ({count})")
+        exceptions.append(f"系统薄封装例外：{relative}，{count} 行；{reason}")
     rows = []
     for name, minimum in LIMITS.items():
         package = ROOT / "Packages" / name
@@ -79,7 +94,7 @@ def main():
         output.append(f"{name}: {covered}/{count} = {percent:.2f}%; 目标 {minimum}%; "
                       + ("通过" if passed else "未通过")
                       + ("" if ok else "（测试未通过或缺少测试目标）"))
-    text = "\n".join(output) + "\n"
+    text = "\n".join(output + exceptions) + "\n"
     (OUT / "summary.txt").write_text(text)
     print(text, end="")
     return 1 if failed else 0

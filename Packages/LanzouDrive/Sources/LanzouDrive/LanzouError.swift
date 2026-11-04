@@ -72,7 +72,7 @@ public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, LoginR
     case .invalidResponse: L("蓝奏云返回了无法识别的数据")
     case .rangeUnsupported: L("蓝奏云下载服务没有返回请求的文件范围")
     case .http(let status): HumanError.http(status)
-    case .service(let message): String(format: L("蓝奏云操作失败：%@"), message)
+    case .service(let message): LF("蓝奏云操作失败：%@", message)
     }
   }
 

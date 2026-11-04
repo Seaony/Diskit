@@ -39,7 +39,7 @@ public enum TianyiError: Error, Equatable, LocalizedError, CustomNSError, LoginR
     case .familyUnavailable: L("当前账号没有可用的家庭云")
     case .loginRequired: L("天翼云盘登录已失效，请重新登录")
     case .invalidResponse: L("天翼云盘返回了无法识别的数据，接口可能已经变化")
-    case .service(let message): String(format: L("天翼云盘操作失败：%@"), message)
+    case .service(let message): LF("天翼云盘操作失败：%@", message)
     }
   }
 
