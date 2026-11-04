@@ -1,4 +1,5 @@
 import Core
+import CoreFoundation
 import Foundation
 
 public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
@@ -26,7 +27,8 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
   public func connect() async throws {
     let response = try await session.authorized(
       apiRequest(
-        url: "https://api.dropboxapi.com/2/users/get_current_account", body: Data("null".utf8)))
+        url: "https://api.dropboxapi.com/2/users/get_current_account", body: Data("null".utf8)),
+      retrySafe: true)
     try check(response)
     connected = true
   }
@@ -38,7 +40,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
     var request = apiRequest(
       url: "https://api.dropboxapi.com/2/users/get_space_usage", body: Data("null".utf8))
     request.httpMethod = "POST"
-    let response = try await session.authorized(request)
+    let response = try await session.authorized(request, retrySafe: true)
     try check(response)
     let value = try JSONDecoder().decode(DropboxSpace.self, from: response.body)
     return SpaceInfo(total: value.allocation.allocated, used: value.used)
@@ -48,7 +50,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
     let response = try await session.authorized(
       apiRequest(
         url: "https://api.dropboxapi.com/2/users/get_current_account",
-        body: Data("null".utf8)))
+        body: Data("null".utf8)), retrySafe: true)
     try check(response)
     let value = try JSONDecoder().decode(DropboxProfile.self, from: response.body)
     return OAuthProfile(
@@ -65,7 +67,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
         "include_non_downloadable_files": false,
       ])
     request.httpMethod = "POST"
-    var response = try await session.authorized(request)
+    var response = try await session.authorized(request, retrySafe: true)
     try check(response)
     var page = try JSONDecoder().decode(DropboxList.self, from: response.body)
     var entries = page.entries
@@ -74,7 +76,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
         url: "https://api.dropboxapi.com/2/files/list_folder/continue",
         json: ["cursor": page.cursor])
       next.httpMethod = "POST"
-      response = try await session.authorized(next)
+      response = try await session.authorized(next, retrySafe: true)
       try check(response)
       page = try JSONDecoder().decode(DropboxList.self, from: response.body)
       entries.append(contentsOf: page.entries)
@@ -92,7 +94,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
       url: "https://api.dropboxapi.com/2/files/get_metadata",
       json: ["path": dropboxPath(path), "include_deleted": false])
     request.httpMethod = "POST"
-    let response = try await session.authorized(request)
+    let response = try await session.authorized(request, retrySafe: true)
     try check(response)
     return try JSONDecoder().decode(DropboxEntry.self, from: response.body)
       .item(parent: parent(path))
@@ -115,7 +117,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
         "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
         forHTTPHeaderField: "Range")
     }
-    let stream = try await session.authorizedStream(request)
+    let stream = try await session.authorizedStream(request, retrySafe: true)
     if range != nil {
       guard stream.response.status == 206 else {
         if (200..<300).contains(stream.response.status) {
@@ -131,6 +133,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     guard let fileSize = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
@@ -148,11 +151,11 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
       request.httpMethod = "POST"
       request.httpBody = data
       request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-      try check(try await session.authorized(request), allowing: [200])
+      try check(try await session.authorized(request, upload: true), allowing: [200])
       progress?(size, size)
       return
     }
-    try await sessionUpload(path: path, localFile: localFile, size: size)
+    try await sessionUpload(path: path, localFile: localFile, size: size, progress: progress)
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -198,52 +201,116 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
     try check(try await session.authorized(request), allowing: [200])
   }
 
-  private func sessionUpload(path: RemotePath, localFile: URL, size: Int64) async throws {
+  private func sessionUpload(
+    path: RemotePath, localFile: URL, size: Int64, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
+    guard chunkSize > 0, chunkSize <= 150 * 1024 * 1024 else {
+      throw RemoteError.posix(EINVAL)
+    }
     let handle = try FileHandle(forReadingFrom: localFile)
     defer { try? handle.close() }
-    guard let first = try handle.read(upToCount: Int(chunkSize)) else {
-      throw RemoteError.posix(EIO)
-    }
-    var start = contentRequest(
-      endpoint: "https://content.dropboxapi.com/2/files/upload_session/start",
-      argument: ["close": false])
-    start.httpMethod = "POST"
-    start.httpBody = first
-    let startResponse = try await session.authorized(start)
-    try check(startResponse)
-    let sessionID = try JSONDecoder().decode(DropboxSessionID.self, from: startResponse.body)
-      .sessionID
-    var offset = Int64(first.count)
-    while offset < size {
+    var sessionID: String?
+    var offset: Int64 = 0
+    var restarts = 0
+    var recoveries = 0
+    var reported: Int64 = 0
+    while true {
       try Task.checkCancellation()
-      guard let data = try handle.read(upToCount: Int(min(chunkSize, size - offset))) else {
-        throw RemoteError.posix(EIO)
+      if sessionID == nil {
+        try handle.seek(toOffset: 0)
+        guard let first = try handle.read(upToCount: Int(min(chunkSize, size))), !first.isEmpty
+        else {
+          throw RemoteError.posix(EIO)
+        }
+        var start = contentRequest(
+          endpoint: "https://content.dropboxapi.com/2/files/upload_session/start",
+          argument: ["close": false])
+        start.httpMethod = "POST"
+        start.httpBody = first
+        let response = try await session.authorized(start, upload: true)
+        try check(response)
+        let id = try JSONDecoder().decode(DropboxSessionID.self, from: response.body).sessionID
+        guard !id.isEmpty else { throw RemoteError.protocolError }
+        sessionID = id
+        offset = Int64(first.count)
       }
-      var append = contentRequest(
-        endpoint: "https://content.dropboxapi.com/2/files/upload_session/append_v2",
-        argument: ["cursor": ["session_id": sessionID, "offset": offset], "close": false])
-      append.httpMethod = "POST"
-      append.httpBody = data
-      try check(try await session.authorized(append))
-      offset += Int64(data.count)
-      progress?(offset, size)
+      let finishing = offset == size
+      var request: URLRequest
+      if finishing {
+        request = contentRequest(
+          endpoint: "https://content.dropboxapi.com/2/files/upload_session/finish",
+          argument: [
+            "cursor": ["session_id": sessionID!, "offset": offset],
+            "commit": [
+              "path": dropboxPath(path), "mode": "add", "autorename": false, "mute": false,
+              "strict_conflict": true,
+            ],
+          ])
+        request.httpBody = Data()
+      } else {
+        try handle.seek(toOffset: UInt64(offset))
+        let count = Int(min(chunkSize, size - offset))
+        guard let data = try handle.read(upToCount: count), data.count == count else {
+          throw RemoteError.posix(EIO)
+        }
+        request = contentRequest(
+          endpoint: "https://content.dropboxapi.com/2/files/upload_session/append_v2",
+          argument: ["cursor": ["session_id": sessionID!, "offset": offset], "close": false])
+        request.httpBody = data
+      }
+      request.httpMethod = "POST"
+      let response: HTTPResponse
+      do {
+        response = try await session.authorized(request, upload: !finishing)
+      } catch let error as URLError
+        where [.networkConnectionLost, .timedOut].contains(error.code) && recoveries < 3
+      {
+        // 同一游标重发由服务端校验偏移，不猜测丢失响应是否已经写入。
+        recoveries += 1
+        continue
+      }
+      if response.status == 409,
+        let object = try JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+        var error = object["error"] as? [String: Any]
+      {
+        if finishing, error[".tag"] as? String == "lookup_failed",
+          let lookup = error["lookup_failed"] as? [String: Any]
+        {
+          error = lookup
+        }
+        if error[".tag"] as? String == "not_found", restarts == 0 {
+          // 已失效会话无法保留分片；新会话仍以严格新增模式提交。
+          restarts += 1
+          sessionID = nil
+          continue
+        }
+        if error[".tag"] as? String == "incorrect_offset" {
+          guard let number = error["correct_offset"] as? NSNumber,
+            CFGetTypeID(number) != CFBooleanGetTypeID(),
+            let confirmed = Int64(number.stringValue), confirmed >= 0,
+            confirmed <= offset + Int64(request.httpBody?.count ?? 0), confirmed <= size,
+            recoveries < 3
+          else { throw RemoteError.protocolError }
+          recoveries += 1
+          offset = confirmed
+          continue
+        }
+      }
+      try check(response)
+      if finishing {
+        progress?(size, size)
+        return
+      }
+      offset += Int64(request.httpBody?.count ?? 0)
+      if offset > reported {
+        reported = offset
+        progress?(offset, size)
+      }
     }
-    var finish = contentRequest(
-      endpoint: "https://content.dropboxapi.com/2/files/upload_session/finish",
-      argument: [
-        "cursor": ["session_id": sessionID, "offset": offset],
-        "commit": [
-          "path": dropboxPath(path), "mode": "add", "autorename": false, "mute": false,
-          "strict_conflict": true,
-        ],
-      ])
-    finish.httpMethod = "POST"
-    finish.httpBody = Data()
-    try check(try await session.authorized(finish))
   }
 
   private func apiRequest(url: String, body: Data) -> URLRequest {
-    var request = URLRequest(url: URL(string: url)!, timeoutInterval: 60)
+    var request = URLRequest(url: URL(string: url)!, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.httpBody = body
@@ -255,7 +322,8 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func contentRequest(endpoint: String, argument: [String: Any]) -> URLRequest {
-    var request = URLRequest(url: URL(string: endpoint)!, timeoutInterval: 60)
+    var request = URLRequest(
+      url: URL(string: endpoint)!, timeoutInterval: RemoteTimeout.transferIdle)
     let data = try! JSONSerialization.data(withJSONObject: argument)
     // 请求头只保留 ASCII，表情按 UTF-16 代理对转义，避免文件名损坏。
     let header = String(decoding: data, as: UTF8.self).utf16.map { unit in
@@ -267,20 +335,10 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
 
   private func dropboxPath(_ path: RemotePath) -> String { path.value == "/" ? "" : path.value }
   private func parent(_ path: RemotePath) -> RemotePath {
-    let parts = path.value.split(separator: "/").dropLast()
-    return try! RemotePath(parts.isEmpty ? "/" : "/" + parts.joined(separator: "/"))
+    path.parent
   }
   private func ensureConnected() throws {
     guard connected else { throw RemoteError.notConnected }
-  }
-
-  private func ensureMissing(_ path: RemotePath) async throws {
-    do {
-      _ = try await stat(path)
-      throw RemoteError.posix(EEXIST)
-    } catch {
-      guard CloudDriveSupport.isExplicitlyMissing(error) else { throw error }
-    }
   }
 
   private func check(_ response: HTTPResponse, allowing: Set<Int> = [200]) throws {
@@ -301,20 +359,14 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
 
 private struct DropboxSpace: Decodable {
   struct Allocation: Decodable {
-    let allocated: Int64
+    let allocated: Int64?
     enum CodingKeys: String, CodingKey { case allocated = ".tag" }
     init(from decoder: Decoder) throws {
       let object = try decoder.container(keyedBy: DynamicCodingKey.self)
-      if let allocated = try object.decodeIfPresent(
-        Int64.self, forKey: DynamicCodingKey("allocated"))
-      {
-        self.allocated = allocated
-      } else {
-        self.allocated = 0
-      }
+      allocated = try object.decodeIfPresent(Int64.self, forKey: DynamicCodingKey("allocated"))
     }
   }
-  let used: Int64
+  let used: Int64?
   let allocation: Allocation
 }
 

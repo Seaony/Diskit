@@ -103,14 +103,18 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
     HTTPResponse(status: 200, body: Data(#"{"user":{}}"#.utf8)),
     HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
     HTTPResponse(status: 200, headers: ["Location": "https://upload.example.com/session"]),
-    HTTPResponse(status: 308),
+    HTTPResponse(status: 308, headers: ["Range": "bytes=0-8388607"]),
     HTTPResponse(status: 201, body: Data(#"{"id":"new"}"#.utf8)),
   ])
   let provider = GoogleDriveProvider(session: try session(transport))
+  let progress = Mutex<[Int64]>([])
+  await provider.onProgress { completed, _ in progress.withLock { $0.append(completed) } }
   try await provider.connect()
   try await provider.write(try RemotePath("/large.bin"), from: file)
+  #expect(progress.withLock { $0 } == [8 * 1024 * 1024, Int64(size)])
   let requests = transport.requests.withLock { $0 }
   #expect(requests[2].url?.query?.contains("uploadType=resumable") == true)
+  #expect(transport.uploadRequests.withLock { $0.count } == 2)
   #expect(requests[3].httpBody?.count == 8 * 1024 * 1024)
   #expect(requests[4].httpBody?.count == 1)
   #expect(
@@ -127,10 +131,14 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
     HTTPResponse(status: 200, body: Data(#"{"id":"new"}"#.utf8)),
   ])
   let provider = GoogleDriveProvider(session: try session(transport))
+  let progress = Mutex<[Int64]>([])
+  await provider.onProgress { completed, _ in progress.withLock { $0.append(completed) } }
   try await provider.connect()
   try await provider.write(try RemotePath("/small.txt"), from: file)
+  #expect(progress.withLock { $0 } == [5])
   let request = try #require(transport.requests.withLock { $0.last })
   #expect(request.url?.query?.contains("uploadType=multipart") == true)
+  #expect(transport.uploadRequests.withLock { $0.count } == 1)
 }
 
 @Test func oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() async throws {
@@ -144,7 +152,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
     HTTPResponse(
       status: 200,
       body: Data(#"{"uploadUrl":"https://upload.example.com/session"}"#.utf8)),
-    HTTPResponse(status: 202),
+    HTTPResponse(status: 202, body: Data(#"{"nextExpectedRanges":["327680-"]}"#.utf8)),
     HTTPResponse(status: 201, body: Data(#"{"id":"new"}"#.utf8)),
   ])
   let provider = OneDriveProvider(
@@ -163,6 +171,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   let uploads = transport.requests.withLock {
     $0.filter { $0.url?.host == "upload.example.com" }
   }
+  #expect(transport.uploadRequests.withLock { $0.count } == 2)
   #expect(uploads.map(\.httpBody?.count) == [320 * 1024, 3])
   #expect(uploads[0].value(forHTTPHeaderField: "Content-Range") == "bytes 0-327679/327683")
   #expect(uploads[1].value(forHTTPHeaderField: "Content-Range") == "bytes 327680-327682/327683")
@@ -243,6 +252,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
     session: try session(transport), uploadSessionThreshold: 1, chunkSize: 8 * 1024 * 1024)
   try await provider.connect()
   try await provider.write(try RemotePath("/large.bin"), from: file)
+  #expect(transport.uploadRequests.withLock { $0.count } == 3)
   let requests = transport.requests.withLock { $0 }
   #expect(requests[1].httpBody?.count == 8 * 1024 * 1024)
   #expect(requests[2].httpBody?.count == 8 * 1024 * 1024)

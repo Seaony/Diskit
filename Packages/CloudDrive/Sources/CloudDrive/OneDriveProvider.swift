@@ -7,6 +7,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private let session: OAuthSession
   private let transport: any HTTPTransport
   private let uploadSessionThreshold: Int64
+  private let recoverySleep: @Sendable (Duration) async throws -> Void
   private let chunkSize: Int64
   private var connected = false
   private var progress: (@Sendable (Int64, Int64) -> Void)?
@@ -16,6 +17,14 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     uploadSessionThreshold: Int64 = 250 * 1024 * 1024,
     chunkSize: Int64 = 10 * 1024 * 1024
   ) {
+    self.init(session: session, transport: transport, uploadSessionThreshold: uploadSessionThreshold,
+      chunkSize: chunkSize, recoverySleep: { try await Task.sleep(for: $0) })
+  }
+
+  init(session: OAuthSession, transport: any HTTPTransport, uploadSessionThreshold: Int64,
+    chunkSize: Int64, recoverySleep: @escaping @Sendable (Duration) async throws -> Void
+  ) {
+    self.recoverySleep = recoverySleep
     self.session = session
     self.transport = session.limited(transport)
     self.uploadSessionThreshold = uploadSessionThreshold
@@ -41,7 +50,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       URLRequest(url: try endpoint("/me/drive?$select=quota")))
     try check(response)
     let root = try JSONDecoder().decode(OneDriveDrive.self, from: response.body)
-    return SpaceInfo(total: Int64(root.quota.total ?? 0), used: Int64(root.quota.used))
+    return SpaceInfo(total: root.quota.total, used: root.quota.used)
   }
 
   public func profile() async throws -> OAuthProfile {
@@ -121,6 +130,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     try await ensureMissing(path)
@@ -129,24 +139,104 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       throw RemoteError.posix(EIO)
     }
     let size = Int64(fileSize)
-    if size <= uploadSessionThreshold {
-      try await directWrite(path: path, data: Data(contentsOf: localFile))
+    if size <= min(uploadSessionThreshold, 8 * 1024 * 1024) {
+      try await directWrite(
+        path: path, data: Data(contentsOf: localFile, options: .mappedIfSafe), progress: progress)
       return
     }
-    try await sessionWrite(path: path, localFile: localFile, size: size)
+    try await sessionWrite(path: path, localFile: localFile, size: size, progress: progress)
   }
 
-  private func directWrite(path: RemotePath, data: Data) async throws {
+  private func directWrite(
+    path: RemotePath, data: Data, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
     var request = URLRequest(url: try itemURL(path, suffix: "/content"))
     request.httpMethod = "PUT"
     request.httpBody = data
     request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
     request.setValue("*", forHTTPHeaderField: "If-None-Match")
-    try check(try await session.authorized(request), allowing: [200, 201])
+    try check(try await session.authorized(request, upload: true), allowing: [200, 201])
     progress?(Int64(data.count), Int64(data.count))
   }
 
-  private func sessionWrite(path: RemotePath, localFile: URL, size: Int64) async throws {
+  private func sessionWrite(
+    path: RemotePath, localFile: URL, size: Int64, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
+    guard chunkSize > 0 else { throw RemoteError.posix(EINVAL) }
+    var uploadURL = try await startUploadSession(path)
+    let handle = try FileHandle(forReadingFrom: localFile)
+    defer { try? handle.close() }
+    do {
+      var offset: Int64 = 0
+      var restarts = 0
+      var recoveries = 0
+      var reported: Int64 = 0
+      while offset < size {
+        try Task.checkCancellation()
+        let length = min(chunkSize, size - offset)
+        try handle.seek(toOffset: UInt64(offset))
+        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
+          throw RemoteError.posix(EIO)
+        }
+        let end = offset + length
+        var request = URLRequest(url: uploadURL, timeoutInterval: RemoteTimeout.transferIdle)
+        request.httpMethod = "PUT"
+        request.httpBody = data
+        request.setValue("\(data.count)", forHTTPHeaderField: "Content-Length")
+        request.setValue("bytes \(offset)-\(end - 1)/\(size)", forHTTPHeaderField: "Content-Range")
+        var response: HTTPResponse
+        var queryStatus = false
+        do {
+          response = try await CloudDriveSupport.sendWithRetry(
+            transport, request, upload: true, retrySafe: false)
+          queryStatus = response.status == 416 || (500...599).contains(response.status)
+          if (500...599).contains(response.status) {
+            guard recoveries < 3 else { try check(response); throw RemoteError.protocolError }
+            try await recoverySleep(.seconds(1 << recoveries))
+          }
+        } catch let error as URLError where [.networkConnectionLost, .timedOut, .notConnectedToInternet].contains(error.code) {
+          response = HTTPResponse(status: 0)
+          queryStatus = true
+        }
+        if queryStatus {
+          guard recoveries < 3 else { throw RemoteError.posix(EIO) }
+          recoveries += 1
+          // 不猜测上次 PUT 是否生效，先取得服务端缺失范围。
+          response = try await transport.send(URLRequest(url: uploadURL,
+            timeoutInterval: RemoteTimeout.cloudRequest))
+        }
+        if response.status == 404 {
+          guard restarts < 2 else { try check(response); throw RemoteError.protocolError }
+          restarts += 1
+          try await ensureMissing(path)
+          uploadURL = try await startUploadSession(path)
+          offset = 0
+          continue
+        }
+        if !queryStatus, response.status == 200 || response.status == 201 {
+          guard end == size else { throw RemoteError.protocolError }
+          progress?(size, size)
+          return
+        }
+        try check(response, allowing: queryStatus ? [200] : [202])
+        let next = try nextUploadOffset(response, size: size)
+        guard next <= end else { throw RemoteError.protocolError }
+        if next <= offset {
+          guard recoveries < 3 else { throw RemoteError.posix(EIO) }
+          recoveries += 1
+        }
+        offset = next
+        reported = max(reported, offset)
+        progress?(reported, size)
+      }
+      throw RemoteError.protocolError
+    } catch {
+      await cancelUploadSession(uploadURL)
+      throw error
+    }
+  }
+
+  private func startUploadSession(_ path: RemotePath) async throws -> URL {
     var start = URLRequest(
       url: try endpoint("/me/drive/root:\(encodedPath(path)):/createUploadSession"))
     start.httpMethod = "POST"
@@ -154,42 +244,35 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     start.httpBody = try JSONSerialization.data(withJSONObject: [
       "item": ["@microsoft.graph.conflictBehavior": "fail", "name": basename(path)]
     ])
-    let started = try await session.authorized(start)
-    try check(started, allowing: [200, 201])
-    guard let value = try JSONSerialization.jsonObject(with: started.body) as? [String: Any],
+    let response = try await session.authorized(start)
+    try check(response, allowing: [200, 201])
+    guard let value = try JSONSerialization.jsonObject(with: response.body) as? [String: Any],
       let rawURL = value["uploadUrl"] as? String,
-      let uploadURL = URL(string: rawURL), uploadURL.scheme == "https"
+      let url = URL(string: rawURL), url.scheme == "https", url.host != nil
     else { throw RemoteError.protocolError }
+    return url
+  }
 
-    let handle = try FileHandle(forReadingFrom: localFile)
-    defer { try? handle.close() }
-    do {
-      var offset: Int64 = 0
-      while offset < size {
-        try Task.checkCancellation()
-        let length = min(chunkSize, size - offset)
-        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-          throw RemoteError.posix(EIO)
-        }
-        let end = offset + length - 1
-        var request = URLRequest(url: uploadURL, timeoutInterval: 120)
-        request.httpMethod = "PUT"
-        request.httpBody = data
-        request.setValue("\(data.count)", forHTTPHeaderField: "Content-Length")
-        request.setValue("bytes \(offset)-\(end)/\(size)", forHTTPHeaderField: "Content-Range")
-        let response = try await CloudDriveSupport.sendWithRetry(transport, request)
-        try check(response, allowing: end + 1 == size ? [200, 201] : [202])
-        offset = end + 1
-        progress?(offset, size)
+  private func nextUploadOffset(_ response: HTTPResponse, size: Int64) throws -> Int64 {
+    guard let value = try JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+      let ranges = value["nextExpectedRanges"] as? [String], !ranges.isEmpty
+    else { throw RemoteError.protocolError }
+    return try ranges.map { range in
+      let parts = range.split(separator: "-", omittingEmptySubsequences: false)
+      guard parts.count == 2, let start = Int64(parts[0]), start >= 0, start < size else {
+        throw RemoteError.protocolError
       }
-    } catch {
-      await cancelUploadSession(uploadURL)
-      throw error
-    }
+      if !parts[1].isEmpty {
+        guard let end = Int64(parts[1]), end >= start, end < size else {
+          throw RemoteError.protocolError
+        }
+      }
+      return start
+    }.min()!
   }
 
   private func cancelUploadSession(_ url: URL) async {
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "DELETE"
     let transport = transport
     let cleanup = Task.detached {
@@ -235,17 +318,23 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
     }
-    let targetParent = try await stat(parent(to))
-    guard targetParent.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     try await ensureMissing(to)
+    var body: [String: Any] = ["name": basename(to)]
+    if parent(from) != parent(to) {
+      let destination = parent(to)
+      let url =
+        destination.value == "/"
+        ? try endpoint("/me/drive/root") : try itemURL(destination)
+      let response = try await session.authorized(URLRequest(url: url))
+      try check(response)
+      let targetParent = try JSONDecoder().decode(OneDriveItem.self, from: response.body)
+      guard targetParent.folder != nil else { throw RemoteError.posix(ENOTDIR) }
+      body["parentReference"] = ["id": targetParent.id]
+    }
     var request = URLRequest(url: try itemURL(from))
     request.httpMethod = "PATCH"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    let parentPath =
-      parent(to).value == "/" ? "/drive/root:" : "/drive/root:\(encodedPath(parent(to))):"
-    request.httpBody = try JSONSerialization.data(withJSONObject: [
-      "name": basename(to), "parentReference": ["path": parentPath],
-    ])
+    request.httpBody = try JSONSerialization.data(withJSONObject: body)
     try check(try await session.authorized(request), allowing: [200])
   }
 
@@ -276,29 +365,21 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func parent(_ path: RemotePath) -> RemotePath {
-    let parts = path.value.split(separator: "/").dropLast()
-    return try! RemotePath(parts.isEmpty ? "/" : "/" + parts.joined(separator: "/"))
+    path.parent
   }
 
   private func basename(_ path: RemotePath) -> String {
-    String(path.value.split(separator: "/").last ?? "")
+    path.basename
   }
 
   private func ensureConnected() throws {
     guard connected else { throw RemoteError.notConnected }
   }
 
-  private func ensureMissing(_ path: RemotePath) async throws {
-    do {
-      _ = try await stat(path)
-      throw RemoteError.posix(EEXIST)
-    } catch RemoteError.posix(ENOENT) {
-    } catch RemoteError.http(404) {}
-  }
-
   private func check(_ response: HTTPResponse, allowing statuses: Set<Int> = [200]) throws {
     if statuses.contains(response.status) { return }
     if response.status == 401 { throw OAuthDriveError.loginRequired }
+    if response.status == 412 { throw RemoteError.posix(EEXIST) }
     throw CloudDriveSupport.mapHTTP(response) ?? OAuthDriveError.invalidResponse
   }
 }
@@ -306,7 +387,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 private struct OneDriveDrive: Decodable {
   struct Quota: Decodable {
     let total: Int64?
-    let used: Int64
+    let used: Int64?
   }
   let quota: Quota
 }

@@ -9,6 +9,14 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private var mimeTypes: [String: String] = [:]
   private var connected = false
   private let chunkSize = 8 * 1024 * 1024
+  private static let identityPrefix = "~kayoi~"
+  private var cacheRevision: UInt64 = 0
+
+  private var progress: (@Sendable (Int64, Int64) -> Void)?
+
+  public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
+    self.progress = progress
+  }
 
   public init(session: OAuthSession) { self.session = session }
 
@@ -21,6 +29,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   public func disconnect() async {
     connected = false
+    cacheRevision &+= 1
     ids = ["/": "root"]
     mimeTypes = [:]
   }
@@ -32,8 +41,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         url: try url("/about", query: [URLQueryItem(name: "fields", value: "storageQuota")])))
     try check(response)
     let value = try JSONDecoder().decode(GoogleAbout.self, from: response.body)
-    return SpaceInfo(
-      total: Int64(value.storageQuota.limit ?? 0), used: Int64(value.storageQuota.usage ?? 0))
+    return SpaceInfo(total: value.storageQuota.limit, used: value.storageQuota.usage)
   }
 
   public func profile() async throws -> OAuthProfile {
@@ -50,6 +58,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
     try ensureConnected()
     let parentID = try await resolve(path)
+    let revision = cacheRevision
     var pageToken: String?
     var items: [GoogleFile] = []
     repeat {
@@ -67,15 +76,36 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       items.append(contentsOf: page.files)
       pageToken = page.nextPageToken
     } while pageToken != nil
-    return try items.map {
-      let item = try $0.item(parent: path)
-      mimeTypes[item.path.value] = $0.mimeType
-      return item
+    // 重名和不能作为路径段的名称按服务端 ID 区分，显示名称保持原样。
+    let counts = Dictionary(grouping: items, by: \.name).mapValues(\.count)
+    let result = try items.map { file in
+      guard !file.id.isEmpty else { throw RemoteError.protocolError }
+      let needsIdentity =
+        counts[file.name, default: 0] > 1 || file.name.contains("/") || file.name.contains("\0")
+        || file.name == "." || file.name == ".." || file.name.isEmpty
+        || file.name.hasPrefix(Self.identityPrefix)
+      let component = needsIdentity ? Self.identityComponent(file.id) : file.name
+      return try file.item(parent: path, component: component)
     }
+    if cacheRevision == revision {
+      let prefix = path.value == "/" ? "/" : path.value + "/"
+      ids = ids.filter { !$0.key.hasPrefix(prefix) }
+      mimeTypes = mimeTypes.filter { !$0.key.hasPrefix(prefix) }
+      ids[path.value] = parentID
+      for (file, item) in zip(items, result) {
+        ids[item.path.value] = file.id
+        mimeTypes[item.path.value] = file.mimeType
+        let identityPath = try path.appending(Self.identityComponent(file.id))
+        ids[identityPath.value] = file.id
+        mimeTypes[identityPath.value] = file.mimeType
+      }
+    }
+    return result
   }
 
   public func stat(_ path: RemotePath) async throws -> RemoteItem {
     try ensureConnected()
+    let revision = cacheRevision
     if path.value == "/" {
       return RemoteItem(
         path: path, name: "/", isDirectory: true, size: 0, modified: Date(timeIntervalSince1970: 0))
@@ -88,8 +118,8 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       URLRequest(url: try url("/files/\(id)", query: query)))
     try check(response)
     let file = try JSONDecoder().decode(GoogleFile.self, from: response.body)
-    mimeTypes[path.value] = file.mimeType
-    return try file.item(parent: parent(path))
+    if cacheRevision == revision { mimeTypes[path.value] = file.mimeType }
+    return try file.item(parent: parent(path), component: basename(path))
   }
 
   public func read(
@@ -127,11 +157,16 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
-    try await ensureMissing(path)
-    let data = try Data(contentsOf: localFile, options: .mappedIfSafe)
-    if data.count <= 5 * 1024 * 1024 {
+    try await ensureNameMissing(path)
+    let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
+    guard values.isRegularFile == true, let size = values.fileSize else {
+      throw RemoteError.posix(EIO)
+    }
+    if size <= 5 * 1024 * 1024 {
+      let data = try Data(contentsOf: localFile, options: .mappedIfSafe)
       let metadata = try JSONSerialization.data(withJSONObject: [
         "name": basename(path), "parents": [try await resolve(parent(path))],
       ])
@@ -149,16 +184,19 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       request.setValue(
         "multipart/related; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
       request.httpBody = body
-      try check(try await session.authorized(request), allowing: [200, 201])
+      try check(try await session.authorized(request, upload: true), allowing: [200, 201])
+      progress?(Int64(size), Int64(size))
     } else {
-      try await resumableWrite(path: path, data: data)
+      try await resumableWrite(
+        path: path, localFile: localFile, size: Int64(size), progress: progress)
     }
+    invalidate(from: parent(path))
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
     try ensureConnected()
     guard path.value != "/" else { return }
-    try await ensureMissing(path)
+    try await ensureNameMissing(path)
     let parentID = try await resolve(parent(path))
     var request = URLRequest(url: try url("/files"))
     request.httpMethod = "POST"
@@ -168,7 +206,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       "parents": [parentID],
     ])
     try check(try await session.authorized(request), allowing: [200, 201])
-    ids.removeValue(forKey: parent(path).value)
+    invalidate(from: parent(path))
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -193,55 +231,111 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
     }
-    try await ensureMissing(to)
+    let targetName =
+      basename(from).hasPrefix(Self.identityPrefix) && basename(from) == basename(to)
+      ? try await stat(from).name : basename(to)
+    try await ensureNameMissing(to, name: targetName)
     let id = try await resolve(from)
     let oldParent = try await resolve(parent(from))
     let newParent = try await resolve(parent(to))
-    var components = URLComponents(url: try url("/files/\(id)"), resolvingAgainstBaseURL: false)!
-    components.queryItems = [
-      URLQueryItem(name: "addParents", value: newParent),
-      URLQueryItem(name: "removeParents", value: oldParent),
-      URLQueryItem(name: "fields", value: "id,name,parents"),
-    ]
-    var request = URLRequest(url: components.url!)
+    var query = [URLQueryItem(name: "fields", value: "id,name,parents")]
+    if oldParent != newParent {
+      query += [
+        URLQueryItem(name: "addParents", value: newParent),
+        URLQueryItem(name: "removeParents", value: oldParent),
+      ]
+    }
+    var request = URLRequest(url: try url("/files/\(id)", query: query))
     request.httpMethod = "PATCH"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try JSONSerialization.data(withJSONObject: ["name": basename(to)])
+    request.httpBody = try JSONSerialization.data(withJSONObject: ["name": targetName])
     try check(try await session.authorized(request), allowing: [200])
     invalidate(from: parent(from))
     invalidate(from: parent(to))
   }
 
-  private func resumableWrite(path: RemotePath, data: Data) async throws {
+  private func resumableWrite(
+    path: RemotePath, localFile: URL, size: Int64, progress: (@Sendable (Int64, Int64) -> Void)?
+  ) async throws {
     var start = URLRequest(
       url: URL(
         string:
           "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id,name")!)
     start.httpMethod = "POST"
     start.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    start.setValue(String(data.count), forHTTPHeaderField: "X-Upload-Content-Length")
+    start.setValue(String(size), forHTTPHeaderField: "X-Upload-Content-Length")
     start.setValue("application/octet-stream", forHTTPHeaderField: "X-Upload-Content-Type")
     start.httpBody = try JSONSerialization.data(withJSONObject: [
       "name": basename(path), "parents": [try await resolve(parent(path))],
     ])
-    let started = try await session.authorized(start)
-    try check(started, allowing: [200])
-    guard let location = started.header("Location"), let uploadURL = URL(string: location),
-      uploadURL.scheme == "https"
-    else { throw RemoteError.protocolError }
+    var uploadURL = try await beginUploadSession(start)
+    let handle = try FileHandle(forReadingFrom: localFile)
+    defer { try? handle.close() }
     do {
-      var offset = 0
-      while offset < data.count {
+      var offset: Int64 = 0
+      var recoveries = 0
+      var stalled = 0
+      var reported: Int64 = 0
+      while offset < size {
         try Task.checkCancellation()
-        let end = min(offset + chunkSize, data.count)
+        let end = min(offset + Int64(chunkSize), size)
+        try handle.seek(toOffset: UInt64(offset))
+        guard let data = try handle.read(upToCount: Int(end - offset)), data.count == end - offset
+        else { throw RemoteError.posix(EIO) }
         var chunk = URLRequest(url: uploadURL)
         chunk.httpMethod = "PUT"
-        chunk.httpBody = data.subdata(in: offset..<end)
-        chunk.setValue(
-          "bytes \(offset)-\(end - 1)/\(data.count)", forHTTPHeaderField: "Content-Range")
-        let response = try await session.authorized(chunk)
+        chunk.httpBody = data
+        chunk.setValue(String(data.count), forHTTPHeaderField: "Content-Length")
+        chunk.setValue("bytes \(offset)-\(end - 1)/\(size)", forHTTPHeaderField: "Content-Range")
+        var response: HTTPResponse
+        do {
+          // 丢失响应时先查服务端位置，不能直接重放分片。
+          response = try await session.authorized(chunk, upload: true, retrySafe: false)
+        } catch let error as URLError where Self.recoverableUploadError(error) {
+          guard recoveries < 3 else { throw error }
+          recoveries += 1
+          response = try await uploadStatus(uploadURL, size: size)
+        }
+        if (500...599).contains(response.status) {
+          guard recoveries < 3 else { try check(response); throw RemoteError.protocolError }
+          recoveries += 1
+          response = try await uploadStatus(uploadURL, size: size)
+        }
+        if response.status == 404 {
+          guard recoveries < 3 else { throw RemoteError.posix(ETIMEDOUT) }
+          recoveries += 1
+          // 最后一次响应可能丢失；重建前检查名称，保留已经完成的文件。
+          try await ensureNameMissing(path)
+          uploadURL = try await beginUploadSession(start)
+          offset = 0
+          stalled = 0
+          continue
+        }
         try check(response, allowing: [200, 201, 308])
-        offset = end
+        if response.status != 308 {
+          guard end == size else { throw RemoteError.protocolError }
+          progress?(size, size)
+          return
+        }
+        let next: Int64
+        if let range = response.header("Range") {
+          guard range.hasPrefix("bytes=0-"), let last = Int64(range.dropFirst(8)),
+            last >= 0, last < end, last < size - 1
+          else { throw RemoteError.protocolError }
+          next = last + 1
+        } else {
+          next = 0
+        }
+        guard next >= offset else { throw RemoteError.protocolError }
+        if next > offset {
+          reported = max(reported, next)
+          progress?(reported, size)
+          stalled = 0
+        } else {
+          stalled += 1
+          guard stalled <= 3 else { throw RemoteError.posix(ETIMEDOUT) }
+        }
+        offset = next
       }
     } catch {
       await cancelUploadSession(uploadURL)
@@ -249,8 +343,30 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     }
   }
 
+  private func beginUploadSession(_ request: URLRequest) async throws -> URL {
+    let started = try await session.authorized(request, retrySafe: false)
+    try check(started, allowing: [200])
+    guard let location = started.header("Location"), let url = URL(string: location),
+      url.scheme == "https"
+    else { throw RemoteError.protocolError }
+    return url
+  }
+
+  private func uploadStatus(_ url: URL, size: Int64) async throws -> HTTPResponse {
+    var request = URLRequest(url: url)
+    request.httpMethod = "PUT"
+    request.httpBody = Data()
+    request.setValue("0", forHTTPHeaderField: "Content-Length")
+    request.setValue("bytes */\(size)", forHTTPHeaderField: "Content-Range")
+    return try await session.authorized(request, retrySafe: false)
+  }
+
+  private static func recoverableUploadError(_ error: URLError) -> Bool {
+    [.networkConnectionLost, .timedOut, .cannotConnectToHost, .notConnectedToInternet].contains(error.code)
+  }
+
   private func cancelUploadSession(_ url: URL) async {
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "DELETE"
     let session = session
     let cleanup = Task.detached {
@@ -261,6 +377,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   private func resolve(_ path: RemotePath) async throws -> String {
     if let id = ids[path.value] { return id }
+    let revision = cacheRevision
     var currentPath = try RemotePath("/")
     var currentID = "root"
     for component in path.value.split(separator: "/") {
@@ -269,6 +386,14 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         currentPath = next
         currentID = cached
         continue
+      }
+      if component.hasPrefix(Self.identityPrefix) {
+        _ = try await list(currentPath)
+        if let listed = ids[next.value] {
+          currentID = listed
+          currentPath = next
+          continue
+        }
       }
       let query = [
         URLQueryItem(
@@ -285,27 +410,36 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       guard !page.files.isEmpty else { throw RemoteError.posix(ENOENT) }
       guard page.files.count == 1 else { throw RemoteError.posix(EEXIST) }
       currentID = page.files[0].id
-      ids[next.value] = currentID
-      mimeTypes[next.value] = page.files[0].mimeType
+      if cacheRevision == revision {
+        ids[next.value] = currentID
+        mimeTypes[next.value] = page.files[0].mimeType
+      }
       currentPath = next
     }
     return currentID
   }
 
   private func invalidate(from path: RemotePath) {
+    cacheRevision &+= 1
     let prefix = path.value == "/" ? "/" : path.value + "/"
     ids = ids.filter { $0.key != path.value && !$0.key.hasPrefix(prefix) }
     mimeTypes = mimeTypes.filter { $0.key != path.value && !$0.key.hasPrefix(prefix) }
     ids["/"] = "root"
   }
 
-  private func ensureMissing(_ path: RemotePath) async throws {
+  private func ensureNameMissing(_ path: RemotePath, name: String? = nil) async throws {
+    if name == nil, basename(path).hasPrefix(Self.identityPrefix) {
+      do {
+        _ = try await resolve(path)
+        throw RemoteError.posix(EEXIST)
+      } catch RemoteError.posix(ENOENT) {}
+    }
     let parentID = try await resolve(parent(path))
     let query = [
       URLQueryItem(
         name: "q",
         value:
-          "'\(escaped(parentID))' in parents and name = '\(escaped(basename(path)))' and trashed = false"
+          "'\(escaped(parentID))' in parents and name = '\(escaped(name ?? basename(path)))' and trashed = false"
       ),
       URLQueryItem(name: "fields", value: "files(id)"),
       URLQueryItem(name: "pageSize", value: "2"),
@@ -323,8 +457,17 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     components.host = "www.googleapis.com"
     components.path = "/drive/v3" + path
     components.queryItems = query.isEmpty ? nil : query
+    components.percentEncodedQuery = components.percentEncodedQuery?
+      .replacingOccurrences(of: "+", with: "%2B")
     guard let url = components.url else { throw RemoteError.invalidPath }
     return url
+  }
+
+  private static func identityComponent(_ id: String) -> String {
+    identityPrefix
+      + Data(id.utf8).base64EncodedString()
+      .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
+      .replacingOccurrences(of: "=", with: "")
   }
 
   private func escaped(_ value: String) -> String {
@@ -352,12 +495,11 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func parent(_ path: RemotePath) -> RemotePath {
-    let parts = path.value.split(separator: "/").dropLast()
-    return try! RemotePath(parts.isEmpty ? "/" : "/" + parts.joined(separator: "/"))
+    path.parent
   }
 
   private func basename(_ path: RemotePath) -> String {
-    String(path.value.split(separator: "/").last ?? "")
+    path.basename
   }
 
   private func ensureConnected() throws {
@@ -435,9 +577,9 @@ private struct GoogleFile: Decodable {
   let mimeType: String
   let size: String?
   let modifiedTime: String?
-  func item(parent: RemotePath) throws -> RemoteItem {
+  func item(parent: RemotePath, component: String? = nil) throws -> RemoteItem {
     RemoteItem(
-      path: try parent.appending(name), name: name,
+      path: try parent.appending(component ?? name), name: name,
       isDirectory: mimeType == "application/vnd.google-apps.folder",
       size: Int64(size ?? "0") ?? 0,
       modified: RemoteTimestamp.parse(modifiedTime)

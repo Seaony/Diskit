@@ -283,15 +283,6 @@ enum CloudDriveSupport {
     }
   }
 
-  static func isExplicitlyMissing(_ error: Error) -> Bool {
-    guard let error = error as? RemoteError else { return false }
-    switch error {
-    case .posix(ENOENT), .http(404): return true
-    default: return false
-    }
-  }
-
-
   private static func shouldRetry(_ response: HTTPResponse) -> Bool {
     if response.status == 429 || response.status == 503 || response.status == 504 {
       return true
