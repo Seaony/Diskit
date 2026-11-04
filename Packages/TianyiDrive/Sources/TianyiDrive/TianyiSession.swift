@@ -193,11 +193,20 @@ public actor TianyiSession {
   public func login(cookie: String) async throws -> TianyiAccount {
     try validateConfiguredScope()
     let jar = try TianyiCookieJar(header: cookie, domain: configuration.cookieDomain)
+    let lease = try await secrets.acquireRefreshLock(for: secretKey)
+    defer { secrets.releaseRefreshLock(lease, for: secretKey) }
     let fresh = try await sessionFromCookie(jar)
     _ = try fresh.credentials(for: configuration.scope.credentialKind)
+    let request = try Self.makeSignedRequest(
+      base: configuration.apiBaseURL, configuration: configuration,
+      path: "/portal/getUserSizeInfo.action", method: "GET", query: [],
+      encryptedParams: nil, form: nil, credentials: fresh.personalCredentials)
+    let response = try await send(request)
+    try TianyiHTTP.check(response)
+    let verified = try account(from: response, state: fresh)
     try persist(fresh)
     didNotifyInvalidation = false
-    return try await account()
+    return verified
   }
 
   public func connect() async throws {
@@ -210,6 +219,12 @@ public actor TianyiSession {
   public func account() async throws -> TianyiAccount {
     let response = try await api(
       path: "/portal/getUserSizeInfo.action", method: "GET", credentialKind: .personal)
+    return try account(from: response, state: requireState())
+  }
+
+  private func account(from response: HTTPResponse, state: StoredTianyiSession) throws
+    -> TianyiAccount
+  {
     let capacity: TianyiCapacity = try TianyiJSON.decode(TianyiCapacity.self, from: response)
     let selected: TianyiCapacity.Capacity
     switch configuration.scope {
@@ -227,12 +242,11 @@ public actor TianyiSession {
     guard selected.totalSize >= 0, selected.usedSize >= 0,
       selected.usedSize <= selected.totalSize
     else { throw TianyiError.invalidResponse }
-    let current = try requireState()
-    let userID = capacity.account ?? current.loginName
+    let userID = capacity.account ?? state.loginName
     return TianyiAccount(
       scope: configuration.scope,
       userID: userID,
-      displayName: current.loginName.isEmpty ? userID : current.loginName,
+      displayName: state.loginName.isEmpty ? userID : state.loginName,
       total: selected.totalSize, used: selected.usedSize)
   }
 
@@ -283,7 +297,7 @@ public actor TianyiSession {
     guard url.scheme?.lowercased() == "https" else {
       throw TianyiError.invalidResponse
     }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.httpMethod = "PUT"
     request.httpBody = body
     request.setValue(nil, forHTTPHeaderField: "Cookie")
@@ -291,7 +305,7 @@ public actor TianyiSession {
     for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
     let response: HTTPResponse
     do {
-      response = try await transport.send(request)
+      response = try await transport.upload(request)
     } catch {
       throw TianyiHTTP.transportError(error)
     }
@@ -325,8 +339,11 @@ public actor TianyiSession {
       URLQueryItem(name: "timeStamp", value: String(Self.millisecondsNow())),
     ]
     guard let unifyURL = components.url else { throw TianyiError.invalidResponse }
-    var unify = URLRequest(url: unifyURL, timeoutInterval: 30)
+    var unify = URLRequest(url: unifyURL, timeoutInterval: RemoteTimeout.cloudRequest)
     unify.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
+    unify.setValue(
+      jar.header(for: unifyURL, trustedDomain: configuration.cookieDomain),
+      forHTTPHeaderField: "Cookie")
     let unifyResponse = try await send(unify)
     try Self.rejectInvalidGrant(unifyResponse)
     jar.merge(
@@ -337,11 +354,15 @@ public actor TianyiSession {
     let locationURL = unifyResponse.header("Location").flatMap {
       URL(string: $0, relativeTo: unifyURL)
     }
-    guard let redirectURL = unifyResponse.url ?? locationURL else {
+    guard
+      let redirectURL = (300..<400).contains(unifyResponse.status)
+        ? locationURL : (unifyResponse.url ?? locationURL),
+      redirectURL.scheme?.lowercased() == "https"
+    else {
       throw TianyiError.invalidResponse
     }
 
-    var redirect = URLRequest(url: redirectURL, timeoutInterval: 30)
+    var redirect = URLRequest(url: redirectURL, timeoutInterval: RemoteTimeout.cloudRequest)
     redirect.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
     if let cookie = jar.header(for: redirectURL, trustedDomain: configuration.cookieDomain) {
       redirect.setValue(cookie, forHTTPHeaderField: "Cookie")
@@ -377,11 +398,13 @@ public actor TianyiSession {
       URLQueryItem(name: queryName, value: queryValue),
     ]
     guard let url = components.url else { throw TianyiError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Accept")
     request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Request-ID")
+    request.setValue(
+      jar.header(for: url, trustedDomain: configuration.cookieDomain), forHTTPHeaderField: "Cookie")
     let response = try await send(request)
     try Self.rejectInvalidGrant(response)
     jar.merge(response, requestURL: url, trustedDomain: configuration.cookieDomain)
@@ -492,7 +515,7 @@ public actor TianyiSession {
     components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(
       of: "+", with: "%2B")
     guard let url = components.url else { throw TianyiError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = method.uppercased()
     let date = httpDate()
     let signature = TianyiCrypto.signature(

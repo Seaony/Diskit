@@ -11,6 +11,7 @@ public actor TianyiProvider: RemoteFileProvider {
   private let taskPollInterval: Duration
   private var connected = false
   private var paths: [String: TianyiNode] = [:]
+  private var cacheRevision: UInt64 = 0
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -30,11 +31,13 @@ public actor TianyiProvider: RemoteFileProvider {
     try await session.connect()
     connected = true
     paths.removeAll()
+    cacheRevision &+= 1
   }
 
   public func disconnect() async {
     connected = false
     paths.removeAll()
+    cacheRevision &+= 1
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -93,7 +96,7 @@ public actor TianyiProvider: RemoteFileProvider {
     guard components.scheme == "https", let url = components.url else {
       throw TianyiError.invalidResponse
     }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.httpMethod = "GET"
     if let requested {
       request.setValue(
@@ -115,10 +118,12 @@ public actor TianyiProvider: RemoteFileProvider {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let destination = parent(of: path)
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
+    defer { invalidate(destination) }
     let name = basename(path)
     guard try await children(destination, folderID: folder.id).allSatisfy({ $0.name != name })
     else { throw RemoteError.posix(EEXIST) }
@@ -170,7 +175,6 @@ public actor TianyiProvider: RemoteFileProvider {
     _ = try await session.upload(
       path: uploadPrefix + "/commitMultiUploadFile",
       params: ["uploadFileId": uploadFileID, "isLog": "0", "opertype": "1"])
-    invalidate(destination)
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -181,6 +185,7 @@ public actor TianyiProvider: RemoteFileProvider {
     let destination = parent(of: path)
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
+    defer { invalidate(destination) }
     let name = basename(path)
     guard try await children(destination, folderID: folder.id).allSatisfy({ $0.name != name })
     else { throw RemoteError.posix(EEXIST) }
@@ -199,7 +204,6 @@ public actor TianyiProvider: RemoteFileProvider {
       query.append(URLQueryItem(name: "parentFolderId", value: folder.id))
     }
     _ = try await session.api(path: pathValue, method: "POST", query: query)
-    invalidate(destination)
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
@@ -208,67 +212,87 @@ public actor TianyiProvider: RemoteFileProvider {
     if node.isDirectory, !recursive, !(try await children(path, folderID: node.id)).isEmpty {
       throw RemoteError.posix(ENOTEMPTY)
     }
+    defer { invalidate(parent(of: path)) }
     try await batchTask(
       path: "/batch/createBatchTask.action", type: "DELETE", targetFolderID: "",
       node: node)
-    invalidate(parent(of: path))
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
-    guard from.value != "/", to.value != "/" else {
-      throw RemoteError.posix(EACCES)
-    }
+    guard from.value != "/", to.value != "/" else { throw RemoteError.posix(EACCES) }
     if from == to { return }
     let node = try await resolve(from)
     let sourceParent = parent(of: from)
     let destinationParent = parent(of: to)
+    if node.isDirectory,
+      destinationParent == from || destinationParent.value.hasPrefix(from.value + "/")
+    {
+      throw RemoteError.posix(EINVAL)
+    }
     let destination = try await resolve(destinationParent)
     guard destination.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     guard
       try await children(destinationParent, folderID: destination.id).allSatisfy({
-        $0.name != basename(to)
+        $0.name != basename(to) || $0.id == node.id
       })
     else { throw RemoteError.posix(EEXIST) }
-
-    do {
-      if sourceParent != destinationParent {
-        try await batchTask(
-          path: "/batch/createBatchTask.action", type: "MOVE",
-          targetFolderID: destination.id, node: node)
-      }
-      if basename(from) != basename(to) {
-        let method = scope.isFamily ? "GET" : "POST"
-        let prefix = scope.isFamily ? "/family/file" : "/file"
-        var query: [URLQueryItem]
-        if node.isDirectory {
-          query = [
-            URLQueryItem(name: "folderId", value: node.id),
-            URLQueryItem(name: "destFolderName", value: basename(to)),
-          ]
-          if scope.isFamily {
-            query.append(URLQueryItem(name: "familyId", value: try configuredFamilyID()))
-          }
-          _ = try await session.api(
-            path: prefix + "/renameFolder.action", method: method, query: query)
-        } else {
-          query = [
-            URLQueryItem(name: "fileId", value: node.id),
-            URLQueryItem(name: "destFileName", value: basename(to)),
-          ]
-          if scope.isFamily {
-            query.append(URLQueryItem(name: "familyId", value: try configuredFamilyID()))
-          }
-          _ = try await session.api(
-            path: prefix + "/renameFile.action", method: method, query: query)
-        }
-      }
-    } catch {
+    defer {
       invalidate(sourceParent)
       invalidate(destinationParent)
-      throw error
     }
-    invalidate(sourceParent)
-    invalidate(destinationParent)
+    if sourceParent == destinationParent {
+      try await rename(node, to: basename(to))
+      return
+    }
+    if basename(from) == basename(to) {
+      try await batchTask(
+        path: "/batch/createBatchTask.action", type: "MOVE", targetFolderID: destination.id,
+        node: node)
+      return
+    }
+
+    let source = try await resolve(sourceParent)
+    let temporaryName = ".kayoi-move-" + UUID().uuidString
+    let temporary = TianyiNode(
+      id: node.id, name: temporaryName, isDirectory: node.isDirectory, size: node.size,
+      modified: node.modified)
+    try await rename(node, to: temporaryName)
+    var confirmedPath = try sourceParent.appending(temporaryName)
+    do {
+      try await batchTask(
+        path: "/batch/createBatchTask.action", type: "MOVE", targetFolderID: destination.id,
+        node: temporary)
+      confirmedPath = try destinationParent.appending(temporaryName)
+      try await rename(temporary, to: basename(to))
+    } catch {
+      let original = error
+      do {
+        // 按 ID 回到源目录，避免未确认的移动结果导致文件留在目标目录。
+        try await batchTask(
+          path: "/batch/createBatchTask.action", type: "MOVE", targetFolderID: source.id,
+          node: temporary)
+        confirmedPath = try sourceParent.appending(temporaryName)
+        try await rename(temporary, to: basename(from))
+      } catch {
+        throw TianyiMoveRecoveryFailure(
+          lastConfirmedPath: confirmedPath, original: original, recovery: error)
+      }
+      throw original
+    }
+  }
+
+  private func rename(_ node: TianyiNode, to name: String) async throws {
+    let prefix = scope.isFamily ? "/family/file" : "/file"
+    var query = [
+      URLQueryItem(name: node.isDirectory ? "folderId" : "fileId", value: node.id),
+      URLQueryItem(name: node.isDirectory ? "destFolderName" : "destFileName", value: name),
+    ]
+    if scope.isFamily {
+      query.append(URLQueryItem(name: "familyId", value: try configuredFamilyID()))
+    }
+    _ = try await session.api(
+      path: prefix + (node.isDirectory ? "/renameFolder.action" : "/renameFile.action"),
+      method: scope.isFamily ? "GET" : "POST", query: query)
   }
 
   private func requireConnection() throws {
@@ -311,8 +335,12 @@ public actor TianyiProvider: RemoteFileProvider {
   }
 
   private func children(_ path: RemotePath, folderID: String) async throws -> [TianyiNode] {
+    let revision = cacheRevision
+    var published = false
+    defer { if !published, revision == cacheRevision { invalidate(path) } }
     var pageNumber = 1
     var nodes: [TianyiNode] = []
+    var seenIDs = Set<String>()
     var expectedCount = 0
     while pageNumber <= 10_000 {
       try Task.checkCancellation()
@@ -343,6 +371,12 @@ public actor TianyiProvider: RemoteFileProvider {
         guard count >= 0 else { throw TianyiError.invalidResponse }
         expectedCount = max(expectedCount, count)
       }
+      for node in pageNodes {
+        guard !node.id.isEmpty, !node.name.isEmpty,
+          node.name != ".", node.name != "..", !node.name.contains("/"), !node.name.contains("\0"),
+          seenIDs.insert("\(node.isDirectory):\(node.id)").inserted
+        else { throw TianyiError.invalidResponse }
+      }
       nodes.append(contentsOf: pageNodes)
       if page.count != nil, pageNodes.count < session.configuration.pageSize,
         nodes.count >= expectedCount
@@ -356,6 +390,7 @@ public actor TianyiProvider: RemoteFileProvider {
       pageNumber += 1
     }
     guard pageNumber <= 10_000 else { throw TianyiError.invalidResponse }
+    guard connected, revision == cacheRevision else { return nodes }
     invalidate(path)
     let grouped = Dictionary(grouping: nodes, by: \.name)
     for node in nodes {
@@ -363,6 +398,7 @@ public actor TianyiProvider: RemoteFileProvider {
       _ = node.item(at: child)
       if grouped[node.name]?.count == 1 { paths[child.value] = node }
     }
+    published = true
     return nodes
   }
 
@@ -390,24 +426,51 @@ public actor TianyiProvider: RemoteFileProvider {
     guard let taskID = task.taskID, !taskID.isEmpty else {
       throw TianyiError.invalidResponse
     }
-    let deadline = ContinuousClock.now.advanced(by: .seconds(60))
-    while ContinuousClock.now < deadline {
-      try Task.checkCancellation()
-      let response = try await session.api(
-        path: "/batch/checkBatchTask.action", method: "POST",
-        form: ["type": type, "taskId": taskID], credentialKind: .personal)
-      let status: TianyiTaskStatus = try TianyiJSON.decode(TianyiTaskStatus.self, from: response)
-      switch status.taskStatus {
-      case 4: return
-      case 2: throw RemoteError.posix(EEXIST)
-      case -1: throw TianyiError.invalidResponse
-      default:
-        if taskPollInterval > .zero {
-          try await Task.sleep(for: taskPollInterval)
+    try await waitForTask(taskID: taskID, type: type)
+  }
+
+  func waitForTask(
+    taskID: String, type: String,
+    idleInterval: Duration = .seconds(RemoteTimeout.transferIdle),
+    deadline suppliedDeadline: HTTPProgressDeadline? = nil
+  ) async throws {
+    let deadline = suppliedDeadline ?? HTTPProgressDeadline(interval: idleInterval)
+    let session = session
+    let interval = taskPollInterval
+    do {
+      try await deadline.run {
+        var completed = 0
+        var percent = 0
+        while true {
+          try Task.checkCancellation()
+          let response = try await session.api(
+            path: "/batch/checkBatchTask.action", method: "POST",
+            form: ["type": type, "taskId": taskID], credentialKind: .personal)
+          let status: TianyiTaskStatus = try TianyiJSON.decode(
+            TianyiTaskStatus.self, from: response)
+          guard status.taskID == nil || status.taskID == taskID,
+            let state = status.taskStatus,
+            (status.failedCount ?? 0) >= 0, (status.successedCount ?? 0) >= 0,
+            (0...100).contains(status.process ?? 0)
+          else { throw TianyiError.invalidResponse }
+          if state == 2 { throw RemoteError.posix(EEXIST) }
+          if (status.failedCount ?? 0) > 0 { throw RemoteError.posix(EIO) }
+          if (status.successedCount ?? 0) > completed || (status.process ?? 0) > percent {
+            completed = max(completed, status.successedCount ?? 0)
+            percent = max(percent, status.process ?? 0)
+            deadline.recordProgress()
+          }
+          switch state {
+          case 4: return
+          case -1: throw TianyiError.invalidResponse
+          default:
+            if interval > .zero { try await Task.sleep(for: interval) }
+          }
         }
       }
+    } catch let error as URLError where error.code == .timedOut {
+      throw RemoteError.posix(ETIMEDOUT)
     }
-    throw RemoteError.posix(ETIMEDOUT)
   }
 
   private func uploadURL(
@@ -435,16 +498,17 @@ public actor TianyiProvider: RemoteFileProvider {
   }
 
   private func invalidate(_ directory: RemotePath) {
+    cacheRevision &+= 1
     let prefix = directory.value == "/" ? "/" : directory.value + "/"
     for key in Array(paths.keys) where key.hasPrefix(prefix) { paths.removeValue(forKey: key) }
   }
 
   private func parent(of path: RemotePath) -> RemotePath {
-    try! RemotePath("/" + path.value.split(separator: "/").dropLast().joined(separator: "/"))
+    path.parent
   }
 
   private func basename(_ path: RemotePath) -> String {
-    path.value.split(separator: "/").last.map(String.init) ?? ""
+    path.basename
   }
 
   private var scope: TianyiStorageScope {
@@ -493,11 +557,6 @@ public actor TianyiProvider: RemoteFileProvider {
   static func validContentRange(
     _ header: String?, requested: Range<Int64>, size: Int64
   ) -> Bool {
-    guard let header, header.hasPrefix("bytes ") else { return false }
-    let fields = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
-    guard fields.count == 2, Int64(fields[1]) == size else { return false }
-    let bounds = fields[0].split(separator: "-", omittingEmptySubsequences: false)
-    return bounds.count == 2 && Int64(bounds[0]) == requested.lowerBound
-      && Int64(bounds[1]) == requested.upperBound - 1
+    HTTPContentRange.matches(header, requested: requested, size: size)
   }
 }

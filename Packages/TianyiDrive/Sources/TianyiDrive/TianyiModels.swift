@@ -1,7 +1,8 @@
 import Core
 import Foundation
+import Synchronization
 
-struct TianyiNode: Sendable {
+struct TianyiNode: Sendable, Equatable {
   let id: String
   let name: String
   let isDirectory: Bool
@@ -39,6 +40,7 @@ struct TianyiFileList: Decodable, Sendable {
       id = try values.decode(TianyiString.self, forKey: .id)
       name = try values.decode(String.self, forKey: .name)
       size = try values.decodeIfPresent(Int64.self, forKey: .size)
+      guard let size, size >= 0 else { throw TianyiError.invalidResponse }
       lastOpTime = try values.decodeIfPresent(String.self, forKey: .lastOpTime)
       createDate = try values.decodeIfPresent(String.self, forKey: .createDate)
     }
@@ -102,26 +104,6 @@ struct TianyiFamilyList: Decodable, Sendable {
   }
 }
 
-struct TianyiCreatedNode: Decodable, Sendable {
-  let id: TianyiString?
-  let name: String?
-  let size: Int64?
-  let lastOpTime: String?
-  let createDate: String?
-
-  enum CodingKeys: String, CodingKey {
-    case id, name, size, lastOpTime, createDate
-  }
-
-  var node: TianyiNode? {
-    guard let id else { return nil }
-    return TianyiNode(
-      id: id.value, name: TianyiName.normalize(name ?? ""), isDirectory: false,
-      size: max(0, size ?? 0),
-      modified: TianyiDate.parse(lastOpTime) ?? TianyiDate.parse(createDate) ?? .distantPast)
-  }
-}
-
 struct TianyiTaskCreated: Decodable, Sendable {
   let taskID: String?
 
@@ -135,10 +117,11 @@ struct TianyiTaskStatus: Decodable, Sendable {
   let taskStatus: Int?
   let failedCount: Int?
   let successedCount: Int?
+  let process: Int?
 
   enum CodingKeys: String, CodingKey {
     case taskID = "taskId"
-    case taskStatus, failedCount, successedCount
+    case taskStatus, failedCount, successedCount, process
   }
 }
 
@@ -165,29 +148,31 @@ enum TianyiName {
 }
 
 enum TianyiDate {
+  private static let isoParser = Mutex(ISO8601DateFormatter())
+  private static let dateParsers = Mutex(
+    [
+      "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "MMM d, yyyy h:mm:ss a Z",
+      "MMM d, yyyy, h:mm:ss a Z", "MMM d, yyyy h:mm:ss a", "MMM d, yyyy, h:mm:ss a",
+    ].map { format in
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
+      formatter.dateFormat = format
+      return formatter
+    })
+
   static func parse(_ value: String?) -> Date? {
     guard let value, !value.isEmpty else { return nil }
     let normalized =
       value.replacingOccurrences(of: "\u{202f}", with: " ")
       .replacingOccurrences(of: "\u{00a0}", with: " ")
-    let iso = ISO8601DateFormatter()
-    if let date = iso.date(from: normalized) { return date }
-    let formats = [
-      "yyyy-MM-dd HH:mm:ss",
-      "yyyy-MM-dd",
-      "MMM d, yyyy h:mm:ss a Z",
-      "MMM d, yyyy, h:mm:ss a Z",
-      "MMM d, yyyy h:mm:ss a",
-      "MMM d, yyyy, h:mm:ss a",
-    ]
-    for format in formats {
-      let formatter = DateFormatter()
-      formatter.locale = Locale(identifier: "en_US_POSIX")
-      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
-      formatter.dateFormat = format
-      if let date = formatter.date(from: normalized) { return date }
+    if let date = isoParser.withLock({ $0.date(from: normalized) }) { return date }
+    return dateParsers.withLock { formatters in
+      for formatter in formatters {
+        if let date = formatter.date(from: normalized) { return date }
+      }
+      return nil
     }
-    return nil
   }
 }
 

@@ -1,13 +1,17 @@
 import Core
 import Foundation
 
-public enum TianyiError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+public enum TianyiError: Error, Equatable, LocalizedError, CustomNSError, LoginRequiredFailure,
+  Sendable
+{
   case invalidCookie
   case invalidFamilyID
   case familyUnavailable
   case loginRequired
   case invalidResponse
   case service(String)
+
+  public var requiresLogin: Bool { self == .loginRequired }
 
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int { Int(posixCode) }
@@ -46,6 +50,9 @@ public enum TianyiError: Error, Equatable, LocalizedError, CustomNSError, Sendab
 
 enum TianyiHTTP {
   static func isAuthenticationFailure(_ response: HTTPResponse) -> Bool {
+    if response.status >= 500 || response.status == 429 || isVerificationChallenge(response) {
+      return false
+    }
     if response.status == 401 { return true }
     let text = String(decoding: response.body, as: UTF8.self).lowercased()
     return text.contains("invalidsessionkey")
@@ -54,24 +61,37 @@ enum TianyiHTTP {
   }
 
   static func check(_ response: HTTPResponse) throws {
-    if isAuthenticationFailure(response) { throw RemoteError.unauthorized }
-    guard (200..<300).contains(response.status) else {
-      throw map(status: response.status, body: response.body)
+    do {
+      if isVerificationChallenge(response) { throw TianyiError.service("需要在天翼云盘网页完成验证") }
+      if isAuthenticationFailure(response) { throw RemoteError.unauthorized }
+      guard (200..<300).contains(response.status) else {
+        throw map(status: response.status, body: response.body)
+      }
+      guard let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
+      else { return }
+      let reason = [
+        object["errorCode"], object["errorMsg"], object["code"], object["message"],
+        object["msg"], object["res_message"],
+      ]
+      .compactMap(string)
+      .joined(separator: " ")
+      .lowercased()
+      if isServiceSuccess(object) { return }
+      throw map(status: response.status, body: response.body, reason: reason)
+    } catch {
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .tianyiDrive, operation: .request)
+      }
+      throw error
     }
-    guard let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
-    else { return }
-    let reason = [
-      object["errorCode"], object["errorMsg"], object["code"], object["message"],
-      object["msg"], object["res_message"],
-    ]
-    .compactMap(string)
-    .joined(separator: " ")
-    .lowercased()
-    if isServiceSuccess(object) { return }
-    throw map(status: response.status, body: response.body, reason: reason)
   }
 
   static func map(status: Int, body: Data?, reason supplied: String? = nil) -> RemoteError {
+    if status == 429 || status == 503 { return .rateLimited }
+    if status >= 500 { return .http(status) }
+    if isVerificationChallenge(HTTPResponse(status: status, body: body ?? Data())) {
+      return .posix(EAGAIN)
+    }
     let reason: String
     if let supplied {
       reason = supplied.lowercased()
@@ -139,6 +159,11 @@ enum TianyiHTTP {
     default:
       return RemoteError.posix(EIO)
     }
+  }
+
+  private static func isVerificationChallenge(_ response: HTTPResponse) -> Bool {
+    let text = String(decoding: response.body, as: UTF8.self).lowercased()
+    return ["captcha", "riskcontrol", "risk_control", "验证码", "风控"].contains { text.contains($0) }
   }
 
   private static func isServiceSuccess(_ object: [String: Any]) -> Bool {

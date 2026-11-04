@@ -1,21 +1,12 @@
-import Core
+@testable import Core
+import CoreTestSupport
 import Foundation
 import Synchronization
 import Testing
 
 @testable import TianyiDrive
 
-private final class TestSecrets: SecretStore, Sendable {
-  let failWrites = Mutex(false)
-  private let values = Mutex<[String: Data]>([:])
-
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws {
-    if failWrites.withLock({ $0 }) { throw CocoaError(.fileWriteNoPermission) }
-    values.withLock { $0[key] = data }
-  }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-}
+private typealias TestSecrets = TestSecretStore
 
 private actor FakeHTTP: HTTPTransport {
   typealias Reply = @Sendable (URLRequest) async throws -> HTTPResponse
@@ -935,4 +926,337 @@ func tianyiSeparateSessionsShareRestoration(separateSessions: Bool) async throws
   try await firstTask.value
   try await secondTask.value
   #expect(restores.withLock { $0 } == 1)
+}
+
+@Test func tianyiLoginValidatesBeforeReplacingSavedCredentials() async throws {
+  let finalURL = URL(string: "https://m.cloud.189.cn/login/complete")!
+  let http = FakeHTTP { request in
+    switch request.url?.path {
+    case "/api/portal/unifyLoginForPC.action": return HTTPResponse(status: 200, url: finalURL)
+    case "/login/complete": return HTTPResponse(status: 200, url: finalURL)
+    case "/getSessionForPC.action": return sessionJSON(accessToken: "unverified")
+    case "/portal/getUserSizeInfo.action":
+      return json(["cloudCapacityInfo": ["totalSize": 2, "usedSize": 3]])
+    default: throw RemoteError.protocolError
+    }
+  }
+  let (session, secrets) = try session(http)
+  let saved = try secrets.read("tianyi.test")
+  await #expect(throws: TianyiError.invalidResponse) {
+    _ = try await session.login(cookie: "SSON=new-cookie")
+  }
+  #expect(try secrets.read("tianyi.test") == saved)
+}
+
+@Test func tianyiLoginSendsScopedCookieAndFollowsRedirectLocation() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path != "/portal/getUserSizeInfo.action" {
+      #expect(request.value(forHTTPHeaderField: "Cookie")?.contains("SSON=cookie") == true)
+    }
+    switch request.url?.path {
+    case "/api/portal/unifyLoginForPC.action":
+      return HTTPResponse(status: 302, headers: ["Location": "/login/complete"], url: request.url)
+    case "/login/complete": return HTTPResponse(status: 200, url: request.url)
+    case "/getSessionForPC.action": return sessionJSON()
+    case "/portal/getUserSizeInfo.action":
+      // 账号校验使用新会话签名，不需要 Cookie。
+      return capacity()
+    default: throw RemoteError.protocolError
+    }
+  }
+  let secrets = TestSecrets()
+  let session = TianyiSession(
+    secretKey: "new", secrets: secrets, configuration: personalConfiguration, transport: http)
+  _ = try await session.login(cookie: "SSON=cookie")
+  #expect(try await session.hasLogin())
+}
+
+@Test(arguments: ["captcha_required", "risk_control", "需要验证码"])
+func tianyiVerificationChallengeDoesNotInvalidateLogin(reason: String) async throws {
+  let response = json(["errorCode": reason], status: 401)
+  #expect(!TianyiHTTP.isAuthenticationFailure(response))
+  #expect(!TianyiError.service(reason).requiresLogin)
+  #expect(!TianyiError.familyUnavailable.requiresLogin)
+  #expect(TianyiError.loginRequired.requiresLogin)
+  let http = FakeHTTP { _ in response }
+  let (session, secrets) = try session(http)
+  let saved = try secrets.read("tianyi.test")
+  await #expect(throws: TianyiError.service("需要在天翼云盘网页完成验证")) { _ = try await session.account() }
+  #expect(try secrets.read("tianyi.test") == saved)
+  #expect(await http.requests.count == 1)
+}
+
+@Test func tianyiTaskProgressExtendsIdleDeadline() async throws {
+  let clock = ManualTestClock()
+  let deadline = HTTPProgressDeadline(
+    interval: .seconds(3),
+    clock: DeadlineClock(now: { clock.now }, sleepUntil: { try await clock.sleep(until: $0) }))
+  let calls = Mutex(0)
+  let http = FakeHTTP { request in
+    guard request.url?.path == "/batch/checkBatchTask.action" else {
+      throw RemoteError.protocolError
+    }
+    let number = calls.withLock { $0 += 1; return $0 }
+    clock.advance(by: .seconds(1))
+    return json(["taskId": "task", "taskStatus": number < 5 ? 1 : 4, "process": number * 10])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  try await provider.waitForTask(taskID: "task", type: "MOVE", deadline: deadline)
+  #expect(calls.withLock { $0 } == 5)
+}
+
+@Test func tianyiRepeatedTaskProgressStillTimesOut() async throws {
+  let clock = ManualTestClock()
+  let deadline = HTTPProgressDeadline(
+    interval: .seconds(3),
+    clock: DeadlineClock(now: { clock.now }, sleepUntil: { try await clock.sleep(until: $0) }))
+  let calls = Mutex(0)
+  let waiting = TestEvent()
+  let blocked = TestEvent()
+  let http = FakeHTTP { _ in
+    let number = calls.withLock { $0 += 1; return $0 }
+    if number == 3 {
+      waiting.signal()
+      try await blocked.wait()
+    }
+    clock.advance(by: .seconds(1))
+    return json(["taskId": "task", "taskStatus": 1, "process": 10, "successedCount": 1])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  let operation = Task {
+    try await provider.waitForTask(taskID: "task", type: "MOVE", deadline: deadline)
+  }
+  try await waiting.wait()
+  await clock.waitForSleepRequests(1)
+  clock.advance(by: .milliseconds(2500))
+  await #expect(throws: RemoteError.posix(ETIMEDOUT)) { try await operation.value }
+  #expect(calls.withLock { $0 } == 3)
+}
+
+@Test(arguments: [2, 4])
+func tianyiCompletedTaskWithFailedItemsIsNotSuccess(state: Int) async throws {
+  let http = FakeHTTP { _ in json(["taskStatus": state, "failedCount": 1, "successedCount": 2]) }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  await #expect(throws: RemoteError.posix(state == 2 ? EEXIST : EIO)) {
+    try await provider.waitForTask(taskID: "task", type: "DELETE")
+  }
+}
+
+@Test func tianyiRepeatedFileIdentityDoesNotProduceDuplicatePaths() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return capacity() }
+    return listPage(folders: [], files: [node("same", "a"), node("same", "b")])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  await #expect(throws: TianyiError.invalidResponse) {
+    _ = try await provider.list(RemotePath("/"))
+  }
+}
+
+@Test func tianyiDelayedListCannotRestoreDeletedEntryInCache() async throws {
+  let waiting = AsyncStream<Void>.makeStream()
+  let release = AsyncStream<Void>.makeStream()
+  let calls = Mutex(0)
+  let deleted = Mutex(false)
+  let http = FakeHTTP { request in
+    switch request.url?.path {
+    case "/portal/getUserSizeInfo.action": return capacity()
+    case "/file/listFiles.action":
+      let number = calls.withLock {
+        $0 += 1
+        return $0
+      }
+      if number == 2 {
+        waiting.continuation.yield(())
+        waiting.continuation.finish()
+        for await _ in release.stream { break }
+        return listPage(folders: [], files: [node("file", "a")])
+      }
+      return listPage(folders: [], files: deleted.withLock { $0 } ? [] : [node("file", "a")])
+    case "/batch/createBatchTask.action": return json(["taskId": "delete"])
+    case "/batch/checkBatchTask.action":
+      deleted.withLock { $0 = true }
+      return json(["taskStatus": 4])
+    default: throw RemoteError.protocolError
+    }
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  try await provider.connect()
+  _ = try await provider.list(RemotePath("/"))
+  let oldListing = Task { try await provider.list(RemotePath("/")) }
+  for await _ in waiting.stream { break }
+  try await provider.remove(RemotePath("/a"), recursive: false)
+  release.continuation.yield(())
+  release.continuation.finish()
+  _ = try await oldListing.value
+  await #expect(throws: RemoteError.posix(ENOENT)) { _ = try await provider.stat(RemotePath("/a")) }
+}
+
+private actor TianyiMoveHTTP: HTTPTransport {
+  var files: [String: (parent: String, name: String)] = [
+    "target": ("src", "a"), "source-other": ("src", "b"), "destination-other": ("dst", "a"),
+  ]
+  let failRename: Bool
+  let failRollback: Bool
+  init(failRename: Bool = false, failRollback: Bool = false) {
+    self.failRename = failRename
+    self.failRollback = failRollback
+  }
+  func location() -> String { files["target"].map { $0.parent + "/" + $0.name } ?? "missing" }
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    func value(_ key: String) -> String { query.first { $0.name == key }?.value ?? "" }
+    switch request.url?.path {
+    case "/portal/getUserSizeInfo.action": return capacity()
+    case "/file/listFiles.action":
+      guard value("pageNum") == "1" else { return listPage(folders: [], files: []) }
+      if value("folderId") == "-11" {
+        return listPage(folders: [node("src", "src"), node("dst", "dst")], files: [])
+      }
+      return listPage(
+        folders: [],
+        files: files.filter { $0.value.parent == value("folderId") }.map {
+          node($0.key, $0.value.name)
+        })
+    case "/file/renameFile.action":
+      let id = value("fileId")
+      let name = value("destFileName")
+      guard var file = files[id] else { return HTTPResponse(status: 404) }
+      if failRename, file.parent == "dst", name == "b" { return HTTPResponse(status: 500) }
+      if files.contains(where: {
+        $0.key != id && $0.value.parent == file.parent && $0.value.name == name
+      }) {
+        return HTTPResponse(status: 409)
+      }
+      file.name = name
+      files[id] = file
+      return json(["res_code": 0])
+    case "/batch/createBatchTask.action":
+      let fields = form(request)
+      let destination = fields["targetFolderId"] ?? ""
+      guard let taskData = fields["taskInfos"]?.data(using: .utf8),
+        let infos = try JSONSerialization.jsonObject(with: taskData) as? [[String: Any]],
+        let id = infos.first?["fileId"] as? String, var file = files[id]
+      else { throw RemoteError.protocolError }
+      if failRollback, destination == "src", file.parent == "dst" {
+        return HTTPResponse(status: 503)
+      }
+      if files.contains(where: {
+        $0.key != id && $0.value.parent == destination && $0.value.name == file.name
+      }) {
+        return HTTPResponse(status: 409)
+      }
+      file.parent = destination
+      files[id] = file
+      return json(["taskId": "move"])
+    case "/batch/checkBatchTask.action": return json(["taskStatus": 4])
+    default: throw RemoteError.protocolError
+    }
+  }
+}
+
+@Test func tianyiCrossDirectoryRenameAvoidsBothIntermediateNameConflicts() async throws {
+  let http = TianyiMoveHTTP()
+  let secrets = MemorySecretStore()
+  try secrets.write(storedSession(), for: "move")
+  let session = TianyiSession(
+    secretKey: "move", secrets: secrets, configuration: personalConfiguration, transport: http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  try await provider.connect()
+  try await provider.move(RemotePath("/src/a"), to: RemotePath("/dst/b"))
+  #expect(await http.location() == "dst/b")
+  #expect(try await provider.list(RemotePath("/src")).map(\.name) == ["b"])
+  #expect(Set(try await provider.list(RemotePath("/dst")).map(\.name)) == Set(["a", "b"]))
+}
+
+@Test(arguments: [false, true])
+func tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbackFails: Bool)
+  async throws
+{
+  let http = TianyiMoveHTTP(failRename: true, failRollback: rollbackFails)
+  let secrets = MemorySecretStore()
+  try secrets.write(storedSession(), for: "move")
+  let session = TianyiSession(
+    secretKey: "move", secrets: secrets, configuration: personalConfiguration, transport: http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  try await provider.connect()
+  if rollbackFails {
+    do {
+      try await provider.move(RemotePath("/src/a"), to: RemotePath("/dst/b"))
+      Issue.record("恢复失败应明确报告")
+    } catch let failure as TianyiMoveRecoveryFailure {
+      #expect(failure.lastConfirmedPath.value.hasPrefix("/dst/.kayoi-move-"))
+      #expect(failure.original as? RemoteError == .http(500))
+    }
+    #expect(await http.location().hasPrefix("dst/.kayoi-move-"))
+  } else {
+    await #expect(throws: RemoteError.http(500)) {
+      try await provider.move(RemotePath("/src/a"), to: RemotePath("/dst/b"))
+    }
+    #expect(await http.location() == "src/a")
+  }
+}
+
+@Test(arguments: ["negative-size", "missing-size", "invalid-name", "missing-id"])
+func malformedTianyiEntryFailsWithoutReturningPartialDirectory(problem: String) async throws {
+  var bad = node("bad", "bad")
+  switch problem {
+  case "negative-size": bad["size"] = -1
+  case "missing-size": bad.removeValue(forKey: "size")
+  case "invalid-name": bad["name"] = "nested/path"
+  default: bad["id"] = ""
+  }
+  let badJSON = try JSONSerialization.data(withJSONObject: [
+    "fileListAO": ["count": 2, "fileList": [node("ok", "ok"), bad], "folderList": []]
+  ])
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return capacity() }
+    return HTTPResponse(status: 200, body: badJSON)
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  await #expect(throws: TianyiError.invalidResponse) {
+    _ = try await provider.list(RemotePath("/"))
+  }
+}
+
+@Test(arguments: [false, true])
+func tianyiTenConcurrentRejectionsShareRestoration(separateSessions: Bool) async throws {
+  let restored = Mutex(0)
+  let oldRequests = Mutex(0)
+  let rejected = TestEvent()
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" {
+      if request.value(forHTTPHeaderField: "SessionKey") == "new-key" { return capacity() }
+      if oldRequests.withLock({ $0 += 1; return $0 }) == 10 { rejected.signal() }
+      try await rejected.wait()
+      return HTTPResponse(status: 401)
+    }
+    guard request.url?.path == "/getSessionForPC.action" else { throw RemoteError.protocolError }
+    restored.withLock { $0 += 1 }
+    return json([
+      "sessionKey": "new-key", "sessionSecret": "new-secret", "accessToken": "new",
+      "refreshToken": "rotated",
+    ])
+  }
+  let (first, secrets) = try session(http)
+  try await withThrowingTaskGroup(of: Void.self) { group in
+    for _ in 0..<10 {
+      let current =
+        separateSessions
+        ? TianyiSession(
+          secretKey: "tianyi.test", secrets: secrets, configuration: personalConfiguration,
+          transport: http) : first
+      group.addTask { try await current.connect() }
+    }
+    try await group.waitForAll()
+  }
+  #expect(restored.withLock { $0 } == 1)
 }

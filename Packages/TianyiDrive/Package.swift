@@ -7,6 +7,9 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "TianyiDrive", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "TianyiDriveTests", dependencies: ["TianyiDrive"]),
+    .testTarget(
+      name: "TianyiDriveTests",
+      dependencies: ["TianyiDrive", .product(name: "CoreTestSupport", package: "Core")]
+    ),
   ],
   swiftLanguageModes: [.v6])
