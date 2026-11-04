@@ -30,9 +30,9 @@ test: gen
 	swift test --package-path Packages/ChinaWebDrive
 
 dev-tool:
-	swift build --package-path Packages/DevTool -c release
+	swift build --package-path Packages/DevTool -c release --arch arm64 --arch x86_64 --force-resolved-versions
 	mkdir -p build/bin
-	cp Packages/DevTool/.build/release/kayoi-dev build/bin/kayoi-dev
+	python3 scripts/package-cli.py "$$(swift build --package-path Packages/DevTool -c release --arch arm64 --arch x86_64 --show-bin-path --force-resolved-versions)" build/bin
 	codesign --force --sign "$(SIGN_IDENTITY)" --identifier com.seaony.Kayoi.dev build/bin/kayoi-dev
 
 format:

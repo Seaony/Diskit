@@ -12,8 +12,9 @@ let package = Package(
     .package(path: "../TianyiDrive"), .package(path: "../ChinaWebDrive"),
   ],
   targets: [
-    .executableTarget(
-      name: "DevTool",
+    .executableTarget(name: "DevTool", dependencies: ["DevToolSupport"]),
+    .target(
+      name: "DevToolSupport",
       dependencies: [
         .product(name: "Core", package: "Core"), .product(name: "ADB", package: "ADB"),
         .product(name: "RicohGR", package: "RicohGR"),
@@ -26,5 +27,6 @@ let package = Package(
         .product(name: "LanzouDrive", package: "LanzouDrive"),
         .product(name: "TianyiDrive", package: "TianyiDrive"),
         .product(name: "ChinaWebDrive", package: "ChinaWebDrive"),
-      ])
+      ]),
+    .testTarget(name: "DevToolTests", dependencies: ["DevToolSupport"]),
   ], swiftLanguageModes: [.v6])
