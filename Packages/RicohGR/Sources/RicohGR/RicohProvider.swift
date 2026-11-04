@@ -25,6 +25,7 @@ import Foundation
       connected = true
       _ = try await current()
     } catch {
+      PackageDiagnostics.failure(error, category: .ricohGR, operation: .connect)
       await adapter.close()
       connected = false
       throw error

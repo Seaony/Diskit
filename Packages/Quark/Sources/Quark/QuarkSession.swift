@@ -131,8 +131,9 @@ public actor QuarkSession {
     self.secretKey = secretKey
     self.secrets = secrets
     self.configuration = configuration
-    self.transport =
-      transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain)
+    self.transport = DiagnosticHTTPTransport(
+      transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain),
+      category: .quark)
   }
   public func hasCookie() throws -> Bool { try storedCookie()?.valid == true }
 

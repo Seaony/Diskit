@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 enum LanzouJSON {
@@ -9,15 +10,20 @@ enum LanzouJSON {
   }
 
   static func successfulObject(_ data: Data) throws -> [String: Any] {
-    let object = try object(data)
-    guard let status = integer(object["zt"]) else { throw LanzouError.invalidResponse }
-    switch status {
-    case 1, 2: return object
-    case 4:
-      let errorMessage = message(in: object)
-      throw errorMessage.isEmpty ? LanzouError.rateLimited : businessError(errorMessage)
-    case 9: throw LanzouError.authenticationExpired
-    default: throw businessError(message(in: object))
+    do {
+      let object = try object(data)
+      guard let status = integer(object["zt"]) else { throw LanzouError.invalidResponse }
+      switch status {
+      case 1, 2: return object
+      case 4:
+        let errorMessage = message(in: object)
+        throw errorMessage.isEmpty ? LanzouError.rateLimited : businessError(errorMessage)
+      case 9: throw LanzouError.authenticationExpired
+      default: throw businessError(message(in: object))
+      }
+    } catch {
+      PackageDiagnostics.failure(error, category: .lanzouDrive, operation: .request)
+      throw error
     }
   }
 

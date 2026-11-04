@@ -364,6 +364,7 @@ public actor AliyunProvider: RemoteFileProvider {
     let response = try await session.authorized(request)
     try check(response)
     do { return try JSONDecoder().decode(T.self, from: response.body) } catch {
+      PackageDiagnostics.failure(error, category: .aliyunDrive, operation: .request)
       throw RemoteError.protocolError
     }
   }

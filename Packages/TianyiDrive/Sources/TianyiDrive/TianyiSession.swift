@@ -180,8 +180,9 @@ public actor TianyiSession {
     self.secretKey = secretKey
     self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
     self.configuration = configuration
-    self.transport =
-      transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain)
+    self.transport = DiagnosticHTTPTransport(
+      transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain),
+      category: .tianyiDrive)
   }
 
   public func hasLogin() throws -> Bool {

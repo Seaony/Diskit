@@ -32,6 +32,7 @@ import Foundation
       connected = true
       _ = try await current()
     } catch {
+      PackageDiagnostics.failure(error, category: .cameraUSB, operation: .connect)
       await access.close()
       connected = false
       throw error
@@ -121,6 +122,7 @@ import Foundation
     do {
       try await access.delete(handles: [handle])
     } catch {
+      PackageDiagnostics.failure(error, category: .cameraUSB, operation: .remove)
       throw CameraUSBErrorMapper.map(error)
     }
   }
@@ -132,6 +134,7 @@ import Foundation
       guard !snapshot.storages.isEmpty else { throw RemoteError.posix(ENODEV) }
       return snapshot
     } catch {
+      PackageDiagnostics.failure(error, category: .cameraUSB, operation: .snapshot)
       throw CameraUSBErrorMapper.map(error)
     }
   }

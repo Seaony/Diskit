@@ -75,7 +75,8 @@ public actor MobileCloudSession {
   ) {
     self.credentials = credentials
     self.refresh = refresh
-    self.transport = transport
+    self.transport = DiagnosticHTTPTransport(
+      POSIXHTTPTransport(transport), category: .chinaWebDrive)
     self.now = now
     self.nonce = nonce
   }

@@ -52,7 +52,8 @@ public actor XunleiSession {
   ) {
     self.credentials = credentials
     self.refresh = refresh
-    self.transport = transport
+    self.transport = DiagnosticHTTPTransport(
+      POSIXHTTPTransport(transport), category: .chinaWebDrive)
   }
 
   public func connect() async throws {
@@ -99,7 +100,10 @@ public actor XunleiSession {
       }
       if Self.isUnauthorized(response) { throw XunleiError.loginRequired }
       try ChinaWebSupport.checkHTTP(response)
-      if let error = Self.businessError(response.body) { throw error }
+      if let error = Self.businessError(response.body) {
+        PackageDiagnostics.failure(error, category: .chinaWebDrive, operation: .request)
+        throw error
+      }
       return response
     }
   }
