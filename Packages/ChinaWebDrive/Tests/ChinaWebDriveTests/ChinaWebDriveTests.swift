@@ -70,7 +70,7 @@ private let mobileRoute = response(
   #"{"success":true,"code":"0000","data":{"routePolicyList":[{"modName":"personal","httpsUrl":"https://personal-kd-njs.yun.139.com/hcy","hashName":"sha256"}]}}"#
 )
 
-private func mobileSession(_ http: ScriptHTTP) -> MobileCloudSession {
+private func mobileSession(_ http: any HTTPTransport) -> MobileCloudSession {
   MobileCloudSession(
     credentials: MobileCloudCredentials(phone: "13800138000", token: "Y2xvdWQ="),
     transport: http)
@@ -283,7 +283,7 @@ private func requestBody(_ request: URLRequest) throws -> [String: Any] {
   #expect(try MobileCloudProvider.splitForTesting(size: 5, partSize: 2).map(\.2) == [2, 2, 1])
 }
 
-@Test func mobileCloudMkdirMoveAndDeleteUseDocumentedOperations() async throws {
+@Test func mobileCloudMkdirAndMoveUseDocumentedOperations() async throws {
   let empty = response(
     #"{"success":true,"code":"0000","data":{"items":[],"nextPageCursor":null}}"#)
   let folderCreated = response(
@@ -310,7 +310,7 @@ private func requestBody(_ request: URLRequest) throws -> [String: Any] {
 private let xunleiAbout = response(
   #"{"kind":"drive#about","quota":{"limit":"1000","usage":"125"}}"#)
 
-private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
+private func xunleiSession(_ http: any HTTPTransport) -> XunleiSession {
   XunleiSession(credentials: XunleiCredentials(accessToken: "session"), transport: http)
 }
 
@@ -438,8 +438,9 @@ private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
     try await provider.write(try RemotePath("/upload.bin"), from: file)
   }
   let deletion = try #require(
-    await http.requests.first { $0.url?.path.hasSuffix("/files:batchDelete") == true })
-  #expect(try requestBody(deletion)["ids"] as? [String] == ["new"])
+    await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true })
+  #expect(deletion.httpMethod == "PATCH")
+  #expect(try requestBody(deletion).isEmpty)
 }
 
 @Test func xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() async throws {
@@ -461,8 +462,9 @@ private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
   }
   #expect(await uploader.calls.isEmpty)
   let deletion = try #require(
-    await http.requests.first { $0.url?.path.hasSuffix("/files:batchDelete") == true })
-  #expect(try requestBody(deletion)["ids"] as? [String] == ["new"])
+    await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true })
+  #expect(deletion.httpMethod == "PATCH")
+  #expect(try requestBody(deletion).isEmpty)
 }
 
 @Test func xunleiUploadRejectsCreateErrorBeforeCallingSDK() async throws {
@@ -484,8 +486,9 @@ private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
   }
   #expect(await uploader.calls.isEmpty)
   let deletion = try #require(
-    await http.requests.first { $0.url?.path.hasSuffix("/files:batchDelete") == true })
-  #expect(try requestBody(deletion)["ids"] as? [String] == ["new"])
+    await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true })
+  #expect(deletion.httpMethod == "PATCH")
+  #expect(try requestBody(deletion).isEmpty)
 }
 
 @Test func xunleiUploadRejectsExistingNameBeforeCreatingTask() async throws {
@@ -584,8 +587,9 @@ private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
   #expect(target["parent_id"] as? String == "d")
   #expect(target["name"] as? String == "y")
   let deletion = try #require(
-    requests.first { $0.url?.path.hasSuffix("/files:batchDelete") == true })
-  #expect(try requestBody(deletion)["ids"] as? [String] == ["x"])
+    requests.first { $0.url?.path.hasSuffix("/files/x/trash") == true })
+  #expect(deletion.httpMethod == "PATCH")
+  #expect(try requestBody(deletion).isEmpty)
 }
 
 @Test func httpErrorsMapToExpectedPOSIXCodes() {
@@ -596,4 +600,110 @@ private func xunleiSession(_ http: ScriptHTTP) -> XunleiSession {
   #expect(ChinaWebSupport.mapBusiness(code: 9008, message: nil) == .unauthorized)
   #expect(ChinaWebSupport.mapBusiness(code: 507, message: "空间不足") == .posix(ENOSPC))
   #expect(ChinaWebSupport.mapBusiness(code: 409, message: nil) == .posix(EEXIST))
+}
+
+private actor TrashOnlyHTTP: HTTPTransport {
+  let directory: Bool
+  let rejection: Int?
+  private(set) var requests: [URLRequest] = []
+  init(directory: Bool = false, rejection: Int? = nil) {
+    self.directory = directory
+    self.rejection = rejection
+  }
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    requests.append(request)
+    let path = request.url?.path ?? ""
+    switch (request.httpMethod, path) {
+    case ("POST", "/user/route/qryRoutePolicy"): return mobileRoute
+    case ("GET", "/drive/v1/about"): return xunleiAbout
+    case ("POST", "/hcy/file/list"):
+      let kind = directory ? "folder" : "file"
+      return response(
+        "{\"success\":true,\"code\":\"0000\",\"data\":{\"items\":[{\"fileId\":\"target\",\"name\":\"item\",\"type\":\"\(kind)\",\"size\":1}],\"nextPageCursor\":null}}"
+      )
+    case ("GET", "/drive/v1/files"):
+      let kind = directory ? "drive#folder" : "drive#file"
+      return response(
+        "{\"files\":[{\"id\":\"target\",\"name\":\"item\",\"kind\":\"\(kind)\",\"size\":1}],\"next_page_token\":\"\"}"
+      )
+    case ("POST", "/hcy/recyclebin/batchTrash"):
+      if let rejection { return HTTPResponse(status: rejection) }
+      return response(#"{"success":true,"code":"0000","data":{}}"#)
+    case ("PATCH", "/drive/v1/files/target/trash"):
+      if let rejection { return HTTPResponse(status: rejection) }
+      return response("{}")
+    default: return HTTPResponse(status: 404)
+    }
+  }
+}
+
+@Test(arguments: [false, true], [false, true])
+func cloudRemovalUsesRecoverableEndpoint(mobile: Bool, directory: Bool) async throws {
+  let http = TrashOnlyHTTP(directory: directory)
+  let provider: any RemoteFileProvider =
+    mobile
+    ? MobileCloudProvider(session: mobileSession(http))
+    : XunleiProvider(session: xunleiSession(http))
+  try await provider.connect()
+  if directory {
+    await #expect(throws: RemoteError.posix(ENOTEMPTY)) {
+      try await provider.remove(RemotePath("/item"), recursive: false)
+    }
+    #expect(
+      await !http.requests.contains {
+        $0.url?.path.contains("trash") == true || $0.url?.path.contains("Trash") == true
+      })
+  }
+  try await provider.remove(RemotePath("/item"), recursive: directory)
+  let deletion = try #require(await http.requests.last)
+  #expect(deletion.httpMethod == (mobile ? "POST" : "PATCH"))
+  #expect(
+    deletion.url?.path == (mobile ? "/hcy/recyclebin/batchTrash" : "/drive/v1/files/target/trash"))
+  if mobile {
+    #expect(try requestBody(deletion)["fileIds"] as? [String] == ["target"])
+  } else {
+    #expect(try requestBody(deletion).isEmpty)
+  }
+  #expect(await !http.requests.contains { $0.url?.path.contains("batchDelete") == true })
+}
+
+@Test(arguments: [false, true])
+func trashFailureNeverFallsBackToPermanentDeletion(mobile: Bool) async throws {
+  let http = TrashOnlyHTTP(rejection: 409)
+  let provider: any RemoteFileProvider =
+    mobile
+    ? MobileCloudProvider(session: mobileSession(http))
+    : XunleiProvider(session: xunleiSession(http))
+  try await provider.connect()
+  await #expect(throws: RemoteError.http(409)) {
+    try await provider.remove(RemotePath("/item"), recursive: false)
+  }
+  let writes = await http.requests.filter {
+    $0.url?.path.hasSuffix("/trash") == true || $0.url?.path.hasSuffix("/batchTrash") == true
+  }
+  #expect(writes.count == 1)
+  #expect(await !http.requests.contains { $0.url?.path.contains("batchDelete") == true })
+}
+
+@Test func mobileCloudUploadFailureTrashesOnlyTheNewFile() async throws {
+  let file = try temporaryFile(Data("x".utf8))
+  defer { try? FileManager.default.removeItem(at: file) }
+  let empty = response(#"{"success":true,"code":"0000","data":{"items":[],"nextPageCursor":null}}"#)
+  let created = response(
+    #"{"success":true,"code":"0000","data":{"fileId":"new","fileName":"upload.bin","uploadId":"u1","rapidUpload":false,"exist":false,"partInfos":[{"partNumber":1,"partSize":1,"uploadUrl":"https://upload.example.com/1"}]}}"#
+  )
+  let http = ScriptHTTP([
+    mobileRoute, empty, created, HTTPResponse(status: 500),
+    response(#"{"success":true,"code":"0000","data":{}}"#),
+  ])
+  let provider = MobileCloudProvider(session: mobileSession(http))
+  try await provider.connect()
+  await #expect(throws: RemoteError.http(500)) {
+    try await provider.write(RemotePath("/upload.bin"), from: file)
+  }
+  let cleanup = try #require(await http.requests.last)
+  #expect(cleanup.httpMethod == "POST")
+  #expect(cleanup.url?.path == "/hcy/recyclebin/batchTrash")
+  #expect(try requestBody(cleanup)["fileIds"] as? [String] == ["new"])
+  #expect(await !http.requests.contains { $0.url?.path.contains("batchDelete") == true })
 }

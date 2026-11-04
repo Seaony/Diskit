@@ -501,7 +501,8 @@ public actor XunleiProvider: RemoteFileProvider {
 
   private func trash(_ id: String) async throws {
     let _ = try await session.request(
-      method: "POST", path: "files:batchDelete", json: ["ids": [id], "space": ""])
+      method: "PATCH", path: "files/\(ChinaWebSupport.encodedPathComponent(id))/trash",
+      json: [String: String]())
   }
 
   private func requestParent(_ id: String) -> String {
@@ -519,7 +520,8 @@ public actor XunleiProvider: RemoteFileProvider {
     let session = session
     let cleanup = Task.detached {
       _ = try? await session.request(
-        method: "POST", path: "files:batchDelete", json: ["ids": [fileID]])
+        method: "PATCH", path: "files/\(ChinaWebSupport.encodedPathComponent(fileID))/trash",
+        json: [String: String]())
     }
     _ = await cleanup.value
   }

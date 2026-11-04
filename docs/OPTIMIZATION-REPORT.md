@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -230,3 +230,14 @@
 - 原分包线协议测试已补上必需的提交/清理命令响应；移动冲突和带特殊字符路径的测试同时扩展到旧、新命令通道。所有文件操作在本地临时目录，未连接手机。
 - FIX-09 指定的本地上传保护与普通移动冲突流程已验证。系统 mv 对外部进程同时改动目标的并发窗口仍按上一节如实保留，不宣称原子拒绝覆盖；真实设备文件系统、命令选项和断线残留清理另待用户验收。
 - 最终版本完整提交门禁通过：应用逻辑 9 项、包测试 312 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-09-upload-gates.log`。
+
+
+## FIX-10：迅雷与移动云盘使用官网回收站请求
+
+- 从两站无需登录的官网 HTML 定位静态资源，核对了页面删除提示、动作编号和请求封装，没有连接真实账号或调用数据 API。来源 URL、SHA-256 与字节定位见 `docs/evidence/v0.2/FIX-10-public-client.md`，不凭接口名称猜测删除语义。
+- 迅雷官网将 `trashFile` 与永久批量删除分开；`XunleiProvider.swift:502` 改为 PATCH files/{id}/trash，空对象正文。上传失败、创建冲突的清理入口（`:519`）也走回收站，源码中不再调用 files:batchDelete。
+- 移动官网普通删除提示可恢复，对应动作 201 → recyclebin/batchTrash；回收站“永久删除”对应 202 → file/batchDelete。虽然适配层将后者命名为 logicalDelete，页面调用链证实不能据此保留旧实现。`MobileCloudProvider.swift:352` 和 `:399` 的删除及清理均改为 recyclebin/batchTrash，fileIds 保持准确目标。
+- `cloudRemovalUsesRecoverableEndpoint`（`ChinaWebDriveTests.swift:641`）覆盖两个平台 × 文件/目录四组；替身按具体方法与路径匹配，未登记路径返回 404。修复前两平台均请求错误端点而失败；修复后方法、路径、正文正确，非递归删除非空目录仍先拒绝。`trashFailureNeverFallsBackToPermanentDeletion`（`:671`）确认回收站端点拒绝后不会改发永久删除。
+- 原迅雷测试曾将 batchDelete 固定为“回收站”预期，现更正为官网契约；移动 `mobileCloudMkdirMoveAndDeleteUseDocumentedOperations` 实际没调用删除，已更名为 `mobileCloudMkdirAndMoveUseDocumentedOperations`，并另补真实调用 remove 的测试，处理审查中关于移动云盘删除测试覆盖的失实记录。`mobileCloudUploadFailureTrashesOnlyTheNewFile`（`:688`）另复现并修复失败清理的永久删除。证据 `docs/evidence/v0.2/FIX-10-regression.log`。
+- 本轮只发送回收站请求，不在失败后自动改为永久删除，因此无需引入永久删除确认入口。真实账号中可见、可恢复及平台保留期限仍为待用户验收；不能将替身请求通过写成服务端已验证。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 315 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-10-gates.log`。

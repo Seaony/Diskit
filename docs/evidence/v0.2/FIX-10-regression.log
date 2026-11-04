@@ -1,0 +1,27 @@
+kayoi-fix10-before.log：修复前退出 1。
+􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → false, directory → false at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
+􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → false, directory → true at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → false at ChinaWebDriveTests.swift:678:9: Expectation failed: expected error ".http(403)" of type RemoteError, but ".http(404)" of type RemoteError was thrown instead
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → false at ChinaWebDriveTests.swift:684:3: Expectation failed: (writes.count → 0) == 1
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → false at ChinaWebDriveTests.swift:685:3: Expectation failed: await !http.requests.contains { $0.url?.path.contains("batchDelete") == true }
+􀢄  Test xunleiMkdirMoveAndTrashUseDocumentedBodies() recorded an issue at ChinaWebDriveTests.swift:589:22: Expectation failed: requests.first { $0.url?.path.hasSuffix("/files/x/trash") == true } → nil
+􀢄  Test xunleiUploadRejectsUntrustedVendorEndpointBeforeCallingSDK() recorded an issue at ChinaWebDriveTests.swift:464:22: Expectation failed: await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true } → nil
+􀢄  Test xunleiUploadRejectsCreateErrorBeforeCallingSDK() recorded an issue at ChinaWebDriveTests.swift:488:22: Expectation failed: await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true } → nil
+􀢄  Test xunleiUploadFailureTrashesOnlyTheNewFile() recorded an issue at ChinaWebDriveTests.swift:440:22: Expectation failed: await http.requests.first { $0.url?.path.hasSuffix("/files/new/trash") == true } → nil
+􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → true, directory → false at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → true at ChinaWebDriveTests.swift:678:9: Expectation failed: expected error ".http(403)" of type RemoteError, but ".http(404)" of type RemoteError was thrown instead
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → true at ChinaWebDriveTests.swift:684:3: Expectation failed: (writes.count → 0) == 1
+􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → true at ChinaWebDriveTests.swift:685:3: Expectation failed: await !http.requests.contains { $0.url?.path.contains("batchDelete") == true }
+􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → true, directory → true at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
+􀢄  Test run with 26 tests in 0 suites failed after 0.010 seconds with 14 issues.
+kayoi-fix10-cleanup-before.log：修复前退出 1。
+􀢄  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() recorded an issue at ChinaWebDriveTests.swift:700:3: Expectation failed: (cleanup.url?.path → "/hcy/file/batchDelete") == "/hcy/recyclebin/batchTrash"
+􀢄  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() recorded an issue at ChinaWebDriveTests.swift:702:3: Expectation failed: await !http.requests.contains { $0.url?.path.contains("batchDelete") == true }
+􀢄  Test run with 1 test in 0 suites failed after 0.008 seconds with 2 issues.
+修复后：swift test --package-path Packages/ChinaWebDrive；退出 0。
+􁁛  Test xunleiUploadFailureTrashesOnlyTheNewFile() passed after 0.004 seconds.
+􁁛  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) with 4 test cases passed after 0.008 seconds.
+􁁛  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() passed after 0.010 seconds.
+􁁛  Test mobileCloudMkdirAndMoveUseDocumentedOperations() passed after 0.011 seconds.
+􁁛  Test run with 27 tests in 0 suites passed after 0.011 seconds.

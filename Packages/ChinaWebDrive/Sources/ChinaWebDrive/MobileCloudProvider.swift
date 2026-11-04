@@ -356,7 +356,7 @@ public actor MobileCloudProvider: RemoteFileProvider {
       throw RemoteError.posix(ENOTEMPTY)
     }
     let _ = try await session.request(
-      "file/batchDelete", body: ["fileIds": [node.fileID]])
+      "recyclebin/batchTrash", body: ["fileIds": [node.fileID]])
     invalidate(ChinaWebSupport.parent(of: path))
   }
 
@@ -399,7 +399,7 @@ public actor MobileCloudProvider: RemoteFileProvider {
   private func discard(_ fileID: String) async {
     let session = session
     let cleanup = Task.detached {
-      _ = try? await session.request("file/batchDelete", body: ["fileIds": [fileID]])
+      _ = try? await session.request("recyclebin/batchTrash", body: ["fileIds": [fileID]])
     }
     await cleanup.value
   }
