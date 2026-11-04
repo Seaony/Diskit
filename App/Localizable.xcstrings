@@ -9792,6 +9792,22 @@
         }
       }
     },
+    "我的位置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My Locations"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我的位置"
+          }
+        }
+      }
+    },
     "手动填写的共享：%@": {
       "localizations": {
         "en": {

@@ -2,6 +2,9 @@ import Core
 import Foundation
 
 enum PanelCopy {
+  static func showsEmptyState(savedCount: Int, discoveredCount: Int) -> Bool {
+    savedCount == 0 && discoveredCount == 0
+  }
 
   static func subtitle(_ state: ConnectionState, kind: ConnectionKind) -> String {
     switch state {

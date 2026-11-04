@@ -149,6 +149,10 @@ struct PanelView: View {
     ].compactMap { $0 }
   }
 
+  private var showsEmptyState: Bool {
+    PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, discoveredCount: discoveredItems.count)
+  }
+
   private var attentionCount: Int {
     model.connections.states.values.filter {
       if case .failed = $0 { return true }
@@ -176,10 +180,10 @@ struct PanelView: View {
                   .modifier(PanelArrival(index: index))
               }
             }
-            if model.connections.connections.isEmpty {
+            if showsEmptyState {
               emptyState
-            } else {
-              sectionTitle(L("已保存的位置"))
+            } else if !model.connections.connections.isEmpty {
+              sectionTitle(L("我的位置"))
               ForEach(Array(model.connections.connections.enumerated()), id: \.element.id) {
                 index, connection in
                 SavedConnectionRow(
