@@ -1,0 +1,210 @@
+修复前：swift test --package-path Packages/Core --filter lateSuccessfulMountIsEjectedAfterAbandonment|deliveredMountIsNotEjectedByLaterFailure；退出 1。
+[0/1] Planning build
+Building for debugging...
+[0/5] Write sources
+[2/5] Write swift-version--58304C5D6DBC2206.txt
+[4/7] Emitting module Core
+[5/7] Compiling Core SMB.swift
+[6/8] Compiling Core ConnectionManager.swift
+[7/16] Compiling CoreTests RemoteTimestampTests.swift
+[8/16] Compiling CoreTests StorageTests.swift
+[9/16] Compiling CoreTests MountRequestTests.swift
+[10/16] Compiling CoreTests RecoverableSecretStoreTests.swift
+[11/16] Compiling CoreTests HTTPTransportTests.swift
+[12/16] Compiling CoreTests ConnectionTests.swift
+[13/16] Compiling CoreTests CredentialRefreshLockTests.swift
+[14/16] Emitting module CoreTests
+[14/16] Write Objects.LinkFileList
+[15/16] Linking CorePackageTests
+Build complete! (3.35s)
+Test Suite 'Selected tests' started at 2026-11-04 18:07:45.389.
+Test Suite 'CorePackageTests.xctest' started at 2026-11-04 18:07:45.390.
+Test Suite 'CorePackageTests.xctest' passed at 2026-11-04 18:07:45.390.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'Selected tests' passed at 2026-11-04 18:07:45.390.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test deliveredMountIsNotEjectedByLaterFailure() started.
+􀟈  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → false to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → true to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􁁛  Test deliveredMountIsNotEjectedByLaterFailure() passed after 0.001 seconds.
+􀢄  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) recorded an issue with 1 argument cancelled → false at MountRequestTests.swift:23:3: Expectation failed: (ejected.map(\.path) → []) == ["/Volumes/late-one", "/Volumes/late-two"]
+􀅺  removed ["/Volumes/late-one", "/Volumes/late-two"]
+􀢄  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) recorded an issue with 1 argument cancelled → true at MountRequestTests.swift:23:3: Expectation failed: (ejected.map(\.path) → []) == ["/Volumes/late-one", "/Volumes/late-two"]
+􀅺  removed ["/Volumes/late-one", "/Volumes/late-two"]
+􀢄  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) with 2 test cases failed after 0.001 seconds with 2 issues.
+􀢄  Test run with 2 tests in 0 suites failed after 0.001 seconds with 2 issues.
+
+修复后：swift test --package-path Packages/Core；退出 0。
+Building for debugging...
+[Planning deferred tasks]
+[32 / 59]
+[34 / 60] CoreNative
+[44 / 73]
+[47 / 73] Core
+[59 / 152]
+[67 / 152]
+[72 / 152]
+[74 / 152]
+[80 / 152]
+[83 / 152]
+[92 / 152]
+[95 / 152]
+[97 / 152]
+[98 / 152]
+[111 / 152]
+[112 / 152]
+[116 / 152]
+[128 / 152] Core
+[136 / 152] Core
+[142 / 153] CoreTests-product
+[143 / 164]
+[153 / 164] CoreTests-product
+[158 / 164] CoreTests-product
+[160 / 164] CoreTests-product
+Build complete! (8.94秒)
+Test Suite 'All tests' started at 2026-11-04 18:14:27.615.
+Test Suite 'All tests' passed at 2026-11-04 18:14:27.616.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test deliveredMountIsNotEjectedByLaterFailure() started.
+􀟈  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() started.
+􀟈  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() started.
+􀟈  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() started.
+􀟈  Test webDAVParticipatesInSaveMountAndAutoMount() started.
+􀟈  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test futureConfigIsNotOverwritten() started.
+􀟈  Test startupMountsOnlyEnabledUnMountedConnections() started.
+􀟈  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() started.
+􀟈  Test mountFailureCanRetryAndReportsOnce() started.
+􀟈  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test smbURLKeepsCredentialsOutOfMountURL() started.
+􀟈  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() started.
+􀟈  Test rejectsMissingShareAndInvalidFields() started.
+􀟈  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() started.
+􀟈  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() started.
+􀟈  Test memorySecretLifecycle() started.
+􀟈  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() started.
+􀟈  Test editSortAndRestartPreserveConfiguration() started.
+􀟈  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() started.
+􀟈  Test credentialRefreshLockRejectsSymlink() started.
+􀟈  Test unauthorizedCloudErrorsAskForLogin() started.
+􀟈  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() started.
+􀟈  Test failedWriteIsSharedBetweenStoreWrappers() started.
+􀟈  Test editingOnlyMountedNameKeepsVolume() started.
+􀟈  Test connectionLogsNeverIncludeUnknownErrorDetails() started.
+􀟈  Test testingExistingConnectionDoesNotUnmountIt() started.
+􀟈  Test removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test deletingOfficialCloudRemovesItsOAuthToken() started.
+􀟈  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() started.
+􀟈  Test genericCameraRemovalClearsConnectionTestResult() started.
+􀟈  Test credentialRefreshLockWaitCanBeCancelled() started.
+􀟈  Test configurationLifecycle() started.
+􀟈  Test HTTPTransportPreservesErrorStatusAndHeaders() started.
+􀟈  Test lateMountCleanupFailureDoesNotSkipOtherMounts() started.
+􀟈  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() started.
+􀟈  Test systemMountURLsCoverSMBWebDAVAndNFS() started.
+􀟈  Test rejectsWrongPasswordBeforeSaving() started.
+􀟈  Test memorySecretsAreIsolatedBetweenRuns() started.
+􀟈  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() started.
+􀟈  Test connectionFailuresLogOnceWithoutExtraMountNotifications() started.
+􀟈  Test failedUnmountKeepsConnectionAndSecret() started.
+􀟈  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() started.
+􀟈  Test credentialRefreshLockExcludesOtherProcessesAndReleases() started.
+􀟈  Test failedSecretWriteRemainsPendingUntilSaved() started.
+􀟈  Test clearingCacheCannotReachConnectionTestContents() started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123Z" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123+00:00" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test credentialRefreshLockIdentityMatchesStorageScope() started.
+􀟈  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 1 argument delete → false to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test case passing 1 argument delete → true to pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) started.
+􀟈  Test cameraRemovalClearsConnectionTestResult() started.
+􀟈  Test case passing 1 argument input → "2026-01-02T03:04:05.123" to remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) started.
+􀟈  Test removalUnmountsAndDeletesSecretsAndCache() started.
+􀟈  Test webDriveAuthenticationFailureAsksForLogin() started.
+􀟈  Test case passing 1 argument cancelled → false to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test case passing 1 argument kind → .smb to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .quark to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument cancelled → true to lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) started.
+􀟈  Test case passing 1 argument kind → .baiduDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .ucDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive115 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .drive123 to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .googleDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .dropbox to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .pikPak to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .tianyiDrive to removalSaveFailurePreservesCredentialsAndCache(kind:) started.
+􀟈  Test case passing 1 argument kind → .aliyunDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 1 argument kind → .oneDrive to deletingConnectionClearsPendingRefreshedCredentials(kind:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .smb, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdav, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .webdavHTTPS, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → false to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􀟈  Test case passing 2 arguments kind → .nfs, ejectFails → true to editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) started.
+􁁛  Test memorySecretLifecycle() passed after 0.002 seconds.
+􁁛  Test smbURLKeepsCredentialsOutOfMountURL() passed after 0.002 seconds.
+􁁛  Test remoteTimestampKeepsFractionAndUsesUTCByDefault(_:) with 3 test cases passed after 0.002 seconds.
+􁁛  Test memorySecretsAreIsolatedBetweenRuns() passed after 0.002 seconds.
+􁁛  Test remoteTimestampPreservesExplicitZoneAndRejectsInvalidInput() passed after 0.002 seconds.
+􁁛  Test systemMountURLsCoverSMBWebDAVAndNFS() passed after 0.002 seconds.
+􁁛  Test shareParsingKeepsSpacesAndFiltersNonDiskTypes() passed after 0.002 seconds.
+􁁛  Test credentialRefreshLockRejectsSymlink() passed after 0.002 seconds.
+􁁛  Test deliveredMountIsNotEjectedByLaterFailure() passed after 0.002 seconds.
+􁁛  Test configurationLifecycle() passed after 0.002 seconds.
+􁁛  Test credentialRefreshLockIdentityMatchesStorageScope() passed after 0.002 seconds.
+􁁛  Test unauthorizedCloudErrorsAskForLogin() passed after 0.003 seconds.
+􁁛  Test deletingQuarkConnectionRemovesCookieWithoutTouchingOtherSecrets() passed after 0.003 seconds.
+􁁛  Test clearingCacheCannotReachConnectionTestContents() passed after 0.003 seconds.
+􁁛  Test HTTPRedirectDoesNotForwardCredentialsOrBodiesOutsideTheirScope() passed after 0.003 seconds.
+􁁛  Test pendingSecretsDoNotCrossStoreInstancesOrAccountKeys() passed after 0.003 seconds.
+􁁛  Test failedSecretWriteRemainsPendingUntilSaved() passed after 0.004 seconds.
+􁁛  Test explicitDeletionClearsPendingWriteOnlyAfterSuccess() passed after 0.004 seconds.
+􁁛  Test webDAVParticipatesInSaveMountAndAutoMount() passed after 0.004 seconds.
+􁁛  Test failedWriteIsSharedBetweenStoreWrappers() passed after 0.004 seconds.
+􁁛  Test HTTPTransportPreservesErrorStatusAndHeaders() passed after 0.007 seconds.
+􁁛  Test startupMountsOnlyEnabledUnMountedConnections() passed after 0.009 seconds.
+􁁛  Test wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected() passed after 0.010 seconds.
+􁁛  Test cloudLoginFailureKeepsReloginStateAndRemovalDeletesOnlyItsSecret() passed after 0.012 seconds.
+􁁛  Test editSortAndRestartPreserveConfiguration() passed after 0.013 seconds.
+􁁛  Test mountFailureCanRetryAndReportsOnce() passed after 0.014 seconds.
+􁁛  Test editingOnlyMountedNameKeepsVolume() passed after 0.015 seconds.
+􁁛  Test deletingOfficialCloudRemovesItsOAuthToken() passed after 0.016 seconds.
+􁁛  Test connectionLogsNeverIncludeUnknownErrorDetails() passed after 0.016 seconds.
+􁁛  Test genericCameraRemovalClearsConnectionTestResult() passed after 0.021 seconds.
+􁁛  Test lateSuccessfulMountIsEjectedAfterAbandonment(cancelled:) with 2 test cases passed after 0.022 seconds.
+􁁛  Test HTTPStreamReadsBoundedChunksAfterHeadersReturn() passed after 0.027 seconds.
+􁁛  Test nonSMBTestsNeverMountAndUnplugWinsOverLateResult() passed after 0.040 seconds.
+􁁛  Test deletingConnectionClearsPendingRefreshedCredentials(kind:) with 2 test cases passed after 0.042 seconds.
+􁁛  Test cameraRemovalClearsConnectionTestResult() passed after 0.048 seconds.
+􁁛  Test removalUnmountsAndDeletesSecretsAndCache() passed after 0.052 seconds.
+􁁛  Test webDriveAuthenticationFailureAsksForLogin() passed after 0.055 seconds.
+􁁛  Test mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice() passed after 0.057 seconds.
+􁁛  Test futureConfigIsNotOverwritten() passed after 0.057 seconds.
+􁁛  Test removalCleanupFailureKeepsPublishedConfigurationConsistent() passed after 0.058 seconds.
+􁁛  Test testingExistingConnectionDoesNotUnmountIt() passed after 0.058 seconds.
+􁁛  Test remoteSecretIsAvailableDuringTestAndRestoredOnFailure() passed after 0.060 seconds.
+􁁛  Test rejectsWrongPasswordBeforeSaving() passed after 0.066 seconds.
+􁁛  Test lateMountCleanupFailureDoesNotSkipOtherMounts() passed after 0.068 seconds.
+􁁛  Test failedUnmountKeepsConnectionAndSecret() passed after 0.070 seconds.
+􁁛  Test removalSaveFailurePreservesCredentialsAndCache(kind:) with 12 test cases passed after 0.072 seconds.
+􁁛  Test rejectsMissingShareAndInvalidFields() passed after 0.074 seconds.
+􁁛  Test editingMountedAddressEjectsBeforeSaving(kind:ejectFails:) with 8 test cases passed after 0.074 seconds.
+􁁛  Test connectionFailuresLogOnceWithoutExtraMountNotifications() passed after 0.075 seconds.
+􁁛  Test credentialRefreshLockWaitCanBeCancelled() passed after 0.533 seconds.
+􁁛  Test refreshWaiterRetriesPendingWriteAndReportsStorageFailure() passed after 0.561 seconds.
+􁁛  Test credentialRefreshLockExcludesOtherProcessesAndReleases() passed after 0.561 seconds.
+􁁛  Test pendingSecretRetainsProcessLockUntilSavedOrDeleted(delete:) with 2 test cases passed after 0.587 seconds.
+􁁛  Test run with 53 tests in 0 suites passed after 0.587 seconds.

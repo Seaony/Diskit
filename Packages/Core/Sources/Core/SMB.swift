@@ -3,6 +3,7 @@ import CoreNative
 import Darwin
 import Foundation
 import NetFS
+import OSLog
 
 public struct MountedShare: Equatable, Sendable {
   public var url: URL
@@ -207,16 +208,51 @@ public enum SystemMountAddress {
   }
 }
 
-@MainActor private final class MountRequest {
+@MainActor final class MountRequest {
+  private static let logger = Logger(subsystem: "com.seaony.Kayoi", category: "MountCleanup")
+  private var abandoned = false
   private var request: AsyncRequestID?
   private var continuation: CheckedContinuation<URL, Error>?
   private var timer: Task<Void, Never>?
+  private let unmountLate: @MainActor (URL) async throws -> Void
+  private let cleanupFailed: @MainActor (URL, Error) -> Void
+  init(
+    unmountLate: @escaping @MainActor (URL) async throws -> Void = {
+      try await UnmountRequest().run($0)
+    },
+    cleanupFailed: @escaping @MainActor (URL, Error) -> Void = { url, error in
+      MountRequest.logger.error(
+        "推出迟到挂载失败：\(url.path, privacy: .private)，\(error.localizedDescription, privacy: .private)")
+    }
+  ) {
+    self.unmountLate = unmountLate
+    self.cleanupFailed = cleanupFailed
+  }
+  func waitForResult(_ start: () -> Void) async throws -> URL {
+    try await withCheckedThrowingContinuation { continuation in
+      self.continuation = continuation
+      start()
+    }
+  }
+  func received(status: Int32, paths: [String]) async {
+    if abandoned, status == 0 {
+      for path in paths {
+        let url = URL(fileURLWithPath: path)
+        do { try await unmountLate(url) } catch { cleanupFailed(url, error) }
+      }
+      return
+    }
+    if status == 0, let path = paths.first {
+      finish(.success(URL(fileURLWithPath: path)))
+    } else {
+      finish(.failure(ConnectionError.status(status == 0 ? EIO : status)))
+    }
+  }
   func run(
     url: URL, user: String, password: String, guest: Bool = false, mountPoint: URL? = nil
   ) async throws -> URL {
     try await withTaskCancellationHandler {
-      try await withCheckedThrowingContinuation { continuation in
-        self.continuation = continuation
+      try await waitForResult {
         let options = NSMutableDictionary(dictionary: [
           kNAUIOptionKey as String: kNAUIOptionNoUI, kNetFSForceNewSessionKey as String: true,
           kNetFSUseAuthenticationInfoKey as String: false, kNetFSAllowLoopbackKey as String: true,
@@ -234,11 +270,7 @@ public enum SystemMountAddress {
         ) { status, _, points in
           let paths = (points as? [String]) ?? []
           Task { @MainActor in
-            if status == 0, let path = paths.first {
-              self.finish(.success(URL(fileURLWithPath: path)))
-            } else {
-              self.finish(.failure(ConnectionError.status(status == 0 ? EIO : status)))
-            }
+            await self.received(status: status, paths: paths)
           }
         }
         if status != 0 {
@@ -259,8 +291,9 @@ public enum SystemMountAddress {
     if let request { NetFSMountURLCancel(request) }
     finish(.failure(CancellationError()))
   }
-  private func finish(_ result: Result<URL, Error>) {
+  func finish(_ result: Result<URL, Error>) {
     guard let continuation else { return }
+    if case .failure = result { abandoned = true }
     self.continuation = nil
     timer?.cancel()
     timer = nil

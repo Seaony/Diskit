@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -290,3 +290,12 @@
 - `editingMountedAddressEjectsBeforeSaving`（`ConnectionTests.swift:669`）覆盖 SMB、WebDAV、HTTPS WebDAV、NFS × 推出成功/失败八组。推出回调直接检查磁盘仍是旧地址、凭据仍是旧值；完成后检查实际假卷表及通知。修复前旧卷遗留、未调用推出、旧地址被覆盖且出现错误通知，修复后均通过。
 - 假挂载服务现按创建挂载时的地址匹配，避免仅凭位置 ID 把旧卷误当成新地址的卷。`editingOnlyMountedNameKeepsVolume`（`:709`）确认名称、颜色变化不触发推出；`mountedEditSaveFailureRestoresCredentialsWithoutFalseDisconnectNotice`（`:723`）确认推出后配置保存失败仍保留旧配置并恢复旧凭据，状态为实际断开且无错误通知。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 331 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-13-regression.log`、`docs/evidence/v0.2/FIX-13-gates.log`。只使用假挂载和临时目录，真实系统卷操作仍待用户验收。
+
+
+## FIX-14：超时或取消后的迟到挂载清理
+
+- `Packages/Core/Sources/Core/SMB.swift:237` 在请求已经失败结束后，处理迟到的成功回调，逐个推出其返回的全部卷；正常交付的卷不受后续失败影响。`:294` 在首次失败结束时记录放弃状态，保留原超时或取消错误，不重复恢复 continuation。
+- `MountRequestTests.swift:7` 的 `lateSuccessfulMountIsEjectedAfterAbandonment` 覆盖超时与取消两组：修复前清理记录为空，修复后两个返回路径均被推出。`:25` 的 `deliveredMountIsNotEjectedByLaterFailure` 确认正常交付不受影响；`:37` 的 `lateMountCleanupFailureDoesNotSkipOtherMounts` 确认一个卷被系统拒绝推出后仍继续处理其他卷，且记录具体失败。
+- 生产清理复用已有系统推出操作；失败写入隐私保护的系统日志（`:223`），不强制推出占用卷。系统拒绝推出时不能保证无残留，真实卷的超时、取消和占用行为留待用户验收。
+- 已核对本机 SDK 的 `NetFS.framework/Headers/NetFS.h:323` 附近回调与取消说明：取消尚未完成的请求后不再提交回调；本修复针对成功已经发生、回调处理迟到的情形，不假设每次取消都产生回调。
+- 测试只注入内存清理记录，不调用 NetFS 或访问真实卷。回归证据 `docs/evidence/v0.2/FIX-14-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 334 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-14-gates.log`。工具链恢复后重编现有 BoringSSL 产生整数转换警告，未作为本项改动处理。
