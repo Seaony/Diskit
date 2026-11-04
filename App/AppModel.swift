@@ -33,6 +33,9 @@ import UserNotifications
   private let sessionCache = RemoteSessionCache()
   private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] = [:]
   var demoSetupError: String?
+  var demoEditorStateOverride: DemoEditorState?
+  var demoEditorRevision = 0
+  var demoAppearanceOverride: String?
 
   init(options: RuntimeOptions = .current, dependencies: AppModelDependencies? = nil) {
     self.options = options
