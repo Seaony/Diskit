@@ -2579,12 +2579,11 @@
       }
     },
     "安卓手机": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Android phone"
+            "value": "Android Phone"
           }
         },
         "zh-Hans": {
@@ -4942,12 +4941,11 @@
       }
     },
     "百度网盘": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Baidu Drive"
+            "value": "Baidu Netdisk"
           }
         },
         "zh-Hans": {
@@ -5639,12 +5637,11 @@
       }
     },
     "腾讯云 COS": {
-      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tencent COS"
+            "value": "Tencent Cloud COS"
           }
         },
         "zh-Hans": {
@@ -7967,6 +7964,22 @@
         }
       }
     },
+    "Kayoi %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayoi %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kayoi %@"
+          }
+        }
+      }
+    },
     "Kayoi，%d 个位置需要处理": {
       "localizations": {
         "en": {
@@ -8023,6 +8036,391 @@
         }
       }
     },
+    "SMB 共享": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SMB Share"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SMB 共享"
+          }
+        }
+      }
+    },
+    "Wi‑Fi 无线调试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi-Fi Wireless Debugging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wi‑Fi 无线调试"
+          }
+        }
+      }
+    },
+    "会先推出这个共享。保存的登录信息会删除，共享里的文件不受影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This share will be ejected first. Saved sign-in information will be deleted. Files in the share are unaffected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会先推出这个共享。保存的登录信息会删除，共享里的文件不受影响。"
+          }
+        }
+      }
+    },
+    "会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The location and sign-in information saved by Kayoi will be deleted. Files on the device are unaffected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。"
+          }
+        }
+      }
+    },
+    "会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in information saved by Kayoi will be deleted. Files in the cloud drive are unaffected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。"
+          }
+        }
+      }
+    },
+    "修改位置名称和颜色": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Location Name and Color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改位置名称和颜色"
+          }
+        }
+      }
+    },
+    "关于 Kayoi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About Kayoi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于 Kayoi"
+          }
+        }
+      }
+    },
+    "已挂载": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mounted"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已挂载"
+          }
+        }
+      }
+    },
+    "已连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接"
+          }
+        }
+      }
+    },
+    "已连接 · 可用 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %@ available"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接 · 可用 %@"
+          }
+        }
+      }
+    },
+    "已连接 · 已用 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %@ used"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接 · 已用 %@"
+          }
+        }
+      }
+    },
+    "已连接 · 已用 %@ / 总容量 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %@ used / %@ total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接 · 已用 %@ / 总容量 %@"
+          }
+        }
+      }
+    },
+    "已连接 · 总容量 %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connected · %@ total"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已连接 · 总容量 %@"
+          }
+        }
+      }
+    },
+    "帮助 · ⌘?": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Help · ⌘?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "帮助 · ⌘?"
+          }
+        }
+      }
+    },
+    "手机未连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phone disconnected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手机未连接"
+          }
+        }
+      }
+    },
+    "插上手机、打开无线调试，或添加网络共享和网盘": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect a phone, enable Wireless Debugging, or add a network share or cloud drive."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插上手机、打开无线调试，或添加网络共享和网盘"
+          }
+        }
+      }
+    },
+    "无法连接：%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t connect: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法连接：%@"
+          }
+        }
+      }
+    },
+    "添加位置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add Location…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加位置…"
+          }
+        }
+      }
+    },
+    "用户名或密码错误，请检查后重试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The username or password is incorrect. Check it and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用户名或密码错误，请检查后重试"
+          }
+        }
+      }
+    },
+    "登录已过期": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign-in expired"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录已过期"
+          }
+        }
+      }
+    },
+    "相机未连接": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera disconnected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相机未连接"
+          }
+        }
+      }
+    },
+    "设置 · ⌘,": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings · ⌘,"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置 · ⌘,"
+          }
+        }
+      }
+    },
+    "设置…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置…"
+          }
+        }
+      }
+    },
+    "请在手机上点“允许 USB 调试”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap “Allow USB debugging” on your phone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在手机上点“允许 USB 调试”"
+          }
+        }
+      }
+    },
     "远程对象存储需要使用 HTTPS；HTTP 仅适用于本地网络地址": {
       "localizations": {
         "en": {
@@ -8035,6 +8433,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "远程对象存储需要使用 HTTPS；HTTP 仅适用于本地网络地址"
+          }
+        }
+      }
+    },
+    "退出 · ⌘Q": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit · ⌘Q"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 · ⌘Q"
+          }
+        }
+      }
+    },
+    "重新测试": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test Again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新测试"
           }
         }
       }

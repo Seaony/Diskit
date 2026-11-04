@@ -1208,3 +1208,38 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   #expect(notices == 0)
   #expect(manager.states[connection.id] == .disconnected)
 }
+
+@Test @MainActor func reorderToEndAndUndoPreservesPersistentOrder() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let a = sample("A")
+  let b = sample("B")
+  let c = sample("C")
+  for connection in [a, b, c] { try await manager.save(connection, password: "test") }
+  try manager.reorder(a.id, before: nil)
+  #expect(manager.connections.map(\.id) == [b.id, c.id, a.id])
+  #expect(f.manager().connections.map(\.order) == [0, 1, 2])
+  try manager.reorder(a.id, before: b.id)
+  #expect(f.manager().connections.map(\.id) == [a.id, b.id, c.id])
+  try manager.reorder(a.id, before: UUID())
+  #expect(manager.connections.map(\.id) == [a.id, b.id, c.id])
+}
+
+@Test @MainActor func presentationUndoChangesOnlyNameAndColor() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  var connection = sample("Original")
+  connection.autoMount = true
+  try await manager.save(connection, password: "retained")
+  try manager.setPresentation(id: connection.id, name: "Renamed", color: "purple")
+  let changed = try #require(f.manager().connections.first)
+  #expect(changed.name == "Renamed")
+  #expect(changed.color == "purple")
+  #expect(changed.params == connection.params)
+  #expect(changed.autoMount)
+  #expect(try manager.savedPassword(changed) == "retained")
+  try manager.setPresentation(id: connection.id, name: connection.name, color: connection.color)
+  #expect(f.manager().connections.first?.name == "Original")
+}

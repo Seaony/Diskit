@@ -7,6 +7,7 @@ import CloudDrive
 import Core
 import Foundation
 import LanzouDrive
+import Network
 import OSLog
 import Observation
 import PikPakDrive
@@ -18,11 +19,13 @@ import UserNotifications
 
 @MainActor @Observable final class AppModel {
   let connections: ConnectionManager
+  let undoManager = UndoManager()
   let options: RuntimeOptions
   let preferences: UserDefaults
   let secrets: any SecretStore
   private let location: any StorageLocation
   private let sessionCache = RemoteSessionCache()
+  private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] = [:]
   var demoSetupError: String?
 
   init(options: RuntimeOptions = .current) {
@@ -93,6 +96,17 @@ import UserNotifications
   var forceLogin = false
   var editing: Connection?
   var notificationAuthorization: UNAuthorizationStatus = .notDetermined
+  private let networkMonitor = NWPathMonitor()
+  private var lastNetworkPath: NWPath?
+  @ObservationIgnored private lazy var recovery = ConnectionRecovery(
+    operations: operations,
+    refresh: { [weak self] in self?.connections.refreshMounts() },
+    recover: { [weak self] in
+      guard let self else { return }
+      discovery.restart()
+      await connections.refreshMountSpace()
+      await connections.autoMount()
+    })
   private var started = false
   private var observers: [NSObjectProtocol] = []
   private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "connections")
@@ -125,6 +139,7 @@ import UserNotifications
       let provider = try await self.remoteProvider(for: connection)
       do {
         try await provider.connect()
+        self.providerAccess[connection.id] = (connection, provider.capabilities)
         let space: SpaceInfo
         do {
           space = try await provider.spaceInfo()
@@ -132,7 +147,7 @@ import UserNotifications
           where connection.kind == .lanzou
           || connection.kind == .cameraUSB
         {
-          space = SpaceInfo(total: 0, used: 0)
+          space = SpaceInfo(total: nil, used: nil)
         }
         await provider.disconnect()
         self.refreshWirelessAvailability(additional: connection)
@@ -142,28 +157,14 @@ import UserNotifications
         throw error
       }
     }
-    usbDiscovery.changed = { [weak self] devices in
-      self?.connections.usbDevicesChanged(serials: Set(devices.map(\.serial)))
-      self?.refreshWirelessAvailability()
-    }
-    wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
-    wirelessDiscovery.start()
-    usbDiscovery.start()
-    ricohDiscovery.changed = { [weak self] devices in
-      self?.connections.ricohDevicesChanged(serials: Set(devices.map(\.serial)))
-    }
-    ricohDiscovery.start()
-    cameraUSBDiscovery.changed = { [weak self] devices in
-      self?.connections.cameraUSBDevicesChanged(serials: Set(devices.map(\.serial)))
-    }
-    cameraUSBDiscovery.start()
-    discovery.start()
-    for name in [NSWorkspace.didMountNotification, NSWorkspace.didUnmountNotification] {
-      observers.append(
-        NSWorkspace.shared.notificationCenter.addObserver(forName: name, object: nil, queue: .main)
-        { [weak self] _ in
-          Task { @MainActor in self?.connections.refreshMounts() }
-        })
+  }
+
+  func providerCapabilities(for connection: Connection) -> ProviderCapabilities? {
+    if options.isDemo {
+      guard connection.kind == .lanzou || connection.kind == .cameraUSB else { return nil }
+      return ProviderCapabilities(
+        canWrite: false, canRename: false, canMove: false, canDelete: false,
+        supportsRangeRead: true)
     }
     observers.append(
       NotificationCenter.default.addObserver(
@@ -231,6 +232,7 @@ import UserNotifications
   func discardUnsavedSessions(for connection: Connection) {
     guard !connections.connections.contains(where: { $0.id == connection.id }) else { return }
     sessionCache.remove(connection.id)
+    providerAccess.removeValue(forKey: connection.id)
   }
   func pikPakSession(for connection: Connection) -> PikPakSession {
     sessionCache.value(for: connection, configuration: "pikPak") {
@@ -349,9 +351,11 @@ import UserNotifications
     case .androidUSB, .androidWiFi:
       return try await ADBProviderFactory.make(for: connection)
     case .ricohGR:
-      return try await RicohProvider.make(serial: connection.params["serial"] ?? "")
+      return try await RicohProvider.make(
+        identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     case .cameraUSB:
-      return try await CameraUSBProvider.make(identifier: connection.params["serial"] ?? "")
+      return try await CameraUSBProvider.make(
+        identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     case .aliyunDrive:
       return AliyunProvider(session: aliyunSession(for: connection))
     case .quark, .ucDrive:
@@ -452,6 +456,7 @@ import UserNotifications
     }
     do {
       try await provider.connect()
+      providerAccess[connection.id] = (connection, provider.capabilities)
       let profile = try await oauth.profile()
       await provider.disconnect()
       return profile
@@ -468,9 +473,18 @@ import UserNotifications
     writeError(L("登录已失效，请重新登录"))
     sendNotification(.loginExpired, title: L("需要重新登录"), body: connection.name)
   }
+  static func deviceIdentifiers(_ devices: [(id: String, serial: String)]) -> Set<String> {
+    var identifiers = Set(devices.map(\.id))
+    let serials = Dictionary(grouping: devices.map(\.serial).filter { !$0.isEmpty }, by: { $0 })
+    identifiers.formUnion(serials.filter { $0.value.count == 1 }.keys)
+    return identifiers
+  }
+
   private func refreshWirelessAvailability(additional: Connection? = nil) {
     var guids = Set(wirelessDiscovery.devices.filter { $0.type == .connect }.map(\.name))
-    let serials = Set(usbDiscovery.devices.map(\.serial))
+    let available = ADBUSB.availableIdentifiers(in: usbDiscovery.devices)
+    let serials = Set(
+      usbDiscovery.devices.map(\.serial).filter { !$0.isEmpty && available.contains($0) })
     for connection in connections.connections + (additional.map { [$0] } ?? [])
     where connection.kind == .androidWiFi {
       if let guid = connection.params["guid"],

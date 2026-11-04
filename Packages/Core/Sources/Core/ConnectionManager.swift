@@ -180,11 +180,26 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
 
-  public func reorder(_ id: UUID, before target: UUID) throws {
+  public func setPresentation(id: UUID, name: String, color: String) throws {
+    guard let index = connections.firstIndex(where: { $0.id == id }) else { return }
+    var updated = connections
+    updated[index].name = name
+    updated[index].color = color
+    try repository.save(updated)
+    connections = updated
+  }
+
+  public func reorder(_ id: UUID, before target: UUID?) throws {
     guard let from = connections.firstIndex(where: { $0.id == id }), id != target else { return }
     var updated = connections
     let item = updated.remove(at: from)
-    guard let to = updated.firstIndex(where: { $0.id == target }) else { return }
+    let to: Int
+    if let target {
+      guard let index = updated.firstIndex(where: { $0.id == target }) else { return }
+      to = index
+    } else {
+      to = updated.endIndex
+    }
     updated.insert(item, at: to)
     for index in updated.indices { updated[index].order = index }
     try repository.save(updated)
