@@ -1,0 +1,140 @@
+修复前：swift test --package-path Packages/S3Drive --filter s3RejectsExistingObjectWhenServiceIgnoresConditions|s3PreflightFailureNeverWrites|s3MultipartChecksAgainBeforePublishing；退出 1。
+Building for debugging...
+[Planning deferred tasks]
+[6 / 15] S3DriveTests-product
+[8 / 17] S3DriveTests-product
+[12 / 16] S3DriveTests-product
+[14 / 16] S3DriveTests-product
+Build complete! (1.08秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3MultipartChecksAgainBeforePublishing() started.
+􀟈  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument status → 403 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument status → 500 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "empty" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "file" at WriteSafetyTests.swift:74:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(EEXIST) → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "empty" at WriteSafetyTests.swift:74:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(EEXIST) → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "directory" at WriteSafetyTests.swift:74:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(EEXIST) → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 403 at WriteSafetyTests.swift:90:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(status == 403 ? EACCES : EIO) → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 500 at WriteSafetyTests.swift:90:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(status == 403 ? EACCES : EIO) → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "file" at WriteSafetyTests.swift:81:3: Expectation failed: await transport.object == original
+􀄵  await transport.object == original → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "empty" at WriteSafetyTests.swift:81:3: Expectation failed: await transport.object == original
+􀄵  await transport.object == original → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 500 at WriteSafetyTests.swift:93:3: Expectation failed: await transport.object == nil
+􀄵  await transport.object == nil → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 403 at WriteSafetyTests.swift:93:3: Expectation failed: await transport.object == nil
+􀄵  await transport.object == nil → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "directory" at WriteSafetyTests.swift:81:3: Expectation failed: await transport.object == original
+􀄵  await transport.object == original → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "empty" at WriteSafetyTests.swift:82:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "directory" at WriteSafetyTests.swift:82:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 403 at WriteSafetyTests.swift:94:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "file" at WriteSafetyTests.swift:82:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) recorded an issue with 1 argument status → 500 at WriteSafetyTests.swift:94:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3PreflightFailureNeverWrites(status:) with 2 test cases failed after 0.004 seconds with 6 issues.
+􀢄  Test s3MultipartChecksAgainBeforePublishing() recorded an issue at WriteSafetyTests.swift:104:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(EEXIST) → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "multipart" at WriteSafetyTests.swift:74:9: Expectation failed: an error was expected but none was thrown
+􀄵  RemoteError.posix(EEXIST) → <not evaluated>
+􀢄  Test s3MultipartChecksAgainBeforePublishing() recorded an issue at WriteSafetyTests.swift:107:3: Expectation failed: await transport.object == Data("other writer".utf8)
+􀄵  await transport.object == Data("other writer".utf8) → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "multipart" at WriteSafetyTests.swift:81:3: Expectation failed: await transport.object == original
+􀄵  await transport.object == original → <not evaluated>
+􀢄  Test s3MultipartChecksAgainBeforePublishing() recorded an issue at WriteSafetyTests.swift:108:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD", "POST", "PUT", "HEAD", "DELETE"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD", "POST", "PUT", "HEAD", "DELETE"] → <not evaluated>
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) recorded an issue with 1 argument operation → "multipart" at WriteSafetyTests.swift:82:3: Expectation failed: await transport.requests.map(\.httpMethod) == ["HEAD"]
+􀄵  await transport.requests.map(\.httpMethod) == ["HEAD"] → <not evaluated>
+􀢄  Test s3MultipartChecksAgainBeforePublishing() failed after 0.005 seconds with 3 issues.
+􀢄  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) with 4 test cases failed after 0.005 seconds with 12 issues.
+􀢄  Test run with 3 tests in 0 suites failed after 0.005 seconds with 21 issues.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)
+
+修复后：swift test --package-path Packages/S3Drive；退出 0。
+Building for debugging...
+[2 / 5] S3DriveTests-product
+[5 / 8] S3DriveTests-product
+[11 / 13] S3DriveTests-product
+Build complete! (1.74秒)
+Test Suite 'All tests' started at 2026-11-04 18:26:51.393.
+Test Suite 'All tests' passed at 2026-11-04 18:26:51.394.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test multipartThresholdAndLastPartBoundaries() started.
+􀟈  Test multipartConditionalConflictReuploadsOnce() started.
+􀟈  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() started.
+􀟈  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() started.
+􀟈  Test s3MultipartChecksAgainBeforePublishing() started.
+􀟈  Test recursiveRemoveDeletesEveryNestedObject() started.
+􀟈  Test rangeRequiresMatchingContentRange() started.
+􀟈  Test servicePresetsUseOfficialAddressing() started.
+􀟈  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() started.
+􀟈  Test s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test truncatedPageWithoutTokenFails() started.
+􀟈  Test signedVirtualHostRequestPercentEncodesPathOnce() started.
+􀟈  Test conditionalPutRetryChecksForNewObject() started.
+􀟈  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test xmlAndHTTPErrorsMapToRemoteErrors() started.
+􀟈  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test statInfersDirectoryWithoutTrailingSlash() started.
+􀟈  Test case passing 1 argument status → 403 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument status → 500 to s3PreflightFailureNeverWrites(status:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123Z" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument operation → "empty" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument pathStyle → true to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument pathStyle → false to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument example → 0 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "file" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3MissingObjectIsWrittenWithConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 1 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "empty" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 2 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "multipart" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􀟈  Test case passing 1 argument example → 3 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument operation → "directory" to s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) started.
+􁁛  Test servicePresetsUseOfficialAddressing() passed after 0.008 seconds.
+􁁛  Test s3ObjectDatesPreserveMilliseconds(_:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test truncatedPageWithoutTokenFails() passed after 0.008 seconds.
+􁁛  Test s3PreflightFailureNeverWrites(status:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() passed after 0.008 seconds.
+􁁛  Test signedVirtualHostRequestPercentEncodesPathOnce() passed after 0.008 seconds.
+􁁛  Test rangeRequiresMatchingContentRange() passed after 0.008 seconds.
+􁁛  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() passed after 0.008 seconds.
+􁁛  Test conditionalPutRetryChecksForNewObject() passed after 0.008 seconds.
+􁁛  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test s3RejectsExistingObjectWhenServiceIgnoresConditions(operation:) with 4 test cases passed after 0.008 seconds.
+􁁛  Test s3MultipartChecksAgainBeforePublishing() passed after 0.009 seconds.
+􁁛  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) with 4 test cases passed after 0.009 seconds.
+􁁛  Test statInfersDirectoryWithoutTrailingSlash() passed after 0.009 seconds.
+􁁛  Test s3MissingObjectIsWrittenWithConditions(operation:) with 4 test cases passed after 0.009 seconds.
+􁁛  Test recursiveRemoveDeletesEveryNestedObject() passed after 0.010 seconds.
+􁁛  Test xmlAndHTTPErrorsMapToRemoteErrors() passed after 0.010 seconds.
+􁁛  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() passed after 0.011 seconds.
+􁁛  Test multipartConditionalConflictReuploadsOnce() passed after 0.014 seconds.
+􁁛  Test multipartThresholdAndLastPartBoundaries() passed after 0.020 seconds.
+􁁛  Test run with 20 tests in 0 suites passed after 0.020 seconds.

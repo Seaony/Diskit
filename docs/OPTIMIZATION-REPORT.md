@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码及官方签名示例已通过本地门禁，防覆盖仍待处理；FIX-17 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -317,3 +317,14 @@
 - 参考 [AWS 官方单块载荷签名示例](https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sig-v4-header-based-auth.html)，对应 Examples: Signature Calculations 下四节；示例值直接来自文档，不由被测代码生成预期值。签名运算仍调用 CryptoKit 的 SHA256 与 HMAC，没有新增密码学实现或依赖。方法只开放模块内测试访问并允许指定日期，生产默认当前时间，公共 API 未增加测试参数。
 - 更正审查第 2 节 B2 对上一轮报告的质疑：原测试只验证 Authorization 中有 Credential，本轮才加入实际官方签名值比对。此处“全部”限定为 Kayoi 所用单块载荷签名页四个示例，不冒称分块签名或预签名 URL 已验收。
 - 核心回归证据 `docs/evidence/v0.2/FIX-16-query-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 341 项，发布构建与签名校验通过；证据 `docs/evidence/v0.2/FIX-16-query-gates.log`。FIX-16 尚未整体通过：不支持条件写入的服务仍需增加 HEAD 同名检查。
+
+
+## FIX-16：S3 写入前检查同名对象
+
+- `Packages/S3Drive/Sources/S3Drive/S3Provider.swift:403` 每次普通 PUT（包括空文件、目录标记与冲突重试）前先 HEAD 精确对象键；`:341` 在发起分片前检查，`:380` 在分片完成前再次检查。已有对象报 EEXIST，HEAD 的权限或服务错误原样失败，不把“检查不了”当作不存在。全部写入仍保留原条件头，没有无条件覆盖回退。
+- 无法可靠识别一个服务是否静默忽略 If-None-Match，因此所有服务都执行检查，不维护猜测性的服务白名单。代价为普通写入至少多一次 HEAD、分片至少多两次 HEAD；缺少对象读取权限时也不能绕过检查写入。
+- `s3RejectsExistingObjectWhenServiceIgnoresConditions`（`WriteSafetyTests.swift:66`）覆盖普通文件、空文件、分片和目录标记四组。替身实际忽略条件头并修改内存对象，修复前原内容被替换且未报错；修复后每组只发一次 HEAD，原内容不变。`s3PreflightFailureNeverWrites`（`:86`）验证 403/500 均不发写请求。
+- `s3MultipartChecksAgainBeforePublishing`（`:97`）在上传分片期间模拟其他写入者创建目标，修复前完成请求覆盖其内容，修复后保留它并中止分片；`s3MissingObjectIsWrittenWithConditions`（`:112`）确认四类正常创建的内容、顺序与最终条件头。`conditionalPutRetryChecksForNewObject`（`S3ProviderTests.swift:499`）确认 409 后重试先重新 HEAD，新对象已出现则不再 PUT。旧分片边界及重试测试补齐 HEAD 响应，分片大小和重试语义不变。
+- 已检查同类路径：move 在复制前已有 pathExists 检查目标对象及后代，继续保留；分片 PUT 仅写未发布分片，不用目标对象 HEAD 阻挡每个分片。无真实设备、账号或存储请求，回归证据 `docs/evidence/v0.2/FIX-16-safety-regression.log`。
+- 限制：对于忽略条件头的服务，HEAD 与随后写入之间仍有外部并发窗口；本实现满足写前检查，不声称跨进程/服务端原子拒绝覆盖。实际服务的条件请求支持、分片中止结果另待用户验收。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 346 项，发布构建与签名校验通过；证据 `docs/evidence/v0.2/FIX-16-safety-gates.log`。FIX-16 三部分本地验收通过，真实服务与并发边界按上述限制另待用户验收。

@@ -339,6 +339,7 @@ public actor S3Provider: RemoteFileProvider {
   }
 
   private func multipartAttempt(key: String, localFile: URL, size: Int64) async throws {
+    try await ensureMissingObject(key)
     let initiated = try await transport.send(
       try signedRequest(
         method: "POST", path: key, query: [URLQueryItem(name: "uploads", value: "")]))
@@ -376,6 +377,7 @@ public actor S3Provider: RemoteFileProvider {
         number += 1
         progress?(offset, size)
       }
+      try await ensureMissingObject(key)
       let complete = try signedRequest(
         method: "POST", path: key, headers: ["if-none-match": "*"],
         body: S3MultipartParser.complete(etags: etags),
@@ -400,6 +402,7 @@ public actor S3Provider: RemoteFileProvider {
 
   private func putConditionally(key: String, body: Data) async throws {
     for attempt in 0..<2 {
+      try await ensureMissingObject(key)
       let request = try signedRequest(
         method: "PUT", path: key, headers: ["if-none-match": "*"], body: body)
       let response = try await transport.send(request)
@@ -427,6 +430,10 @@ public actor S3Provider: RemoteFileProvider {
       try check(response, allowing: [])
       return nil
     }
+  }
+
+  private func ensureMissingObject(_ key: String) async throws {
+    if try await headObject(key) != nil { throw RemoteError.posix(EEXIST) }
   }
 
   private func pathExists(key: String) async throws -> Bool {

@@ -294,24 +294,25 @@ private func encodedPath(_ request: URLRequest) -> String? {
   let partSize = 5 * 1_024 * 1_024
   let (emptyDirectory, emptyFile) = try makeFile(0)
   defer { try? FileManager.default.removeItem(at: emptyDirectory) }
-  let emptyTransport = FakeTransport([HTTPResponse(status: 200)])
+  let emptyTransport = FakeTransport([HTTPResponse(status: 404), HTTPResponse(status: 200)])
   let empty = provider(emptyTransport, threshold: 0, partSize: Int64(partSize))
   try await empty.connect()
   try await empty.write(try RemotePath("/empty.bin"), from: emptyFile)
-  #expect(emptyTransport.requests.withLock { $0 }.count == 1)
+  #expect(emptyTransport.requests.withLock { $0 }.count == 2)
 
   let (directDirectory, directFile) = try makeFile(partSize - 1)
   defer { try? FileManager.default.removeItem(at: directDirectory) }
-  let directTransport = FakeTransport([HTTPResponse(status: 200)])
+  let directTransport = FakeTransport([HTTPResponse(status: 404), HTTPResponse(status: 200)])
   let direct = provider(
     directTransport, threshold: Int64(partSize), partSize: Int64(partSize))
   try await direct.connect()
   try await direct.write(try RemotePath("/direct.bin"), from: directFile)
-  #expect(directTransport.requests.withLock { $0 }.count == 1)
+  #expect(directTransport.requests.withLock { $0 }.count == 2)
 
   let (multipartDirectory, multipartFile) = try makeFile(partSize * 2 + 1)
   defer { try? FileManager.default.removeItem(at: multipartDirectory) }
   let multipartTransport = FakeTransport([
+    HTTPResponse(status: 404),
     HTTPResponse(
       status: 200,
       body: Data(
@@ -320,6 +321,7 @@ private func encodedPath(_ request: URLRequest) -> String? {
     HTTPResponse(status: 200, headers: ["ETag": "\"one\""]),
     HTTPResponse(status: 200, headers: ["ETag": "\"two\""]),
     HTTPResponse(status: 200, headers: ["ETag": "\"three\""]),
+    HTTPResponse(status: 404),
     HTTPResponse(status: 200, body: Data("<CompleteMultipartUploadResult/>".utf8)),
   ])
   let multipart = provider(
@@ -327,12 +329,12 @@ private func encodedPath(_ request: URLRequest) -> String? {
   try await multipart.connect()
   try await multipart.write(try RemotePath("/large.bin"), from: multipartFile)
   let requests = multipartTransport.requests.withLock { $0 }
-  #expect(requests.count == 5)
-  #expect(requests[1].httpBody?.count == partSize)
+  #expect(requests.count == 7)
   #expect(requests[2].httpBody?.count == partSize)
-  #expect(requests[3].httpBody?.count == 1)
-  #expect(requests[0].value(forHTTPHeaderField: "If-None-Match") == nil)
-  #expect(requests[4].value(forHTTPHeaderField: "If-None-Match") == "*")
+  #expect(requests[3].httpBody?.count == partSize)
+  #expect(requests[4].httpBody?.count == 1)
+  #expect(requests[1].value(forHTTPHeaderField: "If-None-Match") == nil)
+  #expect(requests[6].value(forHTTPHeaderField: "If-None-Match") == "*")
 }
 
 @Test func multipartConditionalConflictReuploadsOnce() async throws {
@@ -342,27 +344,31 @@ private func encodedPath(_ request: URLRequest) -> String? {
   let conflict = Data(
     "<Error><Code>ConditionalRequestConflict</Code><Message>conflict</Message></Error>".utf8)
   let transport = FakeTransport([
+    HTTPResponse(status: 404),
     HTTPResponse(
       status: 200,
       body: Data(
         "<InitiateMultipartUploadResult><UploadId>upload-1</UploadId></InitiateMultipartUploadResult>"
           .utf8)),
     HTTPResponse(status: 200, headers: ["ETag": "\"one\""]),
+    HTTPResponse(status: 404),
     HTTPResponse(status: 200, body: conflict),
     HTTPResponse(status: 204),
+    HTTPResponse(status: 404),
     HTTPResponse(
       status: 200,
       body: Data(
         "<InitiateMultipartUploadResult><UploadId>upload-2</UploadId></InitiateMultipartUploadResult>"
           .utf8)),
     HTTPResponse(status: 200, headers: ["ETag": "\"two\""]),
+    HTTPResponse(status: 404),
     HTTPResponse(status: 200, body: Data("<CompleteMultipartUploadResult/>".utf8)),
   ])
   let s3 = provider(transport, threshold: Int64(partSize), partSize: Int64(partSize))
   try await s3.connect()
   try await s3.write(try RemotePath("/race.bin"), from: file)
   let requests = transport.requests.withLock { $0 }
-  #expect(requests.count == 7)
+  #expect(requests.count == 11)
   let completions = requests.filter {
     $0.httpMethod == "POST"
       && URLComponents(url: $0.url!, resolvingAgainstBaseURL: false)?.queryItems?
@@ -374,8 +380,8 @@ private func encodedPath(_ request: URLRequest) -> String? {
       $0.value(forHTTPHeaderField: "If-None-Match") == "*"
     })
   #expect(
-    (requests[0].value(forHTTPHeaderField: "If-None-Match") == nil)
-      && (requests[4].value(forHTTPHeaderField: "If-None-Match") == nil))
+    (requests[1].value(forHTTPHeaderField: "If-None-Match") == nil)
+      && (requests[7].value(forHTTPHeaderField: "If-None-Match") == nil))
 }
 
 @Test func xmlAndHTTPErrorsMapToRemoteErrors() async throws {
@@ -488,4 +494,18 @@ func sigV4MatchesAllOfficialSingleChunkExamples(example: Int) async throws {
   #expect(
     components.percentEncodedQuery == [nil, nil, "lifecycle=", "max-keys=2&prefix=J"][example])
   #expect(transport.requests.withLock { $0.isEmpty })
+}
+
+@Test func conditionalPutRetryChecksForNewObject() async throws {
+  let transport = FakeTransport([
+    HTTPResponse(status: 404), HTTPResponse(status: 409), HTTPResponse(status: 200),
+  ])
+  let s3 = provider(transport)
+  try await s3.connect()
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await s3.makeDirectory(try RemotePath("/new"))
+  }
+  let requests = transport.requests.withLock { $0 }
+  #expect(requests.map(\.httpMethod) == ["HEAD", "PUT", "HEAD"])
+  #expect(requests[1].value(forHTTPHeaderField: "If-None-Match") == "*")
 }
