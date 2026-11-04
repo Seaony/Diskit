@@ -1,0 +1,12 @@
+修复前：swift test --package-path Packages/LanzouDrive --filter lanzouRangeUsesResponseTotalInsteadOfPageSize|lanzouRejectsIncorrectRangeBodyLength；退出 1。
+􀢄  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) recorded an issue with 1 argument bounds → (100, 110, 105) at LanzouDriveTests.swift:386:3: Expectation failed: (result → 0 bytes) == (expected → 5 bytes)
+􀢄  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) recorded an issue with 1 argument bounds → (100, 110, 105) at LanzouDriveTests.swift:387:21: Expectation failed: await http.requests().last { $0.url?.host == "download.example" } → nil
+􀢄  Test lanzouRejectsIncorrectRangeBodyLength(length:) recorded an issue with 1 argument length → 11 at LanzouDriveTests.swift:405:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsIncorrectRangeBodyLength(length:) recorded an issue with 1 argument length → 3 at LanzouDriveTests.swift:405:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) recorded an issue with 1 argument bounds → (80, 110, 103) at LanzouDriveTests.swift:362:2: Caught error: .invalidResponse
+􀢄  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) recorded an issue with 1 argument bounds → (10, 20, 999) at LanzouDriveTests.swift:362:2: Caught error: .invalidResponse
+􀢄  Test run with 2 tests in 0 suites failed after 0.007 seconds with 6 issues.
+修复后：swift test --package-path Packages/LanzouDrive；退出 0。随后新增非法范围与 Content-Length 校验，见完整门禁。
+􁁛  Test lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds:) with 3 test cases passed after 0.007 seconds.
+􁁛  Test lanzouRejectsIncorrectRangeBodyLength(length:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test run with 7 tests in 0 suites passed after 0.008 seconds.

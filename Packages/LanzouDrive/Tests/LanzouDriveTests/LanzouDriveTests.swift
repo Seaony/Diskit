@@ -152,7 +152,7 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
       ]))
   case ("download.example", "/file/object"):
     return FakeReply(
-      status: 206, data: Data([4, 5, 6]),
+      status: 206, data: Data(10..<20),
       headers: [
         "Content-Range": "bytes 10-19/100"
       ])
@@ -267,14 +267,14 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
   for try await chunk in try await provider.read(RemotePath("/文件.bin"), range: 10..<20) {
     body.append(chunk)
   }
-  #expect(body == Data([4, 5, 6]))
+  #expect(body == Data(10..<20))
   let download = try #require(await http.requests().last { $0.url?.host == "download.example" })
   #expect(download.value(forHTTPHeaderField: "Range") == "bytes=10-19")
   #expect(download.value(forHTTPHeaderField: "Cookie")?.contains("down_ip=1") == true)
   #expect(
-    LanzouSession.validContentRange("bytes 10-19/100", for: 10..<20, expectedSize: 100))
+    LanzouSession.contentRangeLength("bytes 10-19/100", for: 10..<20) == 10)
   #expect(
-    !LanzouSession.validContentRange("bytes 10-19/999", for: 10..<20, expectedSize: 100))
+    LanzouSession.contentRangeLength("bytes 10-19/9", for: 10..<20) == nil)
 
   let unsupportedHTTP = FakeHTTP { request in
     if request.url?.host == "download.example" {
@@ -357,4 +357,80 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
     try await provider.write(RemotePath("/文件.bin"), from: URL(fileURLWithPath: "/tmp/nope"))
   }
   #expect(await http.requests().count == beforeWrite)
+}
+
+@Test(arguments: [(Int64(100), Int64(110), Int64(105)), (10, 20, 999), (80, 110, 103)])
+func lanzouRangeUsesResponseTotalInsteadOfPageSize(bounds: (Int64, Int64, Int64)) async throws {
+  let (start, end, total) = bounds
+  let actualEnd = min(end, total)
+  let expected = Data(repeating: 7, count: Int(actualEnd - start))
+  let http = FakeHTTP { request in
+    if request.url?.host == "download.example" {
+      return FakeReply(
+        status: 206, data: expected,
+        headers: [
+          "Content-Range": "bytes \(start)-\(actualEnd - 1)/\(total)",
+          "Content-Length": "\(expected.count)",
+        ])
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  var result = Data()
+  for try await chunk in try await provider.read(RemotePath("/文件.bin"), range: start..<end) {
+    result.append(chunk)
+  }
+  #expect(result == expected)
+  let request = try #require(await http.requests().last { $0.url?.host == "download.example" })
+  #expect(request.value(forHTTPHeaderField: "Range") == "bytes=\(start)-\(end - 1)")
+}
+
+@Test(arguments: [3, 11])
+func lanzouRejectsIncorrectRangeBodyLength(length: Int) async throws {
+  let http = FakeHTTP { request in
+    if request.url?.host == "download.example" {
+      return FakeReply(
+        status: 206, data: Data(repeating: 7, count: length),
+        headers: ["Content-Range": "bytes 10-19/100"])
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  await #expect(throws: LanzouError.invalidResponse) {
+    for try await _ in try await provider.read(RemotePath("/文件.bin"), range: 10..<20) {}
+  }
+}
+
+@Test(arguments: [
+  "bytes 10-19/19", "bytes 10-18/100", "bytes 11-19/100", "bytes 10-20/100", "bytes 10-9/100",
+  "bytes 10-19/-1", "bytes 10-18/*", "items 10-19/100",
+])
+func lanzouRejectsInconsistentContentRanges(header: String) {
+  #expect(LanzouSession.contentRangeLength(header, for: 10..<20) == nil)
+}
+
+@Test(arguments: [false, true])
+func lanzouChecksDeclaredDownloadLength(ranged: Bool) async throws {
+  let http = FakeHTTP { request in
+    if request.url?.host == "download.example" {
+      var headers = ["Content-Length": "9"]
+      if ranged { headers["Content-Range"] = "bytes 10-19/100" }
+      return FakeReply(status: ranged ? 206 : 200, data: Data([1, 2, 3]), headers: headers)
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  await #expect(throws: LanzouError.invalidResponse) {
+    for try await _ in try await provider.read(RemotePath("/文件.bin"), range: ranged ? 10..<20 : nil)
+    {}
+  }
 }

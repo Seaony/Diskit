@@ -187,7 +187,7 @@ actor LanzouSession {
   }
 
   func streamDownload(
-    _ url: URL, range: Range<Int64>?, expectedSize: Int64
+    _ url: URL, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
     try requireConnection()
     guard LanzouConfiguration.isHTTPSURL(url) else { throw LanzouError.invalidResponse }
@@ -213,36 +213,47 @@ actor LanzouSession {
 
     let stream = try await transport.stream(request)
     try checkHTTP(stream.response)
+    let declaredLength: Int64?
+    if let header = stream.response.header("Content-Length") {
+      guard let length = Int64(header), length >= 0 else { throw LanzouError.invalidResponse }
+      declaredLength = length
+    } else {
+      declaredLength = nil
+    }
+    let expectedLength: Int64?
     if let range {
       if stream.response.status == 200 { throw LanzouError.rangeUnsupported }
       guard stream.response.status == 206,
-        Self.validContentRange(
-          stream.response.header("Content-Range"), for: range, expectedSize: expectedSize)
-      else {
-        throw LanzouError.invalidResponse
-      }
+        let length = Self.contentRangeLength(stream.response.header("Content-Range"), for: range),
+        declaredLength == nil || declaredLength == length
+      else { throw LanzouError.invalidResponse }
+      expectedLength = length
     } else {
       guard stream.response.status == 200 else { throw LanzouError.invalidResponse }
+      expectedLength = declaredLength
     }
-    return stream.body
+    let cursor = LanzouDownloadBody(stream.body, expectedLength: expectedLength)
+    return AsyncThrowingStream(unfolding: { try await cursor.next() })
   }
 
-  static func validContentRange(
-    _ header: String?, for range: Range<Int64>, expectedSize: Int64
-  ) -> Bool {
-    guard let header, header.lowercased().hasPrefix("bytes ") else { return false }
+  static func contentRangeLength(_ header: String?, for range: Range<Int64>) -> Int64? {
+    guard range.lowerBound >= 0, !range.isEmpty,
+      let header, header.lowercased().hasPrefix("bytes ")
+    else { return nil }
     let parts = header.dropFirst(6).split(separator: "/", omittingEmptySubsequences: false)
-    guard parts.count == 2 else { return false }
+    guard parts.count == 2 else { return nil }
     let limits = parts[0].split(separator: "-", omittingEmptySubsequences: false)
-    let total = parts[1]
-    let validTotal: Bool
-    if expectedSize > 0 {
-      validTotal = Int64(total) == expectedSize
+    guard limits.count == 2, let start = Int64(limits[0]), let end = Int64(limits[1]),
+      start == range.lowerBound, end >= start, end < range.upperBound
+    else { return nil }
+    if parts[1] == "*" {
+      guard end == range.upperBound - 1 else { return nil }
     } else {
-      validTotal = total == "*" || Int64(total) != nil
+      guard let total = Int64(parts[1]), total > end,
+        end == min(range.upperBound, total) - 1
+      else { return nil }
     }
-    return validTotal && limits.count == 2 && Int64(limits[0]) == range.lowerBound
-      && Int64(limits[1]) == range.upperBound - 1
+    return end - start + 1
   }
 
   private func loadSharePage(_ url: URL, password: String?) async throws -> LanzouSharePage {

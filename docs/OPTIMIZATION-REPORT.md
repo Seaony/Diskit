@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围与下载长度校验已修复，精确大小元数据和验证页识别继续处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -241,3 +241,13 @@
 - 原迅雷测试曾将 batchDelete 固定为“回收站”预期，现更正为官网契约；移动 `mobileCloudMkdirMoveAndDeleteUseDocumentedOperations` 实际没调用删除，已更名为 `mobileCloudMkdirAndMoveUseDocumentedOperations`，并另补真实调用 remove 的测试，处理审查中关于移动云盘删除测试覆盖的失实记录。`mobileCloudUploadFailureTrashesOnlyTheNewFile`（`:688`）另复现并修复失败清理的永久删除。证据 `docs/evidence/v0.2/FIX-10-regression.log`。
 - 本轮只发送回收站请求，不在失败后自动改为永久删除，因此无需引入永久删除确认入口。真实账号中可见、可恢复及平台保留期限仍为待用户验收；不能将替身请求通过写成服务端已验证。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 315 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-10-gates.log`。
+
+
+## FIX-11：范围读取依据实际响应并检查正文长度（部分）
+
+- `Packages/LanzouDrive/Sources/LanzouDrive/LanzouProvider.swift:74` 不再按页面解析出的大小裁剪或跳过范围请求；实际请求保留调用方范围。`LanzouSession.swift:239` 改为检查 Content-Range 自洽性：起点匹配、末端未超过请求，短范围只在响应明确到达文件末尾时接受，不要求总长度等于页面估算值。
+- `LanzouDownloadBody.swift:3` 逐块核对实际下载字节数；少字节在结束时报错，多字节在交付超量块之前报错，取消保持取消错误。范围请求按 Content-Range 推导长度；完整下载按响应 Content-Length 校验，两个长度头不一致直接拒绝。
+- `lanzouRangeUsesResponseTotalInsteadOfPageSize`（`LanzouDriveTests.swift:363`）三组分别覆盖超过页面大小、实际总量不同及文件末尾短范围；修复前空返回或误报 invalidResponse，修复后数据与原始 Range 请求均正确。`lanzouRejectsIncorrectRangeBodyLength`（`:392`）原先将 3/11 字节正文冒充声明的 10 字节，修复后均拒绝。证据 `docs/evidence/v0.2/FIX-11-range-regression.log`。
+- 原范围成功测试的替身也错误地只返回 3 字节，现更正为实际 10 字节。`lanzouRejectsInconsistentContentRanges`（`:414`）覆盖八种边界错误；`lanzouChecksDeclaredDownloadLength`（`:419`）检查完整下载不足及范围长度头冲突。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 319 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-11-range-gates.log`。
+- FIX-11 尚未整体通过：列表/属性仍需取得精确大小，响应类型和 HTML 验证页识别仍待处理；本组不能证明完整下载不会误存验证页。本轮只使用假传输。

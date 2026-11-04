@@ -66,20 +66,14 @@ public actor LanzouProvider: RemoteFileProvider {
     guard let range else {
       let directURL = try await downloadURL(for: node.backing)
       return try await session.streamDownload(
-        directURL, range: nil, expectedSize: node.item.size)
+        directURL, range: nil)
     }
     guard range.lowerBound >= 0, range.upperBound >= range.lowerBound else {
       throw RemoteError.posix(EINVAL)
     }
-    var requested = range
-    if node.item.size > 0 {
-      guard range.lowerBound <= node.item.size else { throw RemoteError.posix(EINVAL) }
-      requested = range.lowerBound..<min(range.upperBound, node.item.size)
-    }
-    if requested.isEmpty { return AsyncThrowingStream { $0.finish() } }
+    if range.isEmpty { return AsyncThrowingStream { $0.finish() } }
     let directURL = try await downloadURL(for: node.backing)
-    return try await session.streamDownload(
-      directURL, range: requested, expectedSize: node.item.size)
+    return try await session.streamDownload(directURL, range: range)
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
