@@ -69,28 +69,35 @@ struct LanzouEntry: Sendable {
   let modified: Date
   let id: String
 
-  static func accountFolder(_ value: [String: Any]) throws -> LanzouEntry {
+  static func accountFolder(_ value: [String: Any], relativeTo referenceDate: Date = Date()) throws
+    -> LanzouEntry
+  {
     let id = LanzouValues.string(value["fol_id"]) ?? ""
-    return try account(value, id: id, isDirectory: true)
+    return try account(value, id: id, isDirectory: true, relativeTo: referenceDate)
   }
 
-  static func accountFile(_ value: [String: Any]) throws -> LanzouEntry {
+  static func accountFile(_ value: [String: Any], relativeTo referenceDate: Date = Date()) throws
+    -> LanzouEntry
+  {
     let id = LanzouValues.string(value["id"]) ?? ""
-    return try account(value, id: id, isDirectory: false)
+    return try account(value, id: id, isDirectory: false, relativeTo: referenceDate)
   }
 
-  static func shareFile(_ value: [String: Any]) throws -> LanzouEntry {
+  static func shareFile(_ value: [String: Any], relativeTo referenceDate: Date = Date()) throws
+    -> LanzouEntry
+  {
     let id = LanzouValues.string(value["id"]) ?? ""
     let name =
       LanzouValues.string(value["name_all"]) ?? LanzouValues.string(value["name"]) ?? ""
     guard !id.isEmpty else { throw LanzouError.invalidResponse }
     return LanzouEntry(
       name: name, isDirectory: false, size: LanzouValues.parseSize(value["size"]),
-      modified: LanzouValues.parseDate(LanzouValues.string(value["time"])), id: id)
+      modified: LanzouValues.parseDate(
+        LanzouValues.string(value["time"]), relativeTo: referenceDate), id: id)
   }
 
   private static func account(
-    _ value: [String: Any], id: String, isDirectory: Bool
+    _ value: [String: Any], id: String, isDirectory: Bool, relativeTo referenceDate: Date
   ) throws -> LanzouEntry {
     let name =
       isDirectory
@@ -101,6 +108,7 @@ struct LanzouEntry: Sendable {
     return LanzouEntry(
       name: name, isDirectory: isDirectory,
       size: isDirectory ? 0 : LanzouValues.parseSize(value["size"]),
-      modified: LanzouValues.parseDate(LanzouValues.string(value["time"])), id: id)
+      modified: LanzouValues.parseDate(
+        LanzouValues.string(value["time"]), relativeTo: referenceDate), id: id)
   }
 }

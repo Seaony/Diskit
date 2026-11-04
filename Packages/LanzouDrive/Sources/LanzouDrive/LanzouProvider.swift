@@ -2,7 +2,7 @@ import Core
 import Foundation
 
 public actor LanzouProvider: RemoteFileProvider {
-  private enum Backing: Equatable, Sendable {
+  private enum Backing: Hashable, Sendable {
     case accountFolder(String)
     case accountFile(String)
     case sharePage(URL)
@@ -20,6 +20,10 @@ public actor LanzouProvider: RemoteFileProvider {
   private let session: LanzouSession
   private var connected = false
   private var nodes: [String: Node] = [:]
+  private var generation = UUID()
+  private var directoryLoads: [String: UUID] = [:]
+  private var downloadURLs: [Backing: URL] = [:]
+  private var downloadTasks: [Backing: Task<URL, Error>] = [:]
 
   public init(
     configuration: LanzouConfiguration,
@@ -34,14 +38,27 @@ public actor LanzouProvider: RemoteFileProvider {
   }
 
   public func connect() async throws {
-    try await session.connect()
-    connected = true
+    let operation = UUID()
+    generation = operation
+    connected = false
     nodes.removeAll()
+    directoryLoads.removeAll()
+    downloadURLs.removeAll()
+    for task in downloadTasks.values { task.cancel() }
+    downloadTasks.removeAll()
+    try await session.connect()
+    guard generation == operation else { throw CancellationError() }
+    connected = true
   }
 
   public func disconnect() async {
+    generation = UUID()
     connected = false
     nodes.removeAll()
+    directoryLoads.removeAll()
+    downloadURLs.removeAll()
+    for task in downloadTasks.values { task.cancel() }
+    downloadTasks.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -64,19 +81,29 @@ public actor LanzouProvider: RemoteFileProvider {
     _ path: RemotePath, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
     try requireConnection()
+    let operation = generation
     let node = try await resolve(path)
     guard !node.item.isDirectory else { throw RemoteError.posix(EISDIR) }
-    guard let range else {
+    if let range {
+      guard range.lowerBound >= 0, range.upperBound >= range.lowerBound else {
+        throw RemoteError.posix(EINVAL)
+      }
+      if range.isEmpty { return AsyncThrowingStream { $0.finish() } }
+    }
+    for attempt in 0..<2 {
       let directURL = try await downloadURL(for: node.backing)
-      return try await session.streamDownload(
-        directURL, range: nil)
+      do {
+        let body = try await session.streamDownload(directURL, range: range)
+        guard connected, generation == operation else { throw CancellationError() }
+        return body
+      } catch let error
+        as LanzouError
+        where attempt == 0 && (error == .notFound || error == .http(401) || error == .http(403))
+      {
+        downloadURLs.removeValue(forKey: node.backing)
+      }
     }
-    guard range.lowerBound >= 0, range.upperBound >= range.lowerBound else {
-      throw RemoteError.posix(EINVAL)
-    }
-    if range.isEmpty { return AsyncThrowingStream { $0.finish() } }
-    let directURL = try await downloadURL(for: node.backing)
-    return try await session.streamDownload(directURL, range: range)
+    throw LanzouError.invalidResponse
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
@@ -107,7 +134,6 @@ public actor LanzouProvider: RemoteFileProvider {
       let matches = children.filter { $0.item.name == component }
       guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
       guard let child = matches.first else { throw RemoteError.posix(ENOENT) }
-      nodes[nextPath.value] = child
       currentPath = nextPath
       current = child
     }
@@ -116,6 +142,9 @@ public actor LanzouProvider: RemoteFileProvider {
 
   private func directoryContents(_ node: Node) async throws -> [Node] {
     guard node.item.isDirectory else { throw RemoteError.posix(ENOTDIR) }
+    let operation = generation
+    let request = UUID()
+    directoryLoads[node.item.path.value] = request
     let children: [Node]
     switch node.backing {
     case .accountFolder(let folderID):
@@ -148,6 +177,21 @@ public actor LanzouProvider: RemoteFileProvider {
         childrenAndBacking.append((file, .sharePage(fileURL)))
       }
       children = try await nodes(for: childrenAndBacking, at: node.item.path)
+    }
+    guard connected, generation == operation, directoryLoads[node.item.path.value] == request else {
+      throw CancellationError()
+    }
+    let prefix = node.item.path.value == "/" ? "/" : node.item.path.value + "/"
+    let previous = nodes.filter { $0.key.hasPrefix(prefix) }
+    nodes = nodes.filter { !$0.key.hasPrefix(prefix) }
+    for old in previous.values {
+      if !children.contains(where: {
+        $0.backing == old.backing && $0.item.size == old.item.size
+          && $0.item.modified == old.item.modified
+      }) {
+        downloadURLs.removeValue(forKey: old.backing)
+        downloadTasks.removeValue(forKey: old.backing)?.cancel()
+      }
     }
     let grouped = Dictionary(grouping: children, by: { $0.item.name })
     for child in children where grouped[child.item.name]?.count == 1 {
@@ -186,6 +230,27 @@ public actor LanzouProvider: RemoteFileProvider {
   }
 
   private func downloadURL(for backing: Backing) async throws -> URL {
+    try requireConnection()
+    if let cached = downloadURLs[backing] { return cached }
+    if let pending = downloadTasks[backing] {
+      let operation = generation
+      let url = try await pending.value
+      guard connected, generation == operation, !pending.isCancelled else {
+        throw CancellationError()
+      }
+      return url
+    }
+    let operation = generation
+    let task = Task { try await resolveDownloadURL(for: backing) }
+    downloadTasks[backing] = task
+    defer { if generation == operation { downloadTasks.removeValue(forKey: backing) } }
+    let url = try await task.value
+    guard connected, generation == operation, !task.isCancelled else { throw CancellationError() }
+    downloadURLs[backing] = url
+    return url
+  }
+
+  private func resolveDownloadURL(for backing: Backing) async throws -> URL {
     switch backing {
     case .accountFile(let fileID):
       let (shareURL, password) = try await session.accountDownloadLocation(fileID: fileID)

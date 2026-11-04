@@ -1,7 +1,9 @@
 import Core
 import Foundation
 
-public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, LoginRequiredFailure,
+  Sendable
+{
   case invalidConfiguration
   case authenticationRequired
   case authenticationExpired
@@ -14,6 +16,10 @@ public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, Sendab
   case rangeUnsupported
   case http(Int)
   case service(String)
+
+  public var requiresLogin: Bool {
+    self == .authenticationRequired || self == .authenticationExpired
+  }
 
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int { Int(posixCode) }
@@ -76,7 +82,7 @@ public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, Sendab
 
   static func fromHTTP(_ status: Int) -> LanzouError {
     switch status {
-    case 401, 403: .authenticationExpired
+    case 401, 403: .http(status)
     case 404: .notFound
     case 429, 503: .rateLimited
     default: .http(status)

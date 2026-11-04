@@ -9,35 +9,47 @@ struct LanzouSharePage: Sendable {
   let url: URL
   let isFile: Bool
   let fileName: String?
-  let modified: Date
+  var modified: Date
+  let relativeDateText: String?
   let requiresPassword: Bool
   let fields: [String: String]
   let folders: [LanzouShareFolderLink]
   let html: String
 
-  static func parse(_ html: String, url: URL) throws -> LanzouSharePage {
+  static func parse(_ source: String, url: URL, relativeTo referenceDate: Date = Date()) throws
+    -> LanzouSharePage
+  {
+    let html = source.replacingOccurrences(
+      of: #"(?s)<!--.*?-->"#, with: "", options: .regularExpression)
     if html.contains("acw_sc__v2") { throw LanzouError.antiBotChallenge }
     if html.contains("取消分享") || html.contains("文件不存在") {
       throw LanzouError.notFound
     }
 
-    let lower = html.lowercased()
-    let passwordMarkers = lower.contains("pwdload") || lower.contains("passwddiv")
+    let visible = html.replacingOccurrences(
+      of: #"(?is)<script\b[^>]*>.*?</script>"#, with: "", options: .regularExpression)
+    let lower = visible.lowercased()
+    let passwordMarkers =
+      lower.contains("pwdload") || lower.contains("passwddiv")
+      || LanzouScript.containsIdentifier("pwdload", in: html)
     let fileMarkers =
-      lower.contains("fileinfo") || lower.contains("id=\"file\"") || html.contains("文件描述")
+      lower.contains("fileinfo") || lower.contains("id=\"file\"") || visible.contains("文件描述")
+    let folderRequest = try? LanzouScript.request(in: html, endpointContains: ["filemoreajax.php"])
+    let downloadRequest = try? LanzouScript.request(
+      in: html, endpointContains: ["/ajaxm.php", "/ajaxfile.php"])
     let folderMarkers =
-      lower.contains("id=\"infos\"") || lower.contains("folderlink")
-      || lower.contains("mbxfolder")
-    let isFile = passwordMarkers || fileMarkers
-    let variables = LanzouHTML.variables(in: html)
-    let fields = LanzouHTML.keyValueObject(in: html, variables: variables)
+      LanzouHTML.firstMatch(#"id\s*=\s*["']infos["']"#, in: visible) != nil
+      || lower.contains("folderlink") || lower.contains("mbxfolder")
+      || folderRequest?.endpoint != nil
+    let isFile = !folderMarkers && (fileMarkers || downloadRequest?.endpoint != nil)
+    let fields = folderRequest?.fields ?? LanzouScript.fields(in: html)
     guard isFile || folderMarkers || !fields.isEmpty else {
       throw LanzouError.invalidResponse
     }
     let title = LanzouHTML.firstMatch(
       #"<title>\s*(.*?)\s*-\s*蓝奏云\s*</title>"#, in: html)?[1]
     let alternateName =
-      LanzouHTML.firstMatch(#"var\s+filename\s*=\s*['"]([^'"]+)['"]\s*;"#, in: html)?[1]
+      LanzouScript.variables(in: html)["filename"]
       ?? LanzouHTML.firstMatch(#"id=["']filenajax["'][^>]*>(.*?)</div>"#, in: html).map {
         LanzouHTML.text($0[1] ?? "")
       }
@@ -47,13 +59,15 @@ struct LanzouSharePage: Sendable {
     if isFile, fileName?.isEmpty != false { throw LanzouError.invalidResponse }
 
     let rawDate = LanzouHTML.firstMatch(
-      #"\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?|\d+\s*(?:秒|分|小|天)前|昨天|前天"#,
-      in: LanzouHTML.strippedText(html))?[0]
+      #"\d{4}[-/]\d{2}[-/]\d{2}(?:\s+\d{2}:\d{2}(?::\d{2})?)?|\d+\s*(?:秒|分钟?|小时?|天)前|昨天|前天"#,
+      in: LanzouHTML.strippedText(visible))?[0]
 
-    let folders = parseFolders(in: html, baseURL: url)
+    let folders = parseFolders(in: visible, baseURL: url)
     return LanzouSharePage(
       url: url, isFile: isFile, fileName: fileName,
-      modified: LanzouValues.parseDate(rawDate), requiresPassword: passwordMarkers,
+      modified: LanzouValues.parseDate(rawDate, relativeTo: referenceDate),
+      relativeDateText: LanzouValues.isRelativeDate(rawDate) ? rawDate : nil,
+      requiresPassword: passwordMarkers,
       fields: fields, folders: folders, html: html)
   }
 

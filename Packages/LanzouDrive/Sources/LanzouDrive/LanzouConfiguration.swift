@@ -12,6 +12,7 @@ public struct LanzouConfiguration: Equatable, Sendable {
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     + "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 
+  let accountCookie: LanzouCookieHeader?
   public let authentication: LanzouAuthentication
   public let accountBaseURL: URL
   public let shareBaseURL: URL
@@ -30,13 +31,20 @@ public struct LanzouConfiguration: Equatable, Sendable {
     }
     switch authentication {
     case .accountCookie(let cookie):
-      guard LanzouCookieHeader.isSafe(cookie), !cookie.isEmpty else {
+      guard !cookie.isEmpty else {
         throw LanzouError.invalidConfiguration
       }
     case .share(let url, _):
       guard Self.isHTTPSURL(url), url.path.count > 1 else {
         throw LanzouError.invalidConfiguration
       }
+    }
+    if case .accountCookie(let cookie) = authentication {
+      let parsed = try LanzouCookieHeader(cookie)
+      guard !parsed.text.isEmpty else { throw LanzouError.invalidConfiguration }
+      accountCookie = parsed
+    } else {
+      accountCookie = nil
     }
     self.authentication = authentication
     self.accountBaseURL = accountBaseURL

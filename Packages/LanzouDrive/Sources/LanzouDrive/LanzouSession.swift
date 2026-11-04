@@ -20,19 +20,19 @@ public actor LanzouSession {
   private var shareCookies: LanzouCookieHeader?
   private var shareCookieOrigin: String?
   private var isConnected = false
+  private var relativeDates: [String: (text: String, date: Date)] = [:]
+  private let persistAccountCookie: (@Sendable (String) throws -> Void)?
+  private var pendingAccountCookie: String?
 
   public init(
     configuration: LanzouConfiguration,
-    transport: any HTTPTransport = URLSessionHTTPTransport()
+    transport: any HTTPTransport = URLSessionHTTPTransport(),
+    persistAccountCookie: (@Sendable (String) throws -> Void)? = nil
   ) {
     self.configuration = configuration
-    self.transport = transport
-    switch configuration.authentication {
-    case .accountCookie(let value):
-      accountCookie = try? LanzouCookieHeader(value)
-    case .share:
-      accountCookie = nil
-    }
+    self.transport = DiagnosticHTTPTransport(transport, category: .lanzouDrive)
+    self.persistAccountCookie = persistAccountCookie
+    accountCookie = configuration.accountCookie
   }
 
   func connect() async throws {
@@ -52,7 +52,11 @@ public actor LanzouSession {
     try requireConnection()
     let folderReply = try await accountRPC(
       ["task": "47", "folder_id": folderID])
-    let folders = try LanzouJSON.array(folderReply["text"]).map(LanzouEntry.accountFolder)
+    let folders = try LanzouJSON.array(folderReply["text"]).map {
+      stabilize(
+        try LanzouEntry.accountFolder($0), dateText: LanzouValues.string($0["time"]),
+        scope: "account:" + folderID)
+    }
 
     var files: [LanzouEntry] = []
     var seenPage = Set<String>()
@@ -66,8 +70,14 @@ public actor LanzouSession {
         LanzouValues.string($0["id"]) ?? LanzouValues.string($0["name_all"])
       }.joined(separator: "\u{1f}")
       guard seenPage.insert(signature).inserted else { throw LanzouError.invalidResponse }
-      files.append(contentsOf: try records.map(LanzouEntry.accountFile))
+      files.append(
+        contentsOf: try records.map {
+          stabilize(
+            try LanzouEntry.accountFile($0), dateText: LanzouValues.string($0["time"]),
+            scope: "account:" + folderID)
+        })
     }
+    pruneRelativeDates(scope: "account:" + folderID, keeping: folders + files)
     return folders + files
   }
 
@@ -87,14 +97,14 @@ public actor LanzouSession {
     guard var fields = page.fields.isEmpty ? nil : page.fields else {
       throw LanzouError.invalidResponse
     }
-    if let password { fields["p"] = password }
+    if let password { fields["pwd"] = password }
     var files: [LanzouEntry] = []
     var seenPage = Set<String>()
     for number in 1... {
       try Task.checkCancellation()
       fields["pg"] = String(number)
       let endpoint = appendPath("filemoreajax.php", to: page.url)
-      var request = URLRequest(url: endpoint, timeoutInterval: 30)
+      var request = URLRequest(url: endpoint, timeoutInterval: RemoteTimeout.cloudRequest)
       request.httpMethod = "POST"
       request.httpBody = Self.formBody(fields)
       request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -103,7 +113,7 @@ public actor LanzouSession {
       request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
       let response = try await sendShare(request)
       try checkHTTP(response)
-      let reply = try LanzouJSON.successfulObject(response.body)
+      let reply = try shareObject(response.body)
       let records = LanzouJSON.array(reply["text"])
       if records.isEmpty { break }
       let signature = records.compactMap { LanzouValues.string($0["id"]) }.joined(
@@ -111,8 +121,14 @@ public actor LanzouSession {
       guard !signature.isEmpty, seenPage.insert(signature).inserted else {
         throw LanzouError.invalidResponse
       }
-      files.append(contentsOf: try records.map(LanzouEntry.shareFile))
+      files.append(
+        contentsOf: try records.map {
+          stabilize(
+            try LanzouEntry.shareFile($0), dateText: LanzouValues.string($0["time"]),
+            scope: page.url.absoluteString)
+        })
     }
+    pruneRelativeDates(scope: page.url.absoluteString, keeping: files)
     return LanzouShareListing(page: page, files: files, folders: page.folders)
   }
 
@@ -148,13 +164,24 @@ public actor LanzouSession {
 
     var pageHTML = page.html
     var pageURL = page.url
-    if let iframe = LanzouHTML.firstMatch(
-      #"(?is)<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>"#, in: pageHTML),
-      let source = iframe[1],
+    let visible =
+      pageHTML
+      .replacingOccurrences(of: #"(?s)<!--.*?-->"#, with: "", options: .regularExpression)
+      .replacingOccurrences(
+        of: #"(?is)<script\b[^>]*>.*?</script>"#, with: "", options: .regularExpression)
+    let frames = LanzouHTML.allMatches(
+      #"(?is)<iframe\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>"#, in: visible)
+    guard frames.count <= 1 else { throw LanzouError.invalidResponse }
+    if let iframe = frames.first,
+      let source = iframe[safe: 1] ?? nil,
       let innerURL = URL(string: source, relativeTo: page.url)?.absoluteURL,
       LanzouConfiguration.isHTTPSURL(innerURL)
     {
-      let response = try await sendShare(URLRequest(url: innerURL, timeoutInterval: 30))
+      if page.requiresPassword, Self.origin(innerURL) != Self.origin(page.url) {
+        throw LanzouError.invalidResponse
+      }
+      let response = try await sendShare(
+        URLRequest(url: innerURL, timeoutInterval: RemoteTimeout.cloudRequest))
       try checkHTTP(response)
       guard let html = String(data: response.body, encoding: .utf8) else {
         throw LanzouError.invalidResponse
@@ -166,7 +193,7 @@ public actor LanzouSession {
 
     let (endpoint, fields) = try downloadRequest(
       html: pageHTML, pageURL: pageURL, password: password, requiresPassword: page.requiresPassword)
-    var request = URLRequest(url: endpoint, timeoutInterval: 30)
+    var request = URLRequest(url: endpoint, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.httpBody = Self.formBody(fields)
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -175,7 +202,7 @@ public actor LanzouSession {
     request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
     let response = try await sendShare(request)
     try checkHTTP(response)
-    let reply = try LanzouJSON.successfulObject(response.body)
+    let reply = try shareObject(response.body)
     return try Self.directDownloadURL(from: reply)
   }
 
@@ -214,7 +241,7 @@ public actor LanzouSession {
 
   private func makeDownloadRequest(_ url: URL, range: Range<Int64>?) throws -> URLRequest {
     guard LanzouConfiguration.isHTTPSURL(url) else { throw LanzouError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue("https://\(url.host ?? "")/file/", forHTTPHeaderField: "Referer")
     if let range {
@@ -310,7 +337,7 @@ public actor LanzouSession {
   }
 
   private func loadSharePage(_ url: URL, password: String?) async throws -> LanzouSharePage {
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
     request.setValue(configuration.shareBaseURL.absoluteString, forHTTPHeaderField: "Referer")
     let response = try await sendShare(request)
@@ -318,7 +345,43 @@ public actor LanzouSession {
     guard let html = String(data: response.body, encoding: .utf8) else {
       throw LanzouError.invalidResponse
     }
-    return try LanzouSharePage.parse(html, url: response.url ?? url)
+    let resolved = response.url ?? url
+    if password?.isEmpty == false, Self.origin(resolved) != Self.origin(url) {
+      throw LanzouError.invalidResponse
+    }
+    var page = try LanzouSharePage.parse(html, url: resolved)
+    page.modified = stableDate(
+      page.modified, text: page.relativeDateText, identity: page.url.absoluteString)
+    return page
+  }
+
+  private func stableDate(_ date: Date, text: String?, identity: String) -> Date {
+    guard let text, LanzouValues.isRelativeDate(text) else {
+      relativeDates.removeValue(forKey: identity)
+      return date
+    }
+    if let previous = relativeDates[identity], previous.text == text { return previous.date }
+    relativeDates[identity] = (text, date)
+    return date
+  }
+
+  private func stabilize(_ entry: LanzouEntry, dateText: String?, scope: String) -> LanzouEntry {
+    LanzouEntry(
+      name: entry.name, isDirectory: entry.isDirectory, size: entry.size,
+      modified: stableDate(
+        entry.modified, text: dateText, identity: dateIdentity(entry, scope: scope)),
+      id: entry.id)
+  }
+
+  private func dateIdentity(_ entry: LanzouEntry, scope: String) -> String {
+    scope + "\u{0}" + (entry.isDirectory ? "folder:" : "file:") + entry.id
+  }
+
+  private func pruneRelativeDates(scope: String, keeping entries: [LanzouEntry]) {
+    let keys = Set(entries.map { dateIdentity($0, scope: scope) })
+    relativeDates = relativeDates.filter {
+      !$0.key.hasPrefix(scope + "\u{0}") || keys.contains($0.key)
+    }
   }
 
   private func downloadRequest(
@@ -326,13 +389,16 @@ public actor LanzouSession {
   ) throws -> (URL, [String: String]) {
     if html.contains("acw_sc__v2") { throw LanzouError.antiBotChallenge }
     let variables = LanzouHTML.variables(in: html)
-    var fields = LanzouHTML.keyValueObject(in: html, variables: variables)
+    let endpointPatterns = ["/ajaxm.php", "/ajaxfile.php"]
+    let parsed =
+      LanzouScript.hasEndpoint(in: html, containing: endpointPatterns)
+      ? try LanzouScript.request(in: html, endpointContains: endpointPatterns) : nil
+    var fields = parsed?.fields ?? [:]
     if requiresPassword {
       guard let password, !password.isEmpty else { throw LanzouError.passwordRequired }
       fields["p"] = password
     }
-    if let endpointText = LanzouHTML.firstMatch(
-      #"(?i)((?:https?://[^'"\s]+)?/ajax(?:m|file)\.php\?file=\d+\b)"#, in: html)?[1],
+    if let endpointText = parsed?.endpoint,
       let endpoint = URL(string: endpointText, relativeTo: pageURL)?.absoluteURL,
       LanzouConfiguration.isHTTPSURL(endpoint)
     {
@@ -391,8 +457,9 @@ public actor LanzouSession {
       URLQueryItem(name: "item", value: "files"), URLQueryItem(name: "action", value: "index"),
     ]
     guard let url = components.url else { throw LanzouError.invalidConfiguration }
-    let response = try await sendAccount(URLRequest(url: url, timeoutInterval: 30))
-    try checkHTTP(response)
+    let response = try await sendAccount(
+      URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest))
+    try checkHTTP(response, account: true)
     guard let html = String(data: response.body, encoding: .utf8) else {
       throw LanzouError.invalidResponse
     }
@@ -405,9 +472,8 @@ public actor LanzouSession {
     {
       throw LanzouError.authenticationExpired
     }
-    let uid = LanzouHTML.firstMatch(
-      #"(?i)\buid\s*=\s*['"]?([^'"&;\s]+)"#, in: html)?[1]
     let variables = LanzouHTML.variables(in: html)
+    let uid = variables["uid"]
     let vei = variables["vei"] ?? LanzouHTML.keyValueObject(in: html, variables: variables)["vei"]
     guard let uid, !uid.isEmpty, let vei, !vei.isEmpty else {
       throw LanzouError.invalidResponse
@@ -427,12 +493,12 @@ public actor LanzouSession {
       URLQueryItem(name: "vei", value: context.vei),
     ]
     guard let url = components.url else { throw LanzouError.invalidResponse }
-    var request = URLRequest(url: url, timeoutInterval: 30)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = "POST"
     request.httpBody = Self.formBody(fields)
     request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
     let response = try await sendAccount(request)
-    try checkHTTP(response)
+    try checkHTTP(response, account: true)
     if String(data: response.body, encoding: .utf8)?.contains("acw_sc__v2") == true {
       throw LanzouError.antiBotChallenge
     }
@@ -440,6 +506,7 @@ public actor LanzouSession {
   }
 
   private func sendAccount(_ request: URLRequest) async throws -> HTTPResponse {
+    try persistPendingAccountCookie()
     guard let destination = request.url,
       Self.origin(destination) == Self.origin(configuration.accountBaseURL),
       var cookie = accountCookie
@@ -450,9 +517,25 @@ public actor LanzouSession {
     request.setValue(configuration.accountBaseURL.absoluteString, forHTTPHeaderField: "Referer")
     request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
     let response = try await transport.send(request)
+    guard Self.origin(response.url ?? destination) == Self.origin(configuration.accountBaseURL)
+    else {
+      throw LanzouError.invalidResponse
+    }
+    cookie = accountCookie ?? cookie
+    let previous = cookie.text
     cookie.merge(response, from: destination)
     accountCookie = cookie
+    if cookie.text != previous, persistAccountCookie != nil {
+      pendingAccountCookie = cookie.text
+      try persistPendingAccountCookie()
+    }
     return response
+  }
+
+  private func persistPendingAccountCookie() throws {
+    guard let pendingAccountCookie, let persistAccountCookie else { return }
+    try persistAccountCookie(pendingAccountCookie)
+    self.pendingAccountCookie = nil
   }
 
   private func sendShare(_ request: URLRequest) async throws -> HTTPResponse {
@@ -481,9 +564,18 @@ public actor LanzouSession {
     return response
   }
 
-  private func checkHTTP(_ response: HTTPResponse) throws {
+  private func checkHTTP(_ response: HTTPResponse, account: Bool = false) throws {
     guard (200..<300).contains(response.status) else {
+      if account, response.status == 401 || response.status == 403 {
+        throw LanzouError.authenticationExpired
+      }
       throw LanzouError.fromHTTP(response.status)
+    }
+  }
+
+  private func shareObject(_ data: Data) throws -> [String: Any] {
+    do { return try LanzouJSON.successfulObject(data) } catch LanzouError.authenticationExpired {
+      throw LanzouError.http(401)
     }
   }
 

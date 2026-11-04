@@ -1,6 +1,7 @@
 import Core
 import CoreFoundation
 import Foundation
+import Synchronization
 
 struct LanzouCookieHeader: Equatable, Sendable {
   private var values: [String: String]
@@ -64,6 +65,18 @@ struct LanzouCookieHeader: Equatable, Sendable {
 }
 
 enum LanzouValues {
+  private static let isoParser = Mutex(ISO8601DateFormatter())
+  private static let dateParsers = Mutex(
+    [
+      "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd",
+    ].map { format in
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
+      formatter.dateFormat = format
+      return formatter
+    })
+
   // 显示用的 KB、MB 可能已取整，不能代替实际字节数。
   static func parseSize(_ value: Any?) -> Int64? {
     let text: String
@@ -81,22 +94,27 @@ enum LanzouValues {
     return Int64(digits)
   }
 
-  static func parseDate(_ value: String?) -> Date {
+  static func isRelativeDate(_ value: String?) -> Bool {
+    guard let value else { return false }
+    return value.contains("前") || value == "昨天"
+  }
+
+  static func parseDate(_ value: String?, relativeTo referenceDate: Date = Date()) -> Date {
     guard let value, !value.isEmpty else { return Date(timeIntervalSince1970: 0) }
-    for format in ["yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd", "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd"] {
-      let formatter = DateFormatter()
-      formatter.locale = Locale(identifier: "en_US_POSIX")
-      formatter.timeZone = TimeZone(secondsFromGMT: 8 * 60 * 60)
-      formatter.dateFormat = format
-      if let date = formatter.date(from: value) { return date }
+    if let date = dateParsers.withLock({ formatters -> Date? in
+      for formatter in formatters {
+        if let date = formatter.date(from: value) { return date }
+      }
+      return nil
+    }) {
+      return date
     }
-    let iso = ISO8601DateFormatter()
-    if let date = iso.date(from: value) { return date }
+    if let date = isoParser.withLock({ $0.date(from: value) }) { return date }
     guard let match = LanzouHTML.firstMatch(#"([0-9]+)\s*([秒分小]|小时|分钟|天)前"#, in: value),
       let numberText = match[1], let number = Double(numberText)
     else {
-      if value.contains("昨天") { return Date().addingTimeInterval(-86_400) }
-      if value.contains("前天") { return Date().addingTimeInterval(-172_800) }
+      if value.contains("昨天") { return referenceDate.addingTimeInterval(-86_400) }
+      if value.contains("前天") { return referenceDate.addingTimeInterval(-172_800) }
       return Date(timeIntervalSince1970: 0)
     }
     let seconds =
@@ -105,7 +123,7 @@ enum LanzouValues {
         ? 1
         : match[2] == "分" || match[2] == "分钟"
           ? 60 : match[2] == "小" || match[2] == "小时" ? 3600 : 86_400)
-    return Date().addingTimeInterval(-seconds)
+    return referenceDate.addingTimeInterval(-seconds)
   }
 
   static func string(_ value: Any?) -> String? {
@@ -156,55 +174,11 @@ enum LanzouHTML {
   }
 
   static func variables(in html: String) -> [String: String] {
-    let matches = allMatches(
-      #"(?i)\b(?:var|let|const)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*['"]([^'"]*)['"]\s*"#,
-      in: html)
-    return matches.reduce(into: [:]) { result, match in
-      if let name = match[safe: 1] ?? nil, let value = match[safe: 2] ?? nil {
-        result[name] = value
-      }
-    }
+    LanzouScript.variables(in: html)
   }
 
   static func keyValueObject(in html: String, variables: [String: String]) -> [String: String] {
-    let body: String
-    if let object = firstMatch(#"data\s*:\s*\{([^}]*)\}"#, in: html), let value = object[1] {
-      body = value
-    } else if let encoded = firstMatch(
-      #"data\s*:\s*(?:'([^']+)'|"([^"]+)")"#, in: html),
-      let text = encoded[1] ?? encoded[2],
-      let decoded = text.removingPercentEncoding
-    {
-      if let object = try? JSONSerialization.jsonObject(with: Data(decoded.utf8))
-        as? [String: Any]
-      {
-        return object.reduce(into: [:]) { result, pair in
-          if let value = LanzouValues.string(pair.value) { result[pair.key] = value }
-        }
-      }
-      if decoded.contains("=") {
-        return decoded.split(separator: "&").reduce(into: [:]) { result, pair in
-          let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-          if parts.count == 2 {
-            result[String(parts[0])] = String(parts[1])
-          }
-        }
-      }
-      return [:]
-    } else {
-      return [:]
-    }
-
-    let pairs = allMatches(
-      #"['"]([^'"]+)['"]\s*:\s*(?:['"]([^'"]*)['"]|([A-Za-z_$][A-Za-z0-9_$]*))"#, in: body)
-    return pairs.reduce(into: [:]) { result, match in
-      guard let key = match[safe: 1] ?? nil else { return }
-      if let literal = match[safe: 2] ?? nil {
-        result[key] = literal
-      } else if let variable = match[safe: 3] ?? nil, let value = variables[variable] {
-        result[key] = value
-      }
-    }
+    LanzouScript.fields(in: html)
   }
 
   static func strippedText(_ html: String) -> String {
