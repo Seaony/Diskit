@@ -11265,6 +11265,22 @@
         }
       }
     },
+    "编辑“%@”": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑“%@”"
+          }
+        }
+      }
+    },
     "网络文件共享": {
       "localizations": {
         "en": {

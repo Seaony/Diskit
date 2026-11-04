@@ -63,6 +63,11 @@ import TianyiDrive
     self.demoWait = demoWait
   }
   var isEditing: Bool { model.connections.connections.contains { $0.id == draft.id } }
+  var windowTitle: String { EditorWindowTitle.text(name: draft.name, isSaved: isEditing) }
+  func synchronizeWindowTitle() {
+    guard let window = anchorWindow else { return }
+    EditorWindowTitle.synchronize(windowTitle, current: window.title) { window.title = $0 }
+  }
   func load() {
     guard !loaded else { return }
     loaded = true
