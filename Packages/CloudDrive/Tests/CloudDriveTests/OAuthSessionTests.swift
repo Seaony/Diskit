@@ -360,3 +360,60 @@ func commonOAuthSecondResourceRejectionPreservesNewToken(_ stream: Bool) async t
   let saved = try JSONDecoder().decode(OAuthToken.self, from: #require(try secrets.read("oauth")))
   #expect(saved.refreshToken == "rotated")
 }
+
+private actor DelayedUnauthorizedHTTP: HTTPTransport {
+  private var rejected: [CheckedContinuation<HTTPResponse, Never>] = []
+  private(set) var refreshes = 0
+  private(set) var oldRequests = 0
+
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    if request.url?.absoluteString == "https://example.com/token" {
+      refreshes += 1
+      return tokenResponse(access: "new", refresh: "rotated")
+    }
+    guard request.url?.absoluteString == "https://example.com/files" else {
+      throw RemoteError.protocolError
+    }
+    if request.value(forHTTPHeaderField: "Authorization") == "Bearer old" {
+      oldRequests += 1
+      return await withCheckedContinuation { continuation in
+        rejected.append(continuation)
+        if oldRequests == 10 { rejected.removeFirst().resume(returning: HTTPResponse(status: 401)) }
+      }
+    }
+    guard request.value(forHTTPHeaderField: "Authorization") == "Bearer new" else {
+      throw RemoteError.protocolError
+    }
+    let waiting = rejected
+    rejected.removeAll()
+    for continuation in waiting { continuation.resume(returning: HTTPResponse(status: 401)) }
+    return HTTPResponse(status: 200)
+  }
+  func stream(_ request: URLRequest) async throws -> HTTPStreamResponse {
+    HTTPStreamResponse(response: try await send(request), body: AsyncThrowingStream { $0.finish() })
+  }
+}
+
+@Test(arguments: [false, true])
+func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool) async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantFuture)),
+    for: "oauth")
+  let transport = DelayedUnauthorizedHTTP()
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  try await withThrowingTaskGroup(of: Int.self) { group in
+    for _ in 0..<10 {
+      group.addTask {
+        let request = URLRequest(url: URL(string: "https://example.com/files")!)
+        if stream { return try await session.authorizedStream(request).response.status }
+        return try await session.authorized(request).status
+      }
+    }
+    for try await status in group { #expect(status == 200) }
+  }
+  #expect(await transport.oldRequests == 10)
+  #expect(await transport.refreshes == 1)
+}

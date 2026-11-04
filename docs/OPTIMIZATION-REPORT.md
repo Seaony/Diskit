@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 进行中，FIX-07 起尚未处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 进行中，FIX-08 起尚未处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -125,3 +125,10 @@
 - 失败回归：`commonOAuthSecondResourceRejectionPreservesNewToken`（普通与流式）、`baiduPreservesLoginAfterASecondUnauthorizedResponse`、`driveBusinessAuthFailurePreservesRefreshedLogin`（115/123 × HTTP/业务失败）、`oauthSecondUnauthorizedResponseStopsAndNeedsLogin`、`oauthPermissionFailurePreservesLoginWithoutInvalidation`、`pikPakSecondResourceRejectionPreservesRefreshedLogin`，修复前均观察到凭据被删或作废；修复后保留轮换后的刷新令牌。证据：`docs/evidence/v0.2/FIX-06-resource-auth-regression.log`。阿里权限失败另覆盖普通与流式分支，确认不发送登录失效通知。
 - 四套会话的暂时恢复失败与后续资源拒绝现已有回归；明确刷新拒绝的已有测试保持通过。当前源码仅保留缺少可用凭据或明确刷新拒绝时的失效处理，以及显式 invalidate 接口。跨会话/多进程竞争和存储失败仍由 FIX-07 处理，真实服务码需账号验收。
 - 完整门禁通过：应用逻辑 9 项、包测试 276 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-06-resource-auth-gates.log`。
+
+## FIX-07：同会话迟到的旧令牌 401（部分）
+
+- `OAuthSession.swift:179`、`:190` 保留每次实际发出的令牌，在 `:234` 刷新入口比较当前令牌；当其他请求已经刷新时，迟到的旧令牌 401 直接复用新令牌，不再强制刷新第二次。
+- `tenDelayedUnauthorizedRequestsShareOneRefresh`（`OAuthSessionTests.swift:398`）通过 continuation 精确安排 10 个旧令牌请求：先放行一个 401，等待新令牌请求成功后才返回余下 9 个 401。普通和流式两种方式修复前均发生重复刷新，修复后均只刷新一次、10 个请求全部成功；不靠 sleep 或真实时钟制造竞态。证据 `docs/evidence/v0.2/FIX-07-delayed-401-regression.log`。
+- 完整门禁通过：应用逻辑 9 项、包测试 277 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-delayed-401-gates.log`。
+- FIX-07 尚未通过：本提交不证明不同会话/不同进程只刷新一次，也不证明存储新令牌失败后的保留与恢复；独立业务鉴权驱动的显式刷新入口也仍需接入拒绝令牌比较。上述项目继续处理，不能据本测试宣称并发刷新整体完成。

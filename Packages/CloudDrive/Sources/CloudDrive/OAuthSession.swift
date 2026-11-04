@@ -177,19 +177,23 @@ public actor OAuthSession {
   }
 
   public func authorized(_ request: URLRequest) async throws -> HTTPResponse {
-    let first = try await withToken(request)
+    let access = try await validToken()
+    var firstRequest = request
+    firstRequest.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
+    let first = try await CloudDriveSupport.sendWithRetry(transport, firstRequest)
     guard first.status == 401 else { return first }
-    _ = try await refresh(force: true)
+    _ = try await refresh(force: true, rejectedAccessToken: access)
     let retried = try await withToken(request)
     return retried
   }
 
   public func authorizedStream(_ request: URLRequest) async throws -> HTTPStreamResponse {
     var request = request
-    request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
+    let access = try await validToken()
+    request.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
     let response = try await CloudDriveSupport.streamWithRetry(transport, request)
     if response.response.status == 401 {
-      _ = try await refresh(force: true)
+      _ = try await refresh(force: true, rejectedAccessToken: access)
       request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
       let retried = try await CloudDriveSupport.streamWithRetry(transport, request)
       return retried
@@ -227,7 +231,14 @@ public actor OAuthSession {
     return try await CloudDriveSupport.sendWithRetry(transport, request)
   }
 
-  private func refresh(force: Bool, current: OAuthToken? = nil) async throws -> String {
+  private func refresh(
+    force: Bool, current: OAuthToken? = nil, rejectedAccessToken: String? = nil
+  ) async throws -> String {
+    if let rejectedAccessToken, let latest = try loadToken(),
+      latest.accessToken != rejectedAccessToken
+    {
+      return latest.accessToken
+    }
     if !force, let token = current, token.expiresAt > Date().addingTimeInterval(60) {
       return token.accessToken
     }

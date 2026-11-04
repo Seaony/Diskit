@@ -1,0 +1,8 @@
+red
+􀢄  Test tenDelayedUnauthorizedRequestsShareOneRefresh(_:) recorded an issue with 1 argument stream → true at OAuthSessionTests.swift:410:3: Expectation failed: await transport.refreshes == 1
+􀢄  Test tenDelayedUnauthorizedRequestsShareOneRefresh(_:) recorded an issue with 1 argument stream → false at OAuthSessionTests.swift:410:3: Expectation failed: await transport.refreshes == 1
+􀢄  Test tenDelayedUnauthorizedRequestsShareOneRefresh(_:) with 2 test cases failed after 0.003 seconds with 2 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 2 issues.
+green
+􁁛  Test tenDelayedUnauthorizedRequestsShareOneRefresh(_:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test run with 51 tests in 0 suites passed after 1.046 seconds.
