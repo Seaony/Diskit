@@ -1,0 +1,93 @@
+修复前：swift test --package-path Packages/S3Drive --filter paginationUsesCanonicalEncodedQueryOnTheWire；退出 1。
+Building for debugging...
+[1 / 5]
+[2 / 6] S3DriveTests-product
+[4 / 8] S3DriveTests-product
+[10 / 12] S3DriveTests-product
+Build complete! (1.65秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument pathStyle → true to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument pathStyle → false to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀢄  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) recorded an issue with 1 argument pathStyle → false at S3ProviderTests.swift:435:3: Expectation failed: first.percentEncodedQuery == "delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀄵  first.percentEncodedQuery == "delimiter=%2F&list-type=2&max-keys=1000&prefix=" → false
+􀄵    first.percentEncodedQuery → "list-type=2&prefix=&max-keys=1000&delimiter=/"
+􀄵      some → "list-type=2&prefix=&max-keys=1000&delimiter=/"
+􀄵      some → "delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀢄  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) recorded an issue with 1 argument pathStyle → true at S3ProviderTests.swift:435:3: Expectation failed: first.percentEncodedQuery == "delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀄵  first.percentEncodedQuery == "delimiter=%2F&list-type=2&max-keys=1000&prefix=" → false
+􀄵    first.percentEncodedQuery → "list-type=2&prefix=&max-keys=1000&delimiter=/"
+􀄵      some → "list-type=2&prefix=&max-keys=1000&delimiter=/"
+􀄵      some → "delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀢄  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) recorded an issue with 1 argument pathStyle → false at S3ProviderTests.swift:436:3: Expectation failed: second.percentEncodedQuery == "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀄵  second.percentEncodedQuery == "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix=" → false
+􀄵    second.percentEncodedQuery → "list-type=2&prefix=&max-keys=1000&delimiter=/&continuation-token=next+/%3D%20%E4%B8%AD%E6%96%87%25?"
+􀄵      some → "list-type=2&prefix=&max-keys=1000&delimiter=/&continuation-token=next+/%3D%20%E4%B8%AD%E6%96%87%25?"
+􀄵      some → "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀢄  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) recorded an issue with 1 argument pathStyle → true at S3ProviderTests.swift:436:3: Expectation failed: second.percentEncodedQuery == "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀄵  second.percentEncodedQuery == "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix=" → false
+􀄵    second.percentEncodedQuery → "list-type=2&prefix=&max-keys=1000&delimiter=/&continuation-token=next+/%3D%20%E4%B8%AD%E6%96%87%25?"
+􀄵      some → "list-type=2&prefix=&max-keys=1000&delimiter=/&continuation-token=next+/%3D%20%E4%B8%AD%E6%96%87%25?"
+􀄵      some → "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix="
+􀢄  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases failed after 0.005 seconds with 4 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.006 seconds with 4 issues.
+Note: Some test targets reported failures:
+  - S3DriveTests (Swift Testing)
+
+修复后：swift test --package-path Packages/S3Drive；退出 0。
+Building for debugging...
+[1 / 4] Core
+[2 / 6] S3Drive
+[3 / 7] S3Drive
+[8 / 12] S3Drive
+[11 / 15] S3DriveTests-product
+[13 / 17] S3DriveTests-product
+[19 / 21] S3DriveTests-product
+Build complete! (2.68秒)
+Test Suite 'All tests' started at 2026-11-04 18:24:04.603.
+Test Suite 'All tests' passed at 2026-11-04 18:24:04.604.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test rangeRequiresMatchingContentRange() started.
+􀟈  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() started.
+􀟈  Test xmlAndHTTPErrorsMapToRemoteErrors() started.
+􀟈  Test servicePresetsUseOfficialAddressing() started.
+􀟈  Test multipartThresholdAndLastPartBoundaries() started.
+􀟈  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test statInfersDirectoryWithoutTrailingSlash() started.
+􀟈  Test truncatedPageWithoutTokenFails() started.
+􀟈  Test recursiveRemoveDeletesEveryNestedObject() started.
+􀟈  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() started.
+􀟈  Test case passing 1 argument example → 1 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument example → 2 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test multipartConditionalConflictReuploadsOnce() started.
+􀟈  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument example → 3 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test case passing 1 argument example → 0 to sigV4MatchesAllOfficialSingleChunkExamples(example:) started.
+􀟈  Test signedVirtualHostRequestPercentEncodesPathOnce() started.
+􀟈  Test s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() started.
+􀟈  Test case passing 1 argument pathStyle → true to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument pathStyle → false to paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123Z" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􀟈  Test case passing 1 argument timestamp → "2026-01-02T03:04:05.123" to s3ObjectDatesPreserveMilliseconds(_:) started.
+􁁛  Test servicePresetsUseOfficialAddressing() passed after 0.005 seconds.
+􁁛  Test sigV4MatchesAllOfficialSingleChunkExamples(example:) with 4 test cases passed after 0.005 seconds.
+􁁛  Test s3ObjectDatesPreserveMilliseconds(_:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test truncatedPageWithoutTokenFails() passed after 0.005 seconds.
+􁁛  Test signedVirtualHostRequestPercentEncodesPathOnce() passed after 0.006 seconds.
+􁁛  Test rangeRequiresMatchingContentRange() passed after 0.006 seconds.
+􁁛  Test nonRecursiveDirectoryRemoveRejectsNonEmptyPrefix() passed after 0.006 seconds.
+􁁛  Test statInfersDirectoryWithoutTrailingSlash() passed after 0.006 seconds.
+􁁛  Test listAggregatesCommonPrefixesAndObjectsAcrossPages() passed after 0.007 seconds.
+􁁛  Test paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle:) with 2 test cases passed after 0.007 seconds.
+􁁛  Test recursiveRemoveDeletesEveryNestedObject() passed after 0.007 seconds.
+􁁛  Test xmlAndHTTPErrorsMapToRemoteErrors() passed after 0.008 seconds.
+􁁛  Test recursiveMoveCopiesEveryNestedObjectThenDeletesSource() passed after 0.009 seconds.
+􁁛  Test multipartConditionalConflictReuploadsOnce() passed after 0.013 seconds.
+􁁛  Test multipartThresholdAndLastPartBoundaries() passed after 0.019 seconds.
+􁁛  Test run with 15 tests in 0 suites passed after 0.020 seconds.

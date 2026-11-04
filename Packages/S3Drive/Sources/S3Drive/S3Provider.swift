@@ -471,11 +471,10 @@ public actor S3Provider: RemoteFileProvider {
     }
   }
 
-  private func signedRequest(
+  func signedRequest(
     method: String, path: String, headers initial: [String: String] = [:], body: Data = Data(),
-    query: [URLQueryItem] = []
+    query: [URLQueryItem] = [], now: Date = Date()
   ) throws -> URLRequest {
-    let now = Date()
     let amzDate = Self.amzDate(now)
     let date = String(amzDate.prefix(8))
     let payloadHash = Self.sha256Hex(body)
@@ -488,8 +487,9 @@ public actor S3Provider: RemoteFileProvider {
     }.joined()
     let signedHeaders = headers.keys.sorted().joined(separator: ";")
     let encodedPath = Self.encodePath(canonicalPath(path))
+    let encodedQuery = Self.canonicalQuery(query)
     let canonicalRequest = [
-      method, encodedPath, Self.canonicalQuery(query), canonicalHeaders,
+      method, encodedPath, encodedQuery, canonicalHeaders,
       signedHeaders, payloadHash,
     ].joined(separator: "\n")
     let scope = "\(date)/\(configuration.region)/s3/aws4_request"
@@ -508,7 +508,7 @@ public actor S3Provider: RemoteFileProvider {
       components.host = "\(configuration.bucket).\(host)"
     }
     components.percentEncodedPath = encodedPath
-    components.queryItems = query.isEmpty ? nil : query
+    components.percentEncodedQuery = query.isEmpty ? nil : encodedQuery
     guard let url = components.url else { throw RemoteError.protocolError }
     var request = URLRequest(url: url, timeoutInterval: 60)
     request.httpMethod = method

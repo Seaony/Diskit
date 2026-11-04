@@ -416,3 +416,76 @@ private func encodedPath(_ request: URLRequest) -> String? {
   #expect(try await mappedError(HTTPResponse(status: 507)) == .posix(ENOSPC))
   #expect(try await mappedError(HTTPResponse(status: 500)) == .posix(EIO))
 }
+
+@Test(arguments: [true, false])
+func paginationUsesCanonicalEncodedQueryOnTheWire(pathStyle: Bool) async throws {
+  let token = "next+/= 中文%?"
+  let transport = FakeTransport([
+    listXML([("a.txt", 5)], next: token, truncated: true),
+    listXML([("b.txt", 3)]),
+  ])
+  let s3 = provider(transport, pathStyle: pathStyle)
+  try await s3.connect()
+  let items = try await s3.list(try RemotePath("/"))
+  #expect(items.map(\.name) == ["a.txt", "b.txt"])
+  let requests = transport.requests.withLock { $0 }
+  #expect(requests.count == 2)
+  let first = try #require(URLComponents(url: requests[0].url!, resolvingAgainstBaseURL: false))
+  let second = try #require(URLComponents(url: requests[1].url!, resolvingAgainstBaseURL: false))
+  #expect(first.percentEncodedQuery == "delimiter=%2F&list-type=2&max-keys=1000&prefix=")
+  #expect(
+    second.percentEncodedQuery
+      == "continuation-token=next%2B%2F%3D%20%E4%B8%AD%E6%96%87%25%3F&delimiter=%2F&list-type=2&max-keys=1000&prefix="
+  )
+  #expect(second.queryItems?.first { $0.name == "continuation-token" }?.value == token)
+}
+
+@Test(arguments: [0, 1, 2, 3])
+func sigV4MatchesAllOfficialSingleChunkExamples(example: Int) async throws {
+  // AWS 文档的公开示例值，不是真实凭据。
+  let transport = FakeTransport()
+  let s3 = S3Provider(
+    configuration: S3Configuration(
+      endpoint: URL(string: "https://s3.amazonaws.com")!, region: "us-east-1",
+      bucket: "examplebucket", accessKey: "AKIAIOSFODNN7EXAMPLE",
+      secretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", pathStyle: false),
+    transport: transport)
+  let date = try #require(ISO8601DateFormatter().date(from: "2013-05-24T00:00:00Z"))
+  let cases: [(String, String, [String: String], Data, [URLQueryItem], String, String)] = [
+    (
+      "GET", "test.txt", ["range": "bytes=0-9"], Data(), [],
+      "host;range;x-amz-content-sha256;x-amz-date",
+      "f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41"
+    ),
+    (
+      "PUT", "test$file.text",
+      ["date": "Fri, 24 May 2013 00:00:00 GMT", "x-amz-storage-class": "REDUCED_REDUNDANCY"],
+      Data("Welcome to Amazon S3.".utf8), [],
+      "date;host;x-amz-content-sha256;x-amz-date;x-amz-storage-class",
+      "98ad721746da40c64f1a55b78f14c238d841ea1380cd77a1b5971af0ece108bd"
+    ),
+    (
+      "GET", "", [:], Data(), [URLQueryItem(name: "lifecycle", value: "")],
+      "host;x-amz-content-sha256;x-amz-date",
+      "fea454ca298b7da1c68078a5d1bdbfbbe0d65c699e0f91ac7a200a0136783543"
+    ),
+    (
+      "GET", "", [:], Data(),
+      [URLQueryItem(name: "prefix", value: "J"), URLQueryItem(name: "max-keys", value: "2")],
+      "host;x-amz-content-sha256;x-amz-date",
+      "34b48302e7b5fa45bde8084f4b7868a86f0a534bc59db6670ed5711ef69dc6f7"
+    ),
+  ]
+  let (method, path, headers, body, query, signedHeaders, signature) = cases[example]
+  let request = try await s3.signedRequest(
+    method: method, path: path, headers: headers, body: body, query: query, now: date)
+  #expect(
+    request.value(forHTTPHeaderField: "Authorization")
+      == "AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE/20130524/us-east-1/s3/aws4_request, SignedHeaders=\(signedHeaders), Signature=\(signature)"
+  )
+  let components = try #require(URLComponents(url: request.url!, resolvingAgainstBaseURL: false))
+  #expect(components.percentEncodedPath == ["/test.txt", "/test%24file.text", "/", "/"][example])
+  #expect(
+    components.percentEncodedQuery == [nil, nil, "lifecycle=", "max-keys=2&prefix=J"][example])
+  #expect(transport.requests.withLock { $0.isEmpty })
+}

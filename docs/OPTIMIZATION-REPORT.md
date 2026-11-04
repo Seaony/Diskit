@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码及官方签名示例已通过本地门禁，防覆盖仍待处理；FIX-17 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -307,3 +307,13 @@
 - 审查第 1B 节关于“没做解码、大小写统一”的表述过宽：原 `URLComponents.path`/`URL.path` 已做一次标准 URL 解码，主机名已有 lowercased，Swift 字符串相等本身也接受 Unicode 等价写法。没有增加手动二次解码，避免将名为 Photos%20 的共享错认成 Photos 加空格。
 - `Packages/Core/Tests/CoreTests/MountAddressTests.swift:7` 的 `mountTableMatchesEncodedChineseShare` 先复现大写协议与编码中文名称匹配失败；`mountTableMatchesWebDAVAndRawNFS` 同样复现 HTTPS 前缀问题，并检查原始 NFS 路径、错误主机、错误文件系统。`mountTableMatchesCanonicalUnicode` 与 `mountTableDecodesExactlyOnceAndPreservesPathCase` 覆盖组合字符和百分号、路径大小写不混淆。
 - 追加 `mountTableMatchesUppercaseSavedScheme`，复现并修正保存地址本身使用大写协议名时的反向匹配失败；两边协议名均忽略大小写。完整提交门禁通过：应用逻辑 9 项、包测试 339 项，发布构建与签名校验通过。证据 `docs/evidence/v0.2/FIX-15-regression.log`、`docs/evidence/v0.2/FIX-15-gates.log`；真实系统挂载表格式另待用户验收。
+
+
+## FIX-16：S3 查询编码与官方签名示例（部分）
+
+- `Packages/S3Drive/Sources/S3Drive/S3Provider.swift:490` 只计算一次规范查询串，同时用于签名和实际 URL 的 percentEncodedQuery（`:511`）；不再让 URLComponents 另行编码并保留加号、斜杠和问号。无查询参数时仍没有问号，空参数值保留等号。
+- `paginationUsesCanonicalEncodedQueryOnTheWire`（`S3ProviderTests.swift:421`）在路径寻址和虚拟主机寻址两组中，返回含加号、斜杠、等号、中文、空格、百分号和问号的分页 token；断言实际请求的完整编码查询串和解码后 token。修复前实际 URL 中的 +、/、? 未编码，两组共四项断言失败；修复后通过。
+- `sigV4MatchesAllOfficialSingleChunkExamples`（`:444`）逐个比较 AWS 官方单块载荷页面的全部四个示例：范围 GET、带正文和存储级别的 PUT、空值 lifecycle 查询、List Objects 查询。固定公开示例日期和凭据，比较完整 Authorization 值、实际编码路径与查询串，不只检查签名头存在。四组均通过，没有发出网络请求。
+- 参考 [AWS 官方单块载荷签名示例](https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sig-v4-header-based-auth.html)，对应 Examples: Signature Calculations 下四节；示例值直接来自文档，不由被测代码生成预期值。签名运算仍调用 CryptoKit 的 SHA256 与 HMAC，没有新增密码学实现或依赖。方法只开放模块内测试访问并允许指定日期，生产默认当前时间，公共 API 未增加测试参数。
+- 更正审查第 2 节 B2 对上一轮报告的质疑：原测试只验证 Authorization 中有 Credential，本轮才加入实际官方签名值比对。此处“全部”限定为 Kayoi 所用单块载荷签名页四个示例，不冒称分块签名或预签名 URL 已验收。
+- 核心回归证据 `docs/evidence/v0.2/FIX-16-query-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 341 项，发布构建与签名校验通过；证据 `docs/evidence/v0.2/FIX-16-query-gates.log`。FIX-16 尚未整体通过：不支持条件写入的服务仍需增加 HEAD 同名检查。
