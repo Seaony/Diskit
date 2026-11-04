@@ -47,6 +47,7 @@ struct WebLoginView: View {
       }.frame(maxWidth: .infinity, maxHeight: .infinity).layoutPriority(1)
       Divider()
       VStack(alignment: .leading, spacing: 12) {
+        if state.checking { ProgressView(L("正在验证登录信息…")).nativeProgressAppearance().controlSize(.small) }
         if let error = state.validationError ?? manualError {
           HStack(alignment: .top, spacing: 8) {
             Label(error, systemImage: "exclamationmark.triangle")

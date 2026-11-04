@@ -10369,6 +10369,22 @@
         }
       }
     },
+    "正在计算缓存大小…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculating cache size…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在计算缓存大小…"
+          }
+        }
+      }
+    },
     "正在读取密钥指纹…": {
       "localizations": {
         "en": {
@@ -10397,6 +10413,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "正在读取许可证…"
+          }
+        }
+      }
+    },
+    "正在验证登录信息…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verifying sign-in information…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在验证登录信息…"
           }
         }
       }
