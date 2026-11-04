@@ -134,6 +134,8 @@ targets:
       - App/AppModel.swift
     dependencies:
       - package: Core
+      - package: Core
+        product: CoreTestSupport
       - package: ADB
       - package: AliyunDrive
       - package: Quark

@@ -7,193 +7,257 @@ import UserNotifications
 
 struct SettingsView: View {
   @Bindable var model: AppModel
-  @AppStorage("cacheLimitGB") private var cacheLimitGB = 5
+  @AppStorage("settings.selectedTab") private var selectedTab = "general"
   @AppStorage("notifications.mountFailure") private var notifyMountFailure = true
   @AppStorage("notifications.loginExpired") private var notifyLoginExpired = true
   @AppStorage("notifications.disconnect") private var notifyDisconnect = true
   @State private var startsAtLogin = false
   @State private var loginNeedsApproval = false
   @State private var loginError: String?
-  @State private var cacheBytes: Int64 = 0
+  @State private var cacheBytes: Int64?
+  @State private var checkingCache = false
+  @State private var clearingCache = false
   @State private var confirmClear = false
   @State private var fingerprint = ""
   @State private var fingerprintError: String?
+  @State private var regeneratingKey = false
   @State private var confirmKey = false
   @State private var copiedFingerprint = false
+  @State private var copyFeedback: Task<Void, Never>?
+  @State private var license: SettingsLicense?
 
   var body: some View {
-    VStack(spacing: 0) {
-      VStack(alignment: .leading, spacing: 6) {
-        Text(L("设置")).font(.system(size: 23, weight: .semibold))
-        Text(L("管理启动、通知、缓存与设备密钥"))
-          .font(.subheadline).foregroundStyle(.secondary)
+    TabView(selection: $selectedTab) {
+      generalPage
+        .tabItem { Label(L("通用"), systemImage: "gearshape") }.tag("general")
+      notificationsPage
+        .tabItem { Label(L("通知"), systemImage: "bell") }.tag("notifications")
+      storagePage
+        .tabItem { Label(L("存储"), systemImage: "internaldrive") }.tag("storage")
+      androidPage
+        .tabItem { Label(L("安卓"), systemImage: "smartphone") }.tag("android")
+      aboutPage
+        .tabItem { Label(L("关于"), systemImage: "info.circle") }.tag("about")
+    }
+    .frame(width: 560)
+    .demoAppearanceEvidence("settings")
+    .fixedSize(horizontal: false, vertical: true)
+    .background(KayoiTheme.background)
+    .buttonStyle(FlatButtonStyle())
+    .toggleStyle(.switch)
+    .controlSize(.small)
+    .task(id: selectedTab) {
+      switch selectedTab {
+      case "general": refreshLogin()
+      case "notifications": await model.refreshNotificationAuthorization()
+      case "storage": await refreshCache()
+      case "android": await refreshFingerprint()
+      default: break
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 24).padding(.vertical, 16)
-      Divider()
+    }
+    .onAppear {
+      if model.options.isDemo,
+        let tab = model.options.demoSettingsTab,
+        ["general", "notifications", "storage", "android", "about"].contains(tab)
+      {
+        selectedTab = tab
+      }
+    }
+    .onDisappear {
+      copyFeedback?.cancel()
+      copyFeedback = nil
+      copiedFingerprint = false
+    }
+    .alert(L("重新生成调试密钥？"), isPresented: $confirmKey) {
+      Button(L("重新生成密钥"), role: .destructive) {
+        model.operations.start { await regenerateKey() }
+      }
+      Button(L("取消"), role: .cancel) {}
+    } message: {
+      Text(L("重新生成后，下次连接每台手机时都需要重新允许这台 Mac。手机上的文件不会改变。"))
+    }
+    .sheet(item: $license) { document in
+      SettingsLicenseView(document: document)
+        .presentationBackground(KayoiTheme.background)
+    }
+  }
 
-      Form {
-        Section(L("通用")) {
-          Toggle(
-            L("开机自动启动"),
-            isOn: Binding(
-              get: { startsAtLogin },
-              set: { enabled in
-                if model.options.isDemo { startsAtLogin = enabled; return }
-                loginError = nil
-                do {
-                  if enabled {
-                    try SMAppService.mainApp.register()
-                  } else {
-                    try SMAppService.mainApp.unregister()
-                  }
-                } catch {
-                  loginError = error.localizedDescription
-                }
-                refreshLogin()
-              }))
-          if let loginError {
-            inlineError(loginError)
+  private var generalPage: some View {
+    SettingsForm {
+      Section {
+        Toggle(L("开机自动启动"), isOn: Binding(get: { startsAtLogin }, set: setStartsAtLogin))
+        if let loginError { inlineError(loginError) }
+        if loginError != nil || loginNeedsApproval {
+          Button(L("打开登录项设置")) {
+            guard !model.options.isDemo else { return }
+            SMAppService.openSystemSettingsLoginItems()
           }
-          if loginNeedsApproval {
-            Button(L("在系统设置中允许登录项")) {
-              SMAppService.openSystemSettingsLoginItems()
-            }
-          }
+          .help(L("在系统设置中允许 Kayoi 开机自动启动"))
         }
+      } footer: {
+        Text(L("退出 Kayoi 不会推出已挂载的共享"))
+      }
+    }
+  }
 
-        Section(L("通知")) {
-          Text(L("只在挂载失败、登录过期或位置意外断开时通知。"))
-            .font(.caption).foregroundStyle(.secondary)
-          Toggle(L("挂载失败"), isOn: $notifyMountFailure)
-          Toggle(L("登录需要更新"), isOn: $notifyLoginExpired)
-          Toggle(L("位置意外断开"), isOn: $notifyDisconnect)
-          notificationPermission
-        }
+  private var notificationsPage: some View {
+    SettingsForm {
+      Section(L("系统权限")) {
+        notificationPermission
+      }
+      Section {
+        Toggle(L("挂载失败"), isOn: $notifyMountFailure)
+        Toggle(L("登录过期"), isOn: $notifyLoginExpired)
+        Toggle(L("位置意外断开"), isOn: $notifyDisconnect)
+      } header: {
+        Text(L("通知时机"))
+      } footer: {
+        Text(L("只在挂载失败、登录过期或位置意外断开时通知。"))
+      }
+    }
+  }
 
-        Section(L("缓存")) {
-          LabeledContent(
-            L("当前占用"),
-            value: ByteCountFormatter.string(fromByteCount: cacheBytes, countStyle: .file))
-          Stepper(value: $cacheLimitGB, in: 1...1024) {
-            Text(String.localizedStringWithFormat(L("缓存上限：%d GB"), cacheLimitGB))
-          }
-          Text(L("SMB 系统挂载不使用这里的缓存。清理不会推出 SMB 共享。"))
-            .font(.caption).foregroundStyle(.secondary)
-          Button(L("清空缓存")) { confirmClear = true }
-        }
-
-        Section(L("安卓调试密钥")) {
-          if fingerprint.isEmpty {
-            if let fingerprintError { inlineError(fingerprintError) }
+  private var storagePage: some View {
+    SettingsForm {
+      Section {
+        LabeledContent(L("当前占用")) {
+          if checkingCache {
+            ProgressView().nativeProgressAppearance().controlSize(.mini).accessibilityLabel(L("正在计算缓存大小…"))
+          } else if let cacheBytes {
+            Text(ByteCountFormatter.string(fromByteCount: cacheBytes, countStyle: .file))
+              .monospacedDigit()
           } else {
-            Text(fingerprint)
-              .font(.caption.monospaced()).textSelection(.enabled)
-              .fixedSize(horizontal: false, vertical: true)
-              .accessibilityLabel(L("ADB 密钥指纹") + ": " + fingerprint)
-            HStack {
-              Button(copiedFingerprint ? L("已复制") : L("复制指纹")) {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(fingerprint, forType: .string)
-                copiedFingerprint = true
-              }
-              Button(L("重新生成密钥")) { confirmKey = true }
-            }
-            Text(L("连接新手机时，手机上会显示这个指纹。指纹应与这里一致。"))
-              .font(.caption).foregroundStyle(.secondary)
+            Text(L("尚未计算")).foregroundStyle(KayoiTheme.secondaryText)
           }
-          Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
-            .font(.caption).foregroundStyle(.secondary)
         }
-
-        Section(L("日志")) {
-          Button(L("在 Finder 中显示日志")) { model.showLogs() }
-          Text(L("日志会保留最近 7 天，不会记录密码、令牌或私钥。"))
-            .font(.caption).foregroundStyle(.secondary)
+        if confirmClear {
+          VStack(alignment: .leading, spacing: Space.sm) {
+            Text(L("清空本机缓存？"))
+              .font(.body.weight(.semibold))
+            Text(L("只会删除 Kayoi 的本机缓存，设备和网盘中的文件不受影响。"))
+              .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+            HStack {
+              Button(L("取消")) { confirmClear = false }
+              Button(L("清空缓存"), role: .destructive) {
+                confirmClear = false
+                clearingCache = true
+                model.operations.start {
+                  await model.clearCache()
+                  clearingCache = false
+                  await refreshCache()
+                }
+              }
+            }
+          }
+        } else {
+          HStack {
+            Button(L("清空缓存…")) { confirmClear = true }
+              .disabled(clearingCache || checkingCache || cacheBytes == nil || cacheBytes == 0)
+              .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
+            if clearingCache { ProgressView().nativeProgressAppearance().controlSize(.mini) }
+          }
         }
+      } header: {
+        Text(L("本机缓存"))
+      } footer: {
+        Text(L("当前版本不缓存远端文件；这里可清理以前留下的本机缓存。系统挂载的共享不使用此缓存。"))
+      }
+    }
+  }
 
         Section(L("关于")) {
           LabeledContent(L("版本"), value: version)
           HStack {
-            Button(L("查看致谢与第三方许可证")) {
-              openBundled("THIRD_PARTY_NOTICES", extension: "md")
-            }
-            Button(L("查看 Apache 2.0 许可证")) {
-              openBundled("Apache-2.0", extension: "txt")
-            }
+            Button(copiedFingerprint ? L("已复制") : L("复制指纹"), action: copyFingerprint)
+              .disabled(regeneratingKey)
+            Button(L("重新生成密钥…")) { confirmKey = true }
+              .disabled(regeneratingKey)
+            if regeneratingKey { ProgressView().nativeProgressAppearance().controlSize(.mini) }
           }
-          Text(L("Kayoi 使用系统文件服务连接设备和服务，不上传你的文件内容。"))
-            .font(.caption).foregroundStyle(.secondary)
+          if let fingerprintError { inlineError(fingerprintError) }
         }
-      }.formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-    }
-    .buttonStyle(FlatButtonStyle())
-    .toggleStyle(.checkbox)
-    .background(KayoiTheme.background)
-    .frame(width: 600, height: 680)
-    .onAppear {
-      refreshLogin()
-      refreshFingerprint()
-      model.enforceCacheLimit()
-      cacheBytes = model.cacheSize()
-      Task { await model.refreshNotificationAuthorization() }
-    }
-    .onChange(of: cacheLimitGB) { _, _ in
-      model.enforceCacheLimit()
-      cacheBytes = model.cacheSize()
-    }
-    .confirmationDialog(
-      L("重新生成调试密钥？"),
-      isPresented: $confirmKey
-    ) {
-      Button(L("重新生成密钥"), role: .destructive) {
-        do {
-          if !model.options.isDemo { try ADBIdentity().regenerate() }
-          refreshFingerprint()
-        } catch { fingerprintError = HumanError.detail(error) }
+      } header: {
+        Text(L("USB 调试密钥"))
+      } footer: {
+        Text(L("MD5 指纹用于核对手机上的 USB 调试授权提示；请确认两边一致后再允许。"))
       }
-    } message: {
-      Text(L("所有已授权的手机都会断开。下次连接时，需要在每台手机上重新允许这台 Mac。"))
+      Section {
+        Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
+          .font(.callout).fixedSize(horizontal: false, vertical: true)
+      } header: {
+        Text(L("设备连接"))
+      }
     }
-    .confirmationDialog(
-      L("清空缓存？"),
-      isPresented: $confirmClear
-    ) {
-      Button(L("清空缓存"), role: .destructive) {
-        Task {
-          await model.clearCache()
-          cacheBytes = model.cacheSize()
+  }
+
+  private var aboutPage: some View {
+    SettingsForm {
+      Section {
+        HStack(spacing: Space.lg) {
+          Image(nsImage: NSApplication.shared.applicationIconImage)
+            .resizable().interpolation(.high).frame(width: 64, height: 64)
+            .accessibilityHidden(true)
+          VStack(alignment: .leading, spacing: Space.xs) {
+            Text(L("Kayoi")).font(.title3.bold())
+            Text(LF("版本 %@", version)).monospacedDigit()
+              .foregroundStyle(KayoiTheme.secondaryText)
+            Text(LF("构建 %@", build)).font(.caption)
+              .monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
+          }
         }
+        Button(L("致谢与许可证…")) { license = .notices }
+        Button(L("Apache 2.0 许可证…")) { license = .apache }
+      } footer: {
+        Text(L("Kayoi 不收集使用情况或文件内容。检查更新时会连接更新服务，文件只在你的 Mac 和你选择的位置之间传输。"))
       }
-    } message: {
-      Text(L("Kayoi 会先推出正在使用文件缓存的卷。SMB 共享不会推出，设备上的文件不会删除。"))
+      Section {
+        Button(L("在 Finder 中显示日志")) { model.showLogs() }
+      } header: {
+        Text(L("日志"))
+      } footer: {
+        Text(L("日志会保留最近 7 天，不会记录密码、令牌或私钥。"))
+      }
     }
   }
 
   @ViewBuilder private var notificationPermission: some View {
-    if notificationsAreAllowed {
-      Label(L("系统通知已允许"), systemImage: "checkmark.circle.fill")
-        .font(.caption).foregroundStyle(KayoiTheme.accent)
+    if model.notificationAuthorization == .authorized
+      || model.notificationAuthorization == .provisional
+    {
+      Label(L("系统通知已允许"), systemImage: "bell.fill")
+        .foregroundStyle(KayoiTheme.secondaryText)
     } else if model.notificationAuthorization == .denied {
-      HStack {
-        Text(L("系统通知已关闭。")).font(.caption).foregroundStyle(.secondary)
-        Button(L("打开通知设置")) { model.openNotificationSettings() }
+      LabeledContent {
+        Button(L("打开系统设置")) { model.openNotificationSettings() }
+      } label: {
+        Label(L("系统通知已关闭"), systemImage: "bell.slash")
       }
     } else {
-      HStack {
-        Text(L("允许系统通知后，上面的开关才会生效。"))
-          .font(.caption).foregroundStyle(.secondary)
-        Button(L("允许系统通知")) {
-          Task { await model.requestNotificationAuthorization() }
+      LabeledContent {
+        Button(L("允许通知")) {
+          model.operations.start { await model.requestNotificationAuthorization() }
         }
+      } label: {
+        Label(L("尚未允许系统通知"), systemImage: "bell")
       }
     }
   }
 
-  private var notificationsAreAllowed: Bool {
-    model.notificationAuthorization == .authorized
-      || model.notificationAuthorization == .provisional
+  private func setStartsAtLogin(_ enabled: Bool) {
+    if model.options.isDemo {
+      if let error = model.options.demoLoginItem?.errorMessage { loginError = error }
+      else { startsAtLogin = enabled; loginError = nil }
+      return
+    }
+    loginError = nil
+    do {
+      if enabled {
+        try SMAppService.mainApp.register()
+      } else {
+        try SMAppService.mainApp.unregister()
+      }
+    } catch { loginError = HumanError.detail(error) }
+    refreshLogin()
   }
 
   private func refreshLogin() {
@@ -202,32 +266,76 @@ struct SettingsView: View {
     loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
   }
 
-  private func refreshFingerprint() {
-    if model.options.isDemo { fingerprint = "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"; return }
-    do {
-      fingerprint = try ADBIdentity().fingerprint()
+  private func refreshCache() async {
+    checkingCache = true
+    let size = await model.cacheSize()
+    guard !Task.isCancelled else { return }
+    cacheBytes = size
+    checkingCache = false
+  }
+
+  private func refreshFingerprint() async {
+    if model.options.isDemo {
+      fingerprint = "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF"
       fingerprintError = nil
-    } catch {
-      fingerprintError = HumanError.detail(error)
+      return
+    }
+    let secrets = model.secrets
+    do {
+      let value = try await Task.detached(priority: .utility) {
+        try ADBIdentity(store: secrets).fingerprint()
+      }.value
+      guard !Task.isCancelled else { return }
+      fingerprint = value
+      fingerprintError = nil
+    } catch { fingerprintError = HumanError.detail(error) }
+  }
+
+  private func regenerateKey() async {
+    regeneratingKey = true
+    defer { regeneratingKey = false }
+    do {
+      if !model.options.isDemo {
+        let secrets = model.secrets
+        try await Task.detached(priority: .utility) { try ADBIdentity(store: secrets).regenerate() }
+          .value
+      }
+      await refreshFingerprint()
+    } catch { fingerprintError = HumanError.detail(error) }
+  }
+
+  private func copyFingerprint() {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(fingerprint, forType: .string)
+    copyFeedback?.cancel()
+    copiedFingerprint = true
+    copyFeedback = Task {
+      do { try await Task.sleep(for: .seconds(2)) } catch { return }
+      copiedFingerprint = false
     }
   }
 
   private func inlineError(_ message: String) -> some View {
     Label(message, systemImage: "exclamationmark.circle.fill")
-      .font(.caption).foregroundStyle(.red)
-  }
-
-  private func openBundled(_ name: String, extension fileExtension: String) {
-    guard let url = Bundle.main.url(forResource: name, withExtension: fileExtension) else {
-      return
-    }
-    NSWorkspace.shared.open(url)
+      .font(.caption).foregroundStyle(KayoiTheme.error)
+      .fixedSize(horizontal: false, vertical: true)
   }
 
   private var version: String {
-    let info = Bundle.main.infoDictionary
-    let short = info?["CFBundleShortVersionString"] as? String ?? "0.1.0"
-    let build = info?["CFBundleVersion"] as? String ?? "1"
-    return "\(short) (\(build))"
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"
+  }
+  private var build: String { Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2" }
+}
+
+private struct SettingsForm<Content: View>: View {
+  let content: Content
+  init(@ViewBuilder content: () -> Content) { self.content = content() }
+  var body: some View {
+    Form { content }
+      .formStyle(.grouped)
+      .scrollContentBackground(.hidden)
+      .scrollBounceBehavior(.basedOnSize)
+      .fixedSize(horizontal: false, vertical: true)
+      .background(KayoiTheme.background)
   }
 }

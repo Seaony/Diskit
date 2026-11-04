@@ -19,18 +19,33 @@ import UserNotifications
 
 @MainActor @Observable final class AppModel {
   let connections: ConnectionManager
+  let operations = AppOperations()
   let undoManager = UndoManager()
   let options: RuntimeOptions
   let preferences: UserDefaults
   let secrets: any SecretStore
+  private let dependencies: AppModelDependencies?
+  private let system: AppSystemServices
+  private let info: [String: Any]
   private let location: any StorageLocation
+  private let maintenance = CacheMaintenance()
   private let sessionCache = RemoteSessionCache()
   private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] = [:]
   var demoSetupError: String?
 
-  init(options: RuntimeOptions = .current) {
+  init(options: RuntimeOptions = .current, dependencies: AppModelDependencies? = nil) {
     self.options = options
-    if options.isDemo {
+    self.dependencies = dependencies
+    system = dependencies?.system ?? .live
+    info = dependencies?.info ?? Bundle.main.infoDictionary ?? [:]
+    updates = dependencies?.updates ?? UpdateController(isDemo: options.isDemo)
+    if let dependencies {
+      location = dependencies.location
+      secrets = dependencies.secrets
+      preferences = dependencies.preferences
+      connections = ConnectionManager(
+        location: dependencies.location, secrets: dependencies.secrets, smb: dependencies.smb)
+    } else if options.isDemo {
       let identifier = UUID().uuidString
       let home = FileManager.default.temporaryDirectory.appending(path: "KayoiDemo-" + identifier)
       let location = LocalStorageLocation(home: home)
@@ -51,7 +66,14 @@ import UserNotifications
       preferences = .standard
       connections = ConnectionManager(smb: SystemSMBService())
     }
-    connections.removed = { [weak self] id in self?.sessionCache.remove(id) }
+    if let notification = options.demoNotification {
+      notificationAuthorization = notification.authorization
+    }
+    if options.demoLoadError { demoSetupError = L("文件无法读取，请检查访问权限") }
+    connections.removed = { [weak self] id in
+      self?.sessionCache.remove(id)
+      self?.providerAccess.removeValue(forKey: id)
+    }
   }
 
   private var showsDemoDiscovery: Bool { options.isDemo && options.scenario != "empty" }
@@ -120,7 +142,111 @@ import UserNotifications
       }
       return
     }
-    connections.openInFinder = { NSWorkspace.shared.open($0) }
+    configureConnections()
+    usbDiscovery.changed = { [weak self] devices in
+      self?.connections.usbDevicesChanged(serials: ADBUSB.availableIdentifiers(in: devices))
+      self?.refreshWirelessAvailability()
+    }
+    wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
+    wirelessDiscovery.start()
+    usbDiscovery.start()
+    ricohDiscovery.changed = { [weak self] devices in
+      self?.connections.ricohDevicesChanged(
+        serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
+    }
+    ricohDiscovery.start()
+    cameraUSBDiscovery.changed = { [weak self] devices in
+      self?.connections.cameraUSBDevicesChanged(
+        serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
+    }
+    cameraUSBDiscovery.start()
+    observers.append(
+      NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.didMountNotification, object: nil, queue: .main
+      ) { [weak self] _ in
+        MainActor.assumeIsolated {
+          guard let self, !self.operations.isStopping else { return }
+          self.connections.refreshMounts()
+        }
+      })
+    observers.append(
+      NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.willUnmountNotification, object: nil, queue: .main
+      ) { [weak self] notification in
+        let url = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL
+        MainActor.assumeIsolated {
+          guard let self, !self.operations.isStopping, let url else { return }
+          self.connections.systemVolumeWillUnmount(at: url)
+        }
+      })
+    observers.append(
+      NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.didUnmountNotification, object: nil, queue: .main
+      ) { [weak self] notification in
+        let url = notification.userInfo?[NSWorkspace.volumeURLUserInfoKey] as? URL
+        MainActor.assumeIsolated {
+          guard let self, !self.operations.isStopping else { return }
+          if let url {
+            self.connections.systemVolumeUnmounted(at: url)
+          } else {
+            self.connections.refreshMounts()
+          }
+        }
+      })
+    observers.append(
+      NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.willSleepNotification, object: nil, queue: .main
+      ) { [weak self] _ in
+        MainActor.assumeIsolated {
+          self?.discovery.stop()
+          self?.recovery.willSleep()
+        }
+      })
+    observers.append(
+      NSWorkspace.shared.notificationCenter.addObserver(
+        forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+      ) { [weak self] _ in
+        MainActor.assumeIsolated { self?.recovery.didWake() }
+      })
+    for name in [
+      AliyunSession.loginInvalidatedNotification, QuarkSession.loginInvalidatedNotification,
+      OAuthSession.invalidationNotification, PikPakSession.loginInvalidatedNotification,
+      TianyiSession.loginInvalidatedNotification,
+    ] {
+      observers.append(
+        NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
+          [weak self] notification in
+          guard let key = notification.userInfo?["secretKey"] as? String,
+            let id = UUID(uuidString: String(key.prefix(36)))
+          else { return }
+          Task { @MainActor in self?.loginExpired(id) }
+        })
+    }
+    networkMonitor.pathUpdateHandler = { [weak self] path in
+      Task { @MainActor in self?.networkPathChanged(path) }
+    }
+    networkMonitor.start(queue: DispatchQueue(label: "com.seaony.Kayoi.networkRecovery"))
+    recovery.start()
+    Task { await refreshNotificationAuthorization() }
+    Task { await enforceCacheLimit() }
+  }
+  private func networkPathChanged(_ path: NWPath) {
+    guard !operations.isStopping, lastNetworkPath != path else { return }
+    lastNetworkPath = path
+    if path.status != .satisfied { discovery.stop() }
+    recovery.networkChanged(available: path.status == .satisfied)
+  }
+
+  func prepareToQuit() {
+    networkMonitor.cancel()
+    if !options.isDemo { discovery.stop() }
+    recovery.stop()
+    operations.cancelAll()
+  }
+  func finishQuitting() async { await operations.finishCancellation() }
+
+  func configureConnections() {
+    connections.openInFinder = { [system] in system.open($0) }
     connections.operationFailed = { [weak self] message in
       self?.logger.error("\(message, privacy: .public)")
       self?.writeError(message)
@@ -166,67 +292,26 @@ import UserNotifications
         canWrite: false, canRename: false, canMove: false, canDelete: false,
         supportsRangeRead: true)
     }
-    observers.append(
-      NotificationCenter.default.addObserver(
-        forName: AliyunSession.loginInvalidatedNotification, object: nil, queue: .main
-      ) { [weak self] notification in
-        guard let key = notification.userInfo?["secretKey"] as? String,
-          let id = UUID(uuidString: String(key.prefix(36)))
-        else { return }
-        Task { @MainActor in self?.loginExpired(id) }
-      })
-    observers.append(
-      NotificationCenter.default.addObserver(
-        forName: QuarkSession.loginInvalidatedNotification, object: nil, queue: .main
-      ) { [weak self] notification in
-        guard let key = notification.userInfo?["secretKey"] as? String,
-          let id = UUID(uuidString: String(key.prefix(36)))
-        else { return }
-        Task { @MainActor in self?.loginExpired(id) }
-      })
-    observers.append(
-      NotificationCenter.default.addObserver(
-        forName: OAuthSession.invalidationNotification, object: nil, queue: .main
-      ) { [weak self] notification in
-        guard let key = notification.userInfo?["secretKey"] as? String,
-          let id = UUID(uuidString: String(key.prefix(36)))
-        else { return }
-        Task { @MainActor in self?.loginExpired(id) }
-      })
-    observers.append(
-      NotificationCenter.default.addObserver(
-        forName: PikPakSession.loginInvalidatedNotification, object: nil, queue: .main
-      ) { [weak self] notification in
-        guard let key = notification.userInfo?["secretKey"] as? String,
-          let id = UUID(uuidString: String(key.prefix(36)))
-        else { return }
-        Task { @MainActor in self?.loginExpired(id) }
-      })
-    observers.append(
-      NotificationCenter.default.addObserver(
-        forName: TianyiSession.loginInvalidatedNotification, object: nil, queue: .main
-      ) { [weak self] notification in
-        guard let key = notification.userInfo?["secretKey"] as? String,
-          let id = UUID(uuidString: String(key.prefix(36)))
-        else { return }
-        Task { @MainActor in self?.loginExpired(id) }
-      })
-    Task { await connections.autoMount() }
-    Task { await refreshNotificationAuthorization() }
-    enforceCacheLimit()
+    guard let entry = providerAccess[connection.id], entry.connection.kind == connection.kind,
+      entry.connection.params == connection.params else { return nil }
+    return entry.capabilities
   }
-  static var aliyunConfiguration: AliyunConfiguration {
-    let info = Bundle.main.infoDictionary ?? [:]
+
+  func makeHTTPTransport(cookieDomain: String? = nil) -> any HTTPTransport {
+    dependencies?.httpTransport ?? URLSessionHTTPTransport(cookieDomain: cookieDomain)
+  }
+
+  var aliyunConfiguration: AliyunConfiguration {
     return AliyunConfiguration(
       clientID: info["ALIYUN_CLIENT_ID"] as? String ?? "",
       clientSecret: info["ALIYUN_CLIENT_SECRET"] as? String ?? "",
       redirectURI: info["ALIYUN_REDIRECT_URI"] as? String ?? "")
   }
   func aliyunSession(for connection: Connection) -> AliyunSession {
-    sessionCache.value(for: connection, configuration: Self.aliyunConfiguration) {
+    sessionCache.value(for: connection, configuration: aliyunConfiguration) {
       AliyunSession(
         secretKey: "\(connection.id.uuidString).oauth", secrets: secrets,
-        configuration: Self.aliyunConfiguration)
+        configuration: aliyunConfiguration, transport: makeHTTPTransport())
     }
   }
   func discardUnsavedSessions(for connection: Connection) {
@@ -236,7 +321,9 @@ import UserNotifications
   }
   func pikPakSession(for connection: Connection) -> PikPakSession {
     sessionCache.value(for: connection, configuration: "pikPak") {
-      PikPakSession(secretKey: "\(connection.id.uuidString).oauth.pikPak", secrets: secrets)
+      PikPakSession(
+        secretKey: "\(connection.id.uuidString).oauth.pikPak", secrets: secrets,
+        transport: makeHTTPTransport())
     }
   }
   func quarkSession(for connection: Connection) -> QuarkSession {
@@ -244,7 +331,8 @@ import UserNotifications
     return sessionCache.value(for: connection, configuration: configuration) {
       QuarkSession(
         secretKey: "\(connection.id.uuidString).cookie", secrets: secrets,
-        configuration: configuration)
+        configuration: configuration,
+        transport: makeHTTPTransport(cookieDomain: configuration.cookieDomain))
     }
   }
   func tianyiSession(for connection: Connection, personal: Bool = false) -> TianyiSession {
@@ -258,11 +346,11 @@ import UserNotifications
     ) {
       TianyiSession(
         secretKey: "\(connection.id.uuidString).oauth.tianyiDrive", secrets: secrets,
-        configuration: configuration)
+        configuration: configuration,
+        transport: makeHTTPTransport(cookieDomain: configuration.cookieDomain))
     }
   }
   func oauthConfiguration(for kind: ConnectionKind) -> OAuthConfiguration? {
-    let info = Bundle.main.infoDictionary ?? [:]
     func value(_ key: String) -> String { info[key] as? String ?? "" }
     switch kind {
     case .baiduDrive:
@@ -341,11 +429,14 @@ import UserNotifications
     return sessionCache.value(for: connection, configuration: configuration) {
       OAuthSession(
         configuration: configuration,
-        secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)", secrets: secrets
+        secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)",
+        secrets: secrets,
+        transport: makeHTTPTransport()
       )
     }
   }
   func remoteProvider(for connection: Connection) async throws -> any RemoteFileProvider {
+    if let factory = dependencies?.providerFactory { return try await factory(connection) }
     guard !options.isDemo else { throw ConnectionError.notImplemented }
     switch connection.kind {
     case .androidUSB, .androidWiFi:
@@ -361,8 +452,8 @@ import UserNotifications
     case .quark, .ucDrive:
       return QuarkProvider(session: quarkSession(for: connection))
     case .baiduDrive:
-      let root = Bundle.main.infoDictionary?["BAIDU_ROOT_PATH"] as? String ?? "apps/Kayoi"
-      let appID = Bundle.main.infoDictionary?["BAIDU_APP_ID"] as? String ?? ""
+      let root = info["BAIDU_ROOT_PATH"] as? String ?? "apps/Kayoi"
+      let appID = info["BAIDU_APP_ID"] as? String ?? ""
       return BaiduDriveProvider(
         configuration: BaiduDriveConfiguration(rootPath: root, appID: appID),
         session: try oauthSession(for: connection))
@@ -401,7 +492,8 @@ import UserNotifications
         pathStyle: connection.params["pathStyle"] != "false")
       return S3Provider(
         configuration: configuration,
-        transport: s3Transport(for: connection, configuration: configuration))
+        transport: dependencies?.httpTransport
+          ?? s3Transport(for: connection, configuration: configuration))
     default:
       throw ConnectionError.notImplemented
     }
@@ -418,8 +510,14 @@ import UserNotifications
       authentication = .accountCookie(secret)
     }
     let configuration = try LanzouConfiguration(authentication: authentication)
+    let cookieStore = RecoverableSecretStore(base: secrets)
+    let cookieKey = connection.passwordKey
     return sessionCache.value(for: connection, configuration: configuration) {
-      LanzouSession(configuration: configuration)
+      LanzouSession(
+        configuration: configuration, transport: makeHTTPTransport(),
+        persistAccountCookie: { cookie in
+          try cookieStore.write(Data(cookie.utf8), for: cookieKey)
+        })
     }
   }
   func mobileCloudSession(for connection: Connection) throws -> MobileCloudSession {
@@ -427,13 +525,13 @@ import UserNotifications
       phone: connection.params["phone"] ?? "", token: try savedRemoteSecret(for: connection),
       userDomainID: connection.params["userDomainID"])
     return sessionCache.value(for: connection, configuration: credentials) {
-      MobileCloudSession(credentials: credentials)
+      MobileCloudSession(credentials: credentials, transport: makeHTTPTransport())
     }
   }
   func xunleiSession(for connection: Connection) throws -> XunleiSession {
     let credentials = XunleiCredentials(accessToken: try savedRemoteSecret(for: connection))
     return sessionCache.value(for: connection, configuration: credentials) {
-      XunleiSession(credentials: credentials)
+      XunleiSession(credentials: credentials, transport: makeHTTPTransport())
     }
   }
   func s3Transport(for connection: Connection, configuration: S3Configuration)
@@ -442,7 +540,7 @@ import UserNotifications
     sessionCache.value(for: connection, configuration: configuration) { URLSessionHTTPTransport() }
   }
   func savedRemoteSecret(for connection: Connection) throws -> String {
-    try secrets.read(connection.passwordKey).map {
+    try RecoverableSecretStore(base: secrets).read(connection.passwordKey).map {
       String(decoding: $0, as: UTF8.self)
     } ?? ""
   }
@@ -499,95 +597,43 @@ import UserNotifications
     sendNotification(.mountFailure, title: L("挂载失败"), body: message)
   }
   private func writeError(_ message: String) {
-    do {
-      let folder = location.dataDirectory.appending(path: "Logs")
-      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-      let formatter = ISO8601DateFormatter()
-      let now = Date()
-      let date = String(formatter.string(from: now).prefix(10))
-      let url = folder.appending(path: date + ".log")
-      if !FileManager.default.fileExists(atPath: url.path) {
-        FileManager.default.createFile(atPath: url.path, contents: nil)
+    let directory = location.dataDirectory.appending(path: "Logs")
+    Task {
+      do { try await maintenance.appendError(message, at: Date(), directory: directory) } catch {
+        logger.error("无法写入错误日志")
       }
-      let handle = try FileHandle(forWritingTo: url)
-      defer { try? handle.close() }
-      try handle.seekToEnd()
-      try handle.write(contentsOf: Data("\(formatter.string(from: now)) \(message)\n".utf8))
-      for file in try FileManager.default.contentsOfDirectory(
-        at: folder, includingPropertiesForKeys: [.contentModificationDateKey])
-      {
-        if let modified = try file.resourceValues(forKeys: [.contentModificationDateKey])
-          .contentModificationDate,
-          now.timeIntervalSince(modified) > 7 * 86_400
-        {
-          try FileManager.default.removeItem(at: file)
-        }
-      }
-    } catch { logger.error("无法写入错误日志") }
+    }
   }
   func showLogs() {
     let url = location.dataDirectory.appending(path: "Logs")
-    do {
-      try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-      NSWorkspace.shared.open(url)
-    } catch {
-      presentOperationAlert(
-        title: L("无法显示日志"), message: HumanError.detail(error),
-        retryTitle: L("重试"), retry: { [weak self] in self?.showLogs() })
-    }
-  }
-  func cacheSize() -> Int64 {
-    guard
-      let files = FileManager.default.enumerator(
-        at: location.cacheDirectory, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey])
-    else { return 0 }
-    var count: Int64 = 0
-    for case let file as URL in files {
-      if let values = try? file.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
-        values.isRegularFile == true
-      {
-        count += Int64(values.fileSize ?? 0)
+    Task { [self] in
+      do {
+        try await maintenance.prepareDirectory(url)
+        system.open(url)
+      } catch {
+        presentOperationAlert(
+          title: L("无法显示日志"), message: HumanError.detail(error),
+          retryTitle: L("重试"), retry: { [weak self] in self?.showLogs() })
       }
     }
-    return count
+  }
+  func cacheSize() async -> Int64 {
+    await maintenance.size(at: location.cacheDirectory)
   }
 
-  func enforceCacheLimit() {
-    let limit =
-      Int64(preferences.object(forKey: "cacheLimitGB") as? Int ?? 5)
-      * 1_024 * 1_024 * 1_024
-    guard
-      let enumerator = FileManager.default.enumerator(
-        at: location.cacheDirectory,
-        includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey, .contentModificationDateKey],
-        options: [.skipsHiddenFiles]
-      )
-    else { return }
-    var files: [(url: URL, size: Int64, modified: Date)] = []
-    var total: Int64 = 0
-    for case let file as URL in enumerator {
-      guard
-        let values = try? file.resourceValues(
-          forKeys: [.fileSizeKey, .isRegularFileKey, .contentModificationDateKey]),
-        values.isRegularFile == true
-      else { continue }
-      let size = Int64(values.fileSize ?? 0)
-      total += size
-      files.append((file, size, values.contentModificationDate ?? .distantPast))
-    }
-    guard total > limit else { return }
-    for file in files.sorted(by: { $0.modified < $1.modified }) {
-      guard total > limit else { break }
-      if (try? FileManager.default.removeItem(at: file.url)) != nil {
-        total -= file.size
-      }
+  func enforceCacheLimit() async {
+    let savedLimit = preferences.object(forKey: "cacheLimitGB") as? Int ?? 5
+    let limit = Int64((1...50).contains(savedLimit) ? savedLimit : 5) * 1_024 * 1_024 * 1_024
+    do { try await maintenance.enforceLimit(at: location.cacheDirectory, bytes: limit) } catch {
+      logger.error("无法清理缓存")
     }
   }
+
   func clearCache() async {
     do {
       for connection in connections.connections where connection.usesFileSystemCache {
         if case .mounted = connections.states[connection.id] {
-          await connections.toggle(connection)
+          await connections.eject(connection)
         }
       }
       connections.refreshMounts()
@@ -597,9 +643,7 @@ import UserNotifications
         return false
       }
       guard !cachedMountsRemain else { throw ConnectionError.busy }
-      if FileManager.default.fileExists(atPath: location.cacheDirectory.path) {
-        try FileManager.default.removeItem(at: location.cacheDirectory)
-      }
+      try await maintenance.clear(at: location.cacheDirectory)
     } catch {
       presentOperationAlert(
         title: L("无法清除缓存"), message: HumanError.detail(error),
@@ -614,31 +658,14 @@ import UserNotifications
     title: String, message: String, retryTitle: String? = nil,
     retry: (@MainActor @Sendable () -> Void)? = nil
   ) {
-    let alert = NSAlert()
-    alert.messageText = title
-    alert.informativeText = message
-    if retry != nil, let retryTitle {
-      alert.addButton(withTitle: retryTitle)
-      alert.addButton(withTitle: L("关闭"))
-    } else {
-      alert.addButton(withTitle: L("好"))
-    }
-    alert.addButton(withTitle: L("复制详细信息"))
-    let completion: (NSApplication.ModalResponse) -> Void = { response in
-      if response == .alertFirstButtonReturn, let retry {
-        retry()
-      } else if response == .alertSecondButtonReturn, retry != nil {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(message, forType: .string)
-      } else if response == .alertSecondButtonReturn, retry == nil {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(message, forType: .string)
+    let hasRetry = retry != nil && retryTitle != nil
+    let buttons = hasRetry ? [retryTitle!, L("关闭"), L("复制详细信息")] : [L("好"), L("复制详细信息")]
+    system.alert(title, message, buttons) { [system] response in
+      switch OperationAlertAction.resolve(response, hasRetry: hasRetry) {
+      case .retry: retry?()
+      case .copy: system.copy(message)
+      case .dismiss: break
       }
-    }
-    if let window = NSApplication.shared.keyWindow {
-      alert.beginSheetModal(for: window, completionHandler: completion)
-    } else {
-      completion(alert.runModal())
     }
   }
 
@@ -647,20 +674,18 @@ import UserNotifications
       notificationAuthorization = .authorized
       return
     }
-    let center = UNUserNotificationCenter.current()
-    _ = try? await center.requestAuthorization(options: [.alert, .sound])
+    try? await system.requestNotifications()
     await refreshNotificationAuthorization()
   }
 
   func refreshNotificationAuthorization() async {
     guard !options.isDemo else { return }
-    notificationAuthorization = await UNUserNotificationCenter.current().notificationSettings()
-      .authorizationStatus
+    notificationAuthorization = await system.notificationStatus()
   }
 
   func openNotificationSettings() {
     guard !options.isDemo else { return }
-    NSWorkspace.shared.open(
+    system.open(
       URL(string: "x-apple.systempreferences:com.apple.preference.notifications")!)
   }
 
@@ -686,14 +711,13 @@ import UserNotifications
       return
     }
     Task {
-      let center = UNUserNotificationCenter.current()
-      guard await center.notificationSettings().authorizationStatus == .authorized else {
+      guard await system.notificationStatus() == .authorized else {
         return
       }
       let content = UNMutableNotificationContent()
       content.title = title
       content.body = body
-      try? await center.add(
+      try? await system.notify(
         UNNotificationRequest(
           identifier: "\(kind.rawValue)-\(UUID().uuidString)", content: content, trigger: nil))
     }
