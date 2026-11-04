@@ -330,6 +330,7 @@ public actor TianyiSession {
     var unify = URLRequest(url: unifyURL, timeoutInterval: 30)
     unify.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
     let unifyResponse = try await send(unify)
+    try Self.rejectInvalidGrant(unifyResponse)
     jar.merge(
       unifyResponse, requestURL: unifyURL, trustedDomain: configuration.cookieDomain)
     guard (200..<400).contains(unifyResponse.status) else {
@@ -348,6 +349,7 @@ public actor TianyiSession {
       redirect.setValue(cookie, forHTTPHeaderField: "Cookie")
     }
     let redirectResponse = try await send(redirect)
+    try Self.rejectInvalidGrant(redirectResponse)
     jar.merge(
       redirectResponse, requestURL: redirectURL, trustedDomain: configuration.cookieDomain)
     guard (200..<400).contains(redirectResponse.status) else {
@@ -383,6 +385,7 @@ public actor TianyiSession {
     request.setValue("application/json;charset=UTF-8", forHTTPHeaderField: "Accept")
     request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Request-ID")
     let response = try await send(request)
+    try Self.rejectInvalidGrant(response)
     jar.merge(response, requestURL: url, trustedDomain: configuration.cookieDomain)
     try TianyiHTTP.check(response)
     let object = TianyiJSON.object(from: response.body)
@@ -421,14 +424,16 @@ public actor TianyiSession {
       do {
         restored = try await restore(original)
       } catch {
-        try invalidate()
-        throw RemoteError.unauthorized
+        if (error as? TianyiError) == .loginRequired {
+          try invalidate()
+          throw RemoteError.unauthorized
+        }
+        throw error
       }
       state = restored
       try persist(restored)
       response = try await send(build(restored))
       if TianyiHTTP.isAuthenticationFailure(response) {
-        try invalidate()
         throw RemoteError.unauthorized
       }
     }
@@ -439,16 +444,30 @@ public actor TianyiSession {
   private func restore(_ rejected: StoredTianyiSession) async throws -> StoredTianyiSession {
     var jar = rejected.cookies
     if !rejected.accessToken.isEmpty {
-      if let fresh = try? await exchangeSession(
-        jar: &jar, queryName: "accessToken", queryValue: rejected.accessToken),
-        (try? fresh.credentials(for: configuration.scope.credentialKind)) != nil
-      {
+      do {
+        let fresh = try await exchangeSession(
+          jar: &jar, queryName: "accessToken", queryValue: rejected.accessToken)
+        _ = try fresh.credentials(for: configuration.scope.credentialKind)
         return fresh
+      } catch {
+        guard
+          (error as? RemoteError) == .unauthorized
+            || (error as? TianyiError) == .loginRequired
+            || (error as? TianyiError) == .familyUnavailable
+        else { throw error }
       }
     }
     let sson = jar.cookies.first { $0.name == "SSON" && !$0.value.isEmpty }
     guard sson != nil else { throw TianyiError.loginRequired }
     return try await sessionFromCookie(jar)
+  }
+
+  private static func rejectInvalidGrant(_ response: HTTPResponse) throws {
+    guard response.status < 500, response.status != 429,
+      let body = TianyiJSON.object(from: response.body),
+      (body["error"] ?? body["errorCode"] ?? body["code"]) as? String == "invalid_grant"
+    else { return }
+    throw TianyiError.loginRequired
   }
 
   private static func makeSignedRequest(

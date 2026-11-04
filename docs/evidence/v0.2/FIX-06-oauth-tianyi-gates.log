@@ -1,0 +1,21 @@
+make test：退出码 0
+2026-11-04 15:52:36.888 appintentsmetadataprocessor[43498:291979] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+􁁛 Test run with 9 tests in 0 suites passed after 0.009 seconds.
+** TEST SUCCEEDED **
+􁁛  Test run with 34 tests in 0 suites passed after 0.029 seconds.
+􁁛  Test run with 26 tests in 0 suites passed after 0.422 seconds.
+􁁛  Test run with 14 tests in 0 suites passed after 0.006 seconds.
+􁁛  Test run with 31 tests in 0 suites passed after 0.070 seconds.
+􁁛  Test run with 32 tests in 0 suites passed after 0.013 seconds.
+􁁛  Test run with 13 tests in 0 suites passed after 0.018 seconds.
+􁁛  Test run with 48 tests in 0 suites passed after 1.056 seconds.
+􁁛  Test run with 12 tests in 0 suites passed after 0.005 seconds.
+􁁛  Test run with 13 tests in 0 suites passed after 0.022 seconds.
+􁁛  Test run with 5 tests in 0 suites passed after 0.007 seconds.
+􁁛  Test run with 21 tests in 0 suites passed after 0.019 seconds.
+􁁛  Test run with 24 tests in 0 suites passed after 0.009 seconds.
+make release：退出码 0
+2026-11-04 15:53:35.589 appintentsmetadataprocessor[46176:302705] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+** BUILD SUCCEEDED **
+build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
+build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement

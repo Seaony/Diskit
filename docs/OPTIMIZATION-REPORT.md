@@ -109,3 +109,12 @@
 - `oauthRefreshRecoversAfterTemporaryFailureWithoutLogin`、`pikPakRefreshRecoversAfterTemporaryFailureWithoutLogin` 实际完成 500 → 新令牌 → 请求成功的替身流程，确认下一次重试不需要再次登录。测试不等待重试时长，429 使用超过自动等待上限的响应头直接返回可重试错误。
 - 完整门禁通过：应用逻辑 9 项、包测试 267 项；发布构建和签名校验通过。证据 `docs/evidence/v0.2/FIX-06-aliyun-pikpak-gates.log`。
 - FIX-06 尚未整体通过：公共 OAuth 和天翼恢复路径仍待修复；跨进程并发刷新与密钥写入失败另由 FIX-07 处理。真实账号服务端错误码仍需账号验收，本轮未连接账号。
+
+## FIX-06：公共 OAuth 与天翼恢复
+
+- `OAuthSession.swift:332` 优先把 429、5xx 归为暂时错误；没有明确拒绝码的 401 不再删除凭据；明确 `invalid_grant` 也能在 HTTP 200 业务失败响应中识别。`commonOAuthTransientRefreshPreservesLogin` 和 `commonOAuthExplicitInvalidGrantInvalidatesLogin` 修复前分别发现丢登录与漏识别，修复后通过。
+- `TianyiSession.swift:417` 起只在明确拒绝授权时作废记录；`:444` 不再吞掉网络、限流、服务故障并盲目切换备用登录；`:465` 集中判断恢复端点的明确拒绝码。成功恢复后若资源请求仍鉴权失败，保留新会话，不删除整份账号信息。
+- 天翼 `tianyiTransientRestorationPreservesLogin` 覆盖断网、429、500、无明确原因的 401，原来均删除记录，修复后保留原字节；`tianyiExplicitInvalidGrantInvalidatesLogin` 保留明确拒绝后的重新登录行为。`tianyiRestorationRecoversAfterServerFailure` 与 `commonOAuthRefreshRecoversAfterServerFailure` 验证失败后下一次成功恢复。证据：`docs/evidence/v0.2/FIX-06-oauth-tianyi-regression.log`。
+- 旧天翼测试把家庭 SessionKey 失败和无明确原因的 401 固定成删除整份账号，已修正为 `familySessionKeyFailurePreservesRecoverableLogin`、`authenticationFailureWithoutExplicitRejectionPreservesStoredCookieSession`。这类资源/会话错误并不能证明 Cookie 与刷新凭据都已失效。
+- 完整门禁通过：应用逻辑 9 项、包测试 273 项；发布构建、签名校验通过。证据 `docs/evidence/v0.2/FIX-06-oauth-tianyi-gates.log`。
+- 四套恢复路径的暂时故障矩阵现已覆盖。仍需追踪资源请求二次鉴权失败时其他驱动主动 invalidate 的路径，以及 FIX-07 的并发刷新/多进程与存储失败；FIX-06 暂不标为全链路通过。

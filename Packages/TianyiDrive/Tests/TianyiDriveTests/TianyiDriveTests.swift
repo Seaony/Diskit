@@ -211,7 +211,8 @@ private func form(_ request: URLRequest) -> [String: String] {
   #expect(pages.count == 2)
 }
 
-@Test func authenticationFailureInvalidatesStoredCookieSession() async throws {
+@Test func authenticationFailureWithoutExplicitRejectionPreservesStoredCookieSession() async throws
+{
   for storageConfiguration in [personalConfiguration, familyConfiguration] {
     for failure in [
       HTTPResponse(status: 401),
@@ -225,7 +226,8 @@ private func form(_ request: URLRequest) -> [String: String] {
       let (session, secrets) = try session(http, configuration: storageConfiguration)
       let provider = TianyiProvider(session: session)
       await #expect(throws: RemoteError.unauthorized) { try await provider.connect() }
-      #expect(try secrets.read("tianyi.test") == nil)
+      #expect(try secrets.read("tianyi.test") != nil)
+      #expect(try await session.hasLogin())
     }
   }
 }
@@ -680,7 +682,7 @@ func rangeReadUsesShortLivedURLAndValidatesContentRange(_ scheme: String) async 
   try await personalProvider.connect()
 }
 
-@Test func familySessionKeyFailureInvalidatesWholeLogin() async throws {
+@Test func familySessionKeyFailurePreservesRecoverableLogin() async throws {
   let http = FakeHTTP { request in
     switch request.url?.path {
     case "/portal/getUserSizeInfo.action":
@@ -698,7 +700,8 @@ func rangeReadUsesShortLivedURLAndValidatesContentRange(_ scheme: String) async 
   await #expect(throws: RemoteError.unauthorized) {
     try await provider.list(try RemotePath("/"))
   }
-  #expect(try secrets.read("tianyi.test") == nil)
+  #expect(try secrets.read("tianyi.test") != nil)
+  #expect(try await session.hasLogin())
 }
 
 @Test func signedRequestsPreservePlusInQueryAndFormValues() async throws {
@@ -772,4 +775,66 @@ func rangeReadUsesShortLivedURLAndValidatesContentRange(_ scheme: String) async 
   try await provider.connect()
   #expect(try await provider.list(RemotePath("/")).map(\.name) == ["a"])
   #expect(await http.requests.filter { $0.url?.path == "/file/listFiles.action" }.count == 2)
+}
+
+@Test(arguments: [0, 429, 500, 401])
+func tianyiTransientRestorationPreservesLogin(_ status: Int) async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return HTTPResponse(status: 401) }
+    guard
+      ["/getSessionForPC.action", "/api/portal/unifyLoginForPC.action"].contains(
+        request.url?.path ?? "")
+    else { throw RemoteError.protocolError }
+    if status == 0 { throw URLError(.notConnectedToInternet) }
+    return HTTPResponse(status: status, body: Data("{}".utf8))
+  }
+  let (session, secrets) = try session(http)
+  let original = try secrets.read("tianyi.test")
+  do {
+    try await session.connect()
+    Issue.record("恢复失败不应成功")
+  } catch { if status != 401 { #expect((error as? RemoteError) != .unauthorized) } }
+  #expect(try secrets.read("tianyi.test") == original)
+  #expect(try await session.hasLogin())
+}
+
+@Test func tianyiExplicitInvalidGrantInvalidatesLogin() async throws {
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" { return HTTPResponse(status: 401) }
+    guard
+      ["/getSessionForPC.action", "/api/portal/unifyLoginForPC.action"].contains(
+        request.url?.path ?? "")
+    else { throw RemoteError.protocolError }
+    return HTTPResponse(status: 400, body: Data(#"{"error":"invalid_grant"}"#.utf8))
+  }
+  let (session, secrets) = try session(http)
+  await #expect(throws: RemoteError.unauthorized) { try await session.connect() }
+  #expect(try secrets.read("tianyi.test") == nil)
+  #expect(try await !session.hasLogin())
+}
+
+@Test func tianyiRestorationRecoversAfterServerFailure() async throws {
+  let attempts = Mutex(0)
+  let http = FakeHTTP { request in
+    if request.url?.path == "/portal/getUserSizeInfo.action" {
+      return attempts.withLock { $0 } >= 2 ? capacity() : HTTPResponse(status: 401)
+    }
+    guard request.url?.path == "/getSessionForPC.action" else { throw RemoteError.protocolError }
+    let number = attempts.withLock {
+      $0 += 1
+      return $0
+    }
+    return number == 1 ? HTTPResponse(status: 500) : sessionJSON(accessToken: "recovered")
+  }
+  let (session, secrets) = try session(http)
+  do {
+    try await session.connect()
+    Issue.record("首次恢复应失败")
+  } catch {}
+  #expect(try await session.hasLogin())
+  try await session.connect()
+  let stored = try JSONDecoder().decode(
+    StoredTianyiSession.self, from: #require(try secrets.read("tianyi.test")))
+  #expect(stored.accessToken == "recovered")
+  #expect(attempts.withLock { $0 } == 2)
 }

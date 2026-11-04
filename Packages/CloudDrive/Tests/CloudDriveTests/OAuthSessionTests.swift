@@ -271,3 +271,64 @@ private func tokenResponse(
   #expect(try await session.hasToken())
   #expect(transport.requests.withLock { $0.count } == 3)
 }
+
+private struct RefreshFailureHTTP: HTTPTransport {
+  let status: Int
+  let explicitRejection: Bool
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    guard request.url?.absoluteString == "https://example.com/token" else {
+      throw RemoteError.protocolError
+    }
+    if status == 0 { throw URLError(.notConnectedToInternet) }
+    return HTTPResponse(
+      status: status, headers: ["Retry-After": "0"],
+      body: Data((explicitRejection ? #"{"error":"invalid_grant"}"# : "{}").utf8))
+  }
+}
+
+@Test(arguments: [0, 429, 500, 401])
+func commonOAuthTransientRefreshPreservesLogin(_ status: Int) async throws {
+  let secrets = MemorySecrets()
+  let token = OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)
+  let original = try JSONEncoder().encode(token)
+  try secrets.write(original, for: "oauth")
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets,
+    transport: RefreshFailureHTTP(status: status, explicitRejection: status == 500))
+  do {
+    _ = try await session.refreshNow()
+    Issue.record("刷新失败不应成功")
+  } catch { #expect((error as? OAuthDriveError) != .loginRequired) }
+  #expect(try secrets.read("oauth") == original)
+  #expect(try await session.hasToken())
+}
+
+@Test(arguments: [200, 400])
+func commonOAuthExplicitInvalidGrantInvalidatesLogin(_ status: Int) async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)),
+    for: "oauth")
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets,
+    transport: RefreshFailureHTTP(status: status, explicitRejection: true))
+  await #expect(throws: OAuthDriveError.loginRequired) { _ = try await session.refreshNow() }
+  #expect(try await !session.hasToken())
+}
+
+@Test func commonOAuthRefreshRecoversAfterServerFailure() async throws {
+  let secrets = MemorySecrets()
+  try secrets.write(
+    JSONEncoder().encode(
+      OAuthToken(accessToken: "old", refreshToken: "refresh", expiresAt: .distantPast)),
+    for: "oauth")
+  let transport = FakeTransport([HTTPResponse(status: 500), tokenResponse(access: "recovered")])
+  let session = OAuthSession(
+    configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
+  await #expect(throws: OAuthDriveError.temporarilyUnavailable) {
+    _ = try await session.refreshNow()
+  }
+  #expect(try await session.refreshNow() == "recovered")
+  #expect(try await session.hasToken())
+}

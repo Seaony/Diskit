@@ -330,6 +330,11 @@ public actor OAuthSession {
   }
 
   private func throwIfTokenError(in payload: [String: Any], status: Int) throws {
+    if status == 429 || status >= 500 { throw OAuthDriveError.temporarilyUnavailable }
+    let rejection = (payload["error"] ?? payload["error_code"] ?? payload["code"]) as? String
+    if ["invalid_grant", "invalid_token", "token_revoked"].contains(rejection ?? "") {
+      throw OAuthDriveError.loginRequired
+    }
     let explicitSuccess = isSuccessfulState(payload["state"])
     if explicitSuccess, !(200..<300).contains(status) {
       throw tokenResponseError(status: status, payload: payload)
@@ -363,15 +368,14 @@ public actor OAuthSession {
     let numericCode = integerValue(payload["code"]) ?? integerValue(payload["errno"])
     let rateLimited =
       status == 429
-      || status == 503
+      || status >= 500
       || numericCode == 429
       || numericCode == 5_113
       || numericCode == 40_140_117
       || code == "temporarily_unavailable"
     if rateLimited { return .temporarilyUnavailable }
     let rejected =
-      status == 401
-      || ["invalid_grant", "invalid_token", "token_revoked"].contains(code ?? "")
+      ["invalid_grant", "invalid_token", "token_revoked"].contains(code ?? "")
       || [40_140_114, 40_140_115, 40_140_116].contains(numericCode ?? -1)
     return rejected ? .loginRequired : .temporarilyUnavailable
   }

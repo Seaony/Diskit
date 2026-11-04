@@ -1,0 +1,31 @@
+oauth 修复前
+􀢄  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) recorded an issue with 1 argument status → 200 at OAuthSessionTests.swift:306:9: Expectation failed: expected error ".loginRequired" of type OAuthDriveError, but ".invalidResponse" of type OAuthDriveError was thrown instead
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 500 at OAuthSessionTests.swift:295:11: Expectation failed: ((error as? OAuthDriveError) → .loginRequired) != .loginRequired
+􀢄  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) recorded an issue with 1 argument status → 200 at OAuthSessionTests.swift:307:3: Expectation failed: try await !session.hasToken()
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 401 at OAuthSessionTests.swift:295:11: Expectation failed: ((error as? OAuthDriveError) → .loginRequired) != .loginRequired
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 500 at OAuthSessionTests.swift:296:3: Expectation failed: try secrets.read("oauth") == original
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 401 at OAuthSessionTests.swift:296:3: Expectation failed: try secrets.read("oauth") == original
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 500 at OAuthSessionTests.swift:297:3: Expectation failed: try await session.hasToken()
+􀢄  Test commonOAuthTransientRefreshPreservesLogin(_:) recorded an issue with 1 argument status → 401 at OAuthSessionTests.swift:297:3: Expectation failed: try await session.hasToken()
+􀢄  Test run with 2 tests in 0 suites failed after 0.004 seconds with 8 issues.
+tianyi 修复前
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 401 at TianyiDriveTests.swift:789:3: Expectation failed: try secrets.read("tianyi.test") == original
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 401 at TianyiDriveTests.swift:790:3: Expectation failed: try await session.hasLogin()
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 0 at TianyiDriveTests.swift:788:30: Expectation failed: ((error as? RemoteError) → .unauthorized) != .unauthorized
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 500 at TianyiDriveTests.swift:788:30: Expectation failed: ((error as? RemoteError) → .unauthorized) != .unauthorized
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 429 at TianyiDriveTests.swift:788:30: Expectation failed: ((error as? RemoteError) → .unauthorized) != .unauthorized
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 0 at TianyiDriveTests.swift:789:3: Expectation failed: try secrets.read("tianyi.test") == original
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 500 at TianyiDriveTests.swift:789:3: Expectation failed: try secrets.read("tianyi.test") == original
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 429 at TianyiDriveTests.swift:789:3: Expectation failed: try secrets.read("tianyi.test") == original
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 0 at TianyiDriveTests.swift:790:3: Expectation failed: try await session.hasLogin()
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 500 at TianyiDriveTests.swift:790:3: Expectation failed: try await session.hasLogin()
+􀢄  Test tianyiTransientRestorationPreservesLogin(_:) recorded an issue with 1 argument status → 429 at TianyiDriveTests.swift:790:3: Expectation failed: try await session.hasLogin()
+􀢄  Test run with 2 tests in 0 suites failed after 0.004 seconds with 11 issues.
+最终测试摘录
+􁁛  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test commonOAuthTransientRefreshPreservesLogin(_:) with 4 test cases passed after 0.006 seconds.
+􁁛  Test commonOAuthRefreshRecoversAfterServerFailure() passed after 0.006 seconds.
+􁁛  Test tianyiTransientRestorationPreservesLogin(_:) with 4 test cases passed after 0.008 seconds.
+􁁛  Test tianyiExplicitInvalidGrantInvalidatesLogin() passed after 0.008 seconds.
+􁁛  Test tianyiRestorationRecoversAfterServerFailure() passed after 0.009 seconds.
+􁁛  Test familySessionKeyFailurePreservesRecoverableLogin() passed after 0.009 seconds.
