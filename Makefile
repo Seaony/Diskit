@@ -1,4 +1,5 @@
 .PHONY: gen build release test dev-tool format
+export KAYOI_BUILD_CONFIG ?= Config/Validation.xcconfig
 SIGN_IDENTITY ?= Apple Development: seaony@outlook.com
 
 gen:

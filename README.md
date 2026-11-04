@@ -99,3 +99,7 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 支持夸克、UC、天翼个人云/家庭云、移动云盘、迅雷、PikPak 和蓝奏云。它们使用网页登录信息或账号密码，接口可能随服务商改版失效；登录信息只存登录钥匙串。蓝奏云只读。迅雷的上传使用官方阿里云 OSS Swift SDK 和迅雷提供的临时 STS 凭据，支持阿里云 OSS 分片；同名上传直接报错，上传失败会清理新建条目，不改旧文件。其余平台的上传、目录操作、同名规则、限流和登录刷新均有假实现覆盖。
 
 真实账号、扫码、网页风控、分片上传和回收站行为仍待验收。不要将 Cookie、访问令牌或账号密码写入配置或提交到 Git。
+
+## 隔离验收构建
+
+`make gen`、`make test`、`make release` 默认使用 `Config/Validation.xcconfig`，不加载本机密钥文件。单元测试的密钥存储只在内存中。真实账号验收由用户另行运行 `make release KAYOI_BUILD_CONFIG=Config/App.xcconfig`；该入口会读取用户本地凭据，不用于自动验收。直接运行 XcodeGen 时也需显式设置 `KAYOI_BUILD_CONFIG`。

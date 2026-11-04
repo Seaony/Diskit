@@ -1,0 +1,18 @@
+命令：git diff --check && make gen && make test
+退出码：0
+􀟈  Test memorySecretsAreIsolatedBetweenRuns() started.
+􀟈  Test memorySecretLifecycle() started.
+􁁛  Test memorySecretsAreIsolatedBetweenRuns() passed after 0.001 seconds.
+􁁛  Test memorySecretLifecycle() passed after 0.001 seconds.
+􁁛  Test run with 32 tests in 0 suites passed after 0.028 seconds.
+􁁛  Test run with 26 tests in 0 suites passed after 0.455 seconds.
+􁁛  Test run with 14 tests in 0 suites passed after 0.008 seconds.
+􁁛  Test run with 28 tests in 0 suites passed after 0.071 seconds.
+􁁛  Test run with 32 tests in 0 suites passed after 0.013 seconds.
+􁁛  Test run with 12 tests in 0 suites passed after 0.022 seconds.
+􁁛  Test run with 35 tests in 0 suites passed after 1.069 seconds.
+􁁛  Test run with 12 tests in 0 suites passed after 0.005 seconds.
+􁁛  Test run with 10 tests in 0 suites passed after 0.025 seconds.
+􁁛  Test run with 5 tests in 0 suites passed after 0.008 seconds.
+􁁛  Test run with 14 tests in 0 suites passed after 0.010 seconds.
+􁁛  Test run with 24 tests in 0 suites passed after 0.013 seconds.

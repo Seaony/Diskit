@@ -21,8 +21,8 @@ import Testing
   try store.delete()
 }
 
-@Test func loginKeychainLifecycle() throws {
-  let store = LoginKeychainStore(service: "com.seaony.Kayoi.tests.\(UUID().uuidString)")
+@Test func memorySecretLifecycle() throws {
+  let store = MemorySecretStore()
   let key = "test.secret"
   defer { try? store.delete(key) }
   #expect(try store.read(key) == nil)
@@ -47,4 +47,11 @@ import Testing
   try Data("keep".utf8).write(to: marker)
   try FileManager.default.removeItem(at: location.cacheDirectory)
   #expect(FileManager.default.fileExists(atPath: marker.path))
+}
+
+@Test func memorySecretsAreIsolatedBetweenRuns() throws {
+  let first = MemorySecretStore()
+  let second = MemorySecretStore()
+  try first.write(Data("demo".utf8), for: "token")
+  #expect(try second.read("token") == nil)
 }

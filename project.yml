@@ -28,8 +28,8 @@ packages:
   ChinaWebDrive:
     path: Packages/ChinaWebDrive
 configFiles:
-  Debug: Config/App.xcconfig
-  Release: Config/App.xcconfig
+  Debug: ${KAYOI_BUILD_CONFIG}
+  Release: ${KAYOI_BUILD_CONFIG}
 settings:
   base:
     SWIFT_VERSION: "6.0"
