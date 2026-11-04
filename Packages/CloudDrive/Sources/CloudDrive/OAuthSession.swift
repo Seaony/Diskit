@@ -214,8 +214,8 @@ public actor OAuthSession {
     try await validToken()
   }
 
-  public func refreshNow() async throws -> String {
-    try await refresh(force: true)
+  public func refreshNow(rejectedAccessToken: String? = nil) async throws -> String {
+    try await refresh(force: true, rejectedAccessToken: rejectedAccessToken)
   }
 
   private func validToken() async throws -> String {

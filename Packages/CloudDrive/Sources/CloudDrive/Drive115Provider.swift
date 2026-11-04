@@ -407,7 +407,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     guard first.status == 401 || isUnauthorized(first) else { return first }
     var retry = request
     retry.setValue(
-      "Bearer \(try await session.refreshNow())", forHTTPHeaderField: "Authorization")
+      "Bearer \(try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request)))",
+      forHTTPHeaderField: "Authorization")
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || isUnauthorized(second) {
       throw OAuthDriveError.loginRequired

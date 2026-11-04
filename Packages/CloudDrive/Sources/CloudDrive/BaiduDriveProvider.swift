@@ -325,7 +325,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private func authorized(_ request: URLRequest) async throws -> HTTPResponse {
     let first = try await CloudDriveSupport.sendWithRetry(transport, request)
     guard first.status == 401 else { return first }
-    _ = try await session.refreshNow()
+    _ = try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request))
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 {
@@ -337,7 +337,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private func upload(_ request: URLRequest) async throws -> HTTPResponse {
     let first = try await CloudDriveSupport.sendWithRetry(transport, request)
     guard first.status == 401 || isBusinessUnauthorized(first) else { return first }
-    _ = try await session.refreshNow()
+    _ = try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request))
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || isBusinessUnauthorized(second) {
@@ -350,7 +350,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     ifNeeded response: HTTPResponse, request: URLRequest
   ) async throws -> HTTPResponse {
     guard isBusinessUnauthorized(response) else { return response }
-    _ = try await session.refreshNow()
+    _ = try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request))
     let retry = try await replacingAccessToken(in: request)
     let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
     if second.status == 401 || isBusinessUnauthorized(second) {
@@ -360,25 +360,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func replacingAccessToken(in request: URLRequest) async throws -> URLRequest {
-    var retry = request
-    if var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false) {
-      components.queryItems = components.queryItems?.filter { $0.name != "access_token" }
-      components.queryItems?.append(
-        URLQueryItem(name: "access_token", value: try await session.accessToken()))
-      retry.url = components.url
-    }
-    if let body = request.httpBody, var bodyValue = String(data: body, encoding: .utf8) {
-      let items = bodyValue.split(separator: "&").filter {
-        !$0.hasPrefix("access_token=")
-      }
-      bodyValue =
-        items.joined(separator: "&")
-        + (items.isEmpty ? "" : "&")
-        + "access_token="
-        + CloudDriveSupport.encode(try await session.accessToken())
-      retry.httpBody = bodyValue.data(using: .utf8)
-    }
-    return retry
+    OAuthRequestToken.replacing(in: request, with: try await session.accessToken())
   }
 
   private func isBusinessUnauthorized(_ response: HTTPResponse) -> Bool {

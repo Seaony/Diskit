@@ -41,7 +41,7 @@ private final class ProviderFakeTransport: HTTPTransport, Sendable {
   }
 }
 
-private func providerSession(_ transport: ProviderFakeTransport) throws -> OAuthSession {
+private func providerSession(_ transport: any HTTPTransport) throws -> OAuthSession {
   let secrets = ProviderSecrets()
   let token = OAuthToken(
     accessToken: "access", refreshToken: "refresh",
@@ -817,4 +817,87 @@ func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business:
   await #expect(throws: OAuthDriveError.loginRequired) { try await provider.connect() }
   #expect(try await session.hasToken())
   #expect(transport.requests.withLock { $0.count } == 3)
+}
+
+@Test func baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() async throws {
+  let file = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: file) }
+  try Data("hello&access_token=file-content".utf8).write(to: file)
+  let bodies = [
+    #"{"errno":0,"uk":7,"vip_type":0}"#,
+    #"{"errno":-9}"#,
+    #"{"errno":0,"uploadid":"upload","block_list":[0]}"#,
+    #"{"error_code":0,"host":"https://upload.example.com"}"#,
+    "{}",
+    #"{"access_token":"fresh","refresh_token":"rotated","expires_in":3600}"#,
+    #"{"errno":0,"md5":"a"}"#,
+    #"{"errno":0,"fs_id":123}"#,
+  ]
+  let transport = ProviderFakeTransport(
+    bodies.enumerated().map {
+      HTTPResponse(status: $0.offset == 4 ? 401 : 200, body: Data($0.element.utf8))
+    })
+  let provider = BaiduDriveProvider(
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    session: try providerSession(transport), transport: transport)
+  try await provider.connect()
+  try await provider.write(try RemotePath("/small.txt"), from: file)
+  let uploads = transport.requests.withLock {
+    $0.filter { $0.url?.path == "/rest/2.0/pcs/superfile2" }
+  }
+  #expect(uploads.count == 2)
+  #expect(uploads[0].httpBody == uploads[1].httpBody)
+  #expect(uploads[1].value(forHTTPHeaderField: "Authorization") == "Bearer fresh")
+  #expect(uploads[0].url == uploads[1].url)
+}
+
+private actor LateProviderRejection: HTTPTransport {
+  weak var session: OAuthSession?
+  var refreshCount = 0
+  var first = true
+  let body: String
+
+  init(body: String) { self.body = body }
+  func attach(_ session: OAuthSession) { self.session = session }
+
+  func send(_ request: URLRequest) async throws -> HTTPResponse {
+    if request.url?.host == "example.com" {
+      refreshCount += 1
+      return HTTPResponse(
+        status: 200,
+        body: Data(
+          #"{"access_token":"fresh","refresh_token":"rotated","expires_in":3600}"#.utf8))
+    }
+    if first {
+      first = false
+      _ = try await session?.refreshNow()
+      return HTTPResponse(status: 401)
+    }
+    return HTTPResponse(status: 200, body: Data(body.utf8))
+  }
+}
+
+@Test(arguments: ["baidu", "115", "123"])
+func providerLateRejectionReusesAlreadyRefreshedToken(kind: String) async throws {
+  let bodies = [
+    "baidu": #"{"errno":0,"uk":7,"vip_type":0}"#,
+    "115":
+      #"{"state":true,"code":0,"data":{"user_id":1,"user_name":"N","rt_space_info":{"all_total":{"size":100},"all_use":{"size":10}}}}"#,
+    "123":
+      #"{"code":0,"data":{"uid":1,"nickname":"N","headImage":"","spaceUsed":10,"spacePermanent":100,"spaceTemp":0}}"#,
+  ]
+  let transport = LateProviderRejection(body: bodies[kind]!)
+  let session = try providerSession(transport)
+  await transport.attach(session)
+  let provider: any RemoteFileProvider
+  switch kind {
+  case "baidu":
+    provider = BaiduDriveProvider(
+      configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+      session: session, transport: transport)
+  case "115": provider = Drive115Provider(session: session, transport: transport)
+  default: provider = Drive123Provider(session: session, transport: transport)
+  }
+  try await provider.connect()
+  #expect(await transport.refreshCount == 1)
 }

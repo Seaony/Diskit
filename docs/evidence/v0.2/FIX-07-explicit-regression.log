@@ -1,0 +1,16 @@
+修复前：swift test --package-path Packages/CloudDrive --filter baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer；退出 1。
+修复前：swift test --package-path Packages/CloudDrive --filter providerLateRejectionReusesAlreadyRefreshedToken；退出 1。
+􀢄  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() recorded an issue at OfficialDriveProvidersTests.swift:848:3: Expectation failed: (uploads[0].httpBody → 233 bytes) == (uploads[1].httpBody → 176 bytes)
+􀢄  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() recorded an issue at OfficialDriveProvidersTests.swift:849:3: Expectation failed: (uploads[1].value(forHTTPHeaderField: "Authorization") → "Bearer access") == "Bearer fresh"
+􀢄  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() recorded an issue at OfficialDriveProvidersTests.swift:850:3: Expectation failed: (uploads[0].url → https://upload.example.com/rest/2.0/pcs/superfile2?method=upload&type=tmpfile&path=/apps/Kayoi/small.txt&uploadid=upload&partseq=0) == (uploads[1].url → https://upload.example.com/rest/2.0/pcs/superfile2?method=upload&type=tmpfile&path=/apps/Kayoi/small.txt&uploadid=upload&partseq=0&access_token=fresh)
+􀢄  Test run with 1 test in 0 suites failed after 0.006 seconds with 3 issues.
+􀢄  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) recorded an issue with 1 argument kind → "baidu" at OfficialDriveProvidersTests.swift:897:3: Expectation failed: await transport.refreshCount == 1
+􀢄  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) recorded an issue with 1 argument kind → "123" at OfficialDriveProvidersTests.swift:897:3: Expectation failed: await transport.refreshCount == 1
+􀢄  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) recorded an issue with 1 argument kind → "115" at OfficialDriveProvidersTests.swift:897:3: Expectation failed: await transport.refreshCount == 1
+􀢄  Test run with 1 test in 0 suites failed after 0.003 seconds with 3 issues.
+修复后：swift test --package-path Packages/CloudDrive；退出 0。
+􁁛  Test oauthTokenReplacementDoesNotInterpretUnrelatedBodies() passed after 0.005 seconds.
+􁁛  Test oauthTokenReplacementPreservesUnrelatedEncodedFields() passed after 0.005 seconds.
+􁁛  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) with 3 test cases passed after 0.006 seconds.
+􁁛  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() passed after 0.007 seconds.
+􁁛  Test run with 56 tests in 0 suites passed after 1.067 seconds.

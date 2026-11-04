@@ -140,3 +140,12 @@
 - Core 的 `failedSecretWriteRemainsPendingUntilSaved` 验证持续写入失败会继续报错、旧存储不被误改、恢复后保存新值；`explicitDeletionClearsPendingWriteOnlyAfterSuccess` 验证显式删除失败不会丢弃待写值，成功删除后不会复活。
 - 完整门禁通过：应用逻辑 9 项、包测试 283 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-persist-gates.log`。
 - 边界：待写值保存在当前进程内存，进程退出后的恢复不作保证；跨会话与跨进程刷新协调仍未完成，不能将本次存储恢复测试作为 FIX-07 整体通过。
+
+## FIX-07：独立业务鉴权入口与百度上传重试（部分）
+
+- `Packages/CloudDrive/Sources/CloudDrive/OAuthSession.swift:217` 接受被拒绝的实际令牌；百度三处重试（`BaiduDriveProvider.swift:328`、`:340`、`:353`）、115（`Drive115Provider.swift:410`）、123（`Drive123Provider.swift:304`）均传入原请求中的令牌，复用其他请求已取得的新值。
+- `OfficialDriveProvidersTests.swift:881` 的 `providerLateRejectionReusesAlreadyRefreshedToken` 在原请求返回 401 前确定性完成另一次刷新。百度、115、123 三组修复前都重复刷新，修复后只刷新一次且连接成功。不是靠等待时间碰运气，也未连接实际账号。
+- 同时处理审查 1C 的百度 multipart 重试正文损坏：`OAuthRequestToken.swift:4` 只替换已有认证字段，不把 multipart 或任意 UTF-8 文件当表单。`baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer`（`OfficialDriveProvidersTests.swift:822`）修复前观察到正文由 233 字节变为 176 字节、旧认证头未更新、URL 被额外添加令牌；修复后正文与 URL 均保持原样，认证头更新为新令牌。
+- `OAuthRequestTokenTests.swift:6`、`:25` 额外验证表单加号解析、百分号编码、空字段和无关参数保持，以及 JSON、multipart、二进制正文不被解释为认证字段。失败与通过证据：`docs/evidence/v0.2/FIX-07-explicit-regression.log`。
+- 本次仍只证明同一会话内的重试行为。不同会话与 App/命令行跨进程刷新协调继续处理，FIX-07 尚未整体通过。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 287 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-explicit-gates.log`。仅存在已有的 AppIntents 元数据跳过提示。
