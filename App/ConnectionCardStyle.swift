@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ConnectionCardStyle: ButtonStyle {
   let selected: Bool
+  var focused = false
   @State private var hovering = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -14,10 +15,8 @@ struct ConnectionCardStyle: ButtonStyle {
       .overlay {
         RoundedRectangle(cornerRadius: Radius.card, style: .continuous)
           .strokeBorder(
-            selected
-              ? KayoiTheme.accent
-              : hovering ? Color.primary.opacity(0.3) : KayoiTheme.border,
-            lineWidth: selected ? 2 : 1)
+            focused ? KayoiTheme.focus : selected ? KayoiTheme.accent : KayoiTheme.border,
+            lineWidth: selected || focused ? 2 : 1)
       }
       .overlay(alignment: .topTrailing) {
         if selected {

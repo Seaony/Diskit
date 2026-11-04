@@ -11,6 +11,7 @@ struct ConnectionTypeTile: View {
         KayoiTheme.secondaryText
       ).lineLimit(1)
     }
+    .padding(.horizontal, Space.sm)
     .frame(maxWidth: .infinity).frame(height: 96)
     .contentShape(RoundedRectangle(cornerRadius: Radius.tile, style: .continuous))
     .overlay(alignment: .topTrailing) {
