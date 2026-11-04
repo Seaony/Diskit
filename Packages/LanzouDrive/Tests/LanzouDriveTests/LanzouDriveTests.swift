@@ -31,9 +31,11 @@ private actor FakeHTTP: HTTPTransport {
   typealias Handler = @Sendable (URLRequest) throws -> FakeReply
 
   let handler: Handler
+  let chunkSize: Int?
   private var sentRequests: [URLRequest] = []
 
-  init(handler: @escaping Handler) {
+  init(chunkSize: Int? = nil, handler: @escaping Handler) {
+    self.chunkSize = chunkSize
     self.handler = handler
   }
 
@@ -52,7 +54,14 @@ private actor FakeHTTP: HTTPTransport {
     return HTTPStreamResponse(
       response: response,
       body: AsyncThrowingStream { continuation in
-        if !reply.body.isEmpty { continuation.yield(reply.body) }
+        if let chunkSize {
+          for offset in stride(from: 0, to: reply.body.count, by: chunkSize) {
+            continuation.yield(
+              reply.body.subdata(in: offset..<min(offset + chunkSize, reply.body.count)))
+          }
+        } else if !reply.body.isEmpty {
+          continuation.yield(reply.body)
+        }
         continuation.finish()
       })
   }
@@ -433,4 +442,77 @@ func lanzouChecksDeclaredDownloadLength(ranged: Bool) async throws {
     for try await _ in try await provider.read(RemotePath("/文件.bin"), range: ranged ? 10..<20 : nil)
     {}
   }
+}
+
+@Test(arguments: ["html", "xhtml", "missing", "octet", "inline"], [1, 7])
+func lanzouRejectsVerificationPagesBeforeYieldingBytes(kind: String, chunkSize: Int) async throws {
+  let page = "\u{FEFF} \n<!DOCTYPE html><html>verification required</html>"
+  let http = FakeHTTP(chunkSize: chunkSize) { request in
+    if request.url?.host == "download.example" {
+      var headers = ["Content-Length": "\(page.utf8.count)"]
+      if kind == "html" || kind == "inline" { headers["Content-Type"] = "text/html; charset=UTF-8" }
+      if kind == "xhtml" { headers["Content-Type"] = "application/xhtml+xml" }
+      if kind == "octet" { headers["Content-Type"] = "application/octet-stream" }
+      if kind == "inline" { headers["Content-Disposition"] = "inline; filename=attachment.html" }
+      return FakeReply(text: page, headers: headers)
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  var received = Data()
+  await #expect(throws: LanzouError.antiBotChallenge) {
+    for try await chunk in try await provider.read(RemotePath("/文件.bin"), range: nil) {
+      received.append(chunk)
+    }
+  }
+  #expect(received.isEmpty)
+}
+
+@Test(arguments: [false, true])
+func lanzouKeepsAttachmentHTMLAndBinaryContent(html: Bool) async throws {
+  let content =
+    html
+    ? Data("<!DOCTYPE html><html>saved document</html>".utf8) : Data(repeating: 0xff, count: 2048)
+  let http = FakeHTTP(chunkSize: 7) { request in
+    if request.url?.host == "download.example" {
+      var headers = [
+        "Content-Length": "\(content.count)",
+        "Content-Type": html ? "text/html" : "application/octet-stream",
+      ]
+      if html { headers["Content-Disposition"] = "Attachment; filename=page.html" }
+      return FakeReply(data: content, headers: headers)
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  var result = Data()
+  for try await chunk in try await provider.read(RemotePath("/文件.bin"), range: nil) {
+    result.append(chunk)
+  }
+  #expect(result == content)
+}
+
+@Test func lanzouDoesNotSniffHTMLInsideNonzeroRange() async throws {
+  let content = Data("<html>".utf8)
+  let http = FakeHTTP(chunkSize: 1) { request in
+    if request.url?.host == "download.example" {
+      return FakeReply(status: 206, data: content, headers: ["Content-Range": "bytes 10-15/100"])
+    }
+    return try #require(shareDownloadReply(request))
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(
+      .share(url: URL(string: "https://share.example/share")!, password: nil)), transport: http)
+  try await provider.connect()
+  var result = Data()
+  for try await chunk in try await provider.read(RemotePath("/文件.bin"), range: 10..<16) {
+    result.append(chunk)
+  }
+  #expect(result == content)
 }

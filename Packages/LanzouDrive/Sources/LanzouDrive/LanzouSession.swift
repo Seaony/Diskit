@@ -213,6 +213,15 @@ actor LanzouSession {
 
     let stream = try await transport.stream(request)
     try checkHTTP(stream.response)
+    let attachment =
+      stream.response.header("Content-Disposition")?
+      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+      == "attachment"
+    let mediaType = stream.response.header("Content-Type")?
+      .split(separator: ";").first?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    if !attachment, mediaType == "text/html" || mediaType == "application/xhtml+xml" {
+      throw LanzouError.antiBotChallenge
+    }
     let declaredLength: Int64?
     if let header = stream.response.header("Content-Length") {
       guard let length = Int64(header), length >= 0 else { throw LanzouError.invalidResponse }
@@ -232,7 +241,9 @@ actor LanzouSession {
       guard stream.response.status == 200 else { throw LanzouError.invalidResponse }
       expectedLength = declaredLength
     }
-    let cursor = LanzouDownloadBody(stream.body, expectedLength: expectedLength)
+    let cursor = LanzouDownloadBody(
+      stream.body, expectedLength: expectedLength,
+      inspectHTML: !attachment && (range == nil || range?.lowerBound == 0))
     return AsyncThrowingStream(unfolding: { try await cursor.next() })
   }
 

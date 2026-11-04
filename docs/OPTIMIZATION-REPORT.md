@@ -11,7 +11,7 @@
 ## 阶段进度
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
-2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围与下载长度校验已修复，精确大小元数据和验证页识别继续处理。
+2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、下载长度和验证页识别已完成本地回归，精确大小元数据继续处理。
 3. 其余缺陷：未开始。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
@@ -251,3 +251,13 @@
 - 原范围成功测试的替身也错误地只返回 3 字节，现更正为实际 10 字节。`lanzouRejectsInconsistentContentRanges`（`:414`）覆盖八种边界错误；`lanzouChecksDeclaredDownloadLength`（`:419`）检查完整下载不足及范围长度头冲突。
 - 完整提交门禁通过：应用逻辑 9 项、包测试 319 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-11-range-gates.log`。
 - FIX-11 尚未整体通过：列表/属性仍需取得精确大小，响应类型和 HTML 验证页识别仍待处理；本组不能证明完整下载不会误存验证页。本轮只使用假传输。
+
+
+## FIX-11：下载响应类型与 HTML 验证页识别（部分）
+
+- `Packages/LanzouDrive/Sources/LanzouDrive/LanzouSession.swift:216` 解析 Content-Disposition 的实际类型，不把文件名中含 attachment 当作附件。没有明确附件声明的 text/html、application/xhtml+xml 下载响应直接返回已有的 antiBotChallenge 错误，不交付页面正文。
+- `LanzouDownloadBody.swift:35` 在完整下载或从零开始的范围中，对首段最多 512 字节检查 HTML 开头，处理 UTF-8 BOM、空白和标签跨分块；已识别的页面在交付任何正文前拒绝。非零偏移范围不按文件开头解释，明确声明为附件的 HTML 文件保持可下载。此为有界类型/内容检查，不声称识别任意伪装内容。
+- `lanzouRejectsVerificationPagesBeforeYieldingBytes`（`LanzouDriveTests.swift:448`）覆盖 HTML、XHTML、缺少类型、二进制类型和带 attachment 字样的 inline 响应 × 1/7 字节分块。修复前十组都被交付为正常文件；修复后均报 antiBotChallenge 且调用方收到 0 字节。
+- `lanzouKeepsAttachmentHTMLAndBinaryContent`（`:475`）确认 HTML 附件及 2048 字节二进制文件逐字节不变；`lanzouDoesNotSniffHTMLInsideNonzeroRange`（`:501`）确认文件中间的 HTML 样式片段不会被误认成页面。证据 `docs/evidence/v0.2/FIX-11-html-regression.log`。
+- 完整提交门禁通过：应用逻辑 9 项、包测试 322 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-11-html-gates.log`。
+- FIX-11 尚未整体通过：列表/属性的精确大小仍需修复。本轮没有访问真实分享链接或账号，也不将替身识别结果写成真实风控页面验收通过。

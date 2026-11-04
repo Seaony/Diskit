@@ -1,0 +1,27 @@
+修复前：swift test --package-path Packages/LanzouDrive --filter lanzouRejectsVerificationPagesBeforeYieldingBytes；退出 1。
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "inline", chunkSize → 7 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "missing", chunkSize → 1 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "xhtml", chunkSize → 7 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "html", chunkSize → 7 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "html", chunkSize → 1 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "octet", chunkSize → 1 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "inline", chunkSize → 1 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "xhtml", chunkSize → 1 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "octet", chunkSize → 7 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "missing", chunkSize → 7 at LanzouDriveTests.swift:466:9: Expectation failed: an error was expected but none was thrown
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "xhtml", chunkSize → 7 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "xhtml", chunkSize → 1 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "inline", chunkSize → 1 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "octet", chunkSize → 7 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "html", chunkSize → 7 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "missing", chunkSize → 7 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "missing", chunkSize → 1 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "inline", chunkSize → 7 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "octet", chunkSize → 1 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) recorded an issue with 2 arguments kind → "html", chunkSize → 1 at LanzouDriveTests.swift:471:3: Expectation failed: (received → 54 bytes).isEmpty → false
+􀢄  Test run with 1 test in 0 suites failed after 0.009 seconds with 20 issues.
+修复后：swift test --package-path Packages/LanzouDrive；退出 0。
+􁁛  Test lanzouKeepsAttachmentHTMLAndBinaryContent(html:) with 2 test cases passed after 0.008 seconds.
+􁁛  Test lanzouDoesNotSniffHTMLInsideNonzeroRange() passed after 0.009 seconds.
+􁁛  Test lanzouRejectsVerificationPagesBeforeYieldingBytes(kind:chunkSize:) with 10 test cases passed after 0.010 seconds.
+􁁛  Test run with 12 tests in 0 suites passed after 0.010 seconds.
