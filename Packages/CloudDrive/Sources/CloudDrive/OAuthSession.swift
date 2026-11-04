@@ -102,6 +102,7 @@ public actor OAuthSession {
   private let secretKey: String
   private let secrets: RecoverableSecretStore
   private let transport: any HTTPTransport
+  private nonisolated let requestLimit: HTTPConcurrencyLimit
   private var refreshing: Task<String, Error>?
   private var codeVerifier: String?
 
@@ -113,7 +114,14 @@ public actor OAuthSession {
     self.configuration = configuration
     self.secretKey = secretKey
     self.secrets = secrets as? RecoverableSecretStore ?? RecoverableSecretStore(base: secrets)
-    self.transport = transport
+    let limit = HTTPConcurrencyLimit.shared(
+      for: "oauth:" + secrets.refreshLockLocation(for: secretKey).path)
+    requestLimit = limit
+    self.transport = LimitedHTTPTransport(transport, limit: limit)
+  }
+
+  nonisolated func limited(_ transport: any HTTPTransport) -> LimitedHTTPTransport {
+    LimitedHTTPTransport(transport, limit: requestLimit)
   }
 
   public func hasToken() throws -> Bool {
@@ -190,14 +198,16 @@ public actor OAuthSession {
     var request = request
     let access = try await validToken()
     request.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
+    if let response = try await streamWithoutRejection(request) { return response }
+    _ = try await refresh(force: true, rejectedAccessToken: access)
+    request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
+    return try await CloudDriveSupport.streamWithRetry(transport, request)
+  }
+
+  private func streamWithoutRejection(_ request: URLRequest) async throws -> HTTPStreamResponse? {
     let response = try await CloudDriveSupport.streamWithRetry(transport, request)
-    if response.response.status == 401 {
-      _ = try await refresh(force: true, rejectedAccessToken: access)
-      request.setValue("Bearer \(try await validToken())", forHTTPHeaderField: "Authorization")
-      let retried = try await CloudDriveSupport.streamWithRetry(transport, request)
-      return retried
-    }
-    return response
+    // 刷新前释放拒绝响应，不能占着下载额度等待刷新。
+    return response.response.status == 401 ? nil : response
   }
 
   public func invalidate() {

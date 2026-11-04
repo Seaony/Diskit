@@ -17,7 +17,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     chunkSize: Int64 = 10 * 1024 * 1024
   ) {
     self.session = session
-    self.transport = transport
+    self.transport = session.limited(transport)
     self.uploadSessionThreshold = uploadSessionThreshold
     self.chunkSize = chunkSize
   }

@@ -19,7 +19,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     completionPollLimit: Int = 60
   ) {
     self.session = session
-    self.transport = transport
+    self.transport = session.limited(transport)
     self.completionPollLimit = completionPollLimit
   }
 

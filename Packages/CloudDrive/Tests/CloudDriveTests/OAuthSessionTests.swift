@@ -380,7 +380,9 @@ private actor DelayedUnauthorizedHTTP: HTTPTransport {
       oldRequests += 1
       return await withCheckedContinuation { continuation in
         rejected.append(continuation)
-        if oldRequests == 10 { rejected.removeFirst().resume(returning: HTTPResponse(status: 401)) }
+        if rejected.count == 4 {
+          rejected.removeFirst().resume(returning: HTTPResponse(status: 401))
+        }
       }
     }
     guard request.value(forHTTPHeaderField: "Authorization") == "Bearer new" else {
@@ -397,7 +399,9 @@ private actor DelayedUnauthorizedHTTP: HTTPTransport {
 }
 
 @Test(arguments: [false, true], [false, true])
-func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool, separateSessions: Bool)
+func tenConcurrentRequestsShareOneRefreshWithDelayedRejections(
+  _ stream: Bool, separateSessions: Bool
+)
   async throws
 {
   let secrets = MemorySecrets()
@@ -423,7 +427,8 @@ func tenDelayedUnauthorizedRequestsShareOneRefresh(_ stream: Bool, separateSessi
     }
     for try await status in group { #expect(status == 200) }
   }
-  #expect(await transport.oldRequests == 10)
+  let rejectedRequests = await transport.oldRequests
+  #expect((4...10).contains(rejectedRequests))
   #expect(await transport.refreshes == 1)
 }
 

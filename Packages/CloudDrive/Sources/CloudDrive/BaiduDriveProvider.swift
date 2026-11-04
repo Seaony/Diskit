@@ -29,7 +29,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   ) {
     self.configuration = configuration
     self.session = session
-    self.transport = transport
+    self.transport = session.limited(transport)
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {

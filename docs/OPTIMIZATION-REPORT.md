@@ -12,7 +12,7 @@
 
 1. 基础：进行中；演示模式、应用逻辑测试、覆盖率门禁和资源颜色迁移尚未验收。
 2. 不可用类型及数据安全：进行中；FIX-01 至 FIX-05 已修复，FIX-06 刷新和资源失败保护已完成本地回归；FIX-07 本地并发与失败保存验收通过，真实账号另待用户验收；FIX-08 已修复并完成本地回归；FIX-09 移动冲突与上传临时文件替换已完成本地回归（系统命令并发边界见下文）；FIX-10 回收站请求已按官网静态客户端核对并完成本地回归；FIX-11 范围、验证页识别和精确大小已完成本地回归。
-3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 和应用层会话复用待处理；FIX-18 起尚未处理。
+3. 其余缺陷：进行中；FIX-12 删除配置顺序与 FIX-13 编辑旧卷处理已修复，FIX-14 迟到回调清理已修复并通过本地门禁；FIX-15 地址匹配已通过本地回归及门禁，FIX-16 分页编码、官方签名示例及写前同名检查已通过本地门禁；FIX-17 的共享额度与 S3 接入已通过本地门禁，CloudDrive 接入已通过本地门禁，应用层会话复用待处理；FIX-18 起尚未处理。
 4. 设计基准：未开始。
 5. 逐界面：未开始。
 6. 图标：未开始。
@@ -339,3 +339,14 @@
 - Core 回归：`sharedHTTPAllowanceHasAccountIdentityAndReleasesUnusedEntries`（`HTTPConcurrencyTests.swift:30`）验证身份与回收；`cancelledHTTPWaiterDoesNotConsumeAllowance`（`:40`）验证取消后继续使用；`httpAllowanceSurvivesResponseAndStreamErrors`（`:60`）验证连续八次完整请求/流读取失败不漏额度；`httpStreamHoldsAllowanceUntilFinishedOrDiscarded`（`:78`）确认四个未消费流会阻挡第五个请求，读完或丢弃其中一个后第五个继续。
 - 所有传输均为内存替身，无真实账号或网络请求。证据 `docs/evidence/v0.2/FIX-17-s3-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 351 项，发布构建及签名校验通过，证据 `docs/evidence/v0.2/FIX-17-s3-gates.log`。
 - FIX-17 尚未整体通过：CloudDrive 的授权及直传路径还未接入；AppModel 每次创建会话的问题仍需修复。本组共享的是请求额度，不把它冒称为应用层已经复用会话；跨进程刷新锁与本进程请求额度是不同约束。
+
+
+## FIX-17：CloudDrive 授权与直接传输共用额度（部分）
+
+- `Packages/CloudDrive/Sources/CloudDrive/OAuthSession.swift:117` 按凭据存储命名空间及凭据键取得共享额度，与刷新锁使用同一账号记录边界；不同会话引用同一凭据记录时共用，测试的独立内存存储不会互相干扰。令牌交换、刷新、普通授权请求、授权下载均经受限 transport。
+- `OAuthSession.limited`（`:123`）让百度（`BaiduDriveProvider.swift:32`）、115（`Drive115Provider.swift:23`）、123（`Drive123Provider.swift:22`）和 OneDrive（`OneDriveProvider.swift:20`）的直接请求也共用相同额度，包括上传分块、直链下载和失败清理。Google、Dropbox 的网络请求原本全部经 OAuthSession，未另加一层重复占用。
+- `cloudProvidersShareAccountRequestAllowance`（`ConcurrencyTests.swift:38`）对六种 provider 各创建两个独立会话并发调用十六次资料查询，替身严格匹配主机和路径；修复前六组峰值均为 16，修复后均不超过 4，全部返回正确资料且不退化为串行。`oneDriveDirectUploadsShareOAuthAccountAllowance`（`:184`）额外对十二个 provider 强制走上传会话直传，未包装入口时峰值 12，修复后不超过 4；正文正确且不向上传地址添加 OAuth Authorization。
+- `rejectedStreamReleasesAllowanceBeforeRefresh`（`:125`）验证三个未消费下载加一个 401：接入额度但保留旧控制流时，401 流占满最后额度，刷新调用为零；`:207` 将拒绝响应的生命周期限定在刷新之前后，其他下载尚未释放时即可刷新并完成重试。没有把“限流通过”当作刷新路径已安全。
+- 原 `tenDelayedUnauthorizedRequestsShareOneRefresh` 夹具等十个请求同时到达才返回第一个 401，与四并发上限互相等待。已改为每满四个返回一个迟到拒绝，保留余下拒绝直到新令牌请求；更名 `tenConcurrentRequestsShareOneRefreshWithDelayedRejections`（`OAuthSessionTests.swift:402`）。仍覆盖普通/流式 × 单/多会话，十个操作全部成功且只刷新一次，实际旧令牌请求数允许 4 至 10，避免要求队列中的请求也必须用旧令牌。首次完整包运行因此手动中止，没有计为通过；修正后完整包通过。
+- 回归证据 `docs/evidence/v0.2/FIX-17-cloud-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 354 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-17-cloud-gates.log`。全部测试为内存凭据、临时文件与假传输，没有访问真实网盘。
+- FIX-17 仍未整体通过：本组补齐 CloudDrive 请求额度；AppModel 的会话实例复用，以及阿里等既有单会话限制的复用问题仍待处理。

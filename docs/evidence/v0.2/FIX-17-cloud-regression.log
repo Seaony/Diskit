@@ -1,0 +1,271 @@
+六平台失败回归：swift test --package-path Packages/CloudDrive --filter cloudProvidersShareAccountRequestAllowance；退出 1。
+Building for debugging...
+[Planning deferred tasks]
+[6 / 15] CloudDriveTests-product
+[8 / 17] CloudDriveTests-product
+[14 / 16] CloudDriveTests-product
+Build complete! (1.12秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "baidu" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "google" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "115" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "dropbox" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "oneDrive" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "123" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "dropbox" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "oneDrive" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "google" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "baidu" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "115" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) recorded an issue with 1 argument kind → "123" at ConcurrencyTests.swift:96:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 16
+􀢄  Test cloudProvidersShareAccountRequestAllowance(kind:) with 6 test cases failed after 0.039 seconds with 6 issues.
+􀢄  Test run with 1 test in 0 suites failed after 0.039 seconds with 6 issues.
+Note: Some test targets reported failures:
+  - CloudDriveTests (Swift Testing)
+
+限流后拒绝流阻塞刷新：swift test --package-path Packages/CloudDrive --filter rejectedStreamReleasesAllowanceBeforeRefresh；退出 1。
+Building for debugging...
+[1 / 5]
+[2 / 5] CloudDriveTests-product
+[4 / 7] CloudDriveTests-product
+[10 / 12] CloudDriveTests-product
+Build complete! (1.23秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test rejectedStreamReleasesAllowanceBeforeRefresh() started.
+􀢄  Test rejectedStreamReleasesAllowanceBeforeRefresh() recorded an issue at ConcurrencyTests.swift:150:3: Expectation failed: refreshesBeforeReleasingOtherDownloads == 1
+􀄵  refreshesBeforeReleasingOtherDownloads == 1 → false
+􀄵    refreshesBeforeReleasingOtherDownloads → 0
+􀢄  Test rejectedStreamReleasesAllowanceBeforeRefresh() failed after 0.402 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.402 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CloudDriveTests (Swift Testing)
+
+OneDrive 直传未包装：swift test --package-path Packages/CloudDrive --filter oneDriveDirectUploadsShareOAuthAccountAllowance；退出 1。
+Another instance of SwiftPM (PID: 22595) is already running using '/Users/seaony/code/Kayoi/Packages/CloudDrive/.build', waiting until that process has finished execution...Building for debugging...
+[2 / 6] CloudDrive
+[3 / 7] CloudDrive
+[7 / 10] CloudDrive
+[10 / 13] CloudDriveTests-product
+[12 / 15] CloudDriveTests-product
+[18 / 20] CloudDriveTests-product
+Build complete! (1.94秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test oneDriveDirectUploadsShareOAuthAccountAllowance() started.
+􀢄  Test oneDriveDirectUploadsShareOAuthAccountAllowance() recorded an issue at ConcurrencyTests.swift:211:3: Expectation failed: maximum <= 4
+􀄵  maximum <= 4 → false
+􀄵    maximum → 12
+􀢄  Test oneDriveDirectUploadsShareOAuthAccountAllowance() failed after 0.040 seconds with 1 issue.
+􀢄  Test run with 1 test in 0 suites failed after 0.040 seconds with 1 issue.
+Note: Some test targets reported failures:
+  - CloudDriveTests (Swift Testing)
+
+最终完整包：swift test --package-path Packages/CloudDrive；退出 0。
+Building for debugging...
+[2 / 6] CloudDrive
+[3 / 7] CloudDrive
+[7 / 10] CloudDrive
+[10 / 13] CloudDriveTests-product
+[12 / 15] CloudDriveTests-product
+[13 / 16] CloudDriveTests-product
+[19 / 21] CloudDriveTests-product
+Build complete! (3.35秒)
+Test Suite 'All tests' started at 2026-11-04 18:39:46.291.
+Test Suite 'All tests' passed at 2026-11-04 18:39:46.292.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) started.
+􀟈  Test baiduListsOnlyTheConfiguredAppDirectoryAndReadsRanges() started.
+􀟈  Test oneDriveFollowsNextLink() started.
+􀟈  Test dropboxProfileDecodesDocumentedDisplayName() started.
+􀟈  Test emptyRangesReturnWithoutNetworkForAllProviders() started.
+􀟈  Test dropboxFollowsCursorAndRejectsMissingRange() started.
+􀟈  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() started.
+􀟈  Test cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) started.
+􀟈  Test removeUsesEachProvidersOfficialDeletionSemantics() started.
+􀟈  Test googleAboutUsesExactDocumentedURLAndStringQuota() started.
+􀟈  Test oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test dropboxMissingDestinationAllowsMove() started.
+􀟈  Test dropboxRootUsesEmptyPath() started.
+􀟈  Test oauthTokenReplacementPreservesUnrelatedEncodedFields() started.
+􀟈  Test dropboxContentHeadersRoundTripUnicodeAndDEL() started.
+􀟈  Test drive115PaginatesAndUploadsConfiguredSlices() started.
+􀟈  Test commonOAuthTransientRefreshPreservesLogin(_:) started.
+􀟈  Test rejectedStreamReleasesAllowanceBeforeRefresh() started.
+􀟈  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() started.
+􀟈  Test drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() started.
+􀟈  Test providerPreflightOnlyTreatsExplicitNotFoundAsMissing() started.
+􀟈  Test drive115NumericBusinessStateRefreshesAuthentication() started.
+􀟈  Test googleDriveResumableUploadSplitsAtEightMegabytes() started.
+􀟈  Test baiduRejectsAmbiguousPathLookups() started.
+􀟈  Test processesCoordinateOAuthRefresh() started.
+􀟈  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) started.
+􀟈  Test oneDriveDirectUploadsShareOAuthAccountAllowance() started.
+􀟈  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() started.
+􀟈  Test refreshUsesItsOwnEndpoint() started.
+􀟈  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) started.
+􀟈  Test baiduUploadUsesOfficialBlocksAndRefusesExistingTargets() started.
+􀟈  Test tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) started.
+􀟈  Test googleQuotaRejectsMalformedByteCounts(_:) started.
+􀟈  Test commonOAuthObservesCredentialsChangedByAnotherSession() started.
+􀟈  Test googleWorkspaceNativeFilesRejectMediaReads() started.
+􀟈  Test oauthTokenReplacementDoesNotInterpretUnrelatedBodies() started.
+􀟈  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) started.
+􀟈  Test commonOAuthRefreshRecoversAfterServerFailure() started.
+􀟈  Test drive123UploadCompletionStopsAtItsLimit() started.
+􀟈  Test drive123PaginatesAndUsesServerSliceSize() started.
+􀟈  Test googleDriveRefusesToUploadOverAnExistingName() started.
+􀟈  Test drive115RefreshTokenErrorInvalidatesLogin() started.
+􀟈  Test googleDriveSmallUploadUsesMultipartEndpoint() started.
+􀟈  Test drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() started.
+􀟈  Test drive123UsesTheOfficialTenBillionByteLimit() started.
+􀟈  Test rateLimitedRequestRetriesAfterHeaderDelay() started.
+􀟈  Test buildsAuthorizationURLAndExchangesCode() started.
+􀟈  Test temporaryRefreshFailureKeepsExistingToken() started.
+􀟈  Test oneDriveRefusesToReplaceAnExistingName() started.
+􀟈  Test oneDriveRangeReadAndErrorsAreMapped() started.
+􀟈  Test businessErrorsUseExactCodesAndDoNotTreatEveryConflictAsDuplicate() started.
+􀟈  Test baiduFetchesEveryThousandEntryPage() started.
+􀟈  Test googleDriveFollowsPageToken() started.
+􀟈  Test pkceChallengeMatchesTheVerifierSentWithTheCode() started.
+􀟈  Test unauthorizedResponseRefreshesAndRetriesOnlyOnce() started.
+􀟈  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) started.
+􀟈  Test dropboxUnknownLookupFailureNeverMoves() started.
+􀟈  Test missingRefreshTokenInvalidatesLogin() started.
+􀟈  Test case passing 1 argument newSession → false to commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) started.
+􀟈  Test dropboxUploadSessionHandlesLastPartialChunk() started.
+􀟈  Test case passing 1 argument newSession → true to commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) started.
+􀟈  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 1 argument kind → "baidu" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "oneDrive" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "115" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "123" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 2 arguments kind → "115", business → false to driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) started.
+􀟈  Test case passing 1 argument kind → "google" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 1 argument kind → "dropbox" to cloudProvidersShareAccountRequestAllowance(kind:) started.
+􀟈  Test case passing 2 arguments kind → "115", business → true to driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["a b", "a%20b"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 1 argument sample → ["中文", "%E4%B8%AD%E6%96%87"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 2 arguments kind → "123", business → false to driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["a+b", "a%2Bb"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 2 arguments kind → "123", business → true to driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["a#b", "a%23b"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 1 argument sample → ["😀", "%F0%9F%98%80"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 1 argument sample → ["a%20b", "a%2520b"] to oneDrivePathsEncodeEachSegmentOnce(_:) started.
+􀟈  Test case passing 1 argument status → 0 to commonOAuthTransientRefreshPreservesLogin(_:) started.
+􀟈  Test case passing 1 argument status → 429 to commonOAuthTransientRefreshPreservesLogin(_:) started.
+􀟈  Test case passing 1 argument status → 500 to commonOAuthTransientRefreshPreservesLogin(_:) started.
+􀟈  Test case passing 1 argument status → 401 to commonOAuthTransientRefreshPreservesLogin(_:) started.
+􀟈  Test case passing 1 argument force → false to separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) started.
+􀟈  Test case passing 1 argument force → true to separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) started.
+􀟈  Test case passing 1 argument stream → false to commonOAuthSecondResourceRejectionPreservesNewToken(_:) started.
+􀟈  Test case passing 1 argument stream → true to commonOAuthSecondResourceRejectionPreservesNewToken(_:) started.
+􀟈  Test case passing 1 argument value → "not-a-number" to googleQuotaRejectsMalformedByteCounts(_:) started.
+􀟈  Test case passing 2 arguments stream → false, separateSessions → false to tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) started.
+􀟈  Test case passing 1 argument value → "9223372036854775808" to googleQuotaRejectsMalformedByteCounts(_:) started.
+􀟈  Test case passing 2 arguments stream → false, separateSessions → true to tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) started.
+􀟈  Test case passing 1 argument value → "-1" to googleQuotaRejectsMalformedByteCounts(_:) started.
+􀟈  Test case passing 2 arguments stream → true, separateSessions → false to tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) started.
+􀟈  Test case passing 1 argument kind → "baidu" to providerLateRejectionReusesAlreadyRefreshedToken(kind:) started.
+􀟈  Test case passing 2 arguments stream → true, separateSessions → true to tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) started.
+􀟈  Test case passing 1 argument kind → "115" to providerLateRejectionReusesAlreadyRefreshedToken(kind:) started.
+􀟈  Test case passing 1 argument kind → "123" to providerLateRejectionReusesAlreadyRefreshedToken(kind:) started.
+􀟈  Test case passing 1 argument status → 200 to commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) started.
+􀟈  Test case passing 1 argument status → 400 to commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02T03:04:05.123Z", "1767323045.123"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02T03:04:05Z", "1767323045"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 2 arguments service → "google", timestamp → "2026-01-02T03:04:05.123Z" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02T03:04:05.123+08:00", "1767294245.123"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 2 arguments service → "google", timestamp → "2026-01-02T03:04:05.123" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02T03:04:05.123", "1767294245.123"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02T03:04:05", "1767294245"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 2 arguments service → "oneDrive", timestamp → "2026-01-02T03:04:05.123Z" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 1 argument sample → ["2026-01-02 03:04:05.123", "1767294245.123"] to cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) started.
+􀟈  Test case passing 2 arguments service → "oneDrive", timestamp → "2026-01-02T03:04:05.123" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 2 arguments service → "dropbox", timestamp → "2026-01-02T03:04:05.123Z" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􀟈  Test case passing 2 arguments service → "dropbox", timestamp → "2026-01-02T03:04:05.123" to officialProviderFileDatesPreserveMilliseconds(_:_:) started.
+􁁛  Test dropboxRootUsesEmptyPath() passed after 0.019 seconds.
+􁁛  Test oauthTokenReplacementPreservesUnrelatedEncodedFields() passed after 0.019 seconds.
+􁁛  Test dropboxProfileDecodesDocumentedDisplayName() passed after 0.019 seconds.
+􁁛  Test oneDrivePathsEncodeEachSegmentOnce(_:) with 6 test cases passed after 0.019 seconds.
+􁁛  Test baiduListsOnlyTheConfiguredAppDirectoryAndReadsRanges() passed after 0.019 seconds.
+􁁛  Test dropboxMissingDestinationAllowsMove() passed after 0.019 seconds.
+􁁛  Test oneDriveFollowsNextLink() passed after 0.020 seconds.
+􁁛  Test dropboxContentHeadersRoundTripUnicodeAndDEL() passed after 0.020 seconds.
+􁁛  Test googleAboutUsesExactDocumentedURLAndStringQuota() passed after 0.021 seconds.
+􁁛  Test dropboxFollowsCursorAndRejectsMissingRange() passed after 0.021 seconds.
+􁁛  Test baiduRejectsAmbiguousPathLookups() passed after 0.020 seconds.
+􁁛  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() passed after 0.020 seconds.
+􁁛  Test googleQuotaRejectsMalformedByteCounts(_:) with 3 test cases passed after 0.021 seconds.
+􁁛  Test oauthTokenReplacementDoesNotInterpretUnrelatedBodies() passed after 0.021 seconds.
+􁁛  Test googleWorkspaceNativeFilesRejectMediaReads() passed after 0.022 seconds.
+􁁛  Test googleDriveRefusesToUploadOverAnExistingName() passed after 0.023 seconds.
+􁁛  Test googleDriveResumableUploadSplitsAtEightMegabytes() passed after 0.023 seconds.
+􁁛  Test providerPreflightOnlyTreatsExplicitNotFoundAsMissing() passed after 0.023 seconds.
+􁁛  Test emptyRangesReturnWithoutNetworkForAllProviders() passed after 0.024 seconds.
+􁁛  Test businessErrorsUseExactCodesAndDoNotTreatEveryConflictAsDuplicate() passed after 0.023 seconds.
+􁁛  Test buildsAuthorizationURLAndExchangesCode() passed after 0.023 seconds.
+􁁛  Test googleDriveSmallUploadUsesMultipartEndpoint() passed after 0.023 seconds.
+􁁛  Test pkceChallengeMatchesTheVerifierSentWithTheCode() passed after 0.023 seconds.
+􁁛  Test dropboxUnknownLookupFailureNeverMoves() passed after 0.023 seconds.
+􁁛  Test cloudTimestampsPreserveMillisecondsAndDefaultTimeZone(_:) with 6 test cases passed after 0.023 seconds.
+􁁛  Test drive123UsesTheOfficialTenBillionByteLimit() passed after 0.023 seconds.
+􁁛  Test oneDriveRefusesToReplaceAnExistingName() passed after 0.023 seconds.
+􁁛  Test googleDriveFollowsPageToken() passed after 0.023 seconds.
+􁁛  Test removeUsesEachProvidersOfficialDeletionSemantics() passed after 0.024 seconds.
+􁁛  Test officialProviderFileDatesPreserveMilliseconds(_:_:) with 6 test cases passed after 0.023 seconds.
+􁁛  Test oneDriveRangeReadAndErrorsAreMapped() passed after 0.024 seconds.
+􁁛  Test drive123PaginatesAndUsesServerSliceSize() passed after 0.027 seconds.
+􁁛  Test dropboxUploadSessionHandlesLastPartialChunk() passed after 0.028 seconds.
+􁁛  Test baiduUploadRetryPreservesMultipartBodyAndUpdatesBearer() passed after 0.029 seconds.
+􁁛  Test commonOAuthRetriesPersistingRotatedTokenBeforeRefreshingAgain(newSession:) with 2 test cases passed after 0.030 seconds.
+􁁛  Test rateLimitedRequestRetriesAfterHeaderDelay() passed after 0.029 seconds.
+􁁛  Test drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() passed after 0.030 seconds.
+􁁛  Test commonOAuthSecondResourceRejectionPreservesNewToken(_:) with 2 test cases passed after 0.030 seconds.
+􁁛  Test baiduPreservesLoginAfterASecondUnauthorizedResponse() passed after 0.030 seconds.
+􁁛  Test unauthorizedResponseRefreshesAndRetriesOnlyOnce() passed after 0.029 seconds.
+􁁛  Test baiduUploadUsesOfficialBlocksAndRefusesExistingTargets() passed after 0.030 seconds.
+􁁛  Test drive115NumericBusinessStateRefreshesAuthentication() passed after 0.030 seconds.
+􁁛  Test commonOAuthObservesCredentialsChangedByAnotherSession() passed after 0.030 seconds.
+􁁛  Test driveBusinessAuthFailurePreservesRefreshedLogin(_:_:) with 4 test cases passed after 0.030 seconds.
+􁁛  Test providerLateRejectionReusesAlreadyRefreshedToken(kind:) with 3 test cases passed after 0.030 seconds.
+􁁛  Test commonOAuthExplicitInvalidGrantInvalidatesLogin(_:) with 2 test cases passed after 0.030 seconds.
+􁁛  Test temporaryRefreshFailureKeepsExistingToken() passed after 0.030 seconds.
+􁁛  Test drive115RefreshTokenErrorInvalidatesLogin() passed after 0.030 seconds.
+􁁛  Test rejectedStreamReleasesAllowanceBeforeRefresh() passed after 0.031 seconds.
+􁁛  Test refreshUsesItsOwnEndpoint() passed after 0.031 seconds.
+􁁛  Test missingRefreshTokenInvalidatesLogin() passed after 0.031 seconds.
+􁁛  Test commonOAuthRefreshRecoversAfterServerFailure() passed after 0.032 seconds.
+􁁛  Test drive115RefreshRateLimitKeepsLoginAndUsesRetryHeader() passed after 0.033 seconds.
+􁁛  Test commonOAuthTransientRefreshPreservesLogin(_:) with 4 test cases passed after 0.033 seconds.
+􁁛  Test drive115PaginatesAndUploadsConfiguredSlices() passed after 0.040 seconds.
+􁁛  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) with 2 test cases passed after 0.046 seconds.
+􁁛  Test baiduFetchesEveryThousandEntryPage() passed after 0.051 seconds.
+􁁛  Test tenConcurrentRequestsShareOneRefreshWithDelayedRejections(_:separateSessions:) with 4 test cases passed after 0.060 seconds.
+􁁛  Test processesCoordinateOAuthRefresh() passed after 0.088 seconds.
+􁁛  Test oneDriveDirectUploadsShareOAuthAccountAllowance() passed after 0.120 seconds.
+􁁛  Test cloudProvidersShareAccountRequestAllowance(kind:) with 6 test cases passed after 0.152 seconds.
+􁁛  Test drive123UploadCompletionStopsAtItsLimit() passed after 1.081 seconds.
+􁁛  Test run with 62 tests in 0 suites passed after 1.081 seconds.

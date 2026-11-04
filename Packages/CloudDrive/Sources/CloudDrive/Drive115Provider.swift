@@ -20,7 +20,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     partSize: Int64 = 64 * 1024 * 1024
   ) {
     self.session = session
-    self.transport = transport
+    self.transport = session.limited(transport)
     self.multipartThreshold = multipartThreshold
     self.partSize = partSize
   }
