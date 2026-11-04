@@ -42,9 +42,9 @@ struct PanelView: View {
   @State private var panelVisible = false
   @State private var deleteTarget: Connection?
   @State private var actionError: PanelError?
-  @State private var selectedConnectionID: UUID?
+  @State private var selection = PanelSelection()
   @State private var scrollHeight: CGFloat = 240
-  @FocusState private var keyboardFocus: Bool
+  @FocusState private var focusedConnectionID: UUID?
 
   private var mergedWirelessDevices: [MergedWirelessDevice] {
     let grouped = Dictionary(grouping: model.wirelessDevices) { device in
@@ -190,7 +190,7 @@ struct PanelView: View {
                   rowFocus: $focusedConnectionID,
                   canMoveUp: index > 0,
                   canMoveDown: index + 1 < model.connections.connections.count,
-                  onSelect: { selectedConnectionID = connection.id },
+                  onSelect: { selection.select(connection.id, reveal: false); focusedConnectionID = connection.id },
                   onPrimary: { primaryAction(connection) },
                   onEdit: { edit(connection) },
                   onReauthenticate: { edit(connection, reauthenticate: true) },
@@ -241,12 +241,14 @@ struct PanelView: View {
     .background(PanelKeyboardAnchor(handle: handleInitialKey))
     .onAppear {
       model.start()
-      selectedConnectionID = model.connections.connections.first?.id
-      keyboardFocus = true
+      selection.select(model.connections.connections.first?.id, reveal: false)
+    }
+    .onChange(of: focusedConnectionID) { _, id in
+      if let id, id != selection.id { selection.select(id, reveal: false) }
     }
     .onChange(of: model.connections.connections.map(\.id)) { _, ids in
-      if let selectedConnectionID, ids.contains(selectedConnectionID) { return }
-      self.selectedConnectionID = ids.first
+      if let id = selection.id, ids.contains(id) { return }
+      selection.select(ids.first, reveal: false)
     }
     .onKeyPress(.upArrow) {
       moveSelection(-1)
@@ -474,11 +476,12 @@ struct PanelView: View {
     let connections = model.connections.connections
     guard !connections.isEmpty else { return }
     let current =
-      selectedConnectionID.flatMap { id in
+      selection.id.flatMap { id in
         connections.firstIndex { $0.id == id }
       } ?? 0
     let next = min(max(current + offset, 0), connections.count - 1)
-    selectedConnectionID = connections[next].id
+    selection.select(connections[next].id, reveal: true)
+    focusedConnectionID = connections[next].id
   }
 
   private func primaryAction(_ connection: Connection) {
