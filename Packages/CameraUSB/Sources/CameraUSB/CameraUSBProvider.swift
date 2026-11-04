@@ -1,17 +1,21 @@
 import Core
 import Foundation
+import Synchronization
 
 @MainActor public final class CameraUSBProvider: RemoteFileProvider {
-  public nonisolated let capabilities: ProviderCapabilities
+  private nonisolated let deletionAllowed = Mutex(false)
+  public nonisolated var capabilities: ProviderCapabilities {
+    ProviderCapabilities(
+      canWrite: false, canRename: false, canMove: false,
+      canDelete: deletionAllowed.withLock { $0 }, supportsRangeRead: true)
+  }
 
   private let access: any CameraUSBAccess
   private var connected = false
 
   init(access: any CameraUSBAccess) {
     self.access = access
-    capabilities = ProviderCapabilities(
-      canWrite: false, canRename: false, canMove: false, canDelete: access.canDelete,
-      supportsRangeRead: true)
+
   }
 
   public static func make(identifier: String) async throws -> CameraUSBProvider {
@@ -27,10 +31,11 @@ import Foundation
 
   public func connect() async throws {
     guard !connected else { return }
+    let deadline = ContinuousClock.now.advanced(by: .seconds(RemoteTimeout.deviceRequest))
     do {
-      try await access.open()
+      try await access.open(until: deadline)
       connected = true
-      _ = try await current()
+      _ = try await current(until: deadline)
     } catch {
       PackageDiagnostics.failure(error, category: .cameraUSB, operation: .connect)
       await access.close()
@@ -41,28 +46,33 @@ import Foundation
 
   public func disconnect() async {
     connected = false
+    deletionAllowed.withLock { $0 = false }
     await access.close()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
     let snapshot = try await current()
-    var total: Int64 = 0
-    var available: Int64 = 0
     for storage in snapshot.storages {
-      guard let storageTotal = storage.total, let storageAvailable = storage.available,
-        storageTotal >= 0, storageAvailable >= 0, storageAvailable <= storageTotal
-      else {
-        throw RemoteError.unsupported
-      }
-      let totalSum = total.addingReportingOverflow(storageTotal)
-      let availableSum = available.addingReportingOverflow(storageAvailable)
-      guard !totalSum.overflow, !availableSum.overflow else {
+      if let total = storage.total, total < 0 { throw RemoteError.protocolError }
+      if let available = storage.available, available < 0 { throw RemoteError.protocolError }
+      if let total = storage.total, let available = storage.available, available > total {
         throw RemoteError.protocolError
       }
-      total = totalSum.partialValue
-      available = availableSum.partialValue
     }
-    return SpaceInfo(total: total, used: total - available)
+    func sum(_ values: [Int64?]) throws -> Int64? {
+      var result: Int64 = 0
+      for value in values {
+        guard let value else { return nil }
+        let next = result.addingReportingOverflow(value)
+        guard !next.overflow else { throw RemoteError.protocolError }
+        result = next.partialValue
+      }
+      return result
+    }
+    let total = try sum(snapshot.storages.map(\.total))
+    let available = try sum(snapshot.storages.map(\.available))
+    let used = total.flatMap { total in available.map { total - $0 } }
+    return SpaceInfo(total: total, used: used, available: available)
   }
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
@@ -113,24 +123,29 @@ import Foundation
   }
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
-    let index = try makeIndex(try await current())
+    let deadline = ContinuousClock.now.advanced(by: .seconds(RemoteTimeout.deviceRequest))
+    let index = try makeIndex(try await current(until: deadline))
     guard let node = index[path.value] else { throw RemoteError.posix(ENOENT) }
     guard !node.item.isDirectory, let handle = node.fileHandle else {
       throw RemoteError.posix(EACCES)
     }
     guard capabilities.canDelete else { throw RemoteError.posix(EACCES) }
     do {
-      try await access.delete(handles: [handle])
+      try await access.delete(handles: [handle], until: deadline)
     } catch {
       PackageDiagnostics.failure(error, category: .cameraUSB, operation: .remove)
       throw CameraUSBErrorMapper.map(error)
     }
   }
 
-  private func current() async throws -> CameraUSBSnapshot {
+  private func current(
+    until deadline: ContinuousClock.Instant = .now.advanced(
+      by: .seconds(RemoteTimeout.deviceRequest))
+  ) async throws -> CameraUSBSnapshot {
     guard connected else { throw RemoteError.posix(EIO) }
     do {
-      let snapshot = try await access.snapshot()
+      let snapshot = try await access.snapshot(until: deadline)
+      deletionAllowed.withLock { $0 = access.canDelete }
       guard !snapshot.storages.isEmpty else { throw RemoteError.posix(ENODEV) }
       return snapshot
     } catch {
@@ -173,6 +188,8 @@ import Foundation
         fileHandle: nil)
     }
 
+    var explicitPaths = Set<String>()
+    var handles = Set<UInt32>()
     for entry in snapshot.entries {
       guard let root = storageRoots[entry.storageID], !entry.relativePath.isEmpty,
         !entry.relativePath.hasPrefix("/"), entry.size >= 0,
@@ -186,9 +203,19 @@ import Foundation
         throw RemoteError.protocolError
       }
 
+      guard explicitPaths.insert(path.value).inserted else { throw RemoteError.protocolError }
+      if let existing = result[path.value], !existing.item.isDirectory || !entry.isDirectory {
+        throw RemoteError.protocolError
+      }
+      if !entry.isDirectory, let handle = entry.fileHandle {
+        guard handle != 0, handles.insert(handle).inserted else { throw RemoteError.protocolError }
+      }
       var parent = ""
       for component in path.value.split(separator: "/").dropLast() {
         parent += "/" + component
+        if let existing = result[parent], !existing.item.isDirectory {
+          throw RemoteError.protocolError
+        }
         if result[parent] == nil {
           let parentPath = try RemotePath(parent)
           result[parent] = Node(
@@ -228,9 +255,14 @@ private actor CameraUSBReadCursor {
     try Task.checkCancellation()
     guard offset < end else { return nil }
     let length = Int(min(1_048_576, end - offset))
-    let data = try await access.read(handle: handle, offset: offset, length: length)
-    guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
-    offset += Int64(data.count)
-    return data
+    do {
+      let data = try await access.read(handle: handle, offset: offset, length: length)
+      guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
+      offset += Int64(data.count)
+      return data
+    } catch {
+      PackageDiagnostics.failure(error, category: .cameraUSB, operation: .download)
+      throw error
+    }
   }
 }

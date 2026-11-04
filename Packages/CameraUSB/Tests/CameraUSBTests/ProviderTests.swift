@@ -15,6 +15,7 @@ import Testing
   }
 
   var calls: [Call] = []
+  var deadlines: [ContinuousClock.Instant] = []
   var canDelete: Bool
   var available = true
   var opened = false
@@ -57,6 +58,18 @@ import Testing
     photoData = [10: photo, 20: Data(repeating: 0x43, count: 32)]
   }
 
+  func open(until deadline: ContinuousClock.Instant) async throws {
+    deadlines.append(deadline)
+    try await open()
+  }
+  func snapshot(until deadline: ContinuousClock.Instant) async throws -> CameraUSBSnapshot {
+    deadlines.append(deadline)
+    return try await snapshot()
+  }
+  func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws {
+    deadlines.append(deadline)
+    try await delete(handles: handles)
+  }
   func open() async throws {
     calls.append(.open)
     guard available else { throw RemoteError.posix(EIO) }
@@ -255,4 +268,72 @@ import Testing
     {}
   }
   await provider.disconnect()
+}
+
+@MainActor @Test func cameraCompoundOperationsShareOneDeadline() async throws {
+  let fixture = CameraAccessFixture()
+  let provider = CameraUSBProvider(access: fixture)
+  try await provider.connect()
+  #expect(fixture.deadlines.count == 2)
+  #expect(fixture.deadlines[0] == fixture.deadlines[1])
+  fixture.deadlines.removeAll()
+  try await provider.remove(RemotePath("/内置存储/DCIM/100FUJI/DSCF0001.JPG"), recursive: false)
+  #expect(fixture.deadlines.count == 2)
+  #expect(fixture.deadlines[0] == fixture.deadlines[1])
+}
+
+@Test @MainActor func cameraCapacityPreservesUnknownFieldsWithoutPartialSums() async throws {
+  let cases: [([CameraUSBStorage], SpaceInfo)] = [
+    ([.init(id: "a", name: "storage")], SpaceInfo(total: nil, used: nil)),
+    ([.init(id: "a", name: "storage", total: 100)], SpaceInfo(total: 100, used: nil)),
+    ([.init(id: "a", name: "storage", available: 60)], SpaceInfo(total: nil, used: nil, available: 60)),
+    ([.init(id: "a", name: "storage", total: 0, available: 0)], SpaceInfo(total: 0, used: 0)),
+    ([.init(id: "a", name: "first", total: 100, available: 60),
+      .init(id: "b", name: "second", total: 200)], SpaceInfo(total: 300, used: nil)),
+  ]
+  for (storages, expected) in cases {
+    let access = CameraAccessFixture()
+    access.snapshotValue = CameraUSBSnapshot(storages: storages, entries: [])
+    let provider = CameraUSBProvider(access: access)
+    try await provider.connect()
+    #expect(try await provider.spaceInfo() == expected)
+    await provider.disconnect()
+  }
+}
+
+@Test @MainActor func cameraDeletionCapabilityRefreshesAfterOpen() async throws {
+  let access = CameraAccessFixture(canDelete: false)
+  let provider = CameraUSBProvider(access: access)
+  access.canDelete = true
+  try await provider.connect()
+  #expect(provider.capabilities.canDelete)
+  access.canDelete = false
+  await expectPOSIX(EACCES) {
+    try await provider.remove(RemotePath("/SD 卡/DCIM/100CANON/IMG_0001.JPG"), recursive: false)
+  }
+  #expect(!provider.capabilities.canDelete)
+}
+
+@Test @MainActor func cameraDuplicatePathsCannotSelectAnotherFile() async throws {
+  let access = CameraAccessFixture()
+  let snapshot = access.snapshotValue
+  access.snapshotValue = CameraUSBSnapshot(storages: snapshot.storages,
+    entries: snapshot.entries + [snapshot.entries[2]])
+  let provider = CameraUSBProvider(access: access)
+  try await provider.connect()
+  await #expect(throws: RemoteError.protocolError) {
+    try await provider.remove(RemotePath("/内置存储/DCIM/100FUJI/DSCF0001.JPG"), recursive: false)
+  }
+  #expect(!access.calls.contains(.delete([10])))
+}
+
+@Test @MainActor func cameraProviderReconnectsWithoutReusingOpenState() async throws {
+  let access = CameraAccessFixture()
+  let provider = CameraUSBProvider(access: access)
+  try await provider.connect()
+  await provider.disconnect()
+  #expect(!provider.capabilities.canDelete)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).count == 2)
+  #expect(access.calls.filter { $0 == .open }.count == 2)
 }

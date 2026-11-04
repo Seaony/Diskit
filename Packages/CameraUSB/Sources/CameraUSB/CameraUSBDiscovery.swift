@@ -45,18 +45,30 @@ extension CameraUSBDevice {
     let id = descriptor.id.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !id.isEmpty else { return nil }
     let name = descriptor.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !CameraIdentity.isGRIV(name) else { return nil }
     self.init(
       id: id, serial: descriptor.serial, name: name.isEmpty ? "USB 相机" : name,
       vendorID: descriptor.vendorID, productID: descriptor.productID)
   }
 }
 
+public enum CameraUSBDiscoveryIssue: Sendable, Equatable {
+  case permissionDenied, networkUnavailable, resolutionFailed, failed
+}
+
 @MainActor @Observable
 public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowserDelegate {
+  public private(set) var issue: CameraUSBDiscoveryIssue?
   public private(set) var devices: [CameraUSBDevice] = []
   public var changed: (([CameraUSBDevice]) -> Void)?
 
   private var browser: ICDeviceBrowser?
+  private var running = false
+  private var startOverride: (() -> Void)?
+  private var stopOverride: (() -> Void)?
+  private var waitForTimeout: @Sendable () async throws -> Void = {
+    try await Task.sleep(for: .seconds(RemoteTimeout.deviceRequest))
+  }
   private var cameras: [String: ICCameraDevice] = [:]
   private var catalog = CameraUSBDeviceCatalog()
   private var enumeration: CheckedContinuation<Void, Error>?
@@ -66,8 +78,24 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
     super.init()
   }
 
+  init(
+    start: @escaping () -> Void, stop: @escaping () -> Void,
+    waitForTimeout: @escaping @Sendable () async throws -> Void
+  ) {
+    self.startOverride = start
+    self.stopOverride = stop
+    self.waitForTimeout = waitForTimeout
+    super.init()
+  }
+
   public func start() {
-    guard browser == nil else { return }
+    guard !running else { return }
+    running = true
+    issue = nil
+    if let startOverride {
+      startOverride()
+      return
+    }
     let browser = ICDeviceBrowser()
     browser.delegate = self
     browser.browsedDeviceTypeMask = ICDeviceTypeMask(
@@ -77,6 +105,8 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
   }
 
   public func stop() {
+    running = false
+    stopOverride?()
     browser?.stop()
     browser?.delegate = nil
     browser = nil
@@ -100,7 +130,7 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
       start()
       timeout = Task { @MainActor in
         do {
-          try await Task.sleep(for: .seconds(15))
+          try await waitForTimeout()
         } catch {
           return
         }
@@ -110,11 +140,10 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
   }
 
   func camera(identifier: String) -> ICCameraDevice? {
-    cameras.values.first {
-      camera in
-      guard let device = cameraUSBDevice(camera) else { return false }
-      return device.id == identifier || device.serial == identifier
-    }
+    guard
+      let id = CameraIdentity.selectedID(identifier, devices: devices.map { ($0.id, $0.serial) })
+    else { return nil }
+    return cameras[id]
   }
 
   public func deviceBrowser(_ browser: ICDeviceBrowser, didAdd device: ICDevice, moreComing: Bool) {
@@ -126,6 +155,20 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
       return
     }
     cameras[model.id] = camera
+    publish()
+  }
+
+  func add(_ descriptor: CameraUSBDeviceDescriptor) {
+    guard catalog.add(descriptor) else { return }
+    publish()
+  }
+
+  func remove(id: String) {
+    catalog.remove(id: id)
+    publish()
+  }
+
+  private func publish() {
     devices = catalog.devices
     changed?(devices)
   }
@@ -144,8 +187,11 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
   }
 
   private func descriptor(for camera: ICCameraDevice) -> CameraUSBDeviceDescriptor? {
-    let id =
-      camera.uuidString ?? camera.persistentIDString ?? "usb:\(camera.usbLocationID)"
+    guard
+      let id = CameraIdentity.identifier(
+        location: UInt32(bitPattern: camera.usbLocationID),
+        uuid: camera.uuidString, persistent: camera.persistentIDString)
+    else { return nil }
     return CameraUSBDeviceDescriptor(
       id: id,
       serial: camera.serialNumberString ?? "",
@@ -160,9 +206,12 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
     descriptor(for: camera).flatMap(CameraUSBDevice.init)
   }
 
-  private func completeEnumeration(_ result: Result<Void, Error>) {
+  func completeEnumeration(_ result: Result<Void, Error>) {
     guard let enumeration else { return }
     self.enumeration = nil
+    if case .failure(let error) = result, !(error is CancellationError) {
+      issue = .failed
+    }
     timeout?.cancel()
     timeout = nil
     enumeration.resume(with: result)

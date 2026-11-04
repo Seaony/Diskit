@@ -1,3 +1,4 @@
+import Core
 import Foundation
 import ImageCaptureCore
 import Testing
@@ -51,4 +52,38 @@ import Testing
   #expect(addedFirst)
   #expect(addedUpdated)
   #expect(catalog.devices.map(\.name) == ["New Name"])
+}
+
+@Test @MainActor func discoveryInjectedLifecyclePublishesAndStopsWithoutHardware() async throws {
+  var starts = 0
+  var stops = 0
+  let discovery = CameraUSBDiscovery(
+    start: { starts += 1 }, stop: { stops += 1 },
+    waitForTimeout: { throw CancellationError() })
+  var changes = 0
+  discovery.changed = { _ in changes += 1 }
+  discovery.start()
+  discovery.start()
+  #expect(starts == 1)
+  discovery.add(
+    CameraUSBDeviceDescriptor(
+      id: "id", serial: "", name: "", productKind: "Camera",
+      transport: ICDeviceTransport.transportTypeUSB.rawValue, vendorID: 1, productID: 2))
+  #expect(discovery.devices.count == 1)
+  discovery.remove(id: "id")
+  #expect(discovery.devices.isEmpty)
+  #expect(changes == 2)
+  #expect(discovery.camera(identifier: "missing") == nil)
+  discovery.stop()
+  #expect(stops == 1)
+}
+
+@Test @MainActor func discoveryTimeoutReportsFailureWithoutHardware() async throws {
+  let discovery = CameraUSBDiscovery(start: {}, stop: {}, waitForTimeout: {})
+  await #expect(throws: Core.RemoteError.posix(ETIMEDOUT)) { try await discovery.enumerate() }
+  #expect(discovery.issue == .failed)
+  discovery.stop()
+  discovery.start()
+  #expect(discovery.issue == nil)
+  discovery.stop()
 }

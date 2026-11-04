@@ -74,4 +74,26 @@ protocol CameraUSBAccess: AnyObject, Sendable {
   func snapshot() async throws -> CameraUSBSnapshot
   func read(handle: UInt32, offset: Int64, length: Int) async throws -> Data
   func delete(handles: [UInt32]) async throws
+  func open(until deadline: ContinuousClock.Instant) async throws
+  func snapshot(until deadline: ContinuousClock.Instant) async throws -> CameraUSBSnapshot
+  func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws
+}
+
+extension CameraUSBAccess {
+  func open(until deadline: ContinuousClock.Instant) async throws {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    try await open()
+    _ = try RemoteTimeout.remaining(until: deadline)
+  }
+  func snapshot(until deadline: ContinuousClock.Instant) async throws -> CameraUSBSnapshot {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    let result = try await snapshot()
+    _ = try RemoteTimeout.remaining(until: deadline)
+    return result
+  }
+  func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws {
+    _ = try RemoteTimeout.remaining(until: deadline)
+    try await delete(handles: handles)
+    _ = try RemoteTimeout.remaining(until: deadline)
+  }
 }

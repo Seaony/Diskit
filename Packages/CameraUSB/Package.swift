@@ -7,6 +7,6 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "CameraUSB", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "CameraUSBTests", dependencies: ["CameraUSB"]),
+    .testTarget(name: "CameraUSBTests", dependencies: ["CameraUSB", .product(name: "CoreTestSupport", package: "Core")]),
   ],
   swiftLanguageModes: [.v6])
