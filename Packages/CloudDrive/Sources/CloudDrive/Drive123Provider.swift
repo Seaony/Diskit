@@ -9,18 +9,29 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: OAuthSession
   private let transport: any HTTPTransport
-  private let completionPollLimit: Int
+  private let completionTimeout: Duration
+  private let completionDeadline: HTTPProgressDeadline?
   private var connected = false
   private var ids: [String: Int64] = ["/": 0]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
     session: OAuthSession, transport: any HTTPTransport = URLSessionHTTPTransport(),
-    completionPollLimit: Int = 60
+    completionPollLimit: Int = Int(RemoteTimeout.transferIdle)
+  ) {
+    self.init(
+      session: session, transport: transport, completionPollLimit: completionPollLimit,
+      completionDeadline: nil)
+  }
+
+  init(
+    session: OAuthSession, transport: any HTTPTransport, completionPollLimit: Int,
+    completionDeadline: HTTPProgressDeadline?
   ) {
     self.session = session
     self.transport = session.limited(transport)
-    self.completionPollLimit = completionPollLimit
+    self.completionTimeout = .seconds(max(0, completionPollLimit))
+    self.completionDeadline = completionDeadline
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
@@ -109,7 +120,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     guard let url = URL(string: value.downloadURL) else {
       throw RemoteError.protocolError
     }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     if let range {
       request.setValue(
         "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
@@ -122,6 +133,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     try await ensureMissing(path)
@@ -142,7 +154,8 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     if created.reuse { return }
     guard let preuploadID = created.preuploadID, !preuploadID.isEmpty,
       let sliceSize = created.sliceSize, sliceSize > 0,
-      let server = created.servers?.first, let base = URL(string: server)
+      let server = created.servers?.first, let base = URL(string: server),
+      base.scheme == "https", base.host != nil, base.user == nil, base.password == nil
     else { throw RemoteError.protocolError }
     let handle = try FileHandle(forReadingFrom: localFile)
     defer { try? handle.close() }
@@ -152,7 +165,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       try Task.checkCancellation()
       try handle.seek(toOffset: UInt64(offset))
       let length = min(sliceSize, size - offset)
-      guard let data = try handle.read(upToCount: Int(length)) else {
+      guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
         throw RemoteError.posix(EIO)
       }
       var form = MultipartFormData()
@@ -163,21 +176,27 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       let request = CloudDriveSupport.multipartRequest(
         try appendPath(base, "/upload/v2/file/slice"), form: form,
         headers: try await authenticationHeaders())
-      _ = try await send(request)
+      let _: EmptyResponse = try decode(
+        EmptyResponse.self, from: try await send(request, upload: true))
       offset += Int64(data.count)
       slice += 1
       progress?(offset, size)
     }
-    for _ in 0..<max(0, completionPollLimit) {
-      let completed: Drive123Completed = try await api(
-        "POST", "/upload/v2/file/upload_complete", json: ["preuploadID": preuploadID])
-      if completed.completed, completed.fileID != 0 {
-        invalidate(from: CloudDriveSupport.parent(path))
-        return
+    do {
+      try await (completionDeadline ?? HTTPProgressDeadline(interval: completionTimeout)).run {
+        [self] in
+        while true {
+          try Task.checkCancellation()
+          let completed: Drive123Completed = try await self.api(
+            "POST", "/upload/v2/file/upload_complete", json: ["preuploadID": preuploadID])
+          if completed.completed, completed.fileID != 0 { return }
+          try await Task.sleep(for: .seconds(1))
+        }
       }
-      try await Task.sleep(for: .seconds(1))
+    } catch let error as URLError where error.code == .timedOut {
+      throw RemoteError.posix(ETIMEDOUT)
     }
-    throw RemoteError.posix(ETIMEDOUT)
+    invalidate(from: CloudDriveSupport.parent(path))
   }
 
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -213,9 +232,11 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     let source = try await resolve(from)
     let parent = try await resolve(CloudDriveSupport.parent(to))
     do {
-      let _: EmptyResponse = try await api(
-        "POST", "/api/v1/file/move",
-        json: ["fileIDs": [source], "toParentFileID": parent])
+      if CloudDriveSupport.parent(from) != CloudDriveSupport.parent(to) {
+        let _: EmptyResponse = try await api(
+          "POST", "/api/v1/file/move",
+          json: ["fileIDs": [source], "toParentFileID": parent])
+      }
       if CloudDriveSupport.basename(from) != CloudDriveSupport.basename(to) {
         let _: EmptyResponse = try await api(
           "PUT", "/api/v1/file/name",
@@ -281,29 +302,36 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
   private func decode<Value: Decodable>(
     _ type: Value.Type, from response: HTTPResponse
   ) throws -> Value {
-    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
-    let envelope: CloudJSONEnvelope<Value>
     do {
-      envelope = try JSONDecoder().decode(CloudJSONEnvelope<Value>.self, from: response.body)
+      if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+      let envelope: CloudJSONEnvelope<Value>
+      do {
+        envelope = try JSONDecoder().decode(CloudJSONEnvelope<Value>.self, from: response.body)
+      } catch {
+        throw RemoteError.protocolError
+      }
+      if envelope.code != 0 { throw businessError(envelope.code) }
+      if Value.self == EmptyResponse.self, envelope.data == nil {
+        return EmptyResponse() as! Value
+      }
+      guard let data = envelope.data else { throw RemoteError.protocolError }
+      return data
     } catch {
-      throw RemoteError.protocolError
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .cloudDrive, operation: .request)
+      }
+      throw error
     }
-    if envelope.code != 0 { throw businessError(envelope.code) }
-    if Value.self == EmptyResponse.self, envelope.data == nil {
-      return EmptyResponse() as! Value
-    }
-    guard let data = envelope.data else { throw RemoteError.protocolError }
-    return data
   }
 
-  private func send(_ request: URLRequest) async throws -> HTTPResponse {
-    let first = try await CloudDriveSupport.sendWithRetry(transport, request)
+  private func send(_ request: URLRequest, upload: Bool = false) async throws -> HTTPResponse {
+    let first = try await CloudDriveSupport.sendWithRetry(transport, request, upload: upload)
     guard first.status == 401 || businessCode(in: first) == 401 else { return first }
     var retry = request
     retry.setValue(
       "Bearer \(try await session.refreshNow(rejectedAccessToken: OAuthRequestToken.read(from: request)))",
       forHTTPHeaderField: "Authorization")
-    let second = try await CloudDriveSupport.sendWithRetry(transport, retry)
+    let second = try await CloudDriveSupport.sendWithRetry(transport, retry, upload: upload)
     if second.status == 401 || businessCode(in: second) == 401 {
       throw OAuthDriveError.loginRequired
     }
@@ -362,15 +390,6 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       return .posix(ENOENT)
     default:
       return .protocolError
-    }
-  }
-
-  private func ensureMissing(_ path: RemotePath) async throws {
-    do {
-      _ = try await stat(path)
-      throw RemoteError.posix(EEXIST)
-    } catch {
-      guard CloudDriveSupport.isExplicitlyMissing(error) else { throw error }
     }
   }
 

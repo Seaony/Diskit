@@ -174,6 +174,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     $0.url?.path == "/uploads/file" && $0.url?.query?.contains("partNumber") == true
   }
   #expect(parts.count == 3)
+  #expect(transport.uploadRequests.withLock { $0.count } == 3)
   #expect(parts.map(\.httpBody?.count) == [2, 2, 1])
   #expect(
     parts.allSatisfy {
@@ -228,6 +229,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     $0.filter { $0.url?.path == "/upload/v2/file/slice" }
   }
   #expect(slices.count == 3)
+  #expect(transport.uploadRequests.withLock { $0.count } == 3)
   let sizes = slices.compactMap(\.httpBody?.count)
   #expect(sizes.count == 3)
   #expect(sizes[0] == sizes[1])
@@ -665,6 +667,9 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       body: Data(
         #"{"state":true,"code":0,"data":{"user_id":1,"user_name":"N","rt_space_info":{"all_total":{"size":100},"all_use":{"size":10}}}}"#
           .utf8)),
+    HTTPResponse(
+      status: 200,
+      body: Data(#"{"state":true,"count":1,"data":[{"fid":"15","fc":"1","fn":"a.txt","fs":1}]}"#.utf8)),
     HTTPResponse(
       status: 200,
       body: Data(

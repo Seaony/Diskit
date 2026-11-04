@@ -11,7 +11,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   private let partSize: Int64
   private var connected = false
   private var ids: [String: String] = ["/": "0"]
-  private var cachedSpace = SpaceInfo(total: 0, used: 0)
+  private var ambiguousPaths: Set<String> = []
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -30,19 +30,20 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func connect() async throws {
-    let value = try await userInfo()
-    cachedSpace = SpaceInfo(total: value.total, used: value.used)
+    _ = try await userInfo()
     connected = true
   }
 
   public func disconnect() async {
     connected = false
     ids = ["/": "0"]
+    ambiguousPaths.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
     try ensureConnected()
-    return cachedSpace
+    let value = try await userInfo()
+    return SpaceInfo(total: value.total, used: value.used)
   }
 
   public func profile() async throws -> OAuthProfile {
@@ -56,6 +57,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     let parent = try await resolve(path)
     var offset = 0
     var result: [RemoteItem] = []
+    var resolved: [String: String] = [:]
+    var ambiguous: Set<String> = []
     while true {
       let response = try await api(
         "GET", "/open/ufile/files",
@@ -74,13 +77,26 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       for entry in entries where entry.aid == nil || entry.aid == "1" {
         let item = try entry.item(parent: path)
         result.append(item)
-        ids[item.path.value] = entry.fid
+        if let previous = resolved[item.path.value], previous != entry.fid {
+          ambiguous.insert(item.path.value)
+        }
+        resolved[item.path.value] = entry.fid
       }
-      guard entries.count > 0, result.count < (page.count ?? result.count),
-        entries.count == 1_150
-      else { break }
+      if let total = page.count {
+        guard total >= 0, offset + entries.count <= total else { throw RemoteError.protocolError }
+        if offset + entries.count == total { break }
+        guard !entries.isEmpty else { throw RemoteError.protocolError }
+      } else if entries.count < 1_150 {
+        break
+      }
       offset += entries.count
     }
+    let prefix = path.value == "/" ? "/" : path.value + "/"
+    ids = ids.filter { !$0.key.hasPrefix(prefix) }
+    ambiguousPaths = ambiguousPaths.filter { !$0.hasPrefix(prefix) }
+    ids[path.value] = parent
+    for (name, id) in resolved where !ambiguous.contains(name) { ids[name] = id }
+    ambiguousPaths.formUnion(ambiguous)
     return result
   }
 
@@ -92,7 +108,6 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         modified: Date(timeIntervalSince1970: 0))
     }
     let info = try await getInfo(path)
-    ids[path.value] = info.fileID
     return try info.item(path: path)
   }
 
@@ -124,7 +139,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     guard let rawURL, let url = URL(string: rawURL) else {
       throw RemoteError.protocolError
     }
-    var request = URLRequest(url: url, timeoutInterval: 60)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     if let range {
       request.setValue(
         "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
@@ -137,6 +152,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
+    let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     try await ensureMissing(path)
@@ -167,18 +183,17 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       let object = prepared.object, !object.isEmpty
     else { throw driveError(prepared.code) }
     let credentials = try await uploadCredentials()
-    let endpoint = prepared.endpoint ?? credentials.endpoint
     guard let bucket = prepared.bucket, !bucket.isEmpty else {
       throw RemoteError.protocolError
     }
     if size > multipartThreshold {
       try await uploadMultipart(
-        file: localFile, size: size, endpoint: endpoint, object: object,
-        bucket: bucket, credentials: credentials, callback: callback)
+        file: localFile, size: size, object: object,
+        bucket: bucket, credentials: credentials, callback: callback, progress: progress)
     } else {
       try await uploadSingle(
-        file: localFile, endpoint: endpoint, object: object,
-        bucket: bucket, credentials: credentials, callback: callback)
+        file: localFile, object: object,
+        bucket: bucket, credentials: credentials, callback: callback, progress: progress)
     }
   }
 
@@ -230,11 +245,13 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     form.addText("file_ids", sourceID)
     form.addText("to_cid", targetID)
     do {
-      let moved = try await sendAPI(
-        CloudDriveSupport.multipartRequest(
-          try baseURL("/open/ufile/move"), form: form,
-          headers: ["Authorization": "Bearer \(try await session.accessToken())"]))
-      _ = try decode(Drive115EmptyEnvelope.self, from: moved)
+      if CloudDriveSupport.parent(from) != CloudDriveSupport.parent(to) {
+        let moved = try await sendAPI(
+          CloudDriveSupport.multipartRequest(
+            try baseURL("/open/ufile/move"), form: form,
+            headers: ["Authorization": "Bearer \(try await session.accessToken())"]))
+        _ = try decode(Drive115EmptyEnvelope.self, from: moved)
+      }
       if CloudDriveSupport.basename(from) != CloudDriveSupport.basename(to) {
         var rename = MultipartFormData()
         rename.addText("file_id", sourceID)
@@ -291,33 +308,51 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       rate: value.transferConfig?.rate)
   }
 
+  private func sendUploadRequest(
+    credentials: inout Drive115Credentials, bucket: String, upload: Bool = false,
+    makeRequest: (Drive115OSSSigner, String) throws -> URLRequest
+  ) async throws -> HTTPResponse {
+    var request = try makeRequest(Drive115OSSSigner(credentials: credentials, bucket: bucket), credentials.endpoint)
+    let response = try await CloudDriveSupport.sendWithRetry(transport, request, upload: upload)
+    guard response.status == 403,
+      Drive115XML.value("Code", in: response.body) == "SecurityTokenExpired"
+    else { return response }
+    try Task.checkCancellation()
+    credentials = try await uploadCredentials()
+    request = try makeRequest(Drive115OSSSigner(credentials: credentials, bucket: bucket), credentials.endpoint)
+    return try await CloudDriveSupport.sendWithRetry(transport, request, upload: upload)
+  }
+
   private func uploadSingle(
-    file: URL, endpoint: String, object: String, bucket: String,
+    file: URL, object: String, bucket: String,
     credentials: Drive115Credentials,
-    callback: Drive115Callback
+    callback: Drive115Callback, progress: (@Sendable (Int64, Int64) -> Void)?
   ) async throws {
     let data = try Data(contentsOf: file, options: .mappedIfSafe)
-    let signer = Drive115OSSSigner(credentials: credentials, bucket: bucket)
-    let request = try signer.request(
-      method: "PUT", endpoint: endpoint, object: object, body: data,
-      callback: callback, contentMD5: Data(Insecure.MD5.hash(data: data)).base64EncodedString())
-    let response = try await CloudDriveSupport.sendWithRetry(transport, request)
-    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+    var credentials = credentials
+    let response = try await sendUploadRequest(credentials: &credentials, bucket: bucket, upload: true) { signer, endpoint in
+      try signer.request(
+        method: "PUT", endpoint: endpoint, object: object, body: data,
+        callback: callback, contentMD5: Data(Insecure.MD5.hash(data: data)).base64EncodedString())
+    }
+    try checkUploadResult(response)
     progress?(Int64(data.count), Int64(data.count))
   }
 
   private func uploadMultipart(
-    file: URL, size: Int64, endpoint: String, object: String,
-    bucket: String, credentials: Drive115Credentials, callback: Drive115Callback
+    file: URL, size: Int64, object: String,
+    bucket: String, credentials: Drive115Credentials, callback: Drive115Callback,
+    progress: (@Sendable (Int64, Int64) -> Void)?
   ) async throws {
-    let signer = Drive115OSSSigner(credentials: credentials, bucket: bucket)
-    let initiate = try signer.request(
-      method: "POST", endpoint: endpoint, object: object, body: Data(),
-      query: [URLQueryItem(name: "uploads", value: "")],
-      callback: callback)
-    let started = try await CloudDriveSupport.sendWithRetry(transport, initiate)
+    guard partSize > 0 else { throw RemoteError.posix(EINVAL) }
+    var credentials = credentials
+    let started = try await sendUploadRequest(credentials: &credentials, bucket: bucket) { signer, endpoint in
+      try signer.request(
+        method: "POST", endpoint: endpoint, object: object, body: Data(),
+        query: [URLQueryItem(name: "uploads", value: "")], callback: callback)
+    }
     if let error = CloudDriveSupport.mapHTTP(started) { throw error }
-    guard let uploadID = Drive115XML.value("UploadId", in: started.body) else {
+    guard let uploadID = Drive115XML.value("UploadId", in: started.body), !uploadID.isEmpty else {
       throw RemoteError.protocolError
     }
     let handle = try FileHandle(forReadingFrom: file)
@@ -330,17 +365,18 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         try Task.checkCancellation()
         try handle.seek(toOffset: UInt64(offset))
         let length = min(partSize, size - offset)
-        guard let data = try handle.read(upToCount: Int(length)) else {
+        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
           throw RemoteError.posix(EIO)
         }
-        let request = try signer.request(
-          method: "PUT", endpoint: endpoint, object: object, body: data,
-          query: [
-            URLQueryItem(name: "partNumber", value: String(number)),
-            URLQueryItem(name: "uploadId", value: uploadID),
-          ], callback: nil,
-          contentMD5: Data(Insecure.MD5.hash(data: data)).base64EncodedString())
-        let response = try await CloudDriveSupport.sendWithRetry(transport, request)
+        let response = try await sendUploadRequest(credentials: &credentials, bucket: bucket, upload: true) { signer, endpoint in
+          try signer.request(
+            method: "PUT", endpoint: endpoint, object: object, body: data,
+            query: [
+              URLQueryItem(name: "partNumber", value: String(number)),
+              URLQueryItem(name: "uploadId", value: uploadID),
+            ], callback: nil,
+            contentMD5: Data(Insecure.MD5.hash(data: data)).base64EncodedString())
+        }
         if let error = CloudDriveSupport.mapHTTP(response) { throw error }
         guard let etag = response.header("ETag"), !etag.isEmpty else {
           throw RemoteError.protocolError
@@ -350,16 +386,17 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         progress?(offset, size)
         number += 1
       }
-      let complete = try signer.request(
-        method: "POST", endpoint: endpoint, object: object,
-        body: Drive115XML.complete(parts: completed),
-        query: [URLQueryItem(name: "uploadId", value: uploadID)],
-        callback: callback)
-      let response = try await CloudDriveSupport.sendWithRetry(transport, complete)
-      if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+      let response = try await sendUploadRequest(credentials: &credentials, bucket: bucket) { signer, endpoint in
+        try signer.request(
+          method: "POST", endpoint: endpoint, object: object,
+          body: Drive115XML.complete(parts: completed),
+          query: [URLQueryItem(name: "uploadId", value: uploadID)], callback: callback)
+      }
+      try checkUploadResult(response)
     } catch {
+      let signer = Drive115OSSSigner(credentials: credentials, bucket: bucket)
       let request = try signer.request(
-        method: "DELETE", endpoint: endpoint, object: object, body: Data(),
+        method: "DELETE", endpoint: credentials.endpoint, object: object, body: Data(),
         query: [URLQueryItem(name: "uploadId", value: uploadID)], callback: nil)
       let transport = transport
       let cleanup = Task.detached {
@@ -371,6 +408,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func getInfo(_ path: RemotePath) async throws -> Drive115ItemInfo {
+    let expectedID = try await resolve(path)
     var form = MultipartFormData()
     form.addText("path", path.value)
     let response = try await sendAPI(
@@ -379,15 +417,29 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         headers: ["Authorization": "Bearer \(try await session.accessToken())"]))
     let envelope = try decode(Drive115InfoEnvelope.self, from: response)
     guard let value = envelope.data else { throw RemoteError.posix(ENOENT) }
+    guard value.fileID == expectedID else { throw RemoteError.posix(EEXIST) }
     return value
   }
 
   private func resolve(_ path: RemotePath) async throws -> String {
+    if ambiguousPaths.contains(path.value) { throw RemoteError.posix(EEXIST) }
     if let value = ids[path.value] { return value }
-    if path.value == "/" { return "0" }
-    let value = try await getInfo(path)
-    ids[path.value] = value.fileID
-    return value.fileID
+    _ = try await list(CloudDriveSupport.parent(path))
+    if ambiguousPaths.contains(path.value) { throw RemoteError.posix(EEXIST) }
+    guard let value = ids[path.value] else { throw RemoteError.posix(ENOENT) }
+    return value
+  }
+
+  private func checkUploadResult(_ response: HTTPResponse) throws {
+    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+    guard response.status == 200, Drive115XML.value("Code", in: response.body) == nil else {
+      throw RemoteError.posix(EIO)
+    }
+    if let envelope = try? JSONDecoder().decode(Drive115StatusEnvelope.self, from: response.body),
+      !envelope.state.isTrue
+    {
+      throw driveError(envelope.code)
+    }
   }
 
   private func api(
@@ -395,7 +447,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   ) async throws -> HTTPResponse {
     var request = URLRequest(
       url: try CloudDriveSupport.url("https://proapi.115.com" + path, query: query),
-      timeoutInterval: 60)
+      timeoutInterval: RemoteTimeout.cloudRequest)
     request.httpMethod = method
     request.setValue(
       "Bearer \(try await session.accessToken())", forHTTPHeaderField: "Authorization")
@@ -426,17 +478,24 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func decode<T: Decodable>(_ type: T.Type, from response: HTTPResponse) throws -> T {
-    if let error = CloudDriveSupport.mapHTTP(response) { throw error }
     do {
-      let value = try JSONDecoder().decode(type, from: response.body)
-      if let envelope = value as? Drive115Stateful, !envelope.success {
-        throw driveError(envelope.businessCode)
+      if let error = CloudDriveSupport.mapHTTP(response) { throw error }
+      do {
+        let value = try JSONDecoder().decode(type, from: response.body)
+        if let envelope = value as? Drive115Stateful, !envelope.success {
+          throw driveError(envelope.businessCode)
+        }
+        return value
+      } catch let error as RemoteError {
+        throw error
+      } catch {
+        throw RemoteError.protocolError
       }
-      return value
-    } catch let error as RemoteError {
-      throw error
     } catch {
-      throw RemoteError.protocolError
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .cloudDrive, operation: .request)
+      }
+      throw error
     }
   }
 
@@ -448,6 +507,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     let prefix = path.value == "/" ? "/" : path.value + "/"
     ids = ids.filter { $0.key != path.value && !$0.key.hasPrefix(prefix) }
     ids["/"] = "0"
+    ambiguousPaths = ambiguousPaths.filter { $0 != path.value && !$0.hasPrefix(prefix) }
   }
 
   private func fileHashes(_ url: URL) throws -> (sha1: String, preID: String) {
@@ -484,15 +544,6 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       return .rateLimited
     default:
       return .protocolError
-    }
-  }
-
-  private func ensureMissing(_ path: RemotePath) async throws {
-    do {
-      _ = try await stat(path)
-      throw RemoteError.posix(EEXIST)
-    } catch {
-      guard CloudDriveSupport.isExplicitlyMissing(error) else { throw error }
     }
   }
 
@@ -542,7 +593,7 @@ private struct Drive115UserEnvelope: Decodable, Drive115Stateful {
 
 private struct Drive115UserData: Decodable {
   struct Space: Decodable {
-    let size: Int64
+    let size: Int64?
   }
   struct Detail: Decodable {
     let size: Int64
@@ -558,15 +609,15 @@ private struct Drive115UserData: Decodable {
   let userID: Int64
   let userName: String
   let avatar: String?
-  let rtSpaceInfo: SpaceInfo
+  let rtSpaceInfo: SpaceInfo?
   enum CodingKeys: String, CodingKey {
     case userID = "user_id"
     case userName = "user_name"
     case avatar = "user_face_m"
     case rtSpaceInfo = "rt_space_info"
   }
-  var total: Int64 { rtSpaceInfo.allTotal?.size ?? 0 }
-  var used: Int64 { rtSpaceInfo.allUse?.size ?? 0 }
+  var total: Int64? { rtSpaceInfo?.allTotal?.size }
+  var used: Int64? { rtSpaceInfo?.allUse?.size }
 }
 
 private struct Drive115ListEnvelope: Decodable, Drive115Stateful {
@@ -623,18 +674,6 @@ private struct Drive115ItemInfo: Decodable {
   }
 }
 
-private struct Drive115DownloadEnvelope: Decodable, Drive115Stateful {
-  struct Download: Decodable {
-    struct URLValue: Decodable { let url: String }
-    let url: URLValue?
-  }
-  let state: Drive115Bool
-  let code: Int?
-  let data: [String: Download]?
-  var success: Bool { state.isTrue }
-  var businessCode: Int? { code }
-}
-
 private struct Drive115EmptyEnvelope: Decodable, Drive115Stateful {
   let state: Drive115Bool
   let code: Int?
@@ -666,7 +705,7 @@ private struct Drive115UploadData: Decodable {
   }
 }
 
-private struct Drive115Callback: Decodable {
+struct Drive115Callback: Decodable {
   let callback: String
   let callbackVar: String
   enum CodingKeys: String, CodingKey {
@@ -701,7 +740,7 @@ private struct Drive115CredentialsValue: Decodable {
   }
 }
 
-private struct Drive115Credentials {
+struct Drive115Credentials {
   let endpoint: String
   let accessKeyID: String
   let accessKeySecret: String
@@ -709,26 +748,46 @@ private struct Drive115Credentials {
   let rate: Int?
 }
 
-private struct Drive115OSSSigner {
+struct Drive115OSSSigner {
   let credentials: Drive115Credentials
   let bucket: String
 
   func request(
     method: String, endpoint: String, object: String, body: Data,
-    query: [URLQueryItem] = [], callback: Drive115Callback?, contentMD5: String? = nil
+    query: [URLQueryItem] = [], callback: Drive115Callback?, contentMD5: String? = nil,
+    now: Date = Date()
   ) throws -> URLRequest {
-    guard var components = URLComponents(string: endpoint) else {
-      throw RemoteError.protocolError
+    let address = endpoint.contains("://") ? endpoint : "https://" + endpoint
+    guard var components = URLComponents(string: address),
+      ["http", "https"].contains(components.scheme?.lowercased() ?? ""),
+      let endpointHost = components.host, !endpointHost.isEmpty,
+      components.user == nil, components.password == nil,
+      components.query == nil, components.fragment == nil,
+      components.path.isEmpty || components.path == "/",
+      !bucket.isEmpty,
+      !bucket.contains(where: { !$0.isASCII || !($0.isLetter || $0.isNumber || $0 == "-") })
+    else { throw RemoteError.protocolError }
+    components.scheme = "https"
+    if components.port == 80 { components.port = nil }
+    if !endpointHost.lowercased().hasPrefix(bucket.lowercased() + ".") {
+      components.host = bucket + "." + endpointHost
     }
-    let encodedObject =
-      object.split(separator: "/", omittingEmptySubsequences: true)
+    let encodedObject = object.split(separator: "/", omittingEmptySubsequences: false)
       .map { CloudDriveSupport.encode(String($0)) }.joined(separator: "/")
     components.percentEncodedPath = "/" + encodedObject
-    components.queryItems = query.isEmpty ? nil : query
+    let sortedQuery = query.sorted {
+      $0.name == $1.name ? ($0.value ?? "") < ($1.value ?? "") : $0.name < $1.name
+    }
+    components.percentEncodedQuery =
+      sortedQuery.isEmpty
+      ? nil
+      : sortedQuery.map {
+        CloudDriveSupport.encode($0.name) + "=" + CloudDriveSupport.encode($0.value ?? "")
+      }.joined(separator: "&")
     guard let url = components.url, let host = components.host else {
       throw RemoteError.protocolError
     }
-    let date = Self.rfc1123(Date())
+    let date = Self.rfc1123(now)
     let contentType = "application/octet-stream"
     var headers = [
       "Date": date,
@@ -738,8 +797,8 @@ private struct Drive115OSSSigner {
     ]
     if let contentMD5 { headers["Content-MD5"] = contentMD5 }
     if let callback {
-      headers["x-oss-callback"] = callback.callback
-      headers["x-oss-callback-var"] = callback.callbackVar
+      headers["x-oss-callback"] = Data(callback.callback.utf8).base64EncodedString()
+      headers["x-oss-callback-var"] = Data(callback.callbackVar.utf8).base64EncodedString()
     }
     if let rate = credentials.rate, rate > 0 {
       headers["x-oss-traffic-limit"] = String(rate * 8)
@@ -748,14 +807,17 @@ private struct Drive115OSSSigner {
       .map { ($0.key.lowercased(), $0.value.trimmingCharacters(in: .whitespacesAndNewlines)) }
       .sorted { $0.0 < $1.0 }
       .map { "\($0.0):\($0.1)\n" }.joined()
-    let bucketPath = "/\(bucket)/\(encodedObject)"
+    let subresources = sortedQuery.map {
+      $0.name + (($0.value ?? "").isEmpty ? "" : "=" + $0.value!)
+    }.joined(separator: "&")
+    let bucketPath = "/\(bucket)/\(object)" + (subresources.isEmpty ? "" : "?" + subresources)
     let stringToSign = [
       method, headers["Content-MD5"] ?? "", contentType, date, ossHeaders + bucketPath,
     ].joined(separator: "\n")
     let signature = Self.hmacSHA1(
       key: Data(credentials.accessKeySecret.utf8), message: Data(stringToSign.utf8))
     headers["Authorization"] = "OSS \(credentials.accessKeyID):\(signature)"
-    var request = URLRequest(url: url, timeoutInterval: 120)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
     request.httpMethod = method
     request.httpBody = body.isEmpty ? nil : body
     for (name, value) in headers { request.setValue(value, forHTTPHeaderField: name) }
