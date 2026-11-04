@@ -101,6 +101,25 @@ targets:
         LSUIElement: true
         NSCameraUsageDescription: 发现并读取通过 USB 连接的相机。
         NSLocalNetworkUsageDescription: 发现并连接局域网中的设备和共享。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+          NSExceptionDomains:
+            "10.0.0.0/8":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "172.16.0.0/12":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "192.168.0.0/16":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "127.0.0.0/8":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "169.254.0.0/16":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "fc00::/7":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "fe80::/10":
+              NSExceptionAllowsInsecureHTTPLoads: true
+            "::1":
+              NSExceptionAllowsInsecureHTTPLoads: true
         NSBonjourServices: ["_smb._tcp", "_adb-tls-pairing._tcp", "_adb-tls-connect._tcp"]
         CFBundleURLTypes:
           - CFBundleURLName: com.seaony.Kayoi.oauth

@@ -7967,6 +7967,22 @@
           }
         }
       }
+    },
+    "远程对象存储需要使用 HTTPS；HTTP 仅适用于本地网络地址": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remote object storage requires HTTPS. HTTP is only available for local network addresses."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "远程对象存储需要使用 HTTPS；HTTP 仅适用于本地网络地址"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

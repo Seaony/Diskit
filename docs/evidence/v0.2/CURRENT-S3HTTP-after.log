@@ -1,0 +1,44 @@
+Building for debugging...
+[2 / 11] S3Drive
+[4 / 13] S3Drive
+[11 / 12] S3DriveTests-product
+Build complete! (0.89秒)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2403
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Test s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test s3CustomMinIOEndpointPreservesExplicitProtocol(endpoint:) started.
+􀟈  Test s3RejectsUnsupportedOrEmbeddedCredentialEndpoints(endpoint:) started.
+􀟈  Test s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://nas" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://nas.local:9000" to s3CustomMinIOEndpointPreservesExplicitProtocol(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://nas.local:9000" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "https://nas.local:9000" to s3CustomMinIOEndpointPreservesExplicitProtocol(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "file:///tmp/bucket" to s3RejectsUnsupportedOrEmbeddedCredentialEndpoints(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://example.com" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "ftp://nas.local" to s3RejectsUnsupportedOrEmbeddedCredentialEndpoints(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://10.1.2.3" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://8.8.8.8" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "https://user:password@nas.local" to s3RejectsUnsupportedOrEmbeddedCredentialEndpoints(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://172.16.1.2" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://172.15.1.2" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://172.31.1.2" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://172.32.1.2" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://192.168.1.2" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://192.169.1.2" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://169.253.1.2" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://127.0.0.1" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://[2001:db8::1]" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://169.254.1.2" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://[::1]" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://2130706433" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://[fe80::123]" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "ftp://nas.local" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "http://[fd00::123]" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "https://user:password@nas.local" to s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) started.
+􀟈  Test case passing 1 argument endpoint → "https://s3.example.com" to s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) started.
+􁁛  Test s3EndpointPolicyAllowsLocalHTTPAndRemoteHTTPS(endpoint:) with 12 test cases passed after 0.001 seconds.
+􁁛  Test s3EndpointPolicyRejectsRemoteHTTPAndUnsafeURLs(endpoint:) with 10 test cases passed after 0.001 seconds.
+􁁛  Test s3RejectsUnsupportedOrEmbeddedCredentialEndpoints(endpoint:) with 3 test cases passed after 0.001 seconds.
+􁁛  Test s3CustomMinIOEndpointPreservesExplicitProtocol(endpoint:) with 2 test cases passed after 0.004 seconds.
+􁁛  Test run with 4 tests in 0 suites passed after 0.004 seconds.

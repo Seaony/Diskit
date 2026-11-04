@@ -128,7 +128,9 @@ public actor S3Provider: RemoteFileProvider {
   ) {
     self.configuration = configuration
     let host = configuration.endpoint.host?.lowercased() ?? ""
-    let port = configuration.endpoint.port ?? 443
+    let port =
+      configuration.endpoint.port
+      ?? (configuration.endpoint.scheme?.lowercased() == "http" ? 80 : 443)
     let account = "s3:\(host):\(port)|\(configuration.accessKey)"
     self.transport = DiagnosticHTTPTransport(
       S3RetryTransport(
@@ -143,7 +145,7 @@ public actor S3Provider: RemoteFileProvider {
   }
 
   public func connect() async throws {
-    guard configuration.endpoint.scheme == "https", configuration.endpoint.host != nil,
+    guard S3EndpointPolicy.allows(configuration.endpoint),
       !configuration.region.isEmpty, !configuration.bucket.isEmpty,
       !configuration.accessKey.isEmpty, !configuration.secretKey.isEmpty
     else { throw RemoteError.posix(EINVAL) }
