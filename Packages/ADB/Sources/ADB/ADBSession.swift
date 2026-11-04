@@ -11,6 +11,7 @@ public actor ADBSession {
   private var local: UInt32 = 0
   private var remote: UInt32?
   private var buffered = Data()
+  private var transportFailed = false
   public init(
     transport: any ADBTransport, identity: ADBIdentity = ADBIdentity(),
     initialConnectSent: Bool = false
@@ -20,33 +21,48 @@ public actor ADBSession {
     self.identity = identity
   }
   private func send(_ message: ADBMessage, timeout: TimeInterval = 15) async throws {
-    let encoded = message.encoded(
-      skipChecksum: version >= 0x0100_0001 && message.command != .connect
-        && message.command != .auth)
-    try await transport.write(Data(encoded.prefix(24)), timeout: timeout)
-    if !message.payload.isEmpty { try await transport.write(message.payload, timeout: timeout) }
+    do {
+      let encoded = message.encoded(
+        skipChecksum: version >= 0x0100_0001 && message.command != .connect
+          && message.command != .auth)
+      try await transport.write(Data(encoded.prefix(24)), timeout: timeout)
+      if !message.payload.isEmpty { try await transport.write(message.payload, timeout: timeout) }
+    } catch {
+      transportFailed = true
+      throw error
+    }
   }
   private func receive(timeout: TimeInterval = 15) async throws -> ADBMessage {
-    var header = Data()
-    while header.count < 24 {
-      header.append(try await transport.read(count: 24 - header.count, timeout: timeout))
+    do {
+      var header = Data()
+      while header.count < 24 {
+        let bytes = try await transport.read(count: 24 - header.count, timeout: timeout)
+        guard !bytes.isEmpty else { throw RemoteError.notConnected }
+        header.append(bytes)
+      }
+      var reader = BinaryReader(Data(header[12..<16]))
+      let length = Int(try reader.u32())
+      guard length <= 1_048_576 else { throw RemoteError.protocolError }
+      var payload = Data()
+      while payload.count < length {
+        let bytes = try await transport.read(count: length - payload.count, timeout: timeout)
+        guard !bytes.isEmpty else { throw RemoteError.notConnected }
+        payload.append(bytes)
+      }
+      var fields = BinaryReader(header)
+      let command = try fields.u32()
+      let announcedVersion = try fields.u32()
+      let skip =
+        command == ADBCommand.connect.rawValue
+        ? announcedVersion >= 0x0100_0001 : version >= 0x0100_0001
+      return try ADBMessage.decode(header + payload, skipChecksum: skip)
+    } catch {
+      transportFailed = true
+      throw error
     }
-    var reader = BinaryReader(Data(header[12..<16]))
-    let length = Int(try reader.u32())
-    guard length <= 1_048_576 else { throw RemoteError.protocolError }
-    var payload = Data()
-    while payload.count < length {
-      payload.append(try await transport.read(count: length - payload.count, timeout: timeout))
-    }
-    var fields = BinaryReader(header)
-    let command = try fields.u32()
-    let announcedVersion = try fields.u32()
-    let skip =
-      command == ADBCommand.connect.rawValue
-      ? announcedVersion >= 0x0100_0001 : version >= 0x0100_0001
-    return try ADBMessage.decode(header + payload, skipChecksum: skip)
   }
   public func connect() async throws {
+    guard !transportFailed else { throw RemoteError.notConnected }
     if !initialConnectSent {
       try await send(
         ADBMessage(
@@ -94,13 +110,16 @@ public actor ADBSession {
     buffered.removeAll(keepingCapacity: true)
     try await send(ADBMessage(.open, local, payload: Data((service + "\0").utf8)))
     let reply = try await receive()
+    if reply.command == .close, reply.arg1 == local { throw RemoteError.posix(EACCES) }
     guard reply.command == .okay, reply.arg1 == local, reply.arg0 != 0 else {
-      throw RemoteError.posix(EACCES)
+      transportFailed = true
+      throw RemoteError.protocolError
     }
     remote = reply.arg0
   }
   private func accept(_ message: ADBMessage) async throws -> Data? {
     guard let remote, message.arg0 == remote, message.arg1 == local else {
+      transportFailed = true
       throw RemoteError.protocolError
     }
     switch message.command {
@@ -111,7 +130,9 @@ public actor ADBSession {
       try await send(ADBMessage(.close, local, remote))
       self.remote = nil
       return nil
-    default: throw RemoteError.protocolError
+    default:
+      transportFailed = true
+      throw RemoteError.protocolError
     }
   }
   public func write(_ bytes: Data, timeout: TimeInterval = 15) async throws {
@@ -157,7 +178,21 @@ public actor ADBSession {
     while self.remote != nil { _ = try await accept(receive()) }
     buffered.removeAll(keepingCapacity: true)
   }
+  func recoverAfterOperationError(_ error: Error) async -> Bool {
+    guard !transportFailed, !(error is CancellationError) else {
+      await disconnect()
+      return false
+    }
+    do {
+      try await closeService()
+      return true
+    } catch {
+      await disconnect()
+      return false
+    }
+  }
   public func disconnect() async {
+    transportFailed = true
     await transport.close()
     remote = nil
     buffered = Data()

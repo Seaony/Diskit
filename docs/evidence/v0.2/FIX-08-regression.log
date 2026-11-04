@@ -1,0 +1,12 @@
+修复前：swift test --package-path Packages/ADB --filter missingPathDoesNotDiscardADBConnection|adbCanReconnectAfterTransportFailure；退出 1。
+􀢄  Test missingPathDoesNotDiscardADBConnection(v2:) recorded an issue with 1 argument v2 → false at ProtocolTests.swift:328:3: Expectation failed: await !transport.closed
+􀢄  Test missingPathDoesNotDiscardADBConnection(v2:) recorded an issue with 1 argument v2 → true at ProtocolTests.swift:328:3: Expectation failed: await !transport.closed
+􀢄  Test missingPathDoesNotDiscardADBConnection(v2:) recorded an issue with 1 argument v2 → true at ProtocolTests.swift:313:2: Caught error: .notConnected
+􀢄  Test adbCanReconnectAfterTransportFailure() recorded an issue at ProtocolTests.swift:332:2: Caught error: .notConnected
+􀢄  Test missingPathDoesNotDiscardADBConnection(v2:) recorded an issue with 1 argument v2 → false at ProtocolTests.swift:313:2: Caught error: .notConnected
+􀢄  Test run with 2 tests in 0 suites failed after 0.001 seconds with 5 issues.
+修复后：swift test --package-path Packages/ADB；退出 0。重连测试改用新增会话工厂注入新传输，并扩展断线、EIO、ETIMEDOUT 与工厂首次失败重试。
+􁁛  Test missingPathDoesNotDiscardADBConnection(v2:) with 2 test cases passed after 0.002 seconds.
+􁁛  Test adbCanReconnectAfterTransportFailure(factoryFailsOnce:failure:) with 6 test cases passed after 0.003 seconds.
+􁁛  Test ordinaryADBServiceErrorsAllowTheNextOperation(operation:) with 5 test cases passed after 0.003 seconds.
+􁁛  Test run with 29 tests in 0 suites passed after 0.797 seconds.

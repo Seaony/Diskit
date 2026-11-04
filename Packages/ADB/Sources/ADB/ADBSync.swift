@@ -77,7 +77,10 @@ public enum ADBSync {
 public actor ADBProvider: RemoteFileProvider {
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: false)
-  private let session: ADBSession
+  private var session: ADBSession
+  private let reconnect: (@Sendable () async throws -> ADBSession)?
+  private var needsNewSession = false
+  private var connecting = false
   private var connected = false
   private var busy = false
   private var sdPath: String?
@@ -85,15 +88,33 @@ public actor ADBProvider: RemoteFileProvider {
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
     self.progress = progress
   }
-  public init(session: ADBSession) { self.session = session }
+  public init(
+    session: ADBSession, reconnect: (@Sendable () async throws -> ADBSession)? = nil
+  ) {
+    self.session = session
+    self.reconnect = reconnect
+  }
   public static func usb(serial: String) throws -> ADBProvider {
+    ADBProvider(
+      session: try usbSession(serial: serial), reconnect: { try usbSession(serial: serial) })
+  }
+  static func usbSession(serial: String) throws -> ADBSession {
     guard let device = ADBUSB.devices().first(where: { $0.serial == serial }) else {
       throw RemoteError.notConnected
     }
-    return ADBProvider(session: ADBSession(transport: try USBTransport(device: device)))
+    return ADBSession(transport: try USBTransport(device: device))
   }
   public func connect() async throws {
-    if !connected {
+    guard !connecting else { throw RemoteError.posix(EBUSY) }
+    guard !connected else { return }
+    connecting = true
+    defer { connecting = false }
+    do {
+      if needsNewSession {
+        guard let reconnect else { throw RemoteError.notConnected }
+        session = try await reconnect()
+        needsNewSession = false
+      }
       try await session.connect()
       connected = true
       if await session.features.contains("shell_v2") {
@@ -102,12 +123,26 @@ public actor ADBProvider: RemoteFileProvider {
         sdPath = String(decoding: output, as: UTF8.self).split(separator: "\n").first.map(
           String.init)
       }
+    } catch {
+      await disconnect()
+      throw error
     }
   }
   public func disconnect() async {
     connected = false
+    needsNewSession = true
     busy = false
+    sdPath = nil
     await session.disconnect()
+  }
+  private func operationFailed(_ error: Error) async {
+    let reusable = await session.recoverAfterOperationError(error)
+    busy = false
+    if !reusable {
+      connected = false
+      needsNewSession = true
+      sdPath = nil
+    }
   }
   private func begin() throws {
     guard connected else { throw RemoteError.notConnected }
@@ -138,7 +173,7 @@ public actor ADBProvider: RemoteFileProvider {
       try await session.closeService()
       return item
     } catch {
-      await disconnect()
+      await operationFailed(error)
       throw error
     }
   }
@@ -177,7 +212,7 @@ public actor ADBProvider: RemoteFileProvider {
       }
       return result
     } catch {
-      await disconnect()
+      await operationFailed(error)
       throw error
     }
   }
@@ -200,16 +235,20 @@ public actor ADBProvider: RemoteFileProvider {
       }
       let cursor = ADBReadCursor(
         session: session, maximum: v2 ? Int64.max : Int64(UInt32.max),
-        finished: { await self.endRead(success: $0) })
+        finished: { await self.endRead(reusable: $0) })
       return AsyncThrowingStream(unfolding: { try await cursor.next() })
     } catch {
-      await disconnect()
+      await operationFailed(error)
       throw error
     }
   }
-  private func endRead(success: Bool) {
+  private func endRead(reusable: Bool) {
     busy = false
-    if !success { connected = false }
+    if !reusable {
+      connected = false
+      needsNewSession = true
+      sdPath = nil
+    }
   }
   public func write(_ path: RemotePath, from localFile: URL) async throws {
     let size = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
@@ -252,7 +291,7 @@ public actor ADBProvider: RemoteFileProvider {
       guard id == ADBSync.id("OKAY") else { throw RemoteError.protocolError }
       try await session.closeService()
     } catch {
-      await disconnect()
+      await operationFailed(error)
       throw error
     }
   }
@@ -306,7 +345,7 @@ public actor ADBProvider: RemoteFileProvider {
       }
       return output
     } catch {
-      await disconnect()
+      await operationFailed(error)
       throw error
     }
   }
@@ -353,8 +392,8 @@ private actor ADBReadCursor {
       return try await session.readExactly(Int(length), timeout: 60)
     } catch {
       done = true
-      await session.disconnect()
-      await finished(false)
+      let reusable = await session.recoverAfterOperationError(error)
+      await finished(reusable)
       throw error
     }
   }

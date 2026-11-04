@@ -18,12 +18,14 @@ private actor FakeTransport: ADBTransport {
   var sent: [Data] = []
   var closed = false
   let fragment: Int
-  init(_ messages: [ADBMessage], fragment: Int = 7) {
+  let exhaustedError: RemoteError
+  init(_ messages: [ADBMessage], fragment: Int = 7, exhaustedError: RemoteError = .notConnected) {
+    self.exhaustedError = exhaustedError
     input = messages.reduce(Data()) { $0 + $1.encoded() }
     self.fragment = fragment
   }
   func read(count: Int, timeout: TimeInterval) async throws -> Data {
-    guard !closed, !input.isEmpty else { throw RemoteError.notConnected }
+    guard !closed, !input.isEmpty else { throw exhaustedError }
     let size = min(count, fragment, input.count)
     let value = Data(input.prefix(size))
     input.removeFirst(size)
@@ -308,4 +310,130 @@ private func shellFrame(_ id: UInt8, _ bytes: Data) -> Data {
     try await provider.write(RemotePath("/large"), from: url)
   }
   await provider.disconnect()
+}
+
+@Test(arguments: [false, true])
+func missingPathDoesNotDiscardADBConnection(v2: Bool) async throws {
+  var missing = Data()
+  if v2 {
+    missing = statV2(error: UInt32(ENOENT))
+  } else {
+    for value in [ADBSync.id("STAT"), 0, 0, 0] { missing.appendLE(value) }
+  }
+  var done = Data("DONE".utf8)
+  done.append(Data(repeating: 0, count: (v2 ? 76 : 20) - 4))
+  let transport = FakeTransport([
+    hello(v2 ? "stat_v2,ls_v2" : ""),
+    .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.write, 11, 1, payload: missing),
+    .init(.close, 11, 1),
+    .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.write, 12, 2, payload: done),
+    .init(.close, 12, 2),
+  ])
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(ENOENT)) {
+    _ = try await provider.stat(RemotePath("/missing"))
+  }
+  #expect(await !transport.closed)
+  #expect(try await provider.list(RemotePath("/")).isEmpty)
+}
+
+@Test(arguments: [false, true], [RemoteError.notConnected, .posix(EIO), .posix(ETIMEDOUT)])
+func adbCanReconnectAfterTransportFailure(factoryFailsOnce: Bool, failure: RemoteError) async throws
+{
+  let broken = FakeTransport(
+    [hello(), .init(.okay, 11, 1), .init(.okay, 11, 1)], exhaustedError: failure)
+  var done = Data("DONE".utf8)
+  done.append(Data(repeating: 0, count: 72))
+  let fresh = FakeTransport([
+    hello("ls_v2"), .init(.okay, 21, 1), .init(.okay, 21, 1),
+    .init(.write, 21, 1, payload: done), .init(.close, 21, 1),
+  ])
+  let attempts = Mutex(0)
+  let provider = ADBProvider(
+    session: ADBSession(transport: broken, identity: ADBIdentity(store: TestSecrets())),
+    reconnect: {
+      let count = attempts.withLock {
+        $0 += 1
+        return $0
+      }
+      if factoryFailsOnce && count == 1 { throw RemoteError.notConnected }
+      return ADBSession(transport: fresh, identity: ADBIdentity(store: TestSecrets()))
+    })
+  try await provider.connect()
+  await #expect(throws: failure) {
+    _ = try await provider.stat(RemotePath("/file"))
+  }
+  #expect(await broken.closed)
+  if factoryFailsOnce {
+    await #expect(throws: RemoteError.notConnected) { try await provider.connect() }
+  }
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).isEmpty)
+  #expect(await !fresh.closed)
+  #expect(attempts.withLock { $0 } == (factoryFailsOnce ? 2 : 1))
+}
+
+@Test(arguments: ["list", "read", "write", "shell", "shell-unknown"])
+func ordinaryADBServiceErrorsAllowTheNextOperation(operation: String) async throws {
+  let text = Data((operation == "shell-unknown" ? "Other command error" : "Permission denied").utf8)
+  var failure = Data("FAIL".utf8)
+  failure.appendLE(UInt32(text.count))
+  failure.append(text)
+  var done = Data("DONE".utf8)
+  done.append(Data(repeating: 0, count: 72))
+  var messages: [ADBMessage] = [hello()]
+  var nextLocal: UInt32 = 2
+  switch operation {
+  case "read":
+    messages += [
+      .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.write, 11, 1, payload: statV2(size: 3)),
+      .init(.close, 11, 1),
+      .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2),
+      .init(.write, 12, 2, payload: failure), .init(.close, 12, 2),
+    ]
+    nextLocal = 3
+  case "write":
+    messages += [
+      .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.okay, 11, 1),
+      .init(.okay, 11, 1),
+      .init(.write, 11, 1, payload: failure), .init(.close, 11, 1),
+    ]
+  case "shell", "shell-unknown":
+    messages = [
+      hello("shell_v2,ls_v2"), .init(.okay, 11, 1),
+      .init(.write, 11, 1, payload: shellFrame(3, Data([0]))), .init(.close, 11, 1),
+      .init(.okay, 12, 2),
+      .init(.write, 12, 2, payload: shellFrame(2, text) + shellFrame(3, Data([1]))),
+      .init(.close, 12, 2),
+    ]
+    nextLocal = 3
+  default:
+    messages += [
+      .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.write, 11, 1, payload: failure),
+      .init(.close, 11, 1),
+    ]
+  }
+  messages += [
+    .init(.okay, 20, nextLocal), .init(.okay, 20, nextLocal),
+    .init(.write, 20, nextLocal, payload: done), .init(.close, 20, nextLocal),
+  ]
+  let transport = FakeTransport(messages)
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  let file = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: file) }
+  try Data("abc".utf8).write(to: file)
+  await #expect(throws: RemoteError.posix(operation == "shell-unknown" ? EIO : EACCES)) {
+    switch operation {
+    case "read": for try await _ in try await provider.read(RemotePath("/file"), range: nil) {}
+    case "write": try await provider.write(RemotePath("/file"), from: file)
+    case "shell", "shell-unknown": try await provider.makeDirectory(RemotePath("/directory"))
+    default: _ = try await provider.list(RemotePath("/directory"))
+    }
+  }
+  #expect(await !transport.closed)
+  #expect(try await provider.list(RemotePath("/")).isEmpty)
 }
