@@ -1,119 +1,6 @@
 import Core
 import Foundation
 
-public enum QuarkError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
-  case invalidCookie, loginRequired, invalidResponse
-  public static var errorDomain: String { NSPOSIXErrorDomain }
-  public var errorCode: Int { self == .invalidResponse ? Int(EIO) : Int(EACCES) }
-  public var errorDescription: String? {
-    switch self {
-    case .invalidCookie: L("登录信息不完整，请重新扫码登录")
-    case .loginRequired: L("夸克网盘需重新登录")
-    case .invalidResponse: L("夸克网盘返回了无效的数据")
-    }
-  }
-  public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
-}
-
-public struct QuarkAccount: Sendable, Equatable {
-  public let userID: String
-  public let nickname: String
-  public let total: Int64
-  public let used: Int64
-  public init(userID: String, nickname: String, total: Int64, used: Int64) {
-    self.userID = userID
-    self.nickname = nickname
-    self.total = total
-    self.used = used
-  }
-}
-
-private struct QuarkCookie {
-  var values: [String: String]
-  init(_ header: String) throws {
-    guard !header.isEmpty, header.utf8.allSatisfy({ $0 >= 0x20 && $0 < 0x7f }) else {
-      throw QuarkError.invalidCookie
-    }
-    let allowed = Set(
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'*+-.^_`|~".utf8)
-    var values: [String: String] = [:]
-    for item in header.split(separator: ";") {
-      let pair = item.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-      guard pair.count == 2 else { throw QuarkError.invalidCookie }
-      let name = pair[0].trimmingCharacters(in: .whitespaces)
-      let value = pair[1].trimmingCharacters(in: .whitespaces)
-      guard !name.isEmpty, name.utf8.allSatisfy({ allowed.contains($0) }) else {
-        throw QuarkError.invalidCookie
-      }
-      values[name] = value
-    }
-    self.values = values
-  }
-  var valid: Bool { !(values["__puus"] ?? "").isEmpty && !(values["__pus"] ?? "").isEmpty }
-  var header: String { values.keys.sorted().map { $0 + "=" + values[$0]! }.joined(separator: "; ") }
-  func merging(_ response: HTTPResponse, from url: URL, cookieDomain: String) -> QuarkCookie {
-    let sourceURL = response.url ?? url
-    guard QuarkSession.trusted(sourceURL, domain: cookieDomain),
-      let value = response.header("Set-Cookie")
-    else {
-      return self
-    }
-    var result = self
-    let incoming = HTTPCookie.cookies(
-      withResponseHeaderFields: ["Set-Cookie": value], for: sourceURL)
-    let host = sourceURL.host?.lowercased() ?? ""
-    for cookie in incoming {
-      let domain = cookie.domain.lowercased().trimmingCharacters(
-        in: CharacterSet(charactersIn: "."))
-      guard domain == cookieDomain || domain.hasSuffix("." + cookieDomain),
-        host == domain || host.hasSuffix("." + domain)
-      else { continue }
-      let maxAge = cookie.properties?[.maximumAge].map { String(describing: $0) }.flatMap(Int.init)
-      if cookie.expiresDate.map({ $0 <= Date() }) == true || maxAge.map({ $0 <= 0 }) == true {
-        result.values.removeValue(forKey: cookie.name)
-      } else {
-        result.values[cookie.name] = cookie.value
-      }
-    }
-    return result
-  }
-}
-
-public enum QuarkCloudService: String, Sendable {
-  case quark, uc
-}
-
-public struct QuarkCloudConfiguration: Sendable, Equatable {
-  public let service: QuarkCloudService
-  public let cookieDomain: String
-  public let loginURL: URL
-  public let refererURL: String
-  public let accountURL: URL
-  public let apiBase: String
-  public let clientParameter: String
-  public let userAgent: String
-
-  public static let quark = QuarkCloudConfiguration(
-    service: .quark, cookieDomain: "quark.cn",
-    loginURL: URL(string: "https://pan.quark.cn/")!,
-    refererURL: "https://pan.quark.cn/",
-    accountURL: URL(string: "https://pan.quark.cn/account/info")!,
-    apiBase: "https://drive.quark.cn/1/clouddrive", clientParameter: "ucpro",
-    userAgent:
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
-  )
-
-  public static let uc = QuarkCloudConfiguration(
-    service: .uc, cookieDomain: "uc.cn",
-    loginURL: URL(string: "https://drive.uc.cn/")!,
-    refererURL: "https://drive.uc.cn/",
-    accountURL: URL(string: "https://drive.uc.cn/account/info")!,
-    apiBase: "https://pc-api.uc.cn/1/clouddrive", clientParameter: "UCBrowser",
-    userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch"
-  )
-}
-
 public actor QuarkSession {
   public static let loginInvalidatedNotification = Notification.Name(
     "com.seaony.Kayoi.quarkLoginInvalidated")
@@ -174,10 +61,11 @@ public actor QuarkSession {
     return QuarkAccount(userID: info.0, nickname: info.1, total: space.0, used: space.1)
   }
 
-  public func authorized(_ original: URLRequest) async throws -> HTTPResponse {
+  public func authorized(_ original: URLRequest, upload: Bool = false) async throws -> HTTPResponse
+  {
     let cookie = try requireCookie()
-    let response = try await transport.send(
-      Self.prepare(original, cookie: cookie, configuration: configuration))
+    let request = Self.prepare(original, cookie: cookie, configuration: configuration)
+    let response = try await (upload ? transport.upload(request) : transport.send(request))
     try process(response, request: original, sent: cookie)
     return response
   }
@@ -237,6 +125,7 @@ public actor QuarkSession {
       try invalidate(sent: sent)
       throw QuarkError.loginRequired
     }
+    guard (200..<300).contains(response.status) else { return }
     let refreshed = sent.merging(
       response, from: url, cookieDomain: configuration.cookieDomain)
     guard refreshed.valid else {
@@ -246,10 +135,10 @@ public actor QuarkSession {
     if refreshed.header != sent.header, try storedCookie()?.header == sent.header {
       try secrets.write(Data(refreshed.header.utf8), for: secretKey)
     }
+    didNotifyInvalidation = false
   }
   private func invalidate(sent: QuarkCookie) throws {
     guard try storedCookie()?.header == sent.header else { return }
-    try secrets.delete(secretKey)
     notifyInvalidation()
   }
   private func notifyInvalidation() {
@@ -259,7 +148,7 @@ public actor QuarkSession {
       name: Self.loginInvalidatedNotification, object: nil,
       userInfo: ["secretKey": secretKey])
   }
-  fileprivate static func trusted(_ url: URL?, domain: String) -> Bool {
+  static func trusted(_ url: URL?, domain: String) -> Bool {
     guard let url, url.scheme == "https", let host = url.host?.lowercased() else { return false }
     return host == domain || host.hasSuffix("." + domain)
   }
@@ -275,7 +164,7 @@ public actor QuarkSession {
       request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
       request.setValue(configuration.refererURL, forHTTPHeaderField: "Referer")
       if isAPI(request) {
-        request.timeoutInterval = 30
+        request.timeoutInterval = RemoteTimeout.cloudRequest
         request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
       }
     } else {
@@ -284,24 +173,32 @@ public actor QuarkSession {
     return request
   }
   private static func check(_ response: HTTPResponse, request: URLRequest) throws {
-    guard isAPI(request) else { return }
-    if response.status == 401 { throw QuarkError.loginRequired }
-    let object = (try? JSONSerialization.jsonObject(with: response.body)) as? [String: Any]
-    if (object?["status"] as? NSNumber)?.intValue == 401
-      || (object?["code"] as? NSNumber)?.intValue == 31001
-    {
-      throw QuarkError.loginRequired
-    }
-    if (200..<300).contains(response.status), request.url?.path == "/account/info",
-      object?["success"] as? Bool == false
-    {
-      throw QuarkError.loginRequired
+    do {
+      guard isAPI(request) else { return }
+      if response.status == 401 { throw QuarkError.loginRequired }
+      guard response.status != 429, response.status < 500 else { return }
+      let object = (try? JSONSerialization.jsonObject(with: response.body)) as? [String: Any]
+      if (object?["status"] as? NSNumber)?.intValue == 401
+        || (object?["code"] as? NSNumber)?.intValue == 31001
+      {
+        throw QuarkError.loginRequired
+      }
+      if (200..<300).contains(response.status), request.url?.path == "/account/info",
+        object?["success"] as? Bool == false
+      {
+        throw QuarkError.loginRequired
+      }
+    } catch {
+      if (200..<300).contains(response.status) {
+        PackageDiagnostics.failure(error, category: .quark, operation: .request)
+      }
+      throw error
     }
   }
   private static func accountRequest(_ configuration: QuarkCloudConfiguration) -> URLRequest {
     var request = URLRequest(url: configuration.accountURL)
     request.httpMethod = "GET"
-    request.timeoutInterval = 30
+    request.timeoutInterval = RemoteTimeout.cloudRequest
     return request
   }
   private static func spaceRequest(_ configuration: QuarkCloudConfiguration) -> URLRequest {
@@ -312,7 +209,7 @@ public actor QuarkSession {
           + "/member?pr=\(configuration.clientParameter)&fr=pc&fetch_subscribe=false&_ch=home&fetch_identity=false"
       )!)
     request.httpMethod = "GET"
-    request.timeoutInterval = 30
+    request.timeoutInterval = RemoteTimeout.cloudRequest
     return request
   }
   private static func identity(_ response: HTTPResponse) throws -> (String, String) {

@@ -27,7 +27,18 @@ struct QuarkStatus: Decodable {
   let status: Int
   let code: Int
 }
+struct QuarkMutation: Decodable {
+  struct Result: Decodable {
+    let taskID: String?
+    enum CodingKeys: String, CodingKey { case taskID = "task_id" }
+  }
+  let data: Result?
+}
+struct QuarkTask: Decodable, Sendable {
+  let status: Int
+}
 struct QuarkData<T: Decodable>: Decodable { let data: T }
+extension QuarkData: Sendable where T: Sendable {}
 struct QuarkFileList: Decodable {
   struct Contents: Decodable { let list: [QuarkFile] }
   struct Page: Decodable {
@@ -180,9 +191,10 @@ enum QuarkOSS {
 }
 
 enum QuarkNames {
+  private static let expression = try! NSRegularExpression(
+    pattern: "&(?:#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);")
+
   static func decode(_ text: String) -> String {
-    let expression = try! NSRegularExpression(
-      pattern: "&(?:#x[0-9a-fA-F]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);")
     var output = text
     for match in expression.matches(in: text, range: NSRange(text.startIndex..., in: text))
       .reversed()

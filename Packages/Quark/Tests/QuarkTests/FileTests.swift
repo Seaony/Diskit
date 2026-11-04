@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Core
 import CryptoKit
 import Foundation
@@ -6,12 +7,7 @@ import Testing
 
 @testable import Quark
 
-private final class FileSecrets: SecretStore, Sendable {
-  private let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-}
+private typealias FileSecrets = TestSecretStore
 private struct Reply: Sendable {
   let path: String
   let response: HTTPResponse
@@ -303,4 +299,198 @@ private func auth() -> Reply {
   let (provider, _) = try setup([Reply("/file/sort", status: 401, bytes: Data())])
   try await provider.connect()
   await #expect(throws: QuarkError.loginRequired) { try await provider.list(RemotePath("/")) }
+}
+
+@Test func quarkExistingDirectoryReportsConflict() async throws {
+  let (provider, http) = try setup([list([file("dir", "existing", folder: true)])])
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.makeDirectory(RemotePath("/existing"))
+  }
+  #expect(await http.files().count == 1)
+}
+
+@Test func quarkUploadUsesDestinationExtensionForFormat() async throws {
+  let url = try local(Data())
+  defer { try? FileManager.default.removeItem(at: url) }
+  let (provider, http) = try setup([
+    list([]), pre(), Reply("/file/update/hash", data: ["finish": true]),
+  ])
+  try await provider.connect()
+  try await provider.write(RemotePath("/photo.png"), from: url)
+  let request = try #require(
+    await http.files().first { $0.url?.path.hasSuffix("/upload/pre") == true })
+  #expect(try body(request)["format_type"] as? String == "image/png")
+}
+
+@Test func quarkMoveWaitsForTaskBeforeRenaming() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]), list([]),
+    Reply("/file/move", data: ["task_id": "move-task"]),
+    Reply("/task", data: ["status": 2]), Reply("/file/rename"),
+  ])
+  try await provider.connect()
+  try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+  let requests = await http.files()
+  #expect(requests.map { $0.url!.lastPathComponent } == ["sort", "sort", "move", "task", "rename"])
+  #expect(
+    URLComponents(url: requests[3].url!, resolvingAgainstBaseURL: false)?.queryItems?.contains(
+      URLQueryItem(name: "task_id", value: "move-task")) == true)
+}
+
+@Test func quarkDeleteTaskFailureIsNotReportedAsSuccess() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x")]), Reply("/file/delete", data: ["task_id": "delete-task"]),
+    Reply("/task", data: ["status": 3]),
+  ])
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(EIO)) {
+    try await provider.remove(RemotePath("/x"), recursive: false)
+  }
+  #expect(await http.files().last?.url?.lastPathComponent == "task")
+}
+
+@Test(arguments: [true, false])
+func quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers: Bool) async throws {
+  let (provider, http) = try setup([
+    list([], total: 1), recovers ? list([file("f", "x")]) : list([], total: 1),
+  ])
+  try await provider.connect()
+  if recovers {
+    #expect(try await provider.list(RemotePath("/")).map(\.name) == ["x"])
+  } else {
+    await #expect(throws: RemoteError.protocolError) {
+      _ = try await provider.list(RemotePath("/"))
+    }
+  }
+  let requests = await http.files()
+  #expect(requests.count == 2)
+  #expect(
+    requests.allSatisfy {
+      URLComponents(url: $0.url!, resolvingAgainstBaseURL: false)?.queryItems?.contains(
+        URLQueryItem(name: "_page", value: "1")) == true
+    })
+}
+
+@Test func quarkCrossDirectoryRenameAvoidsUnrelatedOriginalName() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]), list([file("unrelated", "x")]),
+    Reply("/file/rename"), Reply("/file/move", data: ["task_id": "move"]),
+    Reply("/task", data: ["status": 2]), Reply("/file/rename"),
+  ])
+  try await provider.connect()
+  try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+  let requests = await http.files()
+  #expect(
+    requests.map { $0.url!.lastPathComponent } == [
+      "sort", "sort", "rename", "move", "task", "rename",
+    ])
+  #expect(try body(requests[2])["fid"] as? String == "f")
+  #expect((try body(requests[2])["file_name"] as? String)?.hasPrefix(".kayoi-move-") == true)
+  #expect(try body(requests[3])["filelist"] as? [String] == ["f"])
+  #expect(try body(requests[5])["file_name"] as? String == "y")
+}
+
+@Test func quarkFailedStagedMoveRestoresOriginalName() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]), list([file("unrelated", "x")]),
+    Reply("/file/rename"), Reply("/file/move", status: 500, bytes: Data()), Reply("/file/rename"),
+  ])
+  try await provider.connect()
+  await #expect(throws: RemoteError.http(500)) {
+    try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+  }
+  let requests = await http.files()
+  #expect(try body(requests.last!)["fid"] as? String == "f")
+  #expect(try body(requests.last!)["file_name"] as? String == "x")
+}
+
+@Test func quarkFailedFinalRenameMovesBackBeforeRestoringOriginalName() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]), list([file("unrelated", "x")]),
+    Reply("/file/rename"), Reply("/file/move"), Reply("/file/rename", status: 409, bytes: Data()),
+    Reply("/file/move"), Reply("/file/rename"),
+  ])
+  try await provider.connect()
+  await #expect(throws: RemoteError.http(409)) {
+    try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+  }
+  let requests = await http.files()
+  #expect(try body(requests[5])["to_pdir_fid"] as? String == "0")
+  #expect(try body(requests[6])["file_name"] as? String == "x")
+}
+
+@Test func quarkRangesReuseLinkForUnchangedFileMetadata() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x", size: 100)]),
+    Reply("/file/download", data: [["download_url": "https://download.quark.cn/signed"]]),
+    Reply(
+      "/signed", status: 206, bytes: Data([1, 2]), headers: ["Content-Range": "bytes 0-1/100"]),
+    list([file("f", "x", size: 100)]),
+    Reply(
+      "/signed", status: 206, bytes: Data([3, 4]), headers: ["Content-Range": "bytes 2-3/100"]),
+  ])
+  try await provider.connect()
+  var output = Data()
+  for try await bytes in try await provider.read(RemotePath("/x"), range: 0..<2) {
+    output.append(bytes)
+  }
+  for try await bytes in try await provider.read(RemotePath("/x"), range: 2..<4) {
+    output.append(bytes)
+  }
+  #expect(output == Data([1, 2, 3, 4]))
+  #expect(await http.files().filter { $0.url?.path.hasSuffix("/file/download") == true }.count == 1)
+}
+
+@Test func quarkFailedMoveAndRecoveryPreserveBothErrors() async throws {
+  let (provider, _) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]), list([file("unrelated", "x")]),
+    Reply("/file/rename"), Reply("/file/move", status: 500, bytes: Data()),
+    Reply("/file/rename", status: 503, bytes: Data()),
+  ])
+  try await provider.connect()
+  do {
+    try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+    Issue.record("恢复失败不能报成功")
+  } catch let error as QuarkMoveRecoveryError {
+    #expect(error.original as? RemoteError == .http(500))
+    #expect(error.recovery as? RemoteError == .http(503))
+    #expect(error.temporaryName.hasPrefix(".kayoi-move-"))
+  }
+}
+
+@Test(arguments: [0, 1])
+func quarkPendingTaskIsPolledUntilCompleted(status: Int) async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x")]), Reply("/file/delete", data: ["task_id": "delete-task"]),
+    Reply("/task", data: ["status": status]), Reply("/task", data: ["status": 2]),
+  ])
+  try await provider.connect()
+  try await provider.remove(RemotePath("/x"), recursive: false)
+  let polls = await http.files().filter { $0.url?.lastPathComponent == "task" }
+  #expect(polls.count == 2)
+  #expect(
+    URLComponents(url: polls[1].url!, resolvingAgainstBaseURL: false)?.queryItems?.contains(
+      URLQueryItem(name: "retry_index", value: "1")) == true)
+}
+
+@Test func quarkCrossDirectoryRenameNeverTouchesExistingFinalName() async throws {
+  let (provider, http) = try setup([
+    list([file("f", "x"), file("dest", "dir", folder: true)]),
+    list([file("old-name", "x"), file("final-name", "y")]),
+  ])
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.move(RemotePath("/x"), to: RemotePath("/dir/y"))
+  }
+  #expect(await http.files().allSatisfy { $0.httpMethod == "GET" })
+}
+
+@Test func quarkNameEntitiesPreserveUnsupportedInputAndUnicodeBoundaries() {
+  #expect(QuarkNames.decode("😀&amp;&#x1F600;&#20013;&nbsp;") == "😀&😀中\u{00a0}")
+  #expect(QuarkNames.decode("&lt;&gt;&quot;&apos;") == "<>\"'")
+  let unsupported = "&#xD800;&#1114112;&#999999999999;&unknown;&#X41;&amp"
+  #expect(QuarkNames.decode(unsupported) == unsupported)
+  #expect(QuarkNames.decode("&amp;lt;") == "&lt;")
+  #expect(QuarkNames.decode("") == "")
 }

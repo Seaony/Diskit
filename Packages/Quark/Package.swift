@@ -7,6 +7,6 @@ let package = Package(
   dependencies: [.package(path: "../Core")],
   targets: [
     .target(name: "Quark", dependencies: [.product(name: "Core", package: "Core")]),
-    .testTarget(name: "QuarkTests", dependencies: ["Quark"]),
+    .testTarget(name: "QuarkTests", dependencies: ["Quark", .product(name: "CoreTestSupport", package: "Core")]),
   ],
   swiftLanguageModes: [.v6])

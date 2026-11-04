@@ -1,3 +1,4 @@
+import CoreTestSupport
 import Core
 import Foundation
 import Synchronization
@@ -7,21 +8,18 @@ import Testing
 
 private let goodQuarkCookie = "__puus=session; __pus=user; extra=value=="
 
-private final class SessionSecrets: SecretStore, Sendable {
-  let values = Mutex<[String: Data]>([:])
-  func read(_ key: String) throws -> Data? { values.withLock { $0[key] } }
-  func write(_ data: Data, for key: String) throws { values.withLock { $0[key] = data } }
-  func delete(_ key: String) throws { _ = values.withLock { $0.removeValue(forKey: key) } }
-  func string(_ key: String) throws -> String? {
-    try read(key).map { String(decoding: $0, as: UTF8.self) }
-  }
-}
+private typealias SessionSecrets = TestSecretStore
 
 private actor SessionHTTP: HTTPTransport {
   var requests: [URLRequest] = []
+  var uploads: [URLRequest] = []
   let reply: @Sendable (URLRequest) async throws -> HTTPResponse
   init(_ reply: @escaping @Sendable (URLRequest) async throws -> HTTPResponse) {
     self.reply = reply
+  }
+  func upload(_ request: URLRequest) async throws -> HTTPResponse {
+    uploads.append(request)
+    return try await send(request)
   }
   func send(_ request: URLRequest) async throws -> HTTPResponse {
     requests.append(request)
@@ -185,7 +183,7 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   #expect(error.domain == NSPOSIXErrorDomain && error.code == Int(EACCES))
 }
 
-@Test func quarkHTTPAndBusinessUnauthorizedResponsesInvalidateCookie() async throws {
+@Test func quarkHTTPAndBusinessUnauthorizedResponsesPreserveCookieForRecovery() async throws {
   let responses = [
     HTTPResponse(status: 401),
     HTTPResponse(status: 200, body: Data(#"{"status":401,"code":31001,"message":"未登录"}"#.utf8)),
@@ -197,8 +195,8 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
     let session = QuarkSession(
       secretKey: key, secrets: secrets, transport: SessionHTTP { _ in response })
     await #expect(throws: QuarkError.loginRequired) { try await session.authorized(quarkAPI()) }
-    #expect(try secrets.read(key) == nil)
-    #expect(try await !session.hasCookie())
+    #expect(try secrets.string(key) == goodQuarkCookie)
+    #expect(try await session.hasCookie())
   }
 }
 
@@ -232,7 +230,7 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   }
   let session = QuarkSession(secretKey: key, secrets: secrets, transport: transport)
   await #expect(throws: QuarkError.loginRequired) { try await session.authorized(quarkAPI()) }
-  #expect(try secrets.read(key) == nil)
+  #expect(try secrets.string(key) == goodQuarkCookie)
 }
 
 @Test func quarkCookieNeverLeaksToOSSOrLookalikeHostsAndSignatureHeadersSurvive() async throws {
@@ -295,7 +293,7 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   await #expect(throws: QuarkError.loginRequired) {
     _ = try await session.authorizedStream(quarkAPI())
   }
-  #expect(try secrets.read(key) == nil)
+  #expect(try secrets.string(key) == goodQuarkCookie)
 }
 
 @Test func quarkNonLoginBusinessErrorKeepsSavedCookie() async throws {
@@ -398,4 +396,59 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   #expect(stream.response.status == 401)
   #expect(try secrets.string(key) == goodQuarkCookie)
   #expect(try await session.hasCookie())
+}
+
+@Test func quarkTransferRoutingDoesNotChangeMetadataOrLeakCookie() async throws {
+  let secrets = MemorySecretStore()
+  try secrets.write(Data(goodQuarkCookie.utf8), for: "local")
+  let http = SessionHTTP { request in
+    #expect(request.value(forHTTPHeaderField: "Cookie") == nil)
+    return HTTPResponse(status: 200)
+  }
+  let session = QuarkSession(secretKey: "local", secrets: secrets, transport: http)
+  var request = URLRequest(url: URL(string: "https://upload.example.invalid/file")!)
+  request.httpMethod = "PUT"
+  request.httpBody = Data([1])
+  _ = try await session.authorized(request, upload: true)
+  _ = try await session.authorized(request)
+  #expect(await http.requests.count == 2)
+  #expect(await http.uploads.count == 1)
+}
+
+@Test func quarkTemporaryRejectionKeepsCookieAndCanRecover() async throws {
+  let secrets = SessionSecrets()
+  let key = UUID().uuidString
+  try secrets.write(Data(goodQuarkCookie.utf8), for: key)
+  let attempts = Mutex(0)
+  let session = QuarkSession(
+    secretKey: key, secrets: secrets,
+    transport: SessionHTTP { _ in
+      let attempt = attempts.withLock {
+        $0 += 1
+        return $0
+      }
+      return HTTPResponse(
+        status: attempt == 1 ? 401 : 200, body: Data(#"{"status":200,"code":0}"#.utf8))
+    })
+  await #expect(throws: QuarkError.loginRequired) { _ = try await session.authorized(quarkAPI()) }
+  #expect(try secrets.string(key) == goodQuarkCookie)
+  #expect(try await session.authorized(quarkAPI()).status == 200)
+  #expect(QuarkError.loginRequired.requiresLogin)
+  #expect(!QuarkError.invalidCookie.requiresLogin)
+  #expect(!QuarkError.invalidResponse.requiresLogin)
+}
+
+@Test func quarkServerFailureCannotDeleteCookieThroughLoginLikeBody() async throws {
+  let secrets = SessionSecrets()
+  let key = UUID().uuidString
+  try secrets.write(Data(goodQuarkCookie.utf8), for: key)
+  let session = QuarkSession(
+    secretKey: key, secrets: secrets,
+    transport: SessionHTTP { _ in
+      HTTPResponse(
+        status: 500, headers: ["Set-Cookie": "__puus=; Domain=.quark.cn; Path=/; Max-Age=0"],
+        body: Data(#"{"status":401,"code":31001}"#.utf8))
+    })
+  #expect(try await session.authorized(quarkAPI()).status == 500)
+  #expect(try secrets.string(key) == goodQuarkCookie)
 }
