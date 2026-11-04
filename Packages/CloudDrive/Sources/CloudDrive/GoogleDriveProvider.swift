@@ -13,7 +13,8 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   public init(session: OAuthSession) { self.session = session }
 
   public func connect() async throws {
-    let response = try await session.authorized(URLRequest(url: try url("/about?fields=user")))
+    let response = try await session.authorized(
+      URLRequest(url: try url("/about", query: [URLQueryItem(name: "fields", value: "user")])))
     try check(response)
     connected = true
   }
@@ -27,7 +28,8 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   public func spaceInfo() async throws -> SpaceInfo {
     try ensureConnected()
     let response = try await session.authorized(
-      URLRequest(url: try url("/about?fields=storageQuota")))
+      URLRequest(
+        url: try url("/about", query: [URLQueryItem(name: "fields", value: "storageQuota")])))
     try check(response)
     let value = try JSONDecoder().decode(GoogleAbout.self, from: response.body)
     return SpaceInfo(
@@ -36,7 +38,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   public func profile() async throws -> OAuthProfile {
     let response = try await session.authorized(
-      URLRequest(url: try url("/about?fields=user")))
+      URLRequest(url: try url("/about", query: [URLQueryItem(name: "fields", value: "user")])))
     try check(response)
     let value = try JSONDecoder().decode(GoogleProfileEnvelope.self, from: response.body)
     return OAuthProfile(
@@ -373,6 +375,21 @@ private struct GoogleAbout: Decodable {
   struct Quota: Decodable {
     let limit: Int64?
     let usage: Int64?
+    enum CodingKeys: String, CodingKey { case limit, usage }
+
+    init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      func bytes(_ key: CodingKeys) throws -> Int64? {
+        guard let text = try container.decodeIfPresent(String.self, forKey: key) else { return nil }
+        guard let value = Int64(text), value >= 0 else {
+          throw DecodingError.dataCorruptedError(
+            forKey: key, in: container, debugDescription: "容量必须是非负的 64 位整数字符串")
+        }
+        return value
+      }
+      limit = try bytes(.limit)
+      usage = try bytes(.usage)
+    }
   }
   let storageQuota: Quota
 }

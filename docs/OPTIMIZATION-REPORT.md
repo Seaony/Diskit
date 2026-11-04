@@ -59,3 +59,12 @@
 - `Tests/KayoiTests/ThemeAssetTests.swift:4` 的 `themeAssetsHaveOpaqueLightDarkAndHighContrastVariants` 检查六个实际使用的色集、全部四种组合及合法不透明颜色。Xcode 资源编译和完整门禁通过，应用逻辑 9 项、包 244 项；证据 `docs/evidence/v0.2/color-assets-gates.log`。
 - 电脑控制观察演示空面板，确认深浅色主题资源正常解析、背景仍不透明：`docs/screenshots/v0.2/DS-11-panel-empty-light-zh.png`、`DS-11-panel-empty-dark-zh.png`。这些截图仍显示待修复的重复添加按钮和旧布局，不作为最终界面验收通过。
 - 未覆盖：其他视图中散落的状态色与位置色会在 §3 设计基准阶段统一；DS-13 全部对比度组合尚未达标，增强对比度实际界面矩阵仍待后续验收。
+
+## FIX-01：Google Drive 请求与容量解码
+
+- 修复（审查 1C 严重第 1、2 条）：`Packages/CloudDrive/Sources/CloudDrive/GoogleDriveProvider.swift:15`、`:28`、`:39` 的连接、容量、账号请求统一通过查询项传入 `fields`，不再把问号编码进路径；`:380` 将容量字符串严格解析为非负 Int64，不经过浮点数、不把坏值当 0。
+- 先失败后修复：`googleAboutUsesExactDocumentedURLAndStringQuota` 首先因错误 URL 得到 404；仅修地址后再次以 `DecodingError.typeMismatch` 失败；修正容量后通过。替身按完整 URL 匹配，其他地址返回 404，流请求直接失败，不访问网络。证据：`Packages/CloudDrive/Tests/CloudDriveTests/GoogleRequestTests.swift:51`、`docs/evidence/v0.2/FIX-01-regression.log`。
+- `googleQuotaRejectsMalformedByteCounts` 覆盖非数字、Int64 溢出及负数；有效响应验证 Int64 最大值和大容量精确值。CloudDrive 包 37 项通过。
+- 依据：[Google about.get](https://developers.google.com/workspace/drive/api/reference/rest/v3/about/get) 与 [About 结构](https://developers.google.com/workspace/drive/api/reference/rest/v3/about)。未登录或连接真实账号。无限容量未给 limit 的显示问题仍归审查 1C 容量条目处理，本项不宣称 Google 全流程验收完成。
+
+- FIX-01 完整门禁通过：应用逻辑 9 项、包测试 246 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-01-gates.log`。
