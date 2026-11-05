@@ -13,7 +13,7 @@ enum EditorPreparation {
     case .smb:
       [
         L("在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。"),
-        L("微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"),
+        L("Microsoft 账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"),
         L("Mac 或 NAS 请先开启 SMB 文件共享。"),
       ]
     case .ricohGR, .cameraUSB:

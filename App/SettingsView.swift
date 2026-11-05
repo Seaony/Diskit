@@ -35,7 +35,7 @@ struct SettingsView: View {
       storagePage
         .tabItem { Label(L("存储"), systemImage: "internaldrive") }.tag("storage")
       androidPage
-        .tabItem { Label(L("安卓"), systemImage: "smartphone") }.tag("android")
+        .tabItem { Label(L("Android"), systemImage: "smartphone") }.tag("android")
       aboutPage
         .tabItem { Label(L("关于"), systemImage: "info.circle") }.tag("about")
     }

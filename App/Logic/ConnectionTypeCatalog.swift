@@ -65,7 +65,7 @@ enum ConnectionTypeCatalog {
 
   private static func aliases(_ kind: ConnectionKind) -> String {
     switch kind {
-    case .androidUSB, .androidWiFi: "android usb wifi azsj 手机"
+    case .androidUSB, .androidWiFi: "android usb wifi azsj 安卓 手机"
     case .cameraUSB, .ricohGR: "camera photo xj 相机"
     case .smb: "smb windows mac nas gx 共享"
     case .webdav, .webdavHTTPS: "webdav https http dav 共享 gx"

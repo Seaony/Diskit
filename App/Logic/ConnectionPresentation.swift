@@ -11,8 +11,8 @@ extension AliyunConfiguration {
 extension ConnectionKind {
   var title: String {
     switch self {
-    case .androidUSB: L("安卓手机")
-    case .androidWiFi: L("安卓手机（无线）")
+    case .androidUSB: L("Android 手机")
+    case .androidWiFi: L("Android 手机（无线）")
     case .smb: L("SMB 共享")
     case .ricohGR: L("理光 GR IV")
     case .cameraUSB: L("相机（USB）")
@@ -44,7 +44,7 @@ extension ConnectionKind {
   }
   var defaultName: String {
     switch self {
-    case .androidUSB, .androidWiFi: L("我的安卓手机")
+    case .androidUSB, .androidWiFi: L("我的 Android 手机")
     case .smb: L("我的 SMB 共享")
     case .ricohGR: L("我的理光相机")
     case .cameraUSB: L("我的相机")

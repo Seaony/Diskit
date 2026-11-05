@@ -2095,7 +2095,7 @@
         }
       }
     },
-    "安卓": {
+    "Android": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2106,12 +2106,12 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "安卓"
+            "value": "Android"
           }
         }
       }
     },
-    "安卓手机": {
+    "Android 手机": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2122,12 +2122,12 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "安卓手机"
+            "value": "Android 手机"
           }
         }
       }
     },
-    "安卓手机 · %@": {
+    "Android 手机 · %@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -2139,12 +2139,12 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "安卓手机 · %@"
+            "value": "Android 手机 · %@"
           }
         }
       }
     },
-    "安卓手机（无线）": {
+    "Android 手机（无线）": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -2156,7 +2156,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "安卓手机（无线）"
+            "value": "Android 手机（无线）"
           }
         }
       }
@@ -2704,7 +2704,7 @@
         }
       }
     },
-    "微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。": {
+    "Microsoft 账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -2715,7 +2715,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"
+            "value": "Microsoft 账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"
           }
         }
       }
@@ -2769,7 +2769,7 @@
         }
       }
     },
-    "我的安卓手机": {
+    "我的 Android 手机": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -2781,7 +2781,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "我的安卓手机"
+            "value": "我的 Android 手机"
           }
         }
       }
@@ -3794,7 +3794,7 @@
         }
       }
     },
-    "没有发现安卓设备": {
+    "没有发现 Android 设备": {
       "localizations": {
         "en": {
           "stringUnit": {
@@ -3805,7 +3805,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有发现安卓设备"
+            "value": "没有发现 Android 设备"
           }
         }
       }

@@ -11,7 +11,7 @@ struct AndroidConnectionForm: View {
     if editor.draft.kind == .androidUSB {
       if editor.model.usbDevices.isEmpty {
         EditorEmptyState(
-          title: L("没有发现安卓设备"), detail: L("请使用支持数据传输的线缆，解锁手机并开启 USB 调试。首次连接时，请在手机上允许这台电脑。"),
+          title: L("没有发现 Android 设备"), detail: L("请使用支持数据传输的线缆，解锁手机并开启 USB 调试。首次连接时，请在手机上允许这台电脑。"),
           symbol: "cable.connector")
       } else {
         Picker(

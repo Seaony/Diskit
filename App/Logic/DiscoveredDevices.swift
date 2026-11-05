@@ -75,7 +75,7 @@ extension AppModel {
       let pairing = device.pairing
       let title =
         WirelessSelection.serial(fromGUID: device.serviceName).map {
-          LF("安卓手机 · %@", $0)
+          LF("Android 手机 · %@", $0)
         }
         ?? device.serviceName
       let modes =
