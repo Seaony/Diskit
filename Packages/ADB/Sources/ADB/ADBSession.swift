@@ -80,6 +80,16 @@ public actor ADBSession {
       throw error
     }
   }
+  // 只收发给当前通道的包：关通道时两边会同时发 CLSE，有的手机（如小米 17）会对旧通道再回一个，
+  // 官方 adb 遇到不属于现有通道的 OKAY、WRTE、CLSE 直接丢掉，这里照做
+  private func receiveStream(deadline: ADBOperationDeadline) async throws -> ADBMessage {
+    while true {
+      let message = try await receive(deadline: deadline)
+      let streamCommands: Set<ADBCommand> = [.okay, .write, .close]
+      if streamCommands.contains(message.command), message.arg1 != local { continue }
+      return message
+    }
+  }
   public func connect() async throws {
     guard !transportFailed else { throw RemoteError.notConnected }
     let deadline = ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
@@ -121,6 +131,8 @@ public actor ADBSession {
         } else {
           throw RemoteError.unauthorized
         }
+      // 上次会话没读走的通道包（比如多出来的 CLSE）还留在 USB 里，握手时还没有通道，直接丢掉
+      case .okay, .write, .close: continue
       default: throw RemoteError.protocolError
       }
     }
@@ -133,7 +145,7 @@ public actor ADBSession {
     buffered.removeAll(keepingCapacity: true)
     try await send(
       ADBMessage(.open, local, payload: Data((service + "\0").utf8)), deadline: deadline)
-    let reply = try await receive(deadline: deadline)
+    let reply = try await receiveStream(deadline: deadline)
     if reply.command == .close, reply.arg1 == local { throw RemoteError.posix(EACCES) }
     guard reply.command == .okay, reply.arg1 == local, reply.arg0 != 0 else {
       transportFailed = true
@@ -170,7 +182,7 @@ public actor ADBSession {
         ADBMessage(.write, local, remote, payload: bytes.subdata(in: offset..<end)),
         deadline: deadline)
       while true {
-        let reply = try await receive(deadline: deadline)
+        let reply = try await receiveStream(deadline: deadline)
         if reply.command == .okay, reply.arg0 == remote, reply.arg1 == local { break }
         guard let bytes = try await accept(reply, deadline: deadline) else {
           throw RemoteError.notConnected
@@ -186,7 +198,7 @@ public actor ADBSession {
     let deadline = try operationDeadline(timeout: timeout)
     while buffered.count < count {
       guard remote != nil,
-        let bytes = try await accept(receive(deadline: deadline), deadline: deadline)
+        let bytes = try await accept(receiveStream(deadline: deadline), deadline: deadline)
       else {
         throw RemoteError.notConnected
       }
@@ -204,7 +216,7 @@ public actor ADBSession {
       return value
     }
     guard remote != nil else { return nil }
-    return try await accept(receive(deadline: deadline), deadline: deadline)
+    return try await accept(receiveStream(deadline: deadline), deadline: deadline)
   }
   public func closeService() async throws {
     guard let remote else { return }
@@ -213,7 +225,7 @@ public actor ADBSession {
       ? serviceDeadline! : ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
     try await send(ADBMessage(.close, local, remote), deadline: deadline)
     while self.remote != nil {
-      _ = try await accept(receive(deadline: deadline), deadline: deadline)
+      _ = try await accept(receiveStream(deadline: deadline), deadline: deadline)
     }
     serviceDeadline = nil
     buffered.removeAll(keepingCapacity: true)

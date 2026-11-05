@@ -306,6 +306,25 @@ private func shellFrame(_ id: UInt8, _ bytes: Data) -> Data {
   #expect(output.contains("mkdir -p -- '/sdcard/a'\\''b'"))
 }
 
+// 小米 17 实测：shell 结束后手机对旧通道多发一个 CLSE，没读走的会留到下次握手；
+// 要像官方 adb 一样丢掉，不能当协议错误
+@Test func staleCloseFromPreviousStreamIsIgnored() async throws {
+  let exit = shellFrame(3, Data([0]))
+  var emptyList = Data("DONE".utf8)
+  emptyList.append(Data(repeating: 0, count: 72))
+  let transport = FakeTransport([
+    .init(.close, 22, 3), hello("shell_v2,ls_v2"), .init(.okay, 15, 1), .init(.write, 15, 1, payload: exit),
+    .init(.close, 15, 1),
+    .init(.close, 15, 1), .init(.okay, 15, 1),
+    .init(.okay, 16, 2), .init(.close, 15, 1), .init(.okay, 16, 2),
+    .init(.write, 16, 2, payload: emptyList), .init(.close, 16, 2),
+  ])
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).isEmpty)
+}
+
 @Test func legacyTransferRejectsLargeFilesBeforeUpload() async throws {
   let transport = FakeTransport([hello("")])
   let provider = ADBProvider(
