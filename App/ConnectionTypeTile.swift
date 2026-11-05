@@ -18,16 +18,16 @@ struct ConnectionTypeTile: View {
 
   var body: some View {
     VStack(spacing: Space.sm) {
-      TypeIcon(kind: kind, size: 34)
+      TypeIcon(kind: kind, size: 30)
       VStack(spacing: 2) { // grid: ok 名字和说明贴近
-        Text(title ?? kind.title).font(.system(size: 12.5, weight: .medium)).lineLimit(1)
+        Text(title ?? kind.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
           .foregroundStyle(selected ? KayoiTheme.accent : KayoiTheme.primaryText)
-        Text(subtitle ?? defaultSubtitle).font(.system(size: 11)).lineLimit(1)
+        Text(subtitle ?? defaultSubtitle).font(.system(size: 10)).lineLimit(1)
           .foregroundStyle(KayoiTheme.secondaryText)
       }
     }
     .padding(.horizontal, 10) // grid: ok 设计稿格子左右 10
-    .frame(maxWidth: .infinity).frame(height: 96)
+    .frame(maxWidth: .infinity).frame(height: 84)
     .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
   }
 }

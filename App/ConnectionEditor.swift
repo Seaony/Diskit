@@ -40,7 +40,7 @@ struct ConnectionEditor: View {
     .buttonStyle(FlatButtonStyle())
     .tint(KayoiTheme.accent)
     .background(KayoiTheme.background)
-    .frame(width: 480).frame(minHeight: 520)
+    .frame(width: 448).frame(minHeight: 520)
     .gridDiagnostics("editor")
     .demoAppearanceEvidence("editor")
     .background(

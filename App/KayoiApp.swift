@@ -110,7 +110,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
         .toolbar(removing: .title)
-    }.defaultSize(width: 480, height: 640).windowResizability(.contentSize)
+    }.defaultSize(width: 448, height: 640).windowResizability(.contentSize)
       .defaultLaunchBehavior(.suppressed)
     Window(L("网页登录"), id: "demo-web-login") {
       if model.options.isDemo {

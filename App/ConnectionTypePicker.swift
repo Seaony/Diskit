@@ -23,10 +23,9 @@ struct ConnectionTypePicker: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack(spacing: Space.sm) {
-        Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundStyle(KayoiTheme.secondaryText)
+        Image(systemName: "magnifyingglass").foregroundStyle(KayoiTheme.secondaryText)
           .accessibilityHidden(true)
         TextField(L("搜索类型，例如 网盘、SMB、相机"), text: $editor.search)
-          .font(.system(size: 14))
           .textFieldStyle(.plain).focused($focus, equals: .search)
           .onSubmit { editor.chooseSelected() }
           .onKeyPress(.downArrow) {
@@ -44,7 +43,7 @@ struct ConnectionTypePicker: View {
           .buttonStyle(.plain).pointerStyle(.link).help(L("清除搜索")).accessibilityLabel(L("清除搜索"))
         }
       }
-      .padding(.horizontal, Space.md).frame(height: 36) // grid: ok 搜索框高 36
+      .padding(.horizontal, Space.md).frame(height: 40)
       .background(
         KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
       )
