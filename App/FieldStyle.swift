@@ -28,8 +28,3 @@ extension View {
     modifier(KayoiFieldModifier(focused: focused, horizontalPadding: horizontalPadding))
   }
 }
-
-extension View {
-  // 表单每行上下多留 4，行不显得挤；加在分组外层时会分到每一行
-  func formRowSpacing() -> some View { padding(.vertical, Space.xs) }
-}

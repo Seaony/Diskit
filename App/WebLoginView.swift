@@ -13,7 +13,7 @@ struct WebLoginView: View {
       VStack(alignment: .leading, spacing: 8) {
         HStack(alignment: .top, spacing: 16) {
           Text(
-            LF("请在下方登录%@。Kayoi 只把登录信息保存在本机钥匙串里。", state.service.name)
+            LF("请在下方登录%@。", state.service.name)
           )
           .font(.body).fixedSize(horizontal: false, vertical: true)
           Spacer(minLength: 0)
@@ -69,8 +69,6 @@ struct WebLoginView: View {
                 .disabled(
                   pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || state.checking)
             }
-            Text(L("登录信息相当于密码，请勿分享给他人。"))
-              .font(.caption).foregroundStyle(.secondary)
           }.padding(.top, 8)
         }
       }.padding(20)

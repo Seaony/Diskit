@@ -19,7 +19,7 @@ struct SMBConnectionForm: View {
     Picker(L("登录方式"), selection: $editor.guestLogin) {
       Text(L("注册用户")).tag(false)
       Text(L("访客")).tag(true)
-    }.pickerStyle(.segmented)
+    }.pickerStyle(.segmented).fixedSize().formRow(L("登录方式"))
     if !editor.guestLogin {
       EditorTextRow(editor: editor, key: "username", title: L("用户名"), placeholder: L("账户名或邮箱"))
         .onChange(of: editor.draft.params["username"]) { editor.shares = [] }
@@ -46,7 +46,7 @@ struct SMBConnectionForm: View {
         }
         ForEach(editor.shares, id: \.self) { Text($0).tag(ShareChoice.value($0)) }
         Text(L("手动输入…")).tag(ShareChoice.manual)
-      }
+      }.formRow(L("共享名"))
     }
     HStack {
       Spacer()

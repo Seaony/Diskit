@@ -5,25 +5,12 @@ struct ConnectionFormView: View {
   @Bindable var editor: ConnectionEditorModel
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   var body: some View {
-    Form {
-      Section {
-        // 连接指南：整行可点，展开后按 1. 2. 3. 列出步骤（对照设计稿）
+    ScrollView {
+      VStack(alignment: .leading, spacing: Space.lg) {
+        // 连接指南：不带边框的卡片，整行可点，展开后按 1. 2. 3. 列出步骤（对照设计稿）
         VStack(alignment: .leading, spacing: 0) {
-          Button {
-            withAnimation(Motion.change(reduceMotion: reduceMotion)) { editor.preparationExpanded.toggle() }
-          } label: {
-            HStack(spacing: Space.sm) {
-              Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(KayoiTheme.secondaryText)
-                .rotationEffect(.degrees(editor.preparationExpanded ? 90 : 0))
-                .frame(width: 14) // grid: ok 箭头占位，展开内容按它缩进
-              Text(L("连接指南")).font(.system(size: 13, weight: .medium)).foregroundStyle(KayoiTheme.primaryText)
-              Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain).pointerStyle(.link)
-          .accessibilityAddTraits(editor.preparationExpanded ? .isSelected : [])
+          KayoiDisclosureButton(title: L("连接指南"), isExpanded: $editor.preparationExpanded)
+            .padding(.horizontal, 14).padding(.vertical, 10) // grid: ok 设计稿指南标题内边距 10/14
           if editor.preparationExpanded {
             VStack(alignment: .leading, spacing: 6) { // grid: ok 设计稿步骤间距 6
               ForEach(Array(EditorPreparation.steps(for: editor.draft.kind).enumerated()), id: \.offset) { index, step in
@@ -35,15 +22,14 @@ struct ConnectionFormView: View {
                 }
               }
             }
-            .padding(.leading, 22).padding(.top, Space.sm) // grid: ok 和标题文字左对齐
+            .padding(.leading, 36).padding(.trailing, 14).padding(.bottom, Space.md) // grid: ok 和标题文字左对齐
             .transition(Motion.appear(reduceMotion: reduceMotion))
           }
         }
-      }
-      Section(L("位置")) {
-        Group {
+        .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // grid: ok 同分组卡片圆角
+        KayoiFormSection(title: L("位置")) {
           EditorTextRow(editor: editor, key: "name", title: L("显示名称"), placeholder: L("例如：我的手机"))
-          LabeledContent(L("图标颜色")) {
+          KayoiFormRow(L("图标颜色")) {
             HStack(spacing: Space.sm) {
               ForEach(KayoiTheme.locationColorNames, id: \.self) { name in
                 Button {
@@ -62,11 +48,11 @@ struct ConnectionFormView: View {
                 .accessibilityAddTraits(editor.draft.color == name ? .isSelected : [])
               }
             }
+            // 色块没有文字，按中线和左边标题对齐
+            .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 } // grid: ok 13 号字基线在中线下 4
           }
-        }.formRowSpacing()
-      }
-      Section(L("连接")) {
-        Group {
+        }
+        KayoiFormSection(title: L("连接")) {
           switch editor.draft.kind {
           case .androidUSB, .androidWiFi: AndroidConnectionForm(editor: editor)
           case .ricohGR, .cameraUSB: CameraConnectionForm(editor: editor)
@@ -77,18 +63,17 @@ struct ConnectionFormView: View {
             ObjectStorageConnectionForm(editor: editor)
           default: CloudConnectionForm(editor: editor)
           }
-        }.formRowSpacing()
-      }
-      if editor.draft.kind.usesSystemMount {
-        Section(L("选项")) {
-          Group {
+        }
+        if editor.draft.kind.usesSystemMount {
+          KayoiFormSection(title: L("选项")) {
             Toggle(L("打开 App 时自动挂载"), isOn: $editor.draft.autoMount)
             Toggle(L("挂载后自动在 Finder 中打开"), isOn: $editor.draft.openInFinderAfterMount)
-          }.formRowSpacing()
+          }
         }
       }
+      .padding(.horizontal, 28).padding(.top, Space.md).padding(.bottom, Space.lg) // grid: ok 和标题区左右 28 对齐
     }
-    .formStyle(.grouped).toggleStyle(.switch).scrollContentBackground(.hidden)
+    .labeledContentStyle(KayoiFormRowStyle()).toggleStyle(KayoiFormSwitchStyle())
     .background(KayoiTheme.background)
     // 切换登录方式、列出共享、登录成功等会增减表单行，过渡一下
     .animation(Motion.change(reduceMotion: reduceMotion), value: formShape)

@@ -14,7 +14,7 @@ struct CloudConnectionForm: View {
       Picker(L("访问方式"), selection: editor.parameter("authMode")) {
         Text(L("登录账号")).tag("account")
         Text(L("分享链接")).tag("share")
-      }.pickerStyle(.segmented)
+      }.pickerStyle(.segmented).fixedSize().formRow(L("访问方式"))
         .onChange(of: editor.draft.params["authMode"]) { editor.resetManualLogin() }
     }
     if editor.draft.kind == .lanzou && editor.draft.params["authMode"] == "share" {
@@ -70,10 +70,12 @@ struct CloudConnectionForm: View {
         }
       }
       if editor.webService != nil && !ready {
-        DisclosureGroup(L("其他登录方式"), isExpanded: $alternatives) {
+        // 展开后的内容各占一行，和其他行一样排
+        KayoiDisclosureButton(title: L("其他登录方式"), isExpanded: $alternatives)
+        if alternatives {
           Toggle(L("手动粘贴登录信息"), isOn: $editor.manualLogin)
           if editor.manualLogin {
-            Text(L("可以从浏览器复制当前网盘的登录信息并粘贴到这里。不要把它发给其他人。")).font(.caption).foregroundStyle(
+            Text(L("可以从浏览器复制当前网盘的登录信息并粘贴到这里。")).font(.caption).foregroundStyle(
               KayoiTheme.secondaryText)
             if editor.draft.kind == .mobileCloud {
               EditorTextRow(
@@ -87,7 +89,7 @@ struct CloudConnectionForm: View {
         Picker(L("空间"), selection: editor.parameter("scope")) {
           Text(L("个人云")).tag("personal")
           Text(L("家庭云")).tag("family")
-        }.pickerStyle(.segmented)
+        }.pickerStyle(.segmented).fixedSize().formRow(L("空间"))
         if editor.draft.params["scope"] == "family" {
           if editor.tianyiFamilySpaces.isEmpty {
             EditorTextRow(
@@ -101,7 +103,7 @@ struct CloudConnectionForm: View {
                 Text(LF("手动填写的家庭：%@", id)).tag(id)
               }
               ForEach(editor.tianyiFamilySpaces, id: \.familyID) { Text($0.name).tag($0.familyID) }
-            }
+            }.formRow(L("家庭"))
           }
         }
       }

@@ -268,22 +268,6 @@
         }
       }
     },
-    "Kayoi 不收集使用情况或文件内容。检查更新时会连接更新服务，文件只在你的 Mac 和你选择的位置之间传输。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi does not collect usage data or file contents. Checking for updates connects to the update service. Files move only between your Mac and the locations you choose."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi 不收集使用情况或文件内容。检查更新时会连接更新服务，文件只在你的 Mac 和你选择的位置之间传输。"
-          }
-        }
-      }
-    },
     "Kayoi，%d 个位置已挂载": {
       "extractionState": "manual",
       "localizations": {
@@ -1521,18 +1505,18 @@
         }
       }
     },
-    "可以从浏览器复制当前网盘的登录信息并粘贴到这里。不要把它发给其他人。": {
+    "可以从浏览器复制当前网盘的登录信息并粘贴到这里。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy the current drive’s sign-in information from a browser and paste it here. Do not share it with anyone."
+            "value": "Copy the current drive’s sign-in information from a browser and paste it here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "可以从浏览器复制当前网盘的登录信息并粘贴到这里。不要把它发给其他人。"
+            "value": "可以从浏览器复制当前网盘的登录信息并粘贴到这里。"
           }
         }
       }
@@ -3251,19 +3235,19 @@
         }
       }
     },
-    "日志会保留最近 7 天，不会记录密码、令牌或私钥。": {
+    "日志会保留最近 7 天。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Logs are kept for seven days and never include passwords, tokens, or private keys."
+            "value": "Logs are kept for seven days."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日志会保留最近 7 天，不会记录密码、令牌或私钥。"
+            "value": "日志会保留最近 7 天。"
           }
         }
       }
@@ -4285,22 +4269,6 @@
         }
       }
     },
-    "登录信息只保存在这台 Mac 的**钥匙串**中。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign-in information is stored only in this Mac’s **Keychain**."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "登录信息只保存在这台 Mac 的**钥匙串**中。"
-          }
-        }
-      }
-    },
     "登录信息已失效，请重新登录。": {
       "localizations": {
         "en": {
@@ -4329,22 +4297,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "登录信息格式不正确，请重新复制完整内容。"
-          }
-        }
-      }
-    },
-    "登录信息相当于密码，请勿分享给他人。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Treat sign-in information like a password. Do not share it with anyone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "登录信息相当于密码，请勿分享给他人。"
           }
         }
       }
@@ -5414,18 +5366,18 @@
         }
       }
     },
-    "请在下方登录%@。Kayoi 只把登录信息保存在本机钥匙串里。": {
+    "请在下方登录%@。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in to %@ below. Kayoi stores sign-in information only in your local Keychain."
+            "value": "Sign in to %@ below."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请在下方登录%@。Kayoi 只把登录信息保存在本机钥匙串里。"
+            "value": "请在下方登录%@。"
           }
         }
       }
@@ -5785,22 +5737,6 @@
         }
       }
     },
-    "连接测试只读取相机信息，不会修改照片。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testing the connection only reads camera information. It does not change your photos."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连接测试只读取相机信息，不会修改照片。"
-          }
-        }
-      }
-    },
     "连接测试成功": {
       "localizations": {
         "en": {
@@ -6103,18 +6039,18 @@
         }
       }
     },
-    "重新生成后，下次连接每台手机时都需要重新允许这台 Mac。手机上的文件不会改变。": {
+    "重新生成后，下次连接每台手机时都需要重新允许这台 Mac。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "After generating a new key, you must allow this Mac again the next time you connect each phone. Files on your phones will not change."
+            "value": "After generating a new key, you must allow this Mac again the next time you connect each phone."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新生成后，下次连接每台手机时都需要重新允许这台 Mac。手机上的文件不会改变。"
+            "value": "重新生成后，下次连接每台手机时都需要重新允许这台 Mac。"
           }
         }
       }
@@ -6927,6 +6863,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "立即重新打开"
+          }
+        }
+      }
+    },
+    "已展开": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expanded"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已展开"
+          }
+        }
+      }
+    },
+    "已收起": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapsed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已收起"
           }
         }
       }

@@ -76,7 +76,7 @@ struct SettingsView: View {
       }
       Button(L("取消"), role: .cancel) {}
     } message: {
-      Text(L("重新生成后，下次连接每台手机时都需要重新允许这台 Mac。手机上的文件不会改变。"))
+      Text(L("重新生成后，下次连接每台手机时都需要重新允许这台 Mac。"))
     }
     .sheet(item: $license) { document in
       SettingsLicenseView(document: document)
@@ -249,15 +249,13 @@ struct SettingsView: View {
         }
         Button(L("致谢与许可证…")) { license = .notices }
         Button(L("Apache 2.0 许可证…")) { license = .apache }
-      } footer: {
-        Text(L("Kayoi 不收集使用情况或文件内容。检查更新时会连接更新服务，文件只在你的 Mac 和你选择的位置之间传输。"))
       }
       Section {
         Button(L("在 Finder 中显示日志")) { model.showLogs() }
       } header: {
         Text(L("日志"))
       } footer: {
-        Text(L("日志会保留最近 7 天，不会记录密码、令牌或私钥。"))
+        Text(L("日志会保留最近 7 天。"))
       }
     }
   }

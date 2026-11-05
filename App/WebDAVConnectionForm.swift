@@ -6,7 +6,7 @@ struct WebDAVConnectionForm: View {
   var body: some View {
     Picker(L("服务预设"), selection: $editor.webdavPreset) {
       ForEach(WebDAVPreset.all) { preset in Text(preset.title).tag(preset.id) }
-    }
+    }.formRow(L("服务预设"))
     .onChange(of: editor.webdavPreset) { _, value in
       guard let preset = WebDAVPreset.all.first(where: { $0.id == value }), !preset.address.isEmpty
       else { return }

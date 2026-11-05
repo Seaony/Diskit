@@ -19,7 +19,7 @@ struct CameraConnectionForm: View {
             Text(L("已保存的相机（当前未发现）")).tag(editor.selectedDeviceID)
           }
           ForEach(editor.model.ricohDevices) { Text($0.name).tag($0.id) }
-        }
+        }.formRow(L("相机"))
       }
     } else if editor.model.cameraUSBDevices.isEmpty {
       empty
@@ -35,10 +35,8 @@ struct CameraConnectionForm: View {
           Text(L("已保存的相机（当前未发现）")).tag(editor.selectedDeviceID)
         }
         ForEach(editor.model.cameraUSBDevices) { Text($0.name).tag($0.id) }
-      }
+      }.formRow(L("相机"))
     }
-    Label(L("连接测试只读取相机信息，不会修改照片。"), systemImage: "lock").font(.callout).foregroundStyle(
-      KayoiTheme.secondaryText)
   }
   private var empty: some View {
     EditorEmptyState(

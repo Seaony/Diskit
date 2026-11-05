@@ -30,6 +30,8 @@ struct ConnectionEditor: View {
           }
           .padding(.horizontal, 28).padding(.top, Space.sm) // grid: ok 设计稿第二步左右 28
           ConnectionFormView(editor: editor).disabled(editor.busy)
+          // 底部操作栏和可滚动的表单之间用分割线隔开，左右和表单卡片对齐
+          KayoiSeparator().padding(.horizontal, 28) // grid: ok 同表单左右 28
           footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

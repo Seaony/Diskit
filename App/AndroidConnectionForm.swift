@@ -7,7 +7,7 @@ struct AndroidConnectionForm: View {
     Picker(L("连接方式"), selection: Binding(get: { editor.draft.kind }, set: { editor.choose($0) })) {
       Text(L("USB 数据线")).tag(ConnectionKind.androidUSB)
       Text(L("无线调试")).tag(ConnectionKind.androidWiFi)
-    }.pickerStyle(.segmented)
+    }.pickerStyle(.segmented).fixedSize().formRow(L("连接方式"))
     if editor.draft.kind == .androidUSB {
       if editor.model.usbDevices.isEmpty {
         EditorEmptyState(
@@ -30,7 +30,7 @@ struct AndroidConnectionForm: View {
                 ? device.name : LF("%@（%@）", device.name, String(device.serial.suffix(4)))
             ).tag(device.id)
           }
-        }
+        }.formRow(L("设备"))
       }
     } else if editor.draft.params["guid"] != nil {
       Label(L("配对成功"), systemImage: "checkmark.circle.fill").foregroundStyle(KayoiTheme.accent)
@@ -47,8 +47,8 @@ struct AndroidConnectionForm: View {
             Text(L("已选择的配对设备（当前未发现）")).tag(editor.pairingID)
           }
           ForEach(devices) { Text($0.name).tag($0.id) }
-        }
-        LabeledContent(L("六位配对码")) {
+        }.formRow(L("设备"))
+        KayoiFormRow(L("六位配对码")) {
           PairingCodeField(code: $editor.pairingCode, onComplete: editor.updatePairingCode)
         }
         Text(L("输入完整配对码后会自动配对。")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
