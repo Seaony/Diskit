@@ -22,6 +22,8 @@ Sparkle 固定为 2.10.1。`Dependencies/Package.resolved` 是生成工程的锁
 
 在干净、已推送的 master 上执行 `scripts/publish-unsigned-release.sh 0.3.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥和版本是否已发布；新版本大于当前版本时改写 `project.yml` 的版本号并把构建号加 1；运行 `make test` 与 `make release`；生成 DMG、ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送源码标签，在发布仓库创建 Release 并上传三个文件。任何一步失败即停止，未提交的版本号改动会还原。
 
+更新说明默认列出上个版本以来的提交；想写给用户看的说明时，先提交 `docs/release-notes/v版本号.md`（每行一条“- 说明”），脚本会改用这份。
+
 加 `--dry-run` 只在本地完整打包和验证，输出到 `build/releases/v版本号/`，不提交、不推送、不发布。撤回一次发布：`gh release delete v版本号 --repo Seaony/Kayoi --yes --cleanup-tag`，再 `git push origin :refs/tags/v版本号`。
 
 Sparkle 签名账户默认 `com.seaony.Moni`，可通过 `SPARKLE_ACCOUNT` 指定现有账户。脚本不导出、不打印私钥、不自动生成替代密钥；没有匹配密钥时失败。验签先确认账户公钥与应用公钥相同，再使用官方 `sign_update --verify` 分别验证 feed 与压缩包，验签成功后才解压检查应用。只存在 `edSignature` 字段不能算验证通过。

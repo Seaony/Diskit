@@ -79,12 +79,15 @@ ditto "$app" "$work/dmg/Kayoi.app"
 ln -s /Applications "$work/dmg/Applications"
 hdiutil create -quiet -volname Kayoi -srcfolder "$work/dmg" -ov -format UDZO "$output/$dmg_name"
 
-# 更新说明：上个版本以来的提交；第一次发布写固定说明
+# 更新说明：有手写的 docs/release-notes/v版本号.md 就用它；否则列上个版本以来的提交；第一次发布写固定说明
 notes="$work/notes.md"
+written_notes="$root/docs/release-notes/$tag.md"
 previous_tag="$(git describe --tags --abbrev=0 --exclude "$tag" HEAD 2>/dev/null || true)"
 {
   printf '## Kayoi %s\n\n' "$version"
-  if [[ -n "$previous_tag" ]]; then
+  if [[ -f "$written_notes" ]]; then
+    cat "$written_notes"
+  elif [[ -n "$previous_tag" ]]; then
     git log --no-merges --pretty='- %s' "$previous_tag..HEAD"
   else
     printf -- '- 首个公开版本。\n'
