@@ -53,7 +53,7 @@ if [[ "$version" != "$current_version" ]]; then
 else
   build="$current_build"
 fi
-echo "准备发布 Kayoi $version（构建号 $build）"
+echo "准备发布 Kayoi ${version}（构建号 ${build}）"
 
 output="$root/build/releases/$tag"
 rm -rf "$output"
