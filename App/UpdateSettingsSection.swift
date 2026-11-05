@@ -31,10 +31,11 @@ struct UpdateCheckView: View {
   var body: some View {
     VStack(spacing: Space.sm) {
       HStack(spacing: Space.sm) {
-        Button(L("检查更新")) { updater.checkForUpdates() }
+        Button(L("检查更新"), systemImage: "arrow.triangle.2.circlepath") { updater.checkForUpdates() }
           .disabled(!updater.canCheckForUpdates)
-        Button(L("显示日志"), action: showLogs)
+        Button(L("显示日志"), systemImage: "doc.text.magnifyingglass", action: showLogs)
       }
+      .labelStyle(.titleAndIcon)
       Group {
         if let message = updater.message {
           Text(message)
