@@ -50,6 +50,8 @@ struct SavedConnectionRow: View {
     .scaleEffect(!reduceMotion && draggedID == connection.id ? 0.96 : 1)
     .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: dropTargetID)
     .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: draggedID)
+    .animation(Motion.hover(reduceMotion: reduceMotion), value: hovering)
+    .animation(Motion.change(reduceMotion: reduceMotion), value: state)
     .onHover { hovering = $0 }
     .focusable().focusEffectDisabled()
     .focused(rowFocus, equals: connection.id)

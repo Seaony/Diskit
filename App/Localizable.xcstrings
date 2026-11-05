@@ -413,18 +413,18 @@
         }
       }
     },
-    "Mac 或 NAS 请先开启 SMB 文件共享。": {
+    "Mac 或 NAS 请先开启 **SMB 文件共享**。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable SMB file sharing on your Mac or NAS first."
+            "value": "Enable **SMB file sharing** on your Mac or NAS first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac 或 NAS 请先开启 SMB 文件共享。"
+            "value": "Mac 或 NAS 请先开启 **SMB 文件共享**。"
           }
         }
       }
@@ -943,18 +943,18 @@
         }
       }
     },
-    "使用能传输数据的数据线，并在手机上允许这台 Mac；无线连接需输入手机当前显示的配对码。": {
+    "使用*能传输数据的数据线*，并在手机上**允许**这台 Mac；无线连接需输入手机当前显示的*配对码*。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use a cable that supports data transfer and allow this Mac on your phone. For a wireless connection, enter the pairing code currently shown on the phone."
+            "value": "Use *a cable that supports data transfer* and **Allow** this Mac on your phone. For a wireless connection, enter the *pairing code* currently shown on the phone."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用能传输数据的数据线，并在手机上允许这台 Mac；无线连接需输入手机当前显示的配对码。"
+            "value": "使用*能传输数据的数据线*，并在手机上**允许**这台 Mac；无线连接需输入手机当前显示的*配对码*。"
           }
         }
       }
@@ -1173,51 +1173,51 @@
         }
       }
     },
-    "准备存储桶、区域和完整服务地址。": {
+    "准备*存储桶、区域和完整服务地址*。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Have your bucket, region, and full service endpoint ready."
+            "value": "Have your *bucket, region, and full service endpoint* ready."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备存储桶、区域和完整服务地址。"
+            "value": "准备*存储桶、区域和完整服务地址*。"
           }
         }
       }
     },
-    "准备服务商账号，在服务商自己的登录页面完成授权。": {
+    "准备服务商账号，在*服务商自己的登录页面*完成授权。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Have your provider account ready and authorize access on the provider’s own sign-in page."
+            "value": "Have your provider account ready and authorize access on *the provider’s own sign-in page*."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备服务商账号，在服务商自己的登录页面完成授权。"
+            "value": "准备服务商账号，在*服务商自己的登录页面*完成授权。"
           }
         }
       }
     },
-    "准备步骤": {
+    "连接指南": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Setup Steps"
+            "value": "Connection Guide"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "准备步骤"
+            "value": "连接指南"
           }
         }
       }
@@ -1305,18 +1305,18 @@
         }
       }
     },
-    "创建只允许访问目标存储桶的密钥，不要使用主账号密钥。": {
+    "创建只允许访问目标存储桶的密钥，~~不要使用主账号密钥~~。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Create a key that can access only the target bucket. Do not use your main account key."
+            "value": "Create a key that can access only the target bucket. ~~Do not use your main account key.~~"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "创建只允许访问目标存储桶的密钥，不要使用主账号密钥。"
+            "value": "创建只允许访问目标存储桶的密钥，~~不要使用主账号密钥~~。"
           }
         }
       }
@@ -1553,18 +1553,18 @@
         }
       }
     },
-    "可登录账号，或填写公开分享链接；有分享密码时一并填写。": {
+    "可登录账号，或填写*公开分享链接*；有分享密码时一并填写。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign in to an account or enter a public share link. Include the share password if one is required."
+            "value": "Sign in to an account or enter a *public share link*. Include the share password if one is required."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "可登录账号，或填写公开分享链接；有分享密码时一并填写。"
+            "value": "可登录账号，或填写*公开分享链接*；有分享密码时一并填写。"
           }
         }
       }
@@ -1702,18 +1702,18 @@
         }
       }
     },
-    "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。": {
+    "在 Windows 的网络设置中开启**文件和打印机共享**，并给账户授予*目标文件夹的访问权限*。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on File and Printer Sharing in Windows network settings and grant the account access to the target folder."
+            "value": "Turn on **File and Printer Sharing** in Windows network settings and grant the account *access to the target folder*."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。"
+            "value": "在 Windows 的网络设置中开启**文件和打印机共享**，并给账户授予*目标文件夹的访问权限*。"
           }
         }
       }
@@ -1782,18 +1782,18 @@
         }
       }
     },
-    "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。": {
+    "在手机设置中开启**开发者选项**，再打开 **USB 调试**或**无线调试**。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turn on Developer Options in your phone’s settings, then enable USB debugging or Wireless Debugging."
+            "value": "Turn on **Developer Options** in your phone’s settings, then enable **USB debugging** or **Wireless Debugging**."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。"
+            "value": "在手机设置中开启**开发者选项**，再打开 **USB 调试**或**无线调试**。"
           }
         }
       }
@@ -1880,18 +1880,18 @@
         }
       }
     },
-    "复制服务提供商给出的完整 WebDAV 地址；它通常包含文件夹路径。": {
+    "复制服务提供商给出的*完整 WebDAV 地址*；它通常包含文件夹路径。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy the full WebDAV address from your provider. It usually includes a folder path."
+            "value": "Copy *the full WebDAV address* from your provider. It usually includes a folder path."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "复制服务提供商给出的完整 WebDAV 地址；它通常包含文件夹路径。"
+            "value": "复制服务提供商给出的*完整 WebDAV 地址*；它通常包含文件夹路径。"
           }
         }
       }
@@ -1997,18 +1997,18 @@
         }
       }
     },
-    "如果服务提供应用密码，请使用应用密码而不是网页登录密码。": {
+    "如果服务提供应用密码，请使用**应用密码**而不是网页登录密码。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If the service offers app passwords, use one instead of your web sign-in password."
+            "value": "If the service offers app passwords, use an **app password** instead of your web sign-in password."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "如果服务提供应用密码，请使用应用密码而不是网页登录密码。"
+            "value": "如果服务提供应用密码，请使用**应用密码**而不是网页登录密码。"
           }
         }
       }
@@ -2344,18 +2344,18 @@
         }
       }
     },
-    "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索“开发者选项”和“USB 调试”。": {
+    "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索**开发者选项**和 **USB 调试**。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The settings may be in different places on Xiaomi, OPPO, vivo, and Samsung phones. Search your phone’s settings for “Developer Options” and “USB debugging”."
+            "value": "The settings may be in different places on Xiaomi, OPPO, vivo, and Samsung phones. Search your phone’s settings for **Developer Options** and **USB debugging**."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索“开发者选项”和“USB 调试”。"
+            "value": "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索**开发者选项**和 **USB 调试**。"
           }
         }
       }
@@ -2704,18 +2704,18 @@
         }
       }
     },
-    "Microsoft 账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。": {
+    "Microsoft 账户请填写*邮箱和账户密码*，~~不是登录电脑时使用的 PIN~~。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For a Microsoft account, enter its email and account password, not the PIN used to sign in to the computer."
+            "value": "For a Microsoft account, enter its *email and account password*, ~~not the PIN used to sign in to the computer~~."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Microsoft 账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"
+            "value": "Microsoft 账户请填写*邮箱和账户密码*，~~不是登录电脑时使用的 PIN~~。"
           }
         }
       }
@@ -4220,18 +4220,18 @@
         }
       }
     },
-    "用支持数据传输的 USB 线连接相机，并在相机上允许访问存储卡。": {
+    "用*支持数据传输的 USB 线*连接相机，并在相机上**允许访问存储卡**。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect the camera with a USB cable that supports data transfer and allow access to its memory card on the camera."
+            "value": "Connect the camera with *a USB cable that supports data transfer* and **allow access to its memory card** on the camera."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "用支持数据传输的 USB 线连接相机，并在相机上允许访问存储卡。"
+            "value": "用*支持数据传输的 USB 线*连接相机，并在相机上**允许访问存储卡**。"
           }
         }
       }
@@ -4285,18 +4285,18 @@
         }
       }
     },
-    "登录信息只保存在这台 Mac 的钥匙串中。": {
+    "登录信息只保存在这台 Mac 的**钥匙串**中。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in information is stored only in this Mac’s Keychain."
+            "value": "Sign-in information is stored only in this Mac’s **Keychain**."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "登录信息只保存在这台 Mac 的钥匙串中。"
+            "value": "登录信息只保存在这台 Mac 的**钥匙串**中。"
           }
         }
       }
@@ -4349,18 +4349,18 @@
         }
       }
     },
-    "登录后仅能访问此应用的专属目录。": {
+    "登录后*仅能访问此应用的专属目录*。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "After signing in, you can access only this app’s dedicated folder."
+            "value": "After signing in, you can access *only this app’s dedicated folder*."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "登录后仅能访问此应用的专属目录。"
+            "value": "登录后*仅能访问此应用的专属目录*。"
           }
         }
       }
@@ -4609,18 +4609,18 @@
         }
       }
     },
-    "确认服务器的导出路径，并允许这台 Mac 访问。": {
+    "确认服务器的*导出路径*，并允许这台 Mac 访问。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Confirm the server’s export path and allow this Mac to access it."
+            "value": "Confirm the server’s *export path* and allow this Mac to access it."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确认服务器的导出路径，并允许这台 Mac 访问。"
+            "value": "确认服务器的*导出路径*，并允许这台 Mac 访问。"
           }
         }
       }
@@ -5185,18 +5185,18 @@
         }
       }
     },
-    "蓝奏云在当前版本中只读。": {
+    "~~蓝奏云在当前版本中只读~~。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lanzou Cloud is read-only in this version."
+            "value": "~~Lanzou Cloud is read-only in this version.~~"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "蓝奏云在当前版本中只读。"
+            "value": "~~蓝奏云在当前版本中只读~~。"
           }
         }
       }
@@ -5867,18 +5867,18 @@
         }
       }
     },
-    "退出图像捕捉或其他正在占用相机的应用。": {
+    "退出**图像捕捉**或其他正在占用相机的应用。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quit Image Capture or any other app using the camera."
+            "value": "Quit **Image Capture** or any other app using the camera."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出图像捕捉或其他正在占用相机的应用。"
+            "value": "退出**图像捕捉**或其他正在占用相机的应用。"
           }
         }
       }
@@ -6288,34 +6288,34 @@
         }
       }
     },
-    "非会员账号可能受到服务商的下载速度和文件大小限制。": {
+    "~~非会员账号可能受到服务商的下载速度和文件大小限制~~。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Free accounts may have download speed and file size limits set by the provider."
+            "value": "~~Free accounts may have download speed and file size limits set by the provider.~~"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "非会员账号可能受到服务商的下载速度和文件大小限制。"
+            "value": "~~非会员账号可能受到服务商的下载速度和文件大小限制~~。"
           }
         }
       }
     },
-    "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。": {
+    "~~鸿蒙 NEXT 不支持 ADB~~，不能通过此方式连接。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "HarmonyOS NEXT does not support ADB and cannot connect this way."
+            "value": "~~HarmonyOS NEXT does not support ADB~~ and cannot connect this way."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。"
+            "value": "~~鸿蒙 NEXT 不支持 ADB~~，不能通过此方式连接。"
           }
         }
       }

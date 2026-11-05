@@ -9,7 +9,7 @@ enum ConnectionFailureAdvice {
       L("请让手机和 Mac 连接同一 Wi-Fi，在手机的无线调试设置中打开“使用配对码配对设备”，并保持该页面开启。")
     case .cameraUSB, .ricohGR, .smb, .webdav, .webdavHTTPS, .nfs,
       .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2, .lanzou:
-      EditorPreparation.steps(for: kind).joined(separator: "\n")
+      EditorPreparation.plainSteps(for: kind).joined(separator: "\n")
     default:
       L("请检查网络和登录信息，然后重试。")
     }

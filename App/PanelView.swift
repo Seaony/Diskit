@@ -71,9 +71,11 @@ struct PanelView: View {
             VStack(alignment: .leading, spacing: Space.sm) {
               if let error = model.demoSetupError ?? model.connections.loadError {
                 errorBanner(error, title: L("无法读取位置列表"))
+                  .transition(Motion.appear(reduceMotion: reduceMotion))
               }
               ForEach(discoveryErrors, id: \.message) { error in
                 discoveryBanner(error.message, permissionDenied: error.permissionDenied)
+                  .transition(Motion.appear(reduceMotion: reduceMotion))
               }
               if isGrid {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 3), spacing: Space.sm) {
@@ -88,6 +90,9 @@ struct PanelView: View {
             }
             .padding(.horizontal, Space.lg)
             .padding(.bottom, Space.md)
+            // 增删位置、排序、提示条出现时平滑过渡；减弱动态效果时直接切换，排序只保留插入线
+            .animation(Motion.change(reduceMotion: reduceMotion), value: model.connections.connections.map(\.id))
+            .animation(Motion.change(reduceMotion: reduceMotion), value: discoveryErrors.map(\.message))
             // 拖到卡片之外的空白处，放到最后
             .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
             .gridArea("panel-list", inset: Space.lg)

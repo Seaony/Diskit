@@ -4,6 +4,10 @@ import SwiftUI
 struct ConnectionTypePicker: View {
   @Bindable var editor: ConnectionEditorModel
   @FocusState private var focus: Focus?
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
+  // 只有按方向键在卡片间移动后才画焦点框，鼠标操作和返回后都不显示
+  @State private var navigatingByKeyboard = false
+  private var gridFocused: Bool { focus == .grid && navigatingByKeyboard }
   private enum Focus { case search, grid }
   private var groups: [ConnectionTypeGroup] { ConnectionTypeCatalog.matching(editor.search) }
   private var discovered: [DiscoveredItem] {
@@ -30,6 +34,7 @@ struct ConnectionTypePicker: View {
           .onSubmit { editor.chooseSelected() }
           .onKeyPress(.downArrow) {
             focus = .grid
+            navigatingByKeyboard = true
             editor.moveSelection(1)
             return .handled
           }
@@ -64,15 +69,12 @@ struct ConnectionTypePicker: View {
                     editor.selectedDiscovery = item
                     editor.chooseSelected()
                   } label: {
-                    ConnectionTypeTile(
-                      kind: item.kind, title: item.title, subtitle: item.subtitle,
-                      selected: editor.selectedDiscovery?.id == item.id)
+                    ConnectionTypeTile(kind: item.kind, title: item.title, subtitle: item.subtitle)
                   }
-                  .buttonStyle(ConnectionCardStyle(selected: editor.selectedDiscovery?.id == item.id))
+                  .buttonStyle(ConnectionCardStyle())
                   .disabled(item.connection == nil)
                   .help(item.title + " · " + item.subtitle)
                   .accessibilityLabel(LF("添加“%@”", item.title)).accessibilityValue(item.subtitle)
-                  .accessibilityAddTraits(editor.selectedDiscovery?.id == item.id ? .isSelected : [])
                 }
               }
             }
@@ -87,17 +89,16 @@ struct ConnectionTypePicker: View {
                     editor.selectedKind = kind
                     editor.choose(kind)
                   } label: {
-                    ConnectionTypeTile(kind: kind, selected: editor.selectedKind == kind)
+                    ConnectionTypeTile(kind: kind)
                       .gridProbe("type-" + kind.rawValue, area: "editor-types", edge: nil)
                   }
                   .buttonStyle(ConnectionCardStyle(
-                    selected: editor.selectedKind == kind,
-                    focused: ConnectionTypeFocus.isFocused(kind, selection: editor.selectedKind, gridFocused: focus == .grid)))
+                    focused: ConnectionTypeFocus.isFocused(kind, selection: editor.selectedKind, gridFocused: gridFocused)))
                   .help(kind.title + " · " + ConnectionTypeCatalog.caption(kind))
                   .accessibilityLabel(kind.title).accessibilityValue(
                     ConnectionTypeCatalog.caption(kind)
                   )
-                  .accessibilityAddTraits(editor.selectedKind == kind ? .isSelected : [])
+                  .accessibilityAddTraits(ConnectionTypeFocus.isFocused(kind, selection: editor.selectedKind, gridFocused: gridFocused) ? .isSelected : [])
                 }
               }
             }
@@ -109,10 +110,12 @@ struct ConnectionTypePicker: View {
             .frame(maxWidth: .infinity).padding(.vertical, Space.xl)
           }
         }.padding(.horizontal, Space.xxl).padding(.top, Space.lg).padding(.bottom, Space.xxl)
+          .animation(Motion.change(reduceMotion: reduceMotion), value: editor.search)
           .gridArea("editor-types", inset: Space.xl)
       }
       .focusable().focusEffectDisabled().focused($focus, equals: .grid)
       .onMoveCommand { direction in
+        navigatingByKeyboard = true
         switch direction {
         case .left: editor.moveSelection(-1)
         case .right: editor.moveSelection(1)

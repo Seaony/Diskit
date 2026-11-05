@@ -36,7 +36,7 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
 }
 
 // 普通外观按 WCAG AA（正文 4.5:1），增强对比度外观（下标 2、3）按 AAA（7:1）。
-// 强调色当文字只用于选中项名称和链接，普通外观按 3:1。
+// 强调色当文字只用于链接和成功提示，普通外观按 3:1。
 @Test func everyThemeTextPairMeetsContrastInAllAppearances() throws {
   var pairs: [(String, String, Double, Double)] = []
   for background in ["Background", "Surface", "Selection", "Hover", "Pressed", "ControlFill", "Field"] {
@@ -49,7 +49,7 @@ private func contrastVariants(_ name: String) throws -> [ContrastRGB] {
   for background in ["Background", "Surface", "Hover", "WarningBackground", "WarningHover"] {
     pairs.append(("Warning", background, 4.5, 7))
   }
-  pairs += [("Accent", "Background", 3, 4.5), ("Accent", "Surface", 3, 4.5), ("Accent", "Selection", 3, 4.5), ("DisabledText", "DisabledSurface", 4.5, 7)]
+  pairs += [("Accent", "Background", 3, 4.5), ("Accent", "Surface", 3, 4.5), ("DisabledText", "DisabledSurface", 4.5, 7)]
   for background in ["Accent", "ActionHover", "ActionPressed"] { pairs.append(("ActionText", background, 4.5, 4.5)) }
   for (foreground, background, normal, high) in pairs {
     for (index, (text, surface)) in zip(try contrastVariants(foreground), try contrastVariants(background)).enumerated() {

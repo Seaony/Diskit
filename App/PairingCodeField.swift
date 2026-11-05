@@ -25,10 +25,10 @@ struct PairingCodeField: View {
               }
             })
         )
-        .textFieldStyle(.roundedBorder).font(.body.monospacedDigit()).multilineTextAlignment(
-          .center
-        )
-        .frame(width: 32).focused($focused, equals: index)
+        .font(.body.monospacedDigit()).multilineTextAlignment(.center)
+        .focused($focused, equals: index)
+        .kayoiField(focused: focused == index, horizontalPadding: 0)
+        .frame(width: 32)
         .textContentType(.oneTimeCode)
         .accessibilityLabel(LF("配对码第 %lld 位", Int64(index + 1)))
         .onKeyPress(.delete) {

@@ -5,6 +5,7 @@ import SwiftUI
 struct ConnectionEditor: View {
   @State private var editor: ConnectionEditorModel
   @Environment(\.dismissWindow) private var dismissWindow
+  @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
   init(model: AppModel) {
     _editor = State(
@@ -14,29 +15,43 @@ struct ConnectionEditor: View {
   }
 
   var body: some View {
-    VStack(spacing: 0) {
+    // 两步各占一页：选好类型后表单从右边滑入，上一步时类型页从左边滑回
+    ZStack {
       if editor.chosen {
-        HStack(spacing: Space.md) {
-          TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 44)
-          VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
-            Text(editor.draft.kind.title).font(.system(size: 17, weight: .semibold))
-            Text(ConnectionTypeCatalog.caption(editor.draft.kind)).font(.system(size: 12))
-              .foregroundStyle(KayoiTheme.secondaryText)
+        VStack(spacing: 0) {
+          HStack(spacing: Space.md) {
+            TypeIcon(kind: editor.draft.kind, color: editor.draft.color, size: 44)
+            VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
+              Text(editor.draft.kind.title).font(.system(size: 14, weight: .semibold))
+              Text(ConnectionTypeCatalog.caption(editor.draft.kind)).font(.system(size: 11))
+                .foregroundStyle(KayoiTheme.secondaryText)
+            }
+            Spacer(minLength: 0)
           }
-          Spacer(minLength: 0)
+          .padding(.horizontal, 28).padding(.top, Space.sm) // grid: ok 设计稿第二步左右 28
+          ConnectionFormView(editor: editor).disabled(editor.busy)
+          footer
         }
-        .padding(.horizontal, 28).padding(.top, Space.sm) // grid: ok 设计稿第二步左右 28
-        ConnectionFormView(editor: editor).disabled(editor.busy)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(KayoiTheme.background)
+        .transition(Motion.push(from: .trailing, reduceMotion: reduceMotion))
       } else {
-        ConnectionTypePicker(editor: editor)
-          // 第一步没有底部按钮，Esc 仍然关闭窗口
-          .background {
-            Button(L("关闭")) { dismissWindow(id: "connection") }
-              .keyboardShortcut(.cancelAction).hidden().accessibilityHidden(true)
-          }
+        VStack(spacing: 0) {
+          ConnectionTypePicker(editor: editor)
+            // 第一步没有底部按钮，Esc 仍然关闭窗口
+            .background {
+              Button(L("关闭")) { dismissWindow(id: "connection") }
+                .keyboardShortcut(.cancelAction).hidden().accessibilityHidden(true)
+            }
+          if editor.visibleError != nil { footer }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(KayoiTheme.background)
+        .transition(Motion.push(from: .leading, reduceMotion: reduceMotion))
       }
-      if editor.chosen || editor.visibleError != nil { footer }
     }
+    .clipped()
+    .animation(Motion.page(reduceMotion: reduceMotion), value: editor.chosen)
     .buttonStyle(FlatButtonStyle())
     .tint(KayoiTheme.accent)
     .background(KayoiTheme.background)
@@ -72,29 +87,39 @@ struct ConnectionEditor: View {
       if editor.testSucceeded {
         Label(L("连接测试成功"), systemImage: "checkmark.circle.fill")
           .foregroundStyle(KayoiTheme.accent).font(.callout)
+          .transition(Motion.appear(reduceMotion: reduceMotion))
       }
-      EditorErrorBanner(editor: editor)
+      if editor.visibleError != nil {
+        EditorErrorBanner(editor: editor).transition(Motion.appear(reduceMotion: reduceMotion))
+      }
       if editor.chosen { actions }
     }.padding(Space.xl).gridArea("editor-footer", inset: Space.xl)
+    .animation(Motion.change(reduceMotion: reduceMotion), value: editor.testSucceeded)
+    .animation(Motion.change(reduceMotion: reduceMotion), value: editor.visibleError)
+    .animation(Motion.change(reduceMotion: reduceMotion), value: editor.busy)
   }
 
   private var actions: some View {
     HStack(spacing: Space.sm) {
       if !editor.isEditing {
-        Button(L("上一步")) { editor.showTypes() }.disabled(editor.busy)
+        Button { editor.showTypes() } label: { Label(L("上一步"), systemImage: "chevron.left") }
+          .disabled(editor.busy)
       }
       if editor.busy {
         ProgressView().nativeProgressAppearance().controlSize(.small)
         Text(editor.stage ?? L("正在连接…")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
           .lineLimit(2)
-      } else if let missing = editor.missingFieldsDescription {
-        Text(missing).font(.caption).foregroundStyle(KayoiTheme.secondaryText).lineLimit(2)
       }
       Spacer(minLength: Space.sm)
-      Button(L("取消")) {
+      // 只在连接中显示取消，用来中止；平时关窗口用关闭按钮或 Esc
+      if editor.busy {
+        Button { editor.cancelWork() } label: { Label(L("取消"), systemImage: "xmark") }
+      }
+      Button(L("关闭")) {
         if editor.busy { editor.cancelWork() } else { dismissWindow(id: "connection") }
-      }.keyboardShortcut(.cancelAction)
-      Button(L("测试并保存")) { editor.save() }
+      }
+      .keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0).accessibilityHidden(true)
+      Button { editor.save() } label: { Label(L("测试并保存"), systemImage: "checkmark.circle.fill") }
         .buttonStyle(FlatButtonStyle(prominent: editor.hasRequiredLogin))
         .disabled(!editor.canSave)
         .keyboardShortcut(.defaultAction)
@@ -102,7 +127,9 @@ struct ConnectionEditor: View {
       Button(L("测试并保存")) { editor.save() }
         .keyboardShortcut(.return, modifiers: .command).hidden().frame(width: 0, height: 0)
         .accessibilityHidden(true).disabled(!editor.canSave)
-    }.gridProbe("footer-actions", area: "editor-footer")
+    }
+    .labelStyle(.titleAndIcon)
+    .gridProbe("footer-actions", area: "editor-footer")
   }
 }
 

@@ -11,8 +11,9 @@ struct EditorTextRow: View {
   var body: some View {
     LabeledContent(title) {
       VStack(alignment: .leading, spacing: Space.xs) {
-        TextField(placeholder, text: value).labelsHidden().textFieldStyle(.roundedBorder)
+        TextField(placeholder, text: value).labelsHidden()
           .focused($focused).accessibilityLabel(title)
+          .kayoiField(focused: focused)
           .onChange(of: focused) { was, now in if was && !now { editor.touchedFields.insert(key) } }
         if let error = editor.fieldError(key) {
           Text(error).font(.caption).foregroundStyle(KayoiTheme.error)

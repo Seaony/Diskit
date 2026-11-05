@@ -2,7 +2,6 @@ import Core
 import SwiftUI
 
 struct ConnectionCardStyle: ButtonStyle {
-  let selected: Bool
   var focused = false
   @State private var hovering = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -11,7 +10,7 @@ struct ConnectionCardStyle: ButtonStyle {
     let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
     return configuration.label
       .background(
-        configuration.isPressed ? KayoiTheme.pressed : selected ? KayoiTheme.selection : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape
+        configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape
       )
       // 0.5pt 淡细边；只有键盘焦点才画焦点环
       .overlay {
@@ -21,6 +20,7 @@ struct ConnectionCardStyle: ButtonStyle {
       .pointerStyle(.link)
       .offset(y: configuration.isPressed && !reduceMotion ? 1 : 0) // grid: ok 按下或拖动时的短暂位移
       .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+      .animation(Motion.hover(reduceMotion: reduceMotion), value: hovering)
       .onHover { hovering = $0 }
   }
 }

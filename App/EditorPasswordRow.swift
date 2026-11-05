@@ -9,7 +9,8 @@ struct EditorPasswordRow: View {
   var body: some View {
     LabeledContent(title) {
       VStack(alignment: .leading, spacing: Space.xs) {
-        HStack(spacing: Space.sm) {
+        // 显示密码的小眼睛放在输入框里面靠右
+        HStack(spacing: Space.xs) {
           Group {
             if editor.passwordVisible {
               TextField(placeholder.isEmpty ? title : placeholder, text: $editor.password)
@@ -17,15 +18,17 @@ struct EditorPasswordRow: View {
               SecureField(placeholder.isEmpty ? title : placeholder, text: $editor.password)
             }
           }
-          .textFieldStyle(.roundedBorder).labelsHidden().focused($focused).accessibilityLabel(title)
+          .labelsHidden().focused($focused).accessibilityLabel(title)
           Button {
             editor.passwordVisible.toggle()
           } label: {
             Image(systemName: editor.passwordVisible ? "eye.slash" : "eye")
+              .foregroundStyle(KayoiTheme.secondaryText)
           }.buttonStyle(.plain).pointerStyle(.link)
             .help(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
             .accessibilityLabel(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
         }
+        .kayoiField(focused: focused)
         if let error = editor.fieldError("password") {
           Text(error).font(.caption).foregroundStyle(KayoiTheme.error)
         }
