@@ -26,7 +26,6 @@ struct SettingsView: View {
   @State private var confirmKey = false
   @State private var copiedFingerprint = false
   @State private var copyFeedback: Task<Void, Never>?
-  @State private var license: SettingsLicense?
 
   var body: some View {
     TabView(selection: $selectedTab) {
@@ -42,6 +41,8 @@ struct SettingsView: View {
         .tabItem { Label(L("关于"), systemImage: "info.circle") }.tag("about")
     }
     .frame(width: 560)
+    // 工具栏下面的分隔线由各页自己画（见 settingsPageTop），关掉系统的，免得悬停时多出一条
+    .background(EditorWindowAccessor { $0.titlebarSeparatorStyle = .none })
     .demoAppearanceEvidence("settings")
     .fixedSize(horizontal: false, vertical: true)
     .background(KayoiTheme.background)
@@ -78,10 +79,6 @@ struct SettingsView: View {
     } message: {
       Text(L("重新生成后，下次连接每台手机时都需要重新允许这台 Mac。"))
     }
-    .sheet(item: $license) { document in
-      SettingsLicenseView(document: document)
-        .presentationBackground(KayoiTheme.background)
-    }
   }
 
   private var generalPage: some View {
@@ -99,24 +96,31 @@ struct SettingsView: View {
       } footer: {
         Text(L("退出 Kayoi 不会推出已挂载的共享"))
       }
-      Section(L("外观")) {
-        ChoiceButtons(
-          options: AppAppearance.allCases.map(\.rawValue), selection: $appearance,
-          title: { (AppAppearance(rawValue: $0) ?? .system).title },
-          symbol: { (AppAppearance(rawValue: $0) ?? .system).symbol }
-        )
-        .accessibilityElement(children: .contain).accessibilityLabel(L("主题"))
-      }
-      .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
       Section {
-        ChoiceButtons(options: AppLanguage.allCases, selection: $language, title: \.title, symbol: \.symbol)
-          .accessibilityElement(children: .contain).accessibilityLabel(L("界面语言"))
-          // 书本图标会跟着地区换字形；按英文地区显示，English 用字母 A，简体中文已单独指定“字”
-          .environment(\.locale, Locale(identifier: "en"))
+        // 标题在左、选项在右，同一行里垂直居中
+        HStack(spacing: Space.md) {
+          Text(L("主题")).font(.body).accessibilityHidden(true)
+          Spacer(minLength: 0)
+          ChoiceButtons(
+            options: AppAppearance.allCases.map(\.rawValue), selection: $appearance,
+            title: { (AppAppearance(rawValue: $0) ?? .system).title },
+            symbol: { (AppAppearance(rawValue: $0) ?? .system).symbol }
+          )
+          .accessibilityElement(children: .contain).accessibilityLabel(L("主题"))
+        }
+        .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
+        HStack(spacing: Space.md) {
+          Text(L("界面语言")).font(.body).accessibilityHidden(true)
+          Spacer(minLength: 0)
+          ChoiceButtons(options: AppLanguage.allCases, selection: $language, title: \.title, symbol: \.symbol)
+            // 书本图标会跟着地区换字形；按英文地区显示，English 用字母 A，简体中文已单独指定“字”
+            .environment(\.locale, Locale(identifier: "en"))
+            .accessibilityElement(children: .contain).accessibilityLabel(L("界面语言"))
+        }
         // 演示模式不改真实的语言设置
         .onChange(of: language) { _, value in if !model.options.isDemo { value.save() } }
       } header: {
-        Text(L("语言"))
+        Text(L("外观与语言"))
       } footer: {
         if language != AppLanguage.atLaunch {
           HStack(spacing: Space.sm) {
@@ -236,32 +240,25 @@ struct SettingsView: View {
     }
   }
 
+  // 关于：居中放图标、名称、版本和检查更新
   private var aboutPage: some View {
-    SettingsForm {
-      Section {
-        HStack(spacing: Space.lg) {
-          Image(nsImage: NSApplication.shared.applicationIconImage)
-            .resizable().interpolation(.high).frame(width: 64, height: 64)
-            .accessibilityHidden(true)
-          VStack(alignment: .leading, spacing: Space.xs) {
-            Text(L("Kayoi")).font(.title3.bold())
-            Text(LF("版本 %@", version)).monospacedDigit()
-              .foregroundStyle(KayoiTheme.secondaryText)
-            Text(LF("构建 %@", build)).font(.caption)
-              .monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
-          }
-        }
-        Button(L("致谢与许可证…")) { license = .notices }
-        Button(L("Apache 2.0 许可证…")) { license = .apache }
+    VStack(spacing: Space.lg) {
+      // 直接取资源里的图标，不用系统缓存的应用图标，换图标后这里马上跟着变
+      Image(nsImage: NSImage(named: "AppIcon") ?? NSApplication.shared.applicationIconImage)
+        .resizable().interpolation(.high).frame(width: 96, height: 96)
+        .accessibilityHidden(true)
+      VStack(spacing: Space.xs) {
+        Text(verbatim: "Kayoi").font(.system(size: 20, weight: .semibold))
+          .foregroundStyle(KayoiTheme.primaryText)
+        Text(LF("版本 %@", version)) + Text(verbatim: " · ") + Text(LF("构建 %@", build))
       }
-      Section {
-        Button(L("在 Finder 中显示日志")) { model.showLogs() }
-      } header: {
-        Text(L("日志"))
-      } footer: {
-        Text(L("日志会保留最近 7 天。"))
-      }
+      .font(.callout).monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
+      UpdateCheckView(updater: model.updates)
     }
+    .frame(maxWidth: .infinity)
+    .padding(.vertical, Space.section)
+    .settingsPageTop()
+    .background(KayoiTheme.background)
   }
 
   @ViewBuilder private var notificationPermission: some View {
@@ -384,9 +381,20 @@ private struct SettingsForm<Content: View>: View {
   var body: some View {
     Form { content }
       .formStyle(.grouped)
+      .settingsPageTop()
       .scrollContentBackground(.hidden)
       .scrollBounceBehavior(.basedOnSize)
       .fixedSize(horizontal: false, vertical: true)
       .background(KayoiTheme.background)
+  }
+}
+
+extension View {
+  // 设置各页顶部固定一条分隔线；系统的那条只在光标移到可滚动区域时才出现，这里关掉它
+  fileprivate func settingsPageTop() -> some View {
+    scrollEdgeEffectHidden(true, for: .top)
+      // 工具栏底色每页都显示，不随页面能否滚动变化
+      .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+      .overlay(alignment: .top) { KayoiSeparator() }
   }
 }

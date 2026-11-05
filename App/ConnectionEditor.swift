@@ -135,7 +135,8 @@ struct ConnectionEditor: View {
   }
 }
 
-private struct EditorWindowAccessor: NSViewRepresentable {
+// 拿到所在的窗口做设置；设置窗口也在用
+struct EditorWindowAccessor: NSViewRepresentable {
   let update: @MainActor (NSWindow) -> Void
   func makeNSView(context: Context) -> WindowView { WindowView(update: update) }
   func updateNSView(_ nsView: WindowView, context: Context) { nsView.update = update }

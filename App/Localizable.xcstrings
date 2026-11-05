@@ -118,38 +118,6 @@
         }
       }
     },
-    "Apache 2.0 许可证": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apache 2.0 License"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apache 2.0 许可证"
-          }
-        }
-      }
-    },
-    "Apache 2.0 许可证…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apache 2.0 License…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Apache 2.0 许可证…"
-          }
-        }
-      }
-    },
     "Backblaze B2": {
       "extractionState": "manual",
       "localizations": {
@@ -1637,23 +1605,6 @@
         }
       }
     },
-    "在 Finder 中显示日志": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show Logs in Finder"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 Finder 中显示日志"
-          }
-        }
-      }
-    },
     "在 NAS 上启用 WebDAV Server 的 HTTPS 服务，并允许此账户访问目标共享。": {
       "localizations": {
         "en": {
@@ -3101,22 +3052,6 @@
         }
       }
     },
-    "无法打开许可证": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn’t Open License"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法打开许可证"
-          }
-        }
-      }
-    },
     "无法显示日志": {
       "extractionState": "manual",
       "localizations": {
@@ -3214,40 +3149,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "无线调试"
-          }
-        }
-      }
-    },
-    "日志": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日志"
-          }
-        }
-      }
-    },
-    "日志会保留最近 7 天。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logs are kept for seven days."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日志会保留最近 7 天。"
           }
         }
       }
@@ -3646,22 +3547,6 @@
         }
       }
     },
-    "正在读取许可证…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Reading license…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "正在读取许可证…"
-          }
-        }
-      }
-    },
     "正在连接…": {
       "extractionState": "manual",
       "localizations": {
@@ -3856,22 +3741,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "没有找到可访问的共享，请检查权限或手动填写共享名。"
-          }
-        }
-      }
-    },
-    "没有找到应用内的许可证文件，请重新安装 Kayoi 后重试。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The bundled license file could not be found. Reinstall Kayoi and try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "没有找到应用内的许可证文件，请重新安装 Kayoi 后重试。"
           }
         }
       }
@@ -5084,38 +4953,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "自定义"
-          }
-        }
-      }
-    },
-    "致谢与许可证": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Credits and Licenses"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "致谢与许可证"
-          }
-        }
-      }
-    },
-    "致谢与许可证…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Credits and Licenses…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "致谢与许可证…"
           }
         }
       }
@@ -6765,19 +6602,19 @@
         }
       }
     },
-    "外观": {
+    "外观与语言": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Appearance"
+            "value": "Appearance & Language"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "外观"
+            "value": "外观与语言"
           }
         }
       }
@@ -6795,23 +6632,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "主题"
-          }
-        }
-      }
-    },
-    "语言": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Language"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "语言"
           }
         }
       }

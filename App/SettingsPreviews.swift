@@ -22,5 +22,3 @@ private struct SettingsDemoPreview: View {
 #Preview("设置 · 安卓 · 深色") { SettingsDemoPreview(tab: "android").preferredColorScheme(.dark) }
 #Preview("设置 · 关于 · 浅色") { SettingsDemoPreview(tab: "about").preferredColorScheme(.light) }
 #Preview("设置 · 关于 · 深色") { SettingsDemoPreview(tab: "about").preferredColorScheme(.dark) }
-#Preview("许可证 · 浅色") { SettingsLicenseView(document: .notices).preferredColorScheme(.light) }
-#Preview("许可证 · 深色") { SettingsLicenseView(document: .notices).preferredColorScheme(.dark) }
