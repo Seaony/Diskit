@@ -13,12 +13,7 @@ const designs={
  '03-folder':`<path d="M237 300Q237 267 270 267H435L492 328H757Q789 328 789 360V718Q789 750 757 750H269Q237 750 237 718Z" fill="${c('#93BBFF')}"/><rect x="304" y="360" width="418" height="250" rx="21" fill="#FFFFFF"/><path d="M237 447Q237 416 268 416H756Q789 416 789 449V718Q789 750 756 750H269Q237 750 237 718Z" fill="url(#front)"/><path d="M341 490H568V452L651 527L568 602V564H341Z" fill="${c('#2F6FE0')}"/><path d="M683 621H456V583L373 658L456 733V695H683Z" fill="${c('#5393FF')}"/>`
 };
 for(const [name,body] of Object.entries(designs)) fs.writeFileSync(path.join(root,name+'.svg'),`<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">${defs}${plate}${body}</svg>\n`);
-const chosen=fs.readFileSync(path.join(root,'01-roundtrip.svg'));
-const set=path.join(repo,'App/Assets.xcassets/AppIcon.appiconset');fs.mkdirSync(set,{recursive:true});
-const sizes=[16,32,64,128,256,512,1024];
-for(const size of sizes)await sharp(chosen).resize(size,size).png().toFile(path.join(set,`icon-${size}.png`));
-const images=[];for(const size of [16,32,128,256,512])for(const scale of [1,2])images.push({filename:`icon-${size*scale}.png`,idiom:'mac',scale:scale+'x',size:`${size}x${size}`});
-fs.writeFileSync(path.join(set,'Contents.json'),JSON.stringify({images,info:{author:'xcode',version:1}},null,2)+'\n');
+// AppIcon 改用小花怪兽，由 export-turtle.swift 导出；这里只生成早期草案和对照图
 const out=path.join(repo,'docs/screenshots/v0.2/icons');fs.mkdirSync(out,{recursive:true});
 for(const dark of [false,true]){
  const width=1656,height=850;
@@ -34,4 +29,4 @@ for(const dark of [false,true]){
  });
  sheet+='</svg>';await sharp(Buffer.from(sheet)).png().toFile(path.join(out,`app-directions-${dark?'dark':'light'}.png`));
 }
-console.log('应用图标三个方向与完整 macOS AppIcon 尺寸已导出。');
+console.log('应用图标三个早期方向的草案和对照图已导出。');
