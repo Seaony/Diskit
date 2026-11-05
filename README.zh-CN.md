@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://github.com/Seaony/Kayoi-Releases/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Kayoi"></a>
+<a href="https://github.com/Seaony/Kayoi/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Kayoi"></a>
 
 # Kayoi
 
@@ -12,7 +12,7 @@
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[下载](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->[English](README.md) · **简体中文**
+**[下载](https://github.com/Seaony/Kayoi/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->[English](README.md) · **简体中文**
 
 <br>
 
@@ -43,7 +43,7 @@ Kayoi 把它们都放进菜单栏的一个面板里：
 
 ## 快速开始
 
-**1 · 安装。** 从 **[最新版本](https://github.com/Seaony/Kayoi-Releases/releases/latest)** 下载 DMG，打开后把 `Kayoi.app` 拖进“应用程序”。
+**1 · 安装。** 从 **[最新版本](https://github.com/Seaony/Kayoi/releases/latest)** 下载 DMG，打开后把 `Kayoi.app` 拖进“应用程序”。
 
 <sub>安装包同时支持 Apple 芯片和 Intel，需要 macOS 26 或更高版本。目前还没有 Apple Developer ID 签名和公证，首次打开可能被拦截；打开 **系统设置 → 隐私与安全性**，选择仍要打开 Kayoi。Kayoi 通过 Sparkle 从 GitHub Releases 自动更新。</sub>
 
@@ -93,7 +93,7 @@ SMB、WebDAV、NFS 共享通过 macOS 挂载，Finder 和其他 App 都把它们
 需要 Xcode 27 和 XcodeGen（`brew install xcodegen`）。
 
 ```sh
-git clone https://github.com/Seaony/Kayoi.git
+git clone https://github.com/Seaony/Kayoi-Source.git
 cd Kayoi
 make build
 open build/DerivedData/Build/Products/Debug/Kayoi.app

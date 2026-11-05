@@ -1,6 +1,6 @@
 #!/bin/bash
 # 一键发布新版本：scripts/publish-unsigned-release.sh <版本号> [--dry-run]
-# 源码仓库保持私有，安装包和更新源发布到公开的 Seaony/Kayoi-Releases。
+# 源码仓库保持私有，安装包和更新源发布到公开的 Seaony/Kayoi。
 # --dry-run 只在本地完整打包和验证，不提交、不推送、不发布。
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +12,7 @@ dry_run=0
 if [[ $# == 2 && "$2" == '--dry-run' ]]; then dry_run=1; elif [[ $# != 1 ]]; then usage; fi
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || usage
 
-release_repo="Seaony/Kayoi-Releases"
+release_repo="Seaony/Kayoi"
 account="${SPARKLE_ACCOUNT:-com.seaony.Moni}"
 tag="v$version"
 fail() { echo "$1" >&2; exit 1; }

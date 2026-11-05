@@ -363,7 +363,7 @@ kubai-icons 的所有颜色都从一个主色推导，正好对应 Kayoi「每�
 ## 10. 自动更新（Sparkle，K-03）
 
 - `UPD-01` 在 `project.yml` 加 Sparkle（版本锁定，与 Mekke 使用的 2.10.x 一致）；`Package.resolved` 入库（审查第 5 节第 7 条：现在 `.xcodeproj` 被忽略导致间接依赖版本不固定，同时把 swift-crypto 等版本固定下来）。
-- `UPD-02` Info.plist：`SUFeedURL=https://github.com/Seaony/Kayoi-Releases/releases/latest/download/appcast.xml`，`SUPublicEDKey` 用和 Yomi、Moni 相同的公钥（作者惯例），`SURequireSignedFeed=true`，`SUEnableAutomaticChecks=true`，检查间隔 1 天。
+- `UPD-02` Info.plist：`SUFeedURL=https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml`，`SUPublicEDKey` 用和 Yomi、Moni 相同的公钥（作者惯例），`SURequireSignedFeed=true`，`SUEnableAutomaticChecks=true`，检查间隔 1 天。
 - `UPD-03` 设置 → 通用 → 更新：「自动检查更新」「自动下载并安装」两个开关、「检查更新…」按钮、上次检查时间；「Kayoi」菜单里有「检查更新…」；更新窗口出现时带到最前面。
 - `UPD-04` 首次正式发布之前，后台检查遇到 404 不打扰用户；手动检查时说明「还没有可用的更新信息」。演示模式和测试中不启动更新器。
 - `UPD-05` 发布脚本照 Yomi：`scripts/publish-unsigned-release.sh`（通用二进制、签名、打包、生成并签名 appcast）、`scripts/validate-release.sh`（校验压缩包和 appcast 两者的签名、版本号、最低系统版本）、`docs/RELEASING.md`。版本号改为从一处读取（`project.yml` 的 `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`），本轮升到 0.2.0（构建号 2）。不实际发布、不推送。

@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://github.com/Seaony/Kayoi-Releases/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Kayoi"></a>
+<a href="https://github.com/Seaony/Kayoi/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Kayoi"></a>
 
 # Kayoi
 
@@ -12,7 +12,7 @@ and mount your shares in Finder with one click.
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[Download](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->**English** · [简体中文](README.zh-CN.md)
+**[Download](https://github.com/Seaony/Kayoi/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->**English** · [简体中文](README.zh-CN.md)
 
 <br>
 
@@ -43,7 +43,7 @@ It's for you if you move files between several devices and services. If everythi
 
 ## Quick start
 
-**1 · Install.** Download the DMG from the **[latest release](https://github.com/Seaony/Kayoi-Releases/releases/latest)**, open it and drag `Kayoi.app` into Applications.
+**1 · Install.** Download the DMG from the **[latest release](https://github.com/Seaony/Kayoi/releases/latest)**, open it and drag `Kayoi.app` into Applications.
 
 <sub>Builds are universal (Apple silicon and Intel) and need macOS 26 or later. They are not signed with an Apple Developer ID or notarised yet, so the first launch may be blocked; open **System Settings → Privacy & Security** and choose to open Kayoi anyway. Kayoi updates itself from GitHub Releases through Sparkle.</sub>
 
@@ -93,7 +93,7 @@ Native SwiftUI and AppKit. Light and dark appearance. English and Simplified Chi
 You need Xcode 27 and XcodeGen (`brew install xcodegen`).
 
 ```sh
-git clone https://github.com/Seaony/Kayoi.git
+git clone https://github.com/Seaony/Kayoi-Source.git
 cd Kayoi
 make build
 open build/DerivedData/Build/Products/Debug/Kayoi.app
