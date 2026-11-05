@@ -109,8 +109,8 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         .background(WindowRegistration(coordinator: appDelegate.windows, role: "connection"))
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
-    }.defaultSize(width: 640, height: 640).defaultLaunchBehavior(
-      .suppressed)
+    }.defaultSize(width: 480, height: 640).windowResizability(.contentSize)
+      .defaultLaunchBehavior(.suppressed)
     Window(L("网页登录"), id: "demo-web-login") {
       if model.options.isDemo {
         DemoWebLoginWindow(options: model.options)

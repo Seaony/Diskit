@@ -18,12 +18,22 @@ struct ConnectionTypePicker: View {
       .padding(.horizontal, Space.xs)
   }
 
+  private let columns = Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 3)
+
   var body: some View {
     VStack(spacing: 0) {
+      VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
+        Text(L("选择位置类型")).font(.system(size: 17, weight: .semibold))
+        Text(L("接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。")).font(.system(size: 12))
+          .foregroundStyle(KayoiTheme.secondaryText)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .padding(.horizontal, Space.xxl).padding(.top, Space.xs).padding(.bottom, Space.md)
       HStack(spacing: Space.sm) {
-        Image(systemName: "magnifyingglass").foregroundStyle(KayoiTheme.secondaryText)
+        Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundStyle(KayoiTheme.secondaryText)
           .accessibilityHidden(true)
         TextField(L("搜索类型，例如 网盘、SMB、相机"), text: $editor.search)
+          .font(.system(size: 14))
           .textFieldStyle(.plain).focused($focus, equals: .search)
           .onSubmit { editor.chooseSelected() }
           .onKeyPress(.downArrow) {
@@ -41,29 +51,32 @@ struct ConnectionTypePicker: View {
           .buttonStyle(.plain).pointerStyle(.link).help(L("清除搜索")).accessibilityLabel(L("清除搜索"))
         }
       }
-      .padding(.horizontal, 10).frame(height: 32) // grid: ok 设计稿搜索框高 32
+      .padding(.horizontal, Space.md).frame(height: 36) // grid: ok 搜索框高 36
       .background(
         KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
       )
-      .padding(.horizontal, Space.xxl).padding(.top, Space.xs)
+      .overlay {
+        RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+      }
+      .padding(.horizontal, Space.xxl)
       ScrollView {
         VStack(alignment: .leading, spacing: Space.lg) {
           // 已发现的设备排在最前，选中后第二步带上预填信息
           if !discovered.isEmpty {
             VStack(alignment: .leading, spacing: Space.sm) {
               groupTitle(L("已发现"))
-              LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 4), spacing: Space.sm) {
+              LazyVGrid(columns: columns, spacing: Space.sm) {
                 ForEach(discovered) { item in
+                  // 点一下直接进入第二步
                   Button {
                     editor.selectedDiscovery = item
+                    editor.chooseSelected()
                   } label: {
-                    ConnectionTypeTile(kind: item.kind, title: item.title, selected: editor.selectedDiscovery?.id == item.id)
+                    ConnectionTypeTile(
+                      kind: item.kind, title: item.title, subtitle: item.subtitle,
+                      selected: editor.selectedDiscovery?.id == item.id)
                   }
                   .buttonStyle(ConnectionCardStyle(selected: editor.selectedDiscovery?.id == item.id))
-                  .simultaneousGesture(TapGesture(count: 2).onEnded {
-                    editor.selectedDiscovery = item
-                    editor.chooseSelected()
-                  })
                   .disabled(item.connection == nil)
                   .help(item.title + " · " + item.subtitle)
                   .accessibilityLabel(LF("添加“%@”", item.title)).accessibilityValue(item.subtitle)
@@ -75,23 +88,19 @@ struct ConnectionTypePicker: View {
           ForEach(groups) { group in
             VStack(alignment: .leading, spacing: Space.sm) {
               groupTitle(group.title)
-              LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 4),
-                spacing: Space.sm
-              ) {
+              LazyVGrid(columns: columns, spacing: Space.sm) {
                 ForEach(group.kinds, id: \.self) { kind in
+                  // 点一下直接进入第二步
                   Button {
-                    editor.selectedDiscovery = nil
                     editor.selectedKind = kind
-                    focus = .grid
+                    editor.choose(kind)
                   } label: {
-                    ConnectionTypeTile(kind: kind, marksExperimental: group.title == L("实验性网盘"), selected: editor.selectedKind == kind)
+                    ConnectionTypeTile(kind: kind, selected: editor.selectedKind == kind)
                       .gridProbe("type-" + kind.rawValue, area: "editor-types", edge: nil)
                   }
                   .buttonStyle(ConnectionCardStyle(
                     selected: editor.selectedKind == kind,
                     focused: ConnectionTypeFocus.isFocused(kind, selection: editor.selectedKind, gridFocused: focus == .grid)))
-                  .simultaneousGesture(TapGesture(count: 2).onEnded { editor.choose(kind) })
                   .help(kind.title + " · " + ConnectionTypeCatalog.caption(kind))
                   .accessibilityLabel(kind.title).accessibilityValue(
                     ConnectionTypeCatalog.caption(kind)
@@ -107,7 +116,7 @@ struct ConnectionTypePicker: View {
             )
             .frame(maxWidth: .infinity).padding(.vertical, Space.xl)
           }
-        }.padding(.horizontal, Space.xxl).padding(.top, 14).padding(.bottom, Space.sm) // grid: ok 设计稿搜索框下 14
+        }.padding(.horizontal, Space.xxl).padding(.top, Space.lg).padding(.bottom, Space.xxl)
           .gridArea("editor-types", inset: Space.xl)
       }
       .focusable().focusEffectDisabled().focused($focus, equals: .grid)
@@ -115,8 +124,8 @@ struct ConnectionTypePicker: View {
         switch direction {
         case .left: editor.moveSelection(-1)
         case .right: editor.moveSelection(1)
-        case .up: editor.moveSelection(-4)
-        case .down: editor.moveSelection(4)
+        case .up: editor.moveSelection(-columns.count)
+        case .down: editor.moveSelection(columns.count)
         @unknown default: break
         }
       }

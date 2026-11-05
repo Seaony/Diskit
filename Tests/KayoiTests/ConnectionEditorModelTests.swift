@@ -107,6 +107,23 @@ import Testing
   #expect(editor.draft.params["host"] == nil)
 }
 
+// 第一步单击格子直接进入下一步：先点已发现设备，返回后点普通类型，再返回按回车，应进入普通类型
+@MainActor @Test func returnAfterClickingKindDoesNotReopenDiscoveredDevice() {
+  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let editor = ConnectionEditorModel(model: model)
+  let found = Connection(kind: .smb, name: "客厅 NAS", params: ["host": "nas.local"])
+  editor.selectedDiscovery = DiscoveredItem(
+    id: "smb:nas", kind: .smb, title: "客厅 NAS", subtitle: "局域网", connection: found, pairingSelection: nil)
+  editor.chooseSelected()
+  editor.showTypes()
+  editor.selectedKind = .nfs
+  editor.choose(.nfs)
+  editor.showTypes()
+  editor.chooseSelected()
+  #expect(editor.draft.kind == .nfs)
+  #expect(editor.draft.params["host"] == nil)
+}
+
 @MainActor @Test func choosingDiscoveredDeviceDropsPreviousGuestLogin() {
   let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
   let editor = ConnectionEditorModel(model: model)

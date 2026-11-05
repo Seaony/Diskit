@@ -29,13 +29,18 @@ struct ConnectionEditor: View {
         ConnectionFormView(editor: editor).disabled(editor.busy)
       } else {
         ConnectionTypePicker(editor: editor)
+          // 第一步没有底部按钮，Esc 仍然关闭窗口
+          .background {
+            Button(L("关闭")) { dismissWindow(id: "connection") }
+              .keyboardShortcut(.cancelAction).hidden().accessibilityHidden(true)
+          }
       }
-      footer
+      if editor.chosen || editor.visibleError != nil { footer }
     }
     .buttonStyle(FlatButtonStyle())
     .tint(KayoiTheme.accent)
     .background(KayoiTheme.background)
-    .frame(minWidth: 560, minHeight: 520)
+    .frame(width: 480).frame(minHeight: 520)
     .gridDiagnostics("editor")
     .demoAppearanceEvidence("editor")
     .background(
@@ -69,37 +74,35 @@ struct ConnectionEditor: View {
           .foregroundStyle(KayoiTheme.accent).font(.callout)
       }
       EditorErrorBanner(editor: editor)
-      HStack(spacing: Space.sm) {
-        if editor.chosen && !editor.isEditing {
-          Button(L("上一步")) { editor.showTypes() }.disabled(editor.busy)
-        }
-        if editor.busy {
-          ProgressView().nativeProgressAppearance().controlSize(.small)
-          Text(editor.stage ?? L("正在连接…")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-            .lineLimit(2)
-        } else if editor.chosen, let missing = editor.missingFieldsDescription {
-          Text(missing).font(.caption).foregroundStyle(KayoiTheme.secondaryText).lineLimit(2)
-        }
-        Spacer(minLength: Space.sm)
-        Button(L("取消")) {
-          if editor.busy { editor.cancelWork() } else { dismissWindow(id: "connection") }
-        }.keyboardShortcut(.cancelAction)
-        if editor.chosen {
-          Button(L("测试并保存")) { editor.save() }
-            .buttonStyle(FlatButtonStyle(prominent: editor.hasRequiredLogin))
-            .disabled(!editor.canSave)
-            .keyboardShortcut(.defaultAction)
-            .help(L("测试并保存（Return / ⌘Return）"))
-          Button(L("测试并保存")) { editor.save() }
-            .keyboardShortcut(.return, modifiers: .command).hidden().frame(width: 0, height: 0)
-            .accessibilityHidden(true).disabled(!editor.canSave)
-        } else {
-          Button(L("下一步")) { editor.chooseSelected() }
-            .buttonStyle(FlatButtonStyle(prominent: true))
-            .disabled(editor.selectedKind == nil && editor.selectedDiscovery == nil).keyboardShortcut(.defaultAction)
-        }
-      }.gridProbe("footer-actions", area: "editor-footer")
+      if editor.chosen { actions }
     }.padding(Space.xl).gridArea("editor-footer", inset: Space.xl)
+  }
+
+  private var actions: some View {
+    HStack(spacing: Space.sm) {
+      if !editor.isEditing {
+        Button(L("上一步")) { editor.showTypes() }.disabled(editor.busy)
+      }
+      if editor.busy {
+        ProgressView().nativeProgressAppearance().controlSize(.small)
+        Text(editor.stage ?? L("正在连接…")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+          .lineLimit(2)
+      } else if let missing = editor.missingFieldsDescription {
+        Text(missing).font(.caption).foregroundStyle(KayoiTheme.secondaryText).lineLimit(2)
+      }
+      Spacer(minLength: Space.sm)
+      Button(L("取消")) {
+        if editor.busy { editor.cancelWork() } else { dismissWindow(id: "connection") }
+      }.keyboardShortcut(.cancelAction)
+      Button(L("测试并保存")) { editor.save() }
+        .buttonStyle(FlatButtonStyle(prominent: editor.hasRequiredLogin))
+        .disabled(!editor.canSave)
+        .keyboardShortcut(.defaultAction)
+        .help(L("测试并保存（Return / ⌘Return）"))
+      Button(L("测试并保存")) { editor.save() }
+        .keyboardShortcut(.return, modifiers: .command).hidden().frame(width: 0, height: 0)
+        .accessibilityHidden(true).disabled(!editor.canSave)
+    }.gridProbe("footer-actions", area: "editor-footer")
   }
 }
 

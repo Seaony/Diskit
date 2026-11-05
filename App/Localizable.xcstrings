@@ -762,23 +762,6 @@
         }
       }
     },
-    "下一步": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continue"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "下一步"
-          }
-        }
-      }
-    },
     "下移": {
       "extractionState": "manual",
       "localizations": {
@@ -6727,23 +6710,6 @@
         }
       }
     },
-    "实验": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Beta"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "实验"
-          }
-        }
-      }
-    },
     "接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。": {
       "extractionState": "manual",
       "localizations": {
@@ -6808,6 +6774,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "重新登录…"
+          }
+        }
+      }
+    },
+    "选择位置类型": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Location Type"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择位置类型"
           }
         }
       }
