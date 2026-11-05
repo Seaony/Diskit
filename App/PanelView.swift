@@ -283,6 +283,12 @@ struct PanelView: View {
 
   private var footer: some View {
     HStack(spacing: 2) { // grid: ok 底栏图标间隔 2
+      // 左边版本号，补齐图标按钮自带的内边距，和卡片左边对齐
+      Text(verbatim: "Kayoi " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"))
+        .font(.system(size: 11)).monospacedDigit()
+        .foregroundStyle(KayoiTheme.tertiaryText)
+        .padding(.leading, Space.xs)
+      Spacer()
       Button {
         openSettings()
       } label: {
@@ -290,7 +296,6 @@ struct PanelView: View {
       }
       .keyboardShortcut(",", modifiers: .command)
       .help(L("设置 · ⌘,")).accessibilityLabel(L("打开设置"))
-      Spacer()
       Button(action: requestQuit) {
         Image(systemName: "power")
       }

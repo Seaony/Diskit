@@ -71,7 +71,7 @@ struct SavedConnectionRow: View {
     return VStack(spacing: Space.sm) {
       PanelStatusIcon(kind: connection.kind, color: connection.color, size: 34, badge: badge, ring: fill)
         .gridProbe("icon", area: "saved-" + connection.id.uuidString, edge: nil)
-      VStack(spacing: 1) {
+      VStack(spacing: 2) { // grid: ok 与列表的标题副标题间距一致
         Text(connection.name).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
           .foregroundStyle(KayoiTheme.primaryText)
         Text(PanelCopy.cardCaption(state, kind: connection.kind)).font(.system(size: 9)).lineLimit(1)
@@ -93,7 +93,7 @@ struct SavedConnectionRow: View {
     let shape = RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
     return HStack(spacing: 10) { // grid: ok 设计稿图标与文字间距 10
       PanelStatusIcon(kind: connection.kind, color: connection.color, size: 34, badge: badge, ring: listFill ?? KayoiTheme.surface)
-      VStack(alignment: .leading, spacing: 0) {
+      VStack(alignment: .leading, spacing: 2) { // grid: ok 标题与副标题之间留一点
         Text(connection.name).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
           .foregroundStyle(KayoiTheme.primaryText)
         Text(PanelCopy.listCaption(state, kind: connection.kind, detail: errorDetail)).font(.system(size: 9)).lineLimit(1)
@@ -101,11 +101,11 @@ struct SavedConnectionRow: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .padding(.horizontal, 10).padding(.vertical, 10) // grid: ok 列表行内边距，上下留宽一点不显挤
+    .padding(Space.sm) // 列表行四周内边距一致
     .background(listFill ?? .clear, in: shape)
     .overlay(alignment: .top) {
       if showsDivider && listFill == nil {
-        Rectangle().fill(KayoiTheme.border).frame(height: 0.5).padding(.leading, 54).padding(.trailing, 10) // grid: ok 分隔线从文字处开始
+        Rectangle().fill(KayoiTheme.border).frame(height: 0.5).padding(.leading, 52).padding(.trailing, Space.sm) // grid: ok 分隔线从文字处开始
       }
     }
     .overlay { if selected && isIssue { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
