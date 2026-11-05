@@ -22,7 +22,7 @@ struct ConnectionTypePicker: View {
       .padding(.horizontal, Space.xs)
   }
 
-  private let columns = Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 3)
+  private let columns = Array(repeating: GridItem(.flexible(), spacing: Space.sm), count: 4)
 
   var body: some View {
     VStack(spacing: 0) {

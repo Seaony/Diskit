@@ -11,6 +11,8 @@ struct SettingsView: View {
   @AppStorage("notifications.mountFailure") private var notifyMountFailure = true
   @AppStorage("notifications.loginExpired") private var notifyLoginExpired = true
   @AppStorage("notifications.disconnect") private var notifyDisconnect = true
+  @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
+  @State private var language = AppLanguage.saved
   @State private var startsAtLogin = false
   @State private var loginNeedsApproval = false
   @State private var loginError: String?
@@ -96,6 +98,30 @@ struct SettingsView: View {
         }
       } footer: {
         Text(L("退出 Kayoi 不会推出已挂载的共享"))
+      }
+      Section(L("外观")) {
+        Picker(L("主题"), selection: $appearance) {
+          ForEach(AppAppearance.allCases) { Text($0.title).tag($0.rawValue) }
+        }
+      }
+      .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
+      Section {
+        Picker(L("界面语言"), selection: $language) {
+          ForEach(AppLanguage.allCases) { Text($0.title).tag($0) }
+        }
+        // 演示模式不改真实的语言设置
+        .onChange(of: language) { _, value in if !model.options.isDemo { value.save() } }
+      } header: {
+        Text(L("语言"))
+      } footer: {
+        if language != AppLanguage.atLaunch {
+          HStack(spacing: Space.sm) {
+            Text(L("重新打开 Kayoi 后生效"))
+            if !model.options.isDemo {
+              Button(L("立即重新打开")) { AppLanguage.relaunch() }
+            }
+          }
+        }
       }
       UpdateSettingsSection(updater: model.updates)
     }

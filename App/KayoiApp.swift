@@ -66,6 +66,10 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         }
         .task {
           appDelegate.configure(model: model) { openWindow(id: "main-panel") }
+          // 设置里选的外观；演示模式指定了外观时由下面覆盖
+          (model.preferences.string(forKey: AppAppearance.storageKey).flatMap(AppAppearance.init) ?? .system).apply()
+          // 启动时就记下当前语言，之后在系统设置里改了也能提示重新打开
+          _ = AppLanguage.atLaunch
           if model.options.isDemo, let appearance = DemoAppearance.name(options: model.options) {
             NSApplication.shared.appearance = NSAppearance(named: appearance)
           }
@@ -110,7 +114,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
         .toolbar(removing: .title)
-    }.defaultSize(width: 448, height: 640).windowResizability(.contentSize)
+    }.defaultSize(width: 576, height: 640).windowResizability(.contentSize)
       .defaultLaunchBehavior(.suppressed)
     Window(L("网页登录"), id: "demo-web-login") {
       if model.options.isDemo {
