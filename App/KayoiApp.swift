@@ -53,7 +53,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
   @Environment(\.openWindow) private var openWindow
   var body: some Scene {
     MenuBarExtra {
-      PanelView(model: model)
+      PanelView(model: model, closesOnOpen: true)
         .background(StatusItemCentering())
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)

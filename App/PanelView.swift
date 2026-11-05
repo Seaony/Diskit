@@ -21,6 +21,9 @@ private struct ScrollContentHeightKey: PreferenceKey {
 
 struct PanelView: View {
   @Bindable var model: AppModel
+  // 从菜单栏下拉打开别的窗口后，把下拉收起；独立面板窗口不收
+  var closesOnOpen = false
+  @Environment(\.dismiss) private var dismiss
   @Environment(\.openWindow) private var openWindow
   @Environment(\.openSettings) private var showSettings
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -253,7 +256,7 @@ struct PanelView: View {
         .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
         .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
         Button { edit(nil) } label: {
-          Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
+          Image(systemName: "plus").font(.system(size: 13, weight: .bold))
             .foregroundStyle(KayoiTheme.actionText)
             .frame(width: 26, height: 26)
             .background(KayoiTheme.accent, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
@@ -463,11 +466,13 @@ struct PanelView: View {
     model.editing = connection
     openWindow(id: "connection")
     NSApplication.shared.activate(ignoringOtherApps: true)
+    if closesOnOpen { dismiss() }
   }
 
   private func openSettings() {
     showSettings()
     NSApplication.shared.activate(ignoringOtherApps: true)
+    if closesOnOpen { dismiss() }
   }
 
   private func requestQuit() {
