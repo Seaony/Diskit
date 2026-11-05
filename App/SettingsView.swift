@@ -83,7 +83,7 @@ struct SettingsView: View {
 
   private var generalPage: some View {
     SettingsForm {
-      Section {
+      KayoiFormSection {
         Toggle(L("开机自动启动"), isOn: Binding(get: { startsAtLogin }, set: setStartsAtLogin))
         if let loginError { inlineError(loginError) }
         if loginError != nil || loginNeedsApproval {
@@ -96,31 +96,28 @@ struct SettingsView: View {
       } footer: {
         Text(L("退出 Kayoi 不会推出已挂载的共享"))
       }
-      Section {
-        // 标题在左、选项在右，同一行里垂直居中
-        HStack(spacing: Space.md) {
-          Text(L("主题")).font(.body).accessibilityHidden(true)
-          Spacer(minLength: 0)
+      KayoiFormSection(title: L("外观与语言")) {
+        KayoiSideRow {
           ChoiceButtons(
             options: AppAppearance.allCases.map(\.rawValue), selection: $appearance,
             title: { (AppAppearance(rawValue: $0) ?? .system).title },
             symbol: { (AppAppearance(rawValue: $0) ?? .system).symbol }
           )
           .accessibilityElement(children: .contain).accessibilityLabel(L("主题"))
+        } label: {
+          Text(L("主题")).accessibilityHidden(true)
         }
         .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
-        HStack(spacing: Space.md) {
-          Text(L("界面语言")).font(.body).accessibilityHidden(true)
-          Spacer(minLength: 0)
+        KayoiSideRow {
           ChoiceButtons(options: AppLanguage.allCases, selection: $language, title: \.title, symbol: \.symbol)
             // 书本图标会跟着地区换字形；按英文地区显示，English 用字母 A，简体中文已单独指定“字”
             .environment(\.locale, Locale(identifier: "en"))
             .accessibilityElement(children: .contain).accessibilityLabel(L("界面语言"))
+        } label: {
+          Text(L("界面语言")).accessibilityHidden(true)
         }
         // 演示模式不改真实的语言设置
         .onChange(of: language) { _, value in if !model.options.isDemo { value.save() } }
-      } header: {
-        Text(L("外观与语言"))
       } footer: {
         if language != AppLanguage.atLaunch {
           HStack(spacing: Space.sm) {
@@ -137,15 +134,13 @@ struct SettingsView: View {
 
   private var notificationsPage: some View {
     SettingsForm {
-      Section(L("系统权限")) {
+      KayoiFormSection(title: L("系统权限")) {
         notificationPermission
       }
-      Section {
+      KayoiFormSection(title: L("通知时机")) {
         Toggle(L("挂载失败"), isOn: $notifyMountFailure)
         Toggle(L("登录过期"), isOn: $notifyLoginExpired)
         Toggle(L("位置意外断开"), isOn: $notifyDisconnect)
-      } header: {
-        Text(L("通知时机"))
       } footer: {
         Text(L("只在挂载失败、登录过期或位置意外断开时通知。"))
       }
@@ -154,8 +149,8 @@ struct SettingsView: View {
 
   private var storagePage: some View {
     SettingsForm {
-      Section {
-        LabeledContent(L("当前占用")) {
+      KayoiFormSection(title: L("本机缓存")) {
+        KayoiSideRow(L("当前占用")) {
           if checkingCache {
             ProgressView().nativeProgressAppearance().controlSize(.mini).accessibilityLabel(L("正在计算缓存大小…"))
           } else if let cacheBytes {
@@ -192,8 +187,6 @@ struct SettingsView: View {
             if clearingCache { ProgressView().nativeProgressAppearance().controlSize(.mini) }
           }
         }
-      } header: {
-        Text(L("本机缓存"))
       } footer: {
         Text(L("当前版本不缓存远端文件；这里可清理以前留下的本机缓存。系统挂载的共享不使用此缓存。"))
       }
@@ -202,7 +195,7 @@ struct SettingsView: View {
 
   private var androidPage: some View {
     SettingsForm {
-      Section {
+      KayoiFormSection(title: L("USB 调试密钥")) {
         if fingerprint.isEmpty {
           if let fingerprintError {
             inlineError(fingerprintError)
@@ -211,7 +204,7 @@ struct SettingsView: View {
             ProgressView().nativeProgressAppearance().controlSize(.small).accessibilityLabel(L("正在读取密钥指纹…"))
           }
         } else {
-          LabeledContent(L("ADB 密钥指纹")) {
+          KayoiSideRow(L("ADB 密钥指纹")) {
             Text(fingerprint)
               .font(.body.monospaced()).monospacedDigit()
               .textSelection(.enabled)
@@ -226,16 +219,12 @@ struct SettingsView: View {
           }
           if let fingerprintError { inlineError(fingerprintError) }
         }
-      } header: {
-        Text(L("USB 调试密钥"))
       } footer: {
         Text(L("MD5 指纹用于核对手机上的 USB 调试授权提示；请确认两边一致后再允许。"))
       }
-      Section {
+      KayoiFormSection(title: L("设备连接")) {
         Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
           .font(.callout).fixedSize(horizontal: false, vertical: true)
-      } header: {
-        Text(L("设备连接"))
       }
     }
   }
@@ -253,7 +242,7 @@ struct SettingsView: View {
         Text(LF("版本 %@", version)) + Text(verbatim: " · ") + Text(LF("构建 %@", build))
       }
       .font(.callout).monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
-      UpdateCheckView(updater: model.updates)
+      UpdateCheckView(updater: model.updates, showLogs: model.showLogs)
     }
     .frame(maxWidth: .infinity)
     .padding(.vertical, Space.section)
@@ -268,13 +257,13 @@ struct SettingsView: View {
       Label(L("系统通知已允许"), systemImage: "bell.fill")
         .foregroundStyle(KayoiTheme.secondaryText)
     } else if model.notificationAuthorization == .denied {
-      LabeledContent {
+      KayoiSideRow {
         Button(L("打开系统设置")) { model.openNotificationSettings() }
       } label: {
         Label(L("系统通知已关闭"), systemImage: "bell.slash")
       }
     } else {
-      LabeledContent {
+      KayoiSideRow {
         Button(L("允许通知")) {
           model.operations.start { await model.requestNotificationAuthorization() }
         }
@@ -375,15 +364,16 @@ struct SettingsView: View {
   private var build: String { Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2" }
 }
 
+// 设置各页：和添加表单一样的带边框分组卡片；分组下面常有说明文字，间距比添加表单多一档
 private struct SettingsForm<Content: View>: View {
   let content: Content
   init(@ViewBuilder content: () -> Content) { self.content = content() }
   var body: some View {
-    Form { content }
-      .formStyle(.grouped)
+    VStack(alignment: .leading, spacing: Space.xl) { content }
+      .padding(.horizontal, Space.xl).padding(.vertical, Space.lg)
+      .labeledContentStyle(KayoiFormRowStyle()).toggleStyle(KayoiFormSwitchStyle())
+      .controlSize(.regular)
       .settingsPageTop()
-      .scrollContentBackground(.hidden)
-      .scrollBounceBehavior(.basedOnSize)
       .fixedSize(horizontal: false, vertical: true)
       .background(KayoiTheme.background)
   }

@@ -2,9 +2,16 @@ import SwiftUI
 
 // 添加窗口的表单（对照设计稿）：分组是带细边框的卡片，每行上下留白一样、内容垂直居中；
 // 带标题的行左边是固定宽的标题列，开关行标题在左、开关在右
-struct KayoiFormSection<Content: View>: View {
+struct KayoiFormSection<Content: View, Footer: View>: View {
   var title: String?
-  @ViewBuilder var content: Content
+  let content: Content
+  let footer: Footer
+
+  init(title: String? = nil, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer) {
+    self.title = title
+    self.content = content()
+    self.footer = footer()
+  }
 
   var body: some View {
     let shape = RoundedRectangle(cornerRadius: 10, style: .continuous) // grid: ok 设计稿分组卡片圆角 10
@@ -26,7 +33,42 @@ struct KayoiFormSection<Content: View>: View {
       }
       .background(KayoiTheme.surface, in: shape)
       .overlay { shape.strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
+      // 卡片下面的说明文字
+      footer.font(.system(size: 12)).foregroundStyle(KayoiTheme.secondaryText)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, Space.xs)
     }
+  }
+}
+
+extension KayoiFormSection where Footer == EmptyView {
+  init(title: String? = nil, @ViewBuilder content: () -> Content) {
+    self.init(title: title, content: content, footer: { EmptyView() })
+  }
+}
+
+// 左边标题、右边控件，同一行里垂直居中；标题自带图标或控件高矮不一时用
+struct KayoiSideRow<Label: View, Control: View>: View {
+  let label: Label
+  let control: Control
+
+  init(@ViewBuilder control: () -> Control, @ViewBuilder label: () -> Label) {
+    self.label = label()
+    self.control = control()
+  }
+
+  var body: some View {
+    HStack(spacing: Space.md) {
+      label.font(.system(size: 13)).foregroundStyle(KayoiTheme.primaryText)
+      Spacer(minLength: 0)
+      control
+    }
+  }
+}
+
+extension KayoiSideRow where Label == Text {
+  init(_ title: String, @ViewBuilder control: () -> Control) {
+    self.init(control: control) { Text(title) }
   }
 }
 

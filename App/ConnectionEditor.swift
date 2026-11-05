@@ -57,7 +57,8 @@ struct ConnectionEditor: View {
     .buttonStyle(FlatButtonStyle())
     .tint(KayoiTheme.accent)
     .background(KayoiTheme.background)
-    .frame(width: 576).frame(minHeight: 520)
+    // 高度限制在 520–680，保存过的窗口尺寸再大也会被收回来
+    .frame(width: 576).frame(minHeight: 520, maxHeight: 680) // grid: ok 窗口高度上限
     .gridDiagnostics("editor")
     .demoAppearanceEvidence("editor")
     .background(
