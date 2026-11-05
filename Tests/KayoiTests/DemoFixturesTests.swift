@@ -55,3 +55,19 @@ import Testing
     #expect(message == HumanError.remote(.posix(ETIMEDOUT), kind: connection.kind))
   }
 }
+
+@Test func showcaseOnlyMountsSharesAndHasNoProblems() {
+  let showcase = DemoFixtures(scenario: "showcase")
+  #expect(showcase.connections.count == 9)
+  #expect(Set(showcase.connections.map(\.id)).count == 9)
+  // 只用面板支持的颜色，否则会回退成蓝色
+  let colors: Set = ["blue", "green", "orange", "red", "purple", "pink", "teal", "gray"]
+  #expect(showcase.connections.allSatisfy { colors.contains($0.color) })
+  for connection in showcase.connections {
+    switch showcase.states[connection.id] {
+    case .mounted: #expect(connection.kind.usesSystemMount)
+    case .tested, .disconnected: break
+    default: Issue.record("产品图里不应出现 \(connection.name) 的其他状态")
+    }
+  }
+}

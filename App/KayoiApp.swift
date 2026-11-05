@@ -70,6 +70,10 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
             NSApplication.shared.appearance = NSAppearance(named: appearance)
           }
           model.start()
+          if let path = model.options.productShotPath {
+            await DemoProductShot.write(model: model, to: path)
+            return
+          }
           if model.options.demoEditorKind != nil {
             appDelegate.windows.prepareToOpen()
             openWindow(id: "connection")

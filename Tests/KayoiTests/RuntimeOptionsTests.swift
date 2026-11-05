@@ -45,3 +45,11 @@ import Testing
   #expect(demo.showsLayoutGrid)
   #expect(demo.demoSettingsTab == "about")
 }
+
+@Test func productShotOnlyRunsInDemoWithAbsolutePath() {
+  #expect(RuntimeOptions(environment: ["KAYOI_PRODUCT_SHOT": "/tmp/panel.png"]).productShotPath == nil)
+  #expect(RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_PRODUCT_SHOT": "panel.png"]).productShotPath == nil)
+  #expect(
+    RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_PRODUCT_SHOT": "/tmp/panel.png"]).productShotPath
+      == "/tmp/panel.png")
+}

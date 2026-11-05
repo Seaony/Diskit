@@ -14,6 +14,10 @@ struct DemoFixtures {
       states = [:]
       return
     }
+    if scenario == "showcase" {
+      (connections, states) = Self.showcase()
+      return
+    }
     connections = kinds.enumerated().map { index, kind in
       let id = UUID(uuidString: String(format: "00000000-0000-4000-8000-%012d", index + 1))!
       let name =
@@ -45,6 +49,34 @@ struct DemoFixtures {
           ? mixedStates[connection.kind] ?? "disconnected" : scenario
         return (connection.id, Self.state(name, id: connection.id, kind: connection.kind))
       })
+  }
+
+  // README 产品图用的一组位置：名字用品牌名或类型名，不新增文案；
+  // 只有共享类型显示已挂载，其他类型显示测试通过，和实际能力一致
+  private static func showcase() -> ([Connection], [UUID: ConnectionState]) {
+    let gb: Int64 = 1_000_000_000
+    let items: [(ConnectionKind, String, String, ConnectionState)] = [
+      (.smb, "Synology NAS", "blue", .mounted(MountedShare(url: URL(filePath: "/tmp/KayoiDemo/nas"), availableBytes: 2_400 * gb))),
+      (.androidUSB, "Pixel 9", "green", .tested(SpaceInfo(total: 256 * gb, used: 142 * gb))),
+      (.ricohGR, "GR IV", "orange", .tested(SpaceInfo(total: 128 * gb, used: 37 * gb))),
+      (.aliyunDrive, ConnectionKind.aliyunDrive.title, "purple", .tested(SpaceInfo(total: 2_000 * gb, used: 860 * gb))),
+      (.webdav, "Nextcloud", "teal", .mounted(MountedShare(url: URL(filePath: "/tmp/KayoiDemo/cloud"), availableBytes: 512 * gb))),
+      (.oneDrive, ConnectionKind.oneDrive.title, "blue", .tested(SpaceInfo(total: 1_000 * gb, used: 318 * gb))),
+      (.googleDrive, ConnectionKind.googleDrive.title, "green", .disconnected),
+      (.cloudflareR2, ConnectionKind.cloudflareR2.title, "orange", .tested(SpaceInfo(total: nil, used: nil))),
+      (.dropbox, ConnectionKind.dropbox.title, "blue", .disconnected),
+    ]
+    var connections: [Connection] = []
+    var states: [UUID: ConnectionState] = [:]
+    for (index, item) in items.enumerated() {
+      let id = UUID(uuidString: String(format: "00000000-0000-4000-9000-%012d", index + 1))!
+      connections.append(Connection(
+        id: id, kind: item.0, name: item.1, color: item.2, openInFinderAfterMount: false, order: index,
+        params: ["host": "demo.invalid", "share": "Demo", "username": "demo", "serial": "showcase-\(index)",
+                 "url": "https://demo.invalid/dav", "endpoint": "https://demo.invalid", "bucket": "demo", "accessKey": "demo"]))
+      states[id] = item.3
+    }
+    return (connections, states)
   }
 
   static func state(_ name: String, id: UUID, kind: ConnectionKind) -> ConnectionState {

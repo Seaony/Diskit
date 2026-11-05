@@ -13,6 +13,8 @@ struct RuntimeOptions: Equatable, Sendable {
   let demoEditorState: DemoEditorState?
   let demoWebService: WebLoginService?
   let layoutDirectory: String?
+  // 演示模式下把面板离屏渲染成 PNG 写到这个绝对路径后退出，用于生成 README 产品图
+  let productShotPath: String?
   let showsLayoutGrid: Bool
   let demoSettingsTab: String?
   let demoNotification: DemoNotificationState?
@@ -30,6 +32,7 @@ struct RuntimeOptions: Equatable, Sendable {
     demoDiscoveryError = isDemo ? DemoDiscoveryError(rawValue: environment["KAYOI_DEMO_DISCOVERY_ERROR"] ?? "") : nil
     demoLoadError = isDemo && environment["KAYOI_DEMO_LOAD_ERROR"] == "1"
     layoutDirectory = isDemo ? environment["KAYOI_LAYOUT_DIR"].flatMap { $0.isEmpty ? nil : $0 } : nil
+    productShotPath = isDemo ? environment["KAYOI_PRODUCT_SHOT"].flatMap { $0.hasPrefix("/") ? $0 : nil } : nil
     showsLayoutGrid = isDemo && environment["APP_GRID"] == "1"
     demoSettingsTab = isDemo ? environment["KAYOI_DEMO_SETTINGS_TAB"] : nil
     panelWindow = isDemo && environment["KAYOI_PANEL_WINDOW"] == "1"
