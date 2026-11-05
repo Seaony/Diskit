@@ -57,7 +57,7 @@ struct ConnectionTypePicker: View {
           if !discovered.isEmpty {
             VStack(alignment: .leading, spacing: Space.sm) {
               groupTitle(L("已发现"))
-              LazyVGrid(columns: columns, spacing: Space.sm) {
+              LazyVGrid(columns: columns, spacing: Space.md) {
                 ForEach(discovered) { item in
                   // 点一下直接进入第二步
                   Button {
@@ -80,7 +80,7 @@ struct ConnectionTypePicker: View {
           ForEach(groups) { group in
             VStack(alignment: .leading, spacing: Space.sm) {
               groupTitle(group.title)
-              LazyVGrid(columns: columns, spacing: Space.sm) {
+              LazyVGrid(columns: columns, spacing: Space.md) {
                 ForEach(group.kinds, id: \.self) { kind in
                   // 点一下直接进入第二步
                   Button {
