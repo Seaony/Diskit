@@ -12,7 +12,7 @@ and mount your shares in Finder with one click.
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[Download](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; **[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; **English** · [简体中文](README.zh-CN.md)
+**[Download](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->**English** · [简体中文](README.zh-CN.md)
 
 <br>
 
@@ -39,7 +39,7 @@ Kayoi keeps them all in one panel in the menu bar:
 It's for you if you move files between several devices and services. If everything you use already lives in one cloud drive with its own Mac app, you don't need it.
 
 > [!NOTE]
-> Kayoi is early (0.2). Today only SMB, WebDAV and NFS mount in Finder. Phones, cameras, cloud drives and object storage can be saved and tested in the app; their files are reachable through the `kayoi-dev` command-line tool when you build from source. Many integrations have not been checked against real accounts and devices yet.
+> Kayoi is early (0.2). Today only SMB, WebDAV and NFS mount in Finder. Phones, cameras, cloud drives and object storage can be saved and tested in the app; <!-- source-only -->their files are reachable through the `kayoi-dev` command-line tool when you build from source.<!-- /source-only --><!-- public-only opening their files in Finder is still in progress. --> Many integrations have not been checked against real accounts and devices yet.
 
 ## Quick start
 
@@ -87,6 +87,7 @@ Native SwiftUI and AppKit. Light and dark appearance. English and Simplified Chi
 - Saved locations live in `~/Library/Application Support/Kayoi/connections.json`, without any secrets. Caches stay in `~/Library/Caches/Kayoi/`, and error logs are kept for 7 days.
 - Kayoi has no analytics. Besides looking for phones, cameras and shares on your local network and over USB, it talks only to the devices and services you add, and to Kayoi's GitHub Releases feed for updates.
 
+<!-- source-only -->
 ## Build from source
 
 You need Xcode 27 and XcodeGen (`brew install xcodegen`).
@@ -99,6 +100,7 @@ open build/DerivedData/Build/Products/Debug/Kayoi.app
 ```
 
 `make` signs with the maintainer's Apple Development identity; pass `SIGN_IDENTITY='Apple Development: you@example.com'` to use your own. `make test` runs the tests, `make release` builds a universal app and `make dev-tool` builds `build/bin/kayoi-dev`. Cloud drives that need app credentials read them from `Config/Secrets.xcconfig`: copy `Config/Secrets.example.xcconfig`, fill it in, and build with `make build KAYOI_BUILD_CONFIG=Config/App.xcconfig` (the default build ignores it). See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for every location type, the demo mode and the command-line tool, and [docs/RELEASING.md](docs/RELEASING.md) for releases.
+<!-- /source-only -->
 
 ## Acknowledgements
 

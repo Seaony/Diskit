@@ -27,9 +27,15 @@ gh auth status >/dev/null 2>&1 || fail 'GitHub CLI 未登录，请先运行 gh a
 git fetch origin master --quiet
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/master)" ]] || fail 'master 与 origin/master 不一致，请先推送'
 gh repo view "$release_repo" >/dev/null 2>&1 || fail "找不到发布仓库：$release_repo"
-git rev-parse -q --verify "refs/tags/$tag" >/dev/null && fail "本地已有标签：$tag"
-git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1 && fail "远端已有标签：$tag"
-gh release view "$tag" --repo "$release_repo" >/dev/null 2>&1 && fail "已发布过：$tag"
+# 上次发布中途失败时允许重试：已有标签必须指向当前提交，已有的只能是未完成的草稿
+head="$(git rev-parse HEAD)"
+if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+  [[ "$(git rev-parse "$tag^{commit}")" == "$head" ]] || fail "本地标签 $tag 指向别的提交"
+fi
+remote_tag="$(git ls-remote origin "refs/tags/$tag^{}" | cut -f1)"
+[[ -z "$remote_tag" || "$remote_tag" == "$head" ]] || fail "远端标签 $tag 指向别的提交"
+release_draft="$(gh release view "$tag" --repo "$release_repo" --json isDraft --jq .isDraft 2>/dev/null || true)"
+[[ "$release_draft" != false ]] || fail "已发布过：$tag"
 security find-generic-password -a "$account" -s https://sparkle-project.org >/dev/null 2>&1 \
   || fail "登录钥匙串里没有 Sparkle 签名密钥：$account"
 
@@ -40,8 +46,8 @@ work="$(mktemp -d /tmp/kayoi-release.XXXXXX)"
 committed=0
 cleanup() {
   rm -rf "$work"
-  # 试跑或中途失败时，没提交的版本号改动还原回去
-  if [[ "$committed" == 0 ]]; then git checkout -- project.yml 2>/dev/null || true; fi
+  # 试跑或中途失败时，把没提交的版本号改动（含暂存区）还原到开始时的提交
+  if [[ "$committed" == 0 ]]; then git checkout "$head" -- project.yml 2>/dev/null || true; fi
 }
 trap cleanup EXIT
 if [[ "$version" != "$current_version" ]]; then
@@ -75,7 +81,7 @@ hdiutil create -quiet -volname Kayoi -srcfolder "$work/dmg" -ov -format UDZO "$o
 
 # 更新说明：上个版本以来的提交；第一次发布写固定说明
 notes="$work/notes.md"
-previous_tag="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+previous_tag="$(git describe --tags --abbrev=0 --exclude "$tag" HEAD 2>/dev/null || true)"
 {
   printf '## Kayoi %s\n\n' "$version"
   if [[ -n "$previous_tag" ]]; then
@@ -98,6 +104,7 @@ cp "$work/updates/appcast.xml" "$output/appcast.xml"
 scripts/validate-release.sh "$app" "$output/appcast.xml" "$output/$zip_name" "$tools"
 
 if [[ "$dry_run" == 1 ]]; then
+  scripts/sync-release-repo.sh --dry-run
   echo "试跑完成，未提交、未推送、未发布。制品：$output"
   exit 0
 fi
@@ -106,11 +113,15 @@ fi
 if [[ -n "$(git status --porcelain project.yml)" ]]; then
   git add project.yml
   git commit -qm "发布 $version"
+  committed=1
   git push -q origin master
 fi
 committed=1
-git tag -a "$tag" -m "Kayoi $version"
-git push -q origin "$tag"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "Kayoi $version"
+[[ -n "$remote_tag" ]] || git push -q origin "$tag"
+scripts/sync-release-repo.sh
+# 上次上传失败留下的草稿先删掉再重建
+[[ "$release_draft" == true ]] && gh release delete "$tag" --repo "$release_repo" --yes
 gh release create "$tag" --repo "$release_repo" \
   --title "Kayoi $version" --notes-file "$notes" \
   "$output/$dmg_name" "$output/$zip_name" "$output/appcast.xml"

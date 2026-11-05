@@ -12,7 +12,7 @@
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[下载](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; **[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; [English](README.md) · **简体中文**
+**[下载](https://github.com/Seaony/Kayoi-Releases/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->[English](README.md) · **简体中文**
 
 <br>
 
@@ -39,7 +39,7 @@ Kayoi 把它们都放进菜单栏的一个面板里：
 如果你经常在多台设备和多个服务之间倒腾文件，它适合你。如果你只用一个网盘，而且它已经有自己的 Mac App，就不需要它。
 
 > [!NOTE]
-> Kayoi 还在早期（0.2）。目前只有 SMB、WebDAV、NFS 能挂载到 Finder。手机、相机、网盘和对象存储可以在应用里保存和测试连接；从源码构建时，可以用 `kayoi-dev` 命令行工具访问它们的文件。很多接入还没有用真实账号和设备验证过。
+> Kayoi 还在早期（0.2）。目前只有 SMB、WebDAV、NFS 能挂载到 Finder。手机、相机、网盘和对象存储可以在应用里保存和测试连接；<!-- source-only -->从源码构建时，可以用 `kayoi-dev` 命令行工具访问它们的文件。<!-- /source-only --><!-- public-only 在 Finder 里打开它们的文件还在开发中。 -->很多接入还没有用真实账号和设备验证过。
 
 ## 快速开始
 
@@ -87,6 +87,7 @@ SMB、WebDAV、NFS 共享通过 macOS 挂载，Finder 和其他 App 都把它们
 - 已保存的位置在 `~/Library/Application Support/Kayoi/connections.json`，不含任何密钥。缓存在 `~/Library/Caches/Kayoi/`，错误日志保留 7 天。
 - Kayoi 不做任何统计。除了在局域网和 USB 上发现手机、相机和共享，它只和你添加的设备、服务通信，以及访问 Kayoi 的 GitHub Releases 检查更新。
 
+<!-- source-only -->
 ## 从源码构建
 
 需要 Xcode 27 和 XcodeGen（`brew install xcodegen`）。
@@ -99,6 +100,7 @@ open build/DerivedData/Build/Products/Debug/Kayoi.app
 ```
 
 `make` 默认用维护者的 Apple Development 身份签名，可以传 `SIGN_IDENTITY='Apple Development: 你的邮箱'` 换成自己的。`make test` 运行测试，`make release` 构建通用版本，`make dev-tool` 构建 `build/bin/kayoi-dev`。需要开放平台凭据的网盘从 `Config/Secrets.xcconfig` 读取：复制 `Config/Secrets.example.xcconfig` 并填写，再用 `make build KAYOI_BUILD_CONFIG=Config/App.xcconfig` 构建（默认构建不读取它）。每种位置类型的细节、演示模式和命令行工具见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)，发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。
+<!-- /source-only -->
 
 ## 致谢
 
