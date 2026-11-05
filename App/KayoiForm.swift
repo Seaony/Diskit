@@ -16,14 +16,14 @@ struct KayoiFormSection<Content: View>: View {
       Group(subviews: content) { rows in
         VStack(alignment: .leading, spacing: 0) {
           ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-            row.frame(maxWidth: .infinity, minHeight: 26, alignment: .leading) // grid: ok 加上下 6 正好 38 高
-              .padding(.horizontal, 14).padding(.vertical, 6) // grid: ok 设计稿行内边距 6/14
+            // 每行上下留白相同，单行的行一律 44 高，分隔线两侧距离一样
+            row.frame(maxWidth: .infinity, minHeight: 28, alignment: .leading) // grid: ok 和输入框同高
+              .padding(.horizontal, 14).padding(.vertical, Space.sm) // grid: ok 设计稿行左右 14
             // 行与行之间的分隔线，左右和行内容对齐
             if index < rows.count - 1 { KayoiSeparator().padding(.horizontal, 14) } // grid: ok 同行内边距
           }
         }
       }
-      .padding(.vertical, Space.xs)
       .background(KayoiTheme.surface, in: shape)
       .overlay { shape.strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
     }
@@ -37,7 +37,8 @@ struct KayoiSeparator: View {
   }
 }
 
-// 标题列 110 宽，和控件按文字基线对齐；输入框把基线放在框内文字处，所以标题和框里的字齐平
+// 标题列 110 宽，和控件按文字基线对齐；输入框把基线放在框内文字处，所以标题和框里的字齐平。
+// 输入框撑满右边，选择器、色块这类不撑满的控件靠右
 struct KayoiFormRow<Label: View, Content: View>: View {
   let label: Label
   let content: Content
@@ -46,7 +47,7 @@ struct KayoiFormRow<Label: View, Content: View>: View {
     HStack(alignment: .firstTextBaseline, spacing: Space.md) {
       label.font(.system(size: 13)).foregroundStyle(KayoiTheme.primaryText)
         .frame(width: 110, alignment: .leading) // grid: ok 设计稿标题列宽 110
-      content.frame(maxWidth: .infinity, alignment: .leading)
+      content.frame(maxWidth: .infinity, alignment: .trailing)
     }
   }
 }
