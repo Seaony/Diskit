@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import ImageCaptureCore
 import Testing
 
 @testable import CameraUSB
@@ -104,4 +105,22 @@ private let photo = CameraCatalogItem(kind: .file, name: "photo.jpg", handle: 7,
   session.available = true
   session.failure = RemoteError.posix(EBUSY)
   await #expect(throws: RemoteError.posix(EBUSY)) { try await access.open() }
+}
+
+// 开了 USB 调试的手机有 ADB 接口；没开的按安卓厂商识别；都不能当相机列出
+@Test func phonesAreNotListedAsCameras() {
+  let adb = USBPhoneProbe.Interface(interfaceClass: 0xff, subclass: 0x42, protocolCode: 1)
+  let mtp = USBPhoneProbe.Interface(interfaceClass: 6, subclass: 1, protocolCode: 1)
+  #expect(USBPhoneProbe.kind(vendorID: 0x2717, interfaces: [mtp, adb]) == .androidWithDebugging)
+  #expect(USBPhoneProbe.kind(vendorID: 0x1234, interfaces: [mtp, adb]) == .androidWithDebugging)
+  #expect(USBPhoneProbe.kind(vendorID: 0x2717, interfaces: [mtp]) == .androidWithoutDebugging)
+  // 索尼相机（0x054c）的 MTP 模式仍然算相机
+  #expect(USBPhoneProbe.kind(vendorID: 0x054c, interfaces: [mtp]) == .notPhone)
+  for phone in [USBPhoneKind.androidWithDebugging, .androidWithoutDebugging] {
+    let descriptor = CameraUSBDeviceDescriptor(
+      id: "usb:1", serial: "s", name: "Xiaomi 17", productKind: "Camera",
+      transport: ICDeviceTransport.transportTypeUSB.rawValue, vendorID: 0x2717, productID: 0xff48,
+      phone: phone)
+    #expect(CameraUSBDevice(descriptor) == nil)
+  }
 }

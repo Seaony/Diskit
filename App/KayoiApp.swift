@@ -1,8 +1,9 @@
 import Core
 import SwiftUI
+import UserNotifications
 
 @MainActor
-final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
+final class KayoiAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
   weak var model: AppModel?
   let windows = WindowCoordinator()
   let performance = DemoPerformanceProbe(options: .current)
@@ -12,6 +13,11 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
   func configure(model: AppModel, openPanel: @escaping () -> Void) {
     self.model = model
     self.openPanel = openPanel
+    // 发现设备的通知带“添加”“不用了”按钮；演示模式不碰系统通知
+    if !model.options.isDemo {
+      UNUserNotificationCenter.current().delegate = self
+      AppModel.registerDevicePromptCategory()
+    }
     windows.start()
     if pendingReopen { reopenPanel() }
   }
@@ -23,6 +29,30 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) { windows.stop() }
+
+  // 点了通知上的按钮：添加或不再询问；点通知本身打开面板
+  nonisolated func userNotificationCenter(
+    _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+  ) async {
+    let action = response.actionIdentifier
+    let key = response.notification.request.content.userInfo[DevicePrompt.keyInfo] as? String
+    await MainActor.run {
+      guard let key, action != UNNotificationDefaultActionIdentifier else {
+        reopenPanel()
+        return
+      }
+      switch action {
+      case DevicePrompt.mountAction: model?.respondToDevicePrompt(key: key, accept: true)
+      case DevicePrompt.declineAction: model?.respondToDevicePrompt(key: key, accept: false)
+      default: break
+      }
+    }
+  }
+
+  // App 在前台时也显示通知
+  nonisolated func userNotificationCenter(
+    _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+  ) async -> UNNotificationPresentationOptions { [.banner, .list] }
 
   private func reopenPanel() {
     guard let openPanel else {

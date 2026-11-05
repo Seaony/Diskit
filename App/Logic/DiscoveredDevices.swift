@@ -64,10 +64,19 @@ extension AppModel {
       items.append(
         DiscoveredItem(
           id: "usb:" + device.id, kind: .androidUSB, title: device.name,
-          subtitle: "USB · " + device.name,
+          subtitle: L("USB 数据线"),
           connection: Connection(
             kind: .androidUSB, name: device.name, params: device.connectionParameters(in: usbDevices)),
           pairingSelection: nil))
+    }
+
+    // 插着但没开 USB 调试的安卓手机：先列出来，点进去看连接指南打开 USB 调试
+    for phone in phonesWithoutDebugging
+    where !usbDevices.contains(where: { !phone.serial.isEmpty && $0.serial == phone.serial }) {
+      items.append(
+        DiscoveredItem(
+          id: "phone-setup:" + phone.id, kind: .androidUSB, title: phone.name,
+          subtitle: L("需要打开 USB 调试"), connection: nil, pairingSelection: nil))
     }
 
     for device in mergedWirelessDevices where !isSaved(device) {

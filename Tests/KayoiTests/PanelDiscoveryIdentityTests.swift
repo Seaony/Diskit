@@ -20,6 +20,12 @@ import Testing
   #expect(PanelDiscoveryIdentity.isSavedDevice([saved], kinds: [.androidUSB], id: "usb:1", serial: "", serialIsUnique: false))
 }
 
+@Test func phoneSavedBySerialIsRecognizedOnAnyUSBPort() {
+  let saved = Connection(kind: .androidUSB, name: "phone", params: ["deviceID": "abc", "serial": "abc"])
+  #expect(PanelDiscoveryIdentity.isSavedDevice([saved], kinds: [.androidUSB], id: "usb:7", serial: "abc", serialIsUnique: true))
+  #expect(!PanelDiscoveryIdentity.isSavedDevice([saved], kinds: [.androidUSB], id: "usb:7", serial: "abc", serialIsUnique: false))
+}
+
 @Test func cameraDiscoveryMergesSameUSBLocationWithoutMergingTwoDevicesWithSameSerial() {
   #expect(PanelDiscoveryIdentity.sameCamera(id: "usb:1", serial: "", otherID: "usb:1", otherSerial: ""))
   #expect(!PanelDiscoveryIdentity.sameCamera(id: "usb:1", serial: "same", otherID: "usb:2", otherSerial: "same"))

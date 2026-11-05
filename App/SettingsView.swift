@@ -9,6 +9,7 @@ struct SettingsView: View {
   @Bindable var model: AppModel
   @AppStorage("settings.selectedTab") private var selectedTab = "general"
   @AppStorage("notifications.mountFailure") private var notifyMountFailure = true
+  @AppStorage("notifications.deviceFound") private var notifyDeviceFound = true
   @AppStorage("notifications.loginExpired") private var notifyLoginExpired = true
   @AppStorage("notifications.disconnect") private var notifyDisconnect = true
   @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
@@ -141,8 +142,9 @@ struct SettingsView: View {
         Toggle(L("挂载失败"), isOn: $notifyMountFailure)
         Toggle(L("登录过期"), isOn: $notifyLoginExpired)
         Toggle(L("位置意外断开"), isOn: $notifyDisconnect)
+        Toggle(L("发现新设备"), isOn: $notifyDeviceFound)
       } footer: {
-        Text(L("只在挂载失败、登录过期或位置意外断开时通知。"))
+        Text(L("只在挂载失败、登录过期、位置意外断开或发现新设备时通知。"))
       }
     }
   }

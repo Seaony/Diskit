@@ -8,6 +8,8 @@ import UserNotifications
   var requestNotifications: () async throws -> Void
   var notificationStatus: () async -> UNAuthorizationStatus
   var notify: (UNNotificationRequest) async throws -> Void
+  // 收回已经发出去的通知（比如设备已经处理过）
+  var removeNotifications: ([String]) -> Void = { _ in }
 
   static let live = AppSystemServices(
     open: { NSWorkspace.shared.open($0) },
@@ -34,5 +36,9 @@ import UserNotifications
     notificationStatus: {
       await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     },
-    notify: { try await UNUserNotificationCenter.current().add($0) })
+    notify: { try await UNUserNotificationCenter.current().add($0) },
+    removeNotifications: {
+      UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: $0)
+      UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: $0)
+    })
 }

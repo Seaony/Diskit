@@ -132,8 +132,14 @@ import TianyiDrive
     return LF("还需要填写：%@", missingFields.map(EditorValidation.label).joined(separator: L("、")))
   }
   func chooseSelected() {
-    if let item = selectedDiscovery, let connection = item.connection {
-      chooseDiscovered(connection, pairing: item.pairingSelection)
+    if let item = selectedDiscovery {
+      if let connection = item.connection {
+        chooseDiscovered(connection, pairing: item.pairingSelection)
+      } else {
+        // 还不能直接连接的设备（手机没开 USB 调试）：进对应类型的表单，展开连接指南
+        choose(item.kind)
+        preparationExpanded = true
+      }
       return
     }
     if let kind = selectedKind ?? ConnectionTypeCatalog.matching(search).flatMap(\.kinds).first {

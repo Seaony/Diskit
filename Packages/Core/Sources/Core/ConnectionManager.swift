@@ -28,6 +28,8 @@ public enum ConnectionState: Equatable, Sendable {
   public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
   public var unexpectedDisconnect: ((Connection) -> Void)?
+  // 设了自动挂载的设备重新插上（含启动时已插着）时调用，由外面去连接
+  public var deviceReturned: ((Connection) -> Void)?
   public var loginExpired: ((Connection) -> Void)?
   public var removed: ((UUID) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
@@ -470,6 +472,7 @@ public enum ConnectionState: Equatable, Sendable {
   public func ricohDevicesChanged(serials: Set<String>) {
     let previous = ricohSerials
     ricohSerials = serials
+    reportReturnedDevices(kind: .ricohGR, previous: previous, current: serials)
     for connection in connections
     where connection.kind == .ricohGR
       && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
@@ -485,6 +488,7 @@ public enum ConnectionState: Equatable, Sendable {
   public func cameraUSBDevicesChanged(serials: Set<String>) {
     let previous = cameraUSBSerials
     cameraUSBSerials = serials
+    reportReturnedDevices(kind: .cameraUSB, previous: previous, current: serials)
     for connection in connections
     where connection.kind == .cameraUSB
       && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
@@ -511,6 +515,7 @@ public enum ConnectionState: Equatable, Sendable {
   public func usbDevicesChanged(serials: Set<String>) {
     let previous = usbSerials
     usbSerials = serials
+    reportReturnedDevices(kind: .androidUSB, previous: previous, current: serials)
     for connection in connections
     where connection.kind == .androidUSB
       && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
@@ -535,6 +540,16 @@ public enum ConnectionState: Equatable, Sendable {
         connection.kind.usesSystemMount, connection.autoMount, !busy.contains(id)
       else { continue }
       await mountIfNeeded(connection)
+    }
+  }
+
+  private func reportReturnedDevices(kind: ConnectionKind, previous: Set<String>?, current: Set<String>) {
+    for connection in connections where connection.kind == kind && connection.autoMount {
+      let key = connection.params["deviceID"] ?? connection.params["serial"] ?? ""
+      guard current.contains(key), previous?.contains(key) != true, !busy.contains(connection.id) else {
+        continue
+      }
+      deviceReturned?(connection)
     }
   }
 

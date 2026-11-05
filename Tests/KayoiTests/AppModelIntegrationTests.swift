@@ -301,3 +301,25 @@ private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
   #expect(ProviderAccess.isReadOnly(model.providerCapabilities(for: Connection(kind: .lanzou))))
   #expect(!ProviderAccess.isReadOnly(model.providerCapabilities(for: Connection(kind: .smb))))
 }
+
+// 设备询问：换个 USB 口仍认得出同一台；拒绝后记在偏好里，重新启动也不再问
+@MainActor @Test func declinedDevicePromptIsRemembered() throws {
+  let harness = ModelHarness()
+  let model = harness.model()
+  let phone = DiscoveredItem(
+    id: "usb:usb:1", kind: .androidUSB, title: "Xiaomi 17", subtitle: "",
+    connection: Connection(kind: .androidUSB, name: "Xiaomi 17", params: ["serial": "564d", "deviceID": "564d"]),
+    pairingSelection: nil)
+  let otherPort = DiscoveredItem(
+    id: "usb:usb:2", kind: .androidUSB, title: "Xiaomi 17", subtitle: "",
+    connection: phone.connection, pairingSelection: nil)
+  #expect(DevicePrompt.key(phone) == DevicePrompt.key(otherPort))
+  let noSerial = DiscoveredItem(
+    id: "camera-usb:9", kind: .cameraUSB, title: "Camera", subtitle: "",
+    connection: Connection(kind: .cameraUSB, name: "Camera", params: ["deviceID": "9", "serial": ""]),
+    pairingSelection: nil)
+  #expect(DevicePrompt.key(noSerial) == "camera-usb:9")
+  model.declineDevicePrompt(phone)
+  #expect(model.declinedDevices.contains(DevicePrompt.key(phone)))
+  #expect(harness.model().declinedDevices.contains(DevicePrompt.key(phone)))
+}

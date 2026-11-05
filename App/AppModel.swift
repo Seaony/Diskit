@@ -26,7 +26,7 @@ import UserNotifications
   let preferences: UserDefaults
   let secrets: any SecretStore
   private let dependencies: AppModelDependencies?
-  private let system: AppSystemServices
+  let system: AppSystemServices
   private let info: [String: Any]
   private let location: any StorageLocation
   private let maintenance = CacheMaintenance()
@@ -36,6 +36,11 @@ import UserNotifications
   var demoEditorStateOverride: DemoEditorState?
   var demoEditorRevision = 0
   var demoAppearanceOverride: String?
+  // 第一次发现设备时问要不要添加：拒绝过的设备（存在偏好里）、本次已发过通知的设备、正在连接的设备和各设备连接失败的原因
+  var declinedDevices: Set<String> = []
+  var notifiedDevices: Set<String> = []
+  var mountingPromptDevice: String?
+  var devicePromptErrors: [String: String] = [:]
 
   init(options: RuntimeOptions = .current, dependencies: AppModelDependencies? = nil) {
     self.options = options
@@ -70,6 +75,7 @@ import UserNotifications
       preferences = .standard
       connections = ConnectionManager(smb: SystemSMBService())
     }
+    declinedDevices = Set(preferences.stringArray(forKey: DevicePrompt.declinedKey) ?? [])
     if let notification = options.demoNotification {
       notificationAuthorization = notification.authorization
     }
@@ -147,9 +153,14 @@ import UserNotifications
       return
     }
     configureConnections()
+    connections.deviceReturned = { [weak self] connection in
+      guard let self else { return }
+      self.operations.start(connectionID: connection.id) { await self.connections.toggle(connection) }
+    }
     usbDiscovery.changed = { [weak self] devices in
       self?.connections.usbDevicesChanged(serials: ADBUSB.availableIdentifiers(in: devices))
       self?.refreshWirelessAvailability()
+      self?.refreshDevicePrompts()
     }
     wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
     wirelessDiscovery.start()
@@ -157,11 +168,13 @@ import UserNotifications
     ricohDiscovery.changed = { [weak self] devices in
       self?.connections.ricohDevicesChanged(
         serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
+      self?.refreshDevicePrompts()
     }
     ricohDiscovery.start()
     cameraUSBDiscovery.changed = { [weak self] devices in
       self?.connections.cameraUSBDevicesChanged(
         serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
+      self?.refreshDevicePrompts()
     }
     cameraUSBDiscovery.start()
     observers.append(
@@ -693,20 +706,26 @@ import UserNotifications
       URL(string: "x-apple.systempreferences:com.apple.preference.notifications")!)
   }
 
-  private enum NotificationKind: String {
+  enum NotificationKind: String {
     case mountFailure
     case loginExpired
     case disconnect
+    case deviceFound
     var preferenceKey: String {
       switch self {
       case .mountFailure: "notifications.mountFailure"
       case .loginExpired: "notifications.loginExpired"
       case .disconnect: "notifications.disconnect"
+      case .deviceFound: "notifications.deviceFound"
       }
     }
   }
 
-  private func sendNotification(_ kind: NotificationKind, title: String, body: String) {
+  // identifier 给了就用它（同一台设备的通知可以收回），category 决定通知上的按钮
+  func sendNotification(
+    _ kind: NotificationKind, title: String, body: String, identifier: String? = nil,
+    category: String? = nil, userInfo: [String: String] = [:]
+  ) {
     guard !options.isDemo else { return }
     let defaults = preferences
     if defaults.object(forKey: kind.preferenceKey) != nil,
@@ -721,9 +740,11 @@ import UserNotifications
       let content = UNMutableNotificationContent()
       content.title = title
       content.body = body
+      if let category { content.categoryIdentifier = category }
+      content.userInfo = userInfo
       try? await system.notify(
         UNNotificationRequest(
-          identifier: "\(kind.rawValue)-\(UUID().uuidString)", content: content, trigger: nil))
+          identifier: identifier ?? "\(kind.rawValue)-\(UUID().uuidString)", content: content, trigger: nil))
     }
   }
 }

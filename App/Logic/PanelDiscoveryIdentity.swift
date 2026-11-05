@@ -13,7 +13,10 @@ enum PanelDiscoveryIdentity {
   static func isSavedDevice(_ saved: [Connection], kinds: Set<ConnectionKind>, id: String, serial: String, serialIsUnique: Bool) -> Bool {
     saved.contains { connection in
       guard kinds.contains(connection.kind) else { return false }
-      if let savedID = connection.params["deviceID"], !savedID.isEmpty { return savedID == id }
+      // 安卓手机序列号唯一时 deviceID 存的就是序列号
+      if let savedID = connection.params["deviceID"], !savedID.isEmpty {
+        return savedID == id || (serialIsUnique && !serial.isEmpty && savedID == serial)
+      }
       return serialIsUnique && !serial.isEmpty && connection.params["serial"] == serial
     }
   }

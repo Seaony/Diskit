@@ -1322,6 +1322,23 @@
         }
       }
     },
+    "找不到设备，请检查是否已插好": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Device not found. Check that it's plugged in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找不到设备，请检查是否已插好"
+          }
+        }
+      }
+    },
     "该位置为只读": {
       "extractionState": "manual",
       "localizations": {

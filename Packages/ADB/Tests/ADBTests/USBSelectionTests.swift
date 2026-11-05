@@ -88,3 +88,11 @@ func adbProductionFactoryPrefersOnlyUnambiguousUSB(duplicate: Bool) async throws
       interfaceClass: 0xff, subclass: 0x42, protocolCode: 1, serial: "serial", name: "Phone",
       registryID: 1, locationID: 2)?.name == "Phone")
 }
+
+// 厂商自定义类别只写在顶层会一台都匹配不到，必须放在 IOPropertyMatch 里
+@Test func adbInterfaceMatchUsesPropertyMatch() throws {
+  let match = ADBUSB.adbInterfaceMatch()
+  #expect(match["bInterfaceClass"] == nil)
+  let properties = try #require(match["IOPropertyMatch"] as? [String: Int])
+  #expect(properties == ["bInterfaceClass": 0xff, "bInterfaceSubClass": 0x42, "bInterfaceProtocol": 1])
+}

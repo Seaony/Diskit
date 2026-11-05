@@ -5,11 +5,16 @@ import IOKit
 extension ADBUSB {
   public static func devices() -> [ADBDevice] { (try? scanDevices()) ?? [] }
 
-  static func scanDevices() throws -> [ADBDevice] {
+  // ADB 接口的匹配条件。厂商自定义类别（0xFF）按 USB 匹配规则必须带厂商 ID，
+  // 只写类别、子类、协议会一台都匹配不到；所以放进 IOPropertyMatch 按属性逐项比对
+  static func adbInterfaceMatch() -> NSMutableDictionary {
     let match = IOServiceMatching("IOUSBHostInterface") as NSMutableDictionary
-    match["bInterfaceClass"] = 0xff
-    match["bInterfaceSubClass"] = 0x42
-    match["bInterfaceProtocol"] = 1
+    match[kIOPropertyMatchKey] = ["bInterfaceClass": 0xff, "bInterfaceSubClass": 0x42, "bInterfaceProtocol": 1]
+    return match
+  }
+
+  static func scanDevices() throws -> [ADBDevice] {
+    let match = adbInterfaceMatch()
     var iterator: io_iterator_t = 0
     let status = IOServiceGetMatchingServices(kIOMainPortDefault, match, &iterator)
     guard status == KERN_SUCCESS else {

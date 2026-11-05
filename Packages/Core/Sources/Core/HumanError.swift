@@ -11,6 +11,8 @@ public enum HumanError {
     case ETIMEDOUT: L("连接超时，请检查网络后重试")
     case EROFS: L("该位置为只读")
     case ENOTSUP: L("该位置不支持此操作")
+    // 设备不认这个指令，重试也没用，不提示稍后重试
+    case ENODEV: L("找不到设备，请检查是否已插好")
     default: L("操作没有完成，请稍后重试")
     }
   }

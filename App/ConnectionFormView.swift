@@ -69,6 +69,11 @@ struct ConnectionFormView: View {
             Toggle(L("打开 App 时自动挂载"), isOn: $editor.draft.autoMount)
             Toggle(L("挂载后自动在 Finder 中打开"), isOn: $editor.draft.openInFinderAfterMount)
           }
+        } else if DevicePrompt.kinds.contains(editor.draft.kind) {
+          // 手机和相机：插上就挂载
+          KayoiFormSection(title: L("选项")) {
+            Toggle(L("插上后自动连接"), isOn: $editor.draft.autoMount)
+          }
         }
       }
       .padding(.horizontal, 28).padding(.top, Space.md).padding(.bottom, Space.lg) // grid: ok 和标题区左右 28 对齐

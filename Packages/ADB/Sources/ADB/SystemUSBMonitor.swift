@@ -29,13 +29,7 @@ import IOKit
       }
     }
     let pointer = Unmanaged.passUnretained(self).toOpaque()
-    func match() -> CFMutableDictionary {
-      let result = IOServiceMatching("IOUSBHostInterface") as NSMutableDictionary
-      result["bInterfaceClass"] = 0xff
-      result["bInterfaceSubClass"] = 0x42
-      result["bInterfaceProtocol"] = 1
-      return result
-    }
+    func match() -> CFMutableDictionary { ADBUSB.adbInterfaceMatch() }
     let first = IOServiceAddMatchingNotification(
       port, kIOFirstMatchNotification, match(), callback, pointer, &added)
     let second = IOServiceAddMatchingNotification(

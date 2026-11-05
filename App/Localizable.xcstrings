@@ -1439,19 +1439,19 @@
         }
       }
     },
-    "只在挂载失败、登录过期或位置意外断开时通知。": {
+    "只在挂载失败、登录过期、位置意外断开或发现新设备时通知。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notify only for mount failures, expired logins, or unexpected disconnects."
+            "value": "Notify only for mount failures, expired logins, unexpected disconnects, or new devices."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "只在挂载失败、登录过期或位置意外断开时通知。"
+            "value": "只在挂载失败、登录过期、位置意外断开或发现新设备时通知。"
           }
         }
       }
@@ -6751,6 +6751,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "显示日志"
+          }
+        }
+      }
+    },
+    "插上后自动连接": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect automatically when plugged in"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "插上后自动连接"
+          }
+        }
+      }
+    },
+    "发现新设备": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New device found"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现新设备"
+          }
+        }
+      }
+    },
+    "发现“%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现“%@”"
+          }
+        }
+      }
+    },
+    "要添加吗？添加后，以后插上会自动连接。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add it? After that, it connects automatically whenever it is plugged in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要添加吗？添加后，以后插上会自动连接。"
+          }
+        }
+      }
+    },
+    "不用了": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Thanks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不用了"
+          }
+        }
+      }
+    },
+    "添加": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加"
+          }
+        }
+      }
+    },
+    "需要打开 USB 调试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on USB debugging"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要打开 USB 调试"
           }
         }
       }

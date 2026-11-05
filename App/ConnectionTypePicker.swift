@@ -72,7 +72,6 @@ struct ConnectionTypePicker: View {
                     ConnectionTypeTile(kind: item.kind, title: item.title, subtitle: item.subtitle)
                   }
                   .buttonStyle(ConnectionCardStyle())
-                  .disabled(item.connection == nil)
                   .help(item.title + " · " + item.subtitle)
                   .accessibilityLabel(LF("添加“%@”", item.title)).accessibilityValue(item.subtitle)
                 }

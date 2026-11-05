@@ -11,6 +11,7 @@ struct CameraUSBDeviceDescriptor: Sendable, Equatable {
   let transport: String
   let vendorID: Int
   let productID: Int
+  var phone: USBPhoneKind = .notPhone
 }
 
 struct CameraUSBDeviceCatalog: Sendable {
@@ -37,7 +38,8 @@ extension CameraUSBDevice {
   init?(_ descriptor: CameraUSBDeviceDescriptor) {
     let productKind = descriptor.productKind.trimmingCharacters(in: .whitespacesAndNewlines)
     guard descriptor.transport == ICDeviceTransport.transportTypeUSB.rawValue,
-      productKind.caseInsensitiveCompare("Camera") == .orderedSame
+      productKind.caseInsensitiveCompare("Camera") == .orderedSame,
+      descriptor.phone == .notPhone
     else {
       return nil
     }
@@ -60,7 +62,10 @@ public enum CameraUSBDiscoveryIssue: Sendable, Equatable {
 public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowserDelegate {
   public private(set) var issue: CameraUSBDiscoveryIssue?
   public private(set) var devices: [CameraUSBDevice] = []
+  // 被系统当成相机报上来、但其实是还没开 USB 调试的安卓手机
+  public private(set) var phonesWithoutDebugging: [CameraUSBDevice] = []
   public var changed: (([CameraUSBDevice]) -> Void)?
+  private var phoneDevices: [String: (camera: ICDevice, device: CameraUSBDevice)] = [:]
 
   private var browser: ICDeviceBrowser?
   private var running = false
@@ -111,6 +116,8 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
     browser?.delegate = nil
     browser = nil
     cameras.removeAll()
+    phoneDevices.removeAll()
+    phonesWithoutDebugging = []
     catalog = CameraUSBDeviceCatalog()
     devices = []
     changed?(devices)
@@ -147,9 +154,19 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
   }
 
   public func deviceBrowser(_ browser: ICDeviceBrowser, didAdd device: ICDevice, moreComing: Bool) {
-    guard let camera = device as? ICCameraDevice,
-      let descriptor = descriptor(for: camera),
-      catalog.add(descriptor),
+    guard let camera = device as? ICCameraDevice, let descriptor = descriptor(for: camera) else { return }
+    if descriptor.phone == .androidWithoutDebugging {
+      let name = descriptor.name.trimmingCharacters(in: .whitespacesAndNewlines)
+      phoneDevices[descriptor.id] = (
+        camera,
+        CameraUSBDevice(
+          id: descriptor.id, serial: descriptor.serial, name: name.isEmpty ? "Android" : name,
+          vendorID: descriptor.vendorID, productID: descriptor.productID)
+      )
+      publishPhones()
+      return
+    }
+    guard catalog.add(descriptor),
       let model = CameraUSBDevice(descriptor)
     else {
       return
@@ -173,8 +190,19 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
     changed?(devices)
   }
 
+  private func publishPhones() {
+    phonesWithoutDebugging = phoneDevices.values.map(\.device).sorted {
+      $0.name.localizedStandardCompare($1.name) == .orderedAscending
+    }
+  }
+
   public func deviceBrowser(_ browser: ICDeviceBrowser, didRemove device: ICDevice, moreGoing: Bool)
   {
+    if let phone = phoneDevices.first(where: { $0.value.camera === device })?.key {
+      phoneDevices.removeValue(forKey: phone)
+      publishPhones()
+      return
+    }
     guard let id = cameras.first(where: { $0.value === device })?.key else { return }
     cameras.removeValue(forKey: id)
     catalog.remove(id: id)
@@ -199,7 +227,9 @@ public final class CameraUSBDiscovery: NSObject, @preconcurrency ICDeviceBrowser
       productKind: camera.productKind ?? "",
       transport: camera.transportType ?? "",
       vendorID: Int(camera.usbVendorID),
-      productID: Int(camera.usbProductID))
+      productID: Int(camera.usbProductID),
+      phone: USBPhoneProbe.kind(
+        locationID: UInt32(bitPattern: camera.usbLocationID), vendorID: Int(camera.usbVendorID)))
   }
 
   private func cameraUSBDevice(_ camera: ICCameraDevice) -> CameraUSBDevice? {

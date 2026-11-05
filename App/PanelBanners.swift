@@ -44,6 +44,46 @@ struct PanelFailureBanner: View {
   }
 }
 
+// 第一次插上设备时问要不要添加；连接失败时显示原因，可以再试
+struct DevicePromptBanner: View {
+  let item: DiscoveredItem
+  let mounting: Bool
+  let error: String?
+  let mount: () -> Void
+  let decline: () -> Void
+
+  var body: some View {
+    HStack(alignment: .top, spacing: Space.sm) {
+      TypeIcon(kind: item.kind, color: "blue", size: 28) // grid: ok 和两行文字等高
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: Space.sm) {
+        VStack(alignment: .leading, spacing: 2) { // grid: ok 标题和说明贴近
+          Text(LF("发现“%@”", item.title)).font(.subheadline.weight(.semibold))
+            .foregroundStyle(KayoiTheme.primaryText)
+          Text(error ?? L("要添加吗？添加后，以后插上会自动连接。")).font(.caption)
+            .foregroundStyle(error == nil ? KayoiTheme.secondaryText : KayoiTheme.error)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        HStack(spacing: Space.sm) {
+          Button(error == nil ? L("添加") : L("重试"), action: mount)
+            .buttonStyle(FlatButtonStyle(prominent: true)).disabled(mounting)
+          Button(L("不用了"), action: decline)
+            .buttonStyle(FlatButtonStyle()).disabled(mounting)
+          if mounting {
+            ProgressView().nativeProgressAppearance().controlSize(.small)
+              .accessibilityLabel(L("正在连接…"))
+          }
+        }
+      }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(Space.md)
+    .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
+    .overlay {
+      RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+    }
+  }
+}
+
 #Preview("发现错误 · 权限") {
   PanelDiscoveryBanner(message: L("请允许 Kayoi 访问本地网络"), permissionDenied: true, action: {}).padding().frame(width: 380)
 }

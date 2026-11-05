@@ -1262,3 +1262,24 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == expected)
 }
+
+// 设了自动挂载的设备：启动时已插着、拔掉后再插上都要通知外面去连接；没设的不管，一直插着不重复通知
+@Test @MainActor func autoMountDeviceIsReportedWhenItComesBack() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  let auto = Connection(kind: .androidUSB, name: "手机", autoMount: true, params: ["serial": "a", "deviceID": "a"])
+  let manual = Connection(kind: .androidUSB, name: "备用机", params: ["serial": "b", "deviceID": "b"])
+  try await manager.save(auto, password: "")
+  try await manager.save(manual, password: "")
+  var returned: [String] = []
+  manager.deviceReturned = { returned.append($0.name) }
+  manager.usbDevicesChanged(serials: ["a", "b"])
+  #expect(returned == ["手机"])
+  manager.usbDevicesChanged(serials: ["a", "b"])
+  #expect(returned == ["手机"])
+  manager.usbDevicesChanged(serials: ["b"])
+  manager.usbDevicesChanged(serials: ["a", "b"])
+  #expect(returned == ["手机", "手机"])
+}

@@ -61,8 +61,11 @@ struct PanelView: View {
     VStack(spacing: 0) {
       header.gridProbe("header", area: "panel", edge: nil)
       if PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, hasLoadError: (model.demoSetupError ?? model.connections.loadError) != nil) {
-        ForEach(discoveryErrors, id: \.message) { error in
-          discoveryBanner(error.message, permissionDenied: error.permissionDenied)
+        Group {
+          devicePromptBanner
+          ForEach(discoveryErrors, id: \.message) { error in
+            discoveryBanner(error.message, permissionDenied: error.permissionDenied)
+          }
         }.padding(.horizontal, Space.lg)
         emptyState
       } else {
@@ -73,6 +76,7 @@ struct PanelView: View {
                 errorBanner(error, title: L("无法读取位置列表"))
                   .transition(Motion.appear(reduceMotion: reduceMotion))
               }
+              devicePromptBanner
               ForEach(discoveryErrors, id: \.message) { error in
                 discoveryBanner(error.message, permissionDenied: error.permissionDenied)
                   .transition(Motion.appear(reduceMotion: reduceMotion))
@@ -93,6 +97,7 @@ struct PanelView: View {
             // 增删位置、排序、提示条出现时平滑过渡；减弱动态效果时直接切换，排序只保留插入线
             .animation(Motion.change(reduceMotion: reduceMotion), value: model.connections.connections.map(\.id))
             .animation(Motion.change(reduceMotion: reduceMotion), value: discoveryErrors.map(\.message))
+            .animation(Motion.change(reduceMotion: reduceMotion), value: model.devicePrompt?.id)
             // 拖到卡片之外的空白处，放到最后
             .onDrop(of: [.text], delegate: PanelDropDelegate(source: $draggedID, target: $dropTargetID, destination: nil, onTargeted: { endDropTargeted = $0 }, move: move))
             .gridArea("panel-list", inset: Space.lg)
@@ -333,6 +338,18 @@ struct PanelView: View {
     }
     .padding(.horizontal, 40).padding(.bottom, Space.xxl)
     .frame(maxWidth: .infinity).frame(height: 340)
+  }
+
+  @ViewBuilder private var devicePromptBanner: some View {
+    if let item = model.devicePrompt {
+      DevicePromptBanner(
+        item: item, mounting: model.mountingPromptDevice == DevicePrompt.key(item),
+        error: model.devicePromptErrors[DevicePrompt.key(item)],
+        mount: { model.acceptDevicePrompt(item) },
+        decline: { model.declineDevicePrompt(item) }
+      )
+      .transition(Motion.appear(reduceMotion: reduceMotion))
+    }
   }
 
   private func discoveryBanner(_ message: String, permissionDenied: Bool) -> some View {
