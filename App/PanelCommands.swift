@@ -60,13 +60,8 @@ extension FocusedValues {
     CommandGroup(replacing: .undoRedo) {
       SharedUndoCommands(manager: model.undoManager)
     }
-    CommandGroup(replacing: .help) {
-      Button(L("Kayoi 帮助")) {
-        windows.prepareToOpen()
-        openWindow(id: "help")
-        NSApplication.shared.activate()
-      }.keyboardShortcut("?", modifiers: .command)
-    }
+    // 没有帮助页面，清掉系统默认的帮助菜单项
+    CommandGroup(replacing: .help) {}
   }
 }
 

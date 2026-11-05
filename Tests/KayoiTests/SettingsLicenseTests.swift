@@ -27,12 +27,3 @@ import Testing
 }
 
 private final class LicenseBundleMarker: NSObject {}
-
-@Test func capabilityLabelsAndSymbolsKeepThreeDistinctStates() {
-  let states: [HelpCapability.Availability] = [.supported, .unavailable, .deviceDependent]
-  #expect(Set(states.map(\.title)).count == 3)
-  #expect(states.map(\.symbol) == ["checkmark", "minus", "questionmark.circle"])
-  let capability = HelpCapability("read", "读取", .supported)
-  #expect(capability.id == "read")
-  #expect(capability.title == "读取")
-}

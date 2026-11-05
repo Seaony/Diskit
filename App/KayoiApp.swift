@@ -122,15 +122,6 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate {
         .containerBackground(KayoiTheme.background, for: .window)
         .tint(KayoiTheme.accent)
     }.windowResizability(.contentSize)
-    Window(L("帮助"), id: "help") {
-      HelpView()
-        .background(WindowRegistration(coordinator: appDelegate.windows, role: "help"))
-        .containerBackground(KayoiTheme.background, for: .window)
-        .tint(KayoiTheme.accent)
-    }.defaultSize(width: 760, height: 600).windowResizability(.contentMinSize)
-      .defaultLaunchBehavior(
-        .suppressed
-      )
       .commands {
         KayoiCommands(model: model, windows: appDelegate.windows)
         DemoCommands(model: model)

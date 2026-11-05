@@ -284,23 +284,6 @@
         }
       }
     },
-    "Kayoi 帮助": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi Help"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kayoi 帮助"
-          }
-        }
-      }
-    },
     "Kayoi，%d 个位置已挂载": {
       "extractionState": "manual",
       "localizations": {
@@ -746,22 +729,6 @@
         }
       }
     },
-    "上传与新建文件夹": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Upload and Create Folders"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "上传与新建文件夹"
-          }
-        }
-      }
-    },
     "上次检查": {
       "localizations": {
         "en": {
@@ -829,38 +796,6 @@
         }
       }
     },
-    "不会。SMB、WebDAV 和 NFS 由系统保持挂载；需要断开时，请在 Kayoi 或 Finder 中推出。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No. The system keeps SMB, WebDAV, and NFS mounted. To disconnect, eject them in Kayoi or Finder."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不会。SMB、WebDAV 和 NFS 由系统保持挂载；需要断开时，请在 Kayoi 或 Finder 中推出。"
-          }
-        }
-      }
-    },
-    "不支持": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unsupported"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不支持"
-          }
-        }
-      }
-    },
     "个人云": {
       "extractionState": "manual",
       "localizations": {
@@ -878,38 +813,6 @@
         }
       }
     },
-    "为什么提示没有访问权限？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why am I getting an access denied message?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "为什么提示没有访问权限？"
-          }
-        }
-      }
-    },
-    "为什么服务地址正确却连不上？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why can’t I connect with the correct service endpoint?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "为什么服务地址正确却连不上？"
-          }
-        }
-      }
-    },
     "主机地址": {
       "extractionState": "manual",
       "localizations": {
@@ -923,22 +826,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "主机地址"
-          }
-        }
-      }
-    },
-    "以下文件操作目前需通过命令行工具 kayoi-dev 使用。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The file operations below currently require the kayoi-dev command-line tool."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "以下文件操作目前需通过命令行工具 kayoi-dev 使用。"
           }
         }
       }
@@ -1020,22 +907,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "位置意外断开"
-          }
-        }
-      }
-    },
-    "位置能力": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Location Capabilities"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "位置能力"
           }
         }
       }
@@ -1182,54 +1053,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "允许通知"
-          }
-        }
-      }
-    },
-    "先在“图像捕捉”中确认 Mac 能识别相机，然后退出图像捕捉，避免同时占用设备。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check that Image Capture recognizes the camera, then quit Image Capture so both apps do not use it at once."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "先在“图像捕捉”中确认 Mac 能识别相机，然后退出图像捕捉，避免同时占用设备。"
-          }
-        }
-      }
-    },
-    "先在服务商或 NAS 中开启 WebDAV。可使用坚果云、Nextcloud、ownCloud、群晖、威联通及 OpenList / AList 等服务。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enable WebDAV with your provider or on your NAS first. Services include Nutstore, Nextcloud, ownCloud, Synology, QNAP, and OpenList / AList."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "先在服务商或 NAS 中开启 WebDAV。可使用坚果云、Nextcloud、ownCloud、群晖、威联通及 OpenList / AList 等服务。"
-          }
-        }
-      }
-    },
-    "先在服务商控制台创建存储桶，并准备允许访问该桶的访问密钥。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Create a bucket in the provider’s console and prepare an access key that can access it."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "先在服务商控制台创建存储桶，并准备允许访问该桶的访问密钥。"
           }
         }
       }
@@ -1598,22 +1421,6 @@
         }
       }
     },
-    "删除后能恢复吗？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Can deleted files be recovered?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "删除后能恢复吗？"
-          }
-        }
-      }
-    },
     "加密 WebDAV": {
       "extractionState": "manual",
       "localizations": {
@@ -1664,22 +1471,6 @@
         }
       }
     },
-    "取决于设备": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depends on the device"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "取决于设备"
-          }
-        }
-      }
-    },
     "取消": {
       "extractionState": "manual",
       "localizations": {
@@ -1726,22 +1517,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "只在挂载失败、登录过期或位置意外断开时通知。"
-          }
-        }
-      }
-    },
-    "只授予需要的读写权限。要上传或整理文件，还需要相应的写入、列出和删除权限。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Grant only the permissions you need. Uploading and organizing files also require the relevant write, list, and delete permissions."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "只授予需要的读写权限。要上传或整理文件，还需要相应的写入、列出和删除权限。"
           }
         }
       }
@@ -1912,22 +1687,6 @@
         }
       }
     },
-    "在 Kayoi 中选择发现的手机，输入手机显示的 6 位配对码。配对码过期后，请重新打开手机上的配对窗口。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Select the discovered phone in Kayoi and enter the 6-digit code shown on it. If the code expires, reopen the pairing window on your phone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 Kayoi 中选择发现的手机，输入手机显示的 6 位配对码。配对码过期后，请重新打开手机上的配对窗口。"
-          }
-        }
-      }
-    },
     "在 NAS 上启用 WebDAV Server 的 HTTPS 服务，并允许此账户访问目标共享。": {
       "localizations": {
         "en": {
@@ -1960,22 +1719,6 @@
         }
       }
     },
-    "在 NAS 或服务器上开启 NFS，并创建导出目录。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enable NFS on your NAS or server and create an exported directory."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 NAS 或服务器上开启 NFS，并创建导出目录。"
-          }
-        }
-      }
-    },
     "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。": {
       "localizations": {
         "en": {
@@ -1988,22 +1731,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "在 Windows 的网络设置中开启文件和打印机共享，并给账户授予目标文件夹的访问权限。"
-          }
-        }
-      }
-    },
-    "在 Windows、Mac 或 NAS 上开启文件共享，并为要连接的文件夹设置访问权限。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enable file sharing on Windows, Mac, or your NAS and set access permissions for the folder you want to connect."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 Windows、Mac 或 NAS 上开启文件共享，并为要连接的文件夹设置访问权限。"
           }
         }
       }
@@ -2056,22 +1783,6 @@
         }
       }
     },
-    "在位置右侧选择“重新登录”，重新完成服务商要求的授权或验证。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose “Sign In Again” on the right of the location, then complete the provider’s authorization or verification."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在位置右侧选择“重新登录”，重新完成服务商要求的授权或验证。"
-          }
-        }
-      }
-    },
     "在坚果云账号的安全设置中创建应用密码，用户名填写账号邮箱。": {
       "localizations": {
         "en": {
@@ -2088,38 +1799,6 @@
         }
       }
     },
-    "在开发者选项中打开无线调试，再选择“使用配对码配对设备”。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on Wireless Debugging in Developer Options, then choose “Pair device with pairing code”."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在开发者选项中打开无线调试，再选择“使用配对码配对设备”。"
-          }
-        }
-      }
-    },
-    "在手机设置中开启开发者选项和 USB 调试，再用支持数据传输的数据线连接 Mac。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enable Developer Options and USB debugging in your phone’s settings, then connect it to your Mac with a cable that supports data transfer."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在手机设置中开启开发者选项和 USB 调试，再用支持数据传输的数据线连接 Mac。"
-          }
-        }
-      }
-    },
     "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。": {
       "localizations": {
         "en": {
@@ -2132,38 +1811,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "在手机设置中开启开发者选项，再打开 USB 调试或无线调试。"
-          }
-        }
-      }
-    },
-    "在服务商自己的授权页完成登录，Kayoi 只保存连接所需的登录信息。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sign in on the provider’s own authorization page. Kayoi saves only the information needed to connect."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在服务商自己的授权页完成登录，Kayoi 只保存连接所需的登录信息。"
-          }
-        }
-      }
-    },
-    "在服务端允许这台 Mac 的 IP 地址访问，再填写服务器地址和完整导出路径。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allow your Mac’s IP address on the server, then enter the server address and full export path."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在服务端允许这台 Mac 的 IP 地址访问，再填写服务器地址和完整导出路径。"
           }
         }
       }
@@ -2233,38 +1880,6 @@
         }
       }
     },
-    "填写服务地址、区域、存储桶名称、访问密钥 ID 和访问密钥。MinIO 使用自己的服务器地址。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter the service endpoint, region, bucket name, access key ID, and secret access key. For MinIO, use your own server address."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "填写服务地址、区域、存储桶名称、访问密钥 ID 和访问密钥。MinIO 使用自己的服务器地址。"
-          }
-        }
-      }
-    },
-    "填写电脑的 IP 地址或主机名，再填写用户名、密码和共享名。共享名不等于电脑上的完整文件路径。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enter the computer’s IP address or hostname, then the username, password, and share name. The share name is not the full file path on the computer."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "填写电脑的 IP 地址或主机名，再填写用户名、密码和共享名。共享名不等于电脑上的完整文件路径。"
-          }
-        }
-      }
-    },
     "复制指纹": {
       "extractionState": "manual",
       "localizations": {
@@ -2278,22 +1893,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "复制指纹"
-          }
-        }
-      }
-    },
-    "复制服务商提供的完整 WebDAV 地址，保留路径，并优先使用 HTTPS。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Copy the full WebDAV address from your provider, including its path. Use HTTPS when available."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "复制服务商提供的完整 WebDAV 地址，保留路径，并优先使用 HTTPS。"
           }
         }
       }
@@ -2415,22 +2014,6 @@
         }
       }
     },
-    "如果服务商要求验证，请先在服务商页面完成验证，再回到 Kayoi 重试。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If the provider requires verification, complete it on the provider’s page, then return to Kayoi and try again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "如果服务商要求验证，请先在服务商页面完成验证，再回到 Kayoi 重试。"
-          }
-        }
-      }
-    },
     "如果服务提供应用密码，请使用应用密码而不是网页登录密码。": {
       "localizations": {
         "en": {
@@ -2443,38 +2026,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "如果服务提供应用密码，请使用应用密码而不是网页登录密码。"
-          }
-        }
-      }
-    },
-    "如果未能识别账号，请展开“其他登录方式”，按说明复制并粘贴登录信息，再验证并保存。不要把登录信息发给其他人。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If the account is not recognized, expand “Other Sign-In Methods” and follow the instructions to copy and paste your sign-in information. Then verify and save. Do not share the information with anyone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "如果未能识别账号，请展开“其他登录方式”，按说明复制并粘贴登录信息，再验证并保存。不要把登录信息发给其他人。"
-          }
-        }
-      }
-    },
-    "如果相机询问是否允许访问，请先在相机上确认，再回到 Kayoi 测试连接。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If the camera asks to allow access, confirm on the camera before returning to Kayoi to test the connection."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "如果相机询问是否允许访问，请先在相机上确认，再回到 Kayoi 测试连接。"
           }
         }
       }
@@ -2810,22 +2361,6 @@
         }
       }
     },
-    "小米、OPPO、vivo 和三星手机的开关位置可能不同。请在设置中搜索“USB 调试”，并确认厂商的安全设置允许 USB 调试。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The settings may be in different places on Xiaomi, OPPO, vivo, and Samsung phones. Search for “USB debugging” and check that the manufacturer’s security settings allow it."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "小米、OPPO、vivo 和三星手机的开关位置可能不同。请在设置中搜索“USB 调试”，并确认厂商的安全设置允许 USB 调试。"
-          }
-        }
-      }
-    },
     "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索“开发者选项”和“USB 调试”。": {
       "localizations": {
         "en": {
@@ -3120,55 +2655,6 @@
         }
       }
     },
-    "帮助": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Help"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "帮助"
-          }
-        }
-      }
-    },
-    "帮助 · ⌘?": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Help · ⌘?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "帮助 · ⌘?"
-          }
-        }
-      }
-    },
-    "常见问题": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Common Questions"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "常见问题"
-          }
-        }
-      }
-    },
     "开机自动启动": {
       "extractionState": "manual",
       "localizations": {
@@ -3247,22 +2733,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "微软账户请填写邮箱和账户密码，不是登录电脑时使用的 PIN。"
-          }
-        }
-      }
-    },
-    "微软账户请填写邮箱和账户密码，不要填写 PIN。匿名共享才选择访客。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For a Microsoft account, enter its email and account password, not the PIN. Choose Guest only for anonymous shares."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "微软账户请填写邮箱和账户密码，不要填写 PIN。匿名共享才选择访客。"
           }
         }
       }
@@ -3416,22 +2886,6 @@
         }
       }
     },
-    "手机和 Mac 需要在同一局域网。访客网络、VPN 或路由器的设备隔离可能阻止连接；无线调试关闭后也需要重新开启。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your phone and Mac must be on the same local network. Guest networks, VPNs, or router device isolation may block the connection. If Wireless Debugging was turned off, turn it on again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "手机和 Mac 需要在同一局域网。访客网络、VPN 或路由器的设备隔离可能阻止连接；无线调试关闭后也需要重新开启。"
-          }
-        }
-      }
-    },
     "手机未连接": {
       "localizations": {
         "en": {
@@ -3461,23 +2915,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "打开 App 时自动挂载"
-          }
-        }
-      }
-    },
-    "打开 Kayoi 帮助": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Kayoi Help"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "打开 Kayoi 帮助"
           }
         }
       }
@@ -3544,38 +2981,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "打开设置"
-          }
-        }
-      }
-    },
-    "找不到设备怎么办？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why can’t I find my device?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "找不到设备怎么办？"
-          }
-        }
-      }
-    },
-    "把已有的网络共享挂载到 Finder，文件仍保存在原来的电脑或服务器上。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mount an existing network share in Finder. Files remain on the original computer or server."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "把已有的网络共享挂载到 Finder，文件仍保存在原来的电脑或服务器上。"
           }
         }
       }
@@ -3648,22 +3053,6 @@
         }
       }
     },
-    "授权完成后返回 Kayoi，确认账号信息，再测试并保存位置。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After authorization, return to Kayoi, confirm the account details, then test and save the location."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "授权完成后返回 Kayoi，确认账号信息，再测试并保存位置。"
-          }
-        }
-      }
-    },
     "推出": {
       "extractionState": "manual",
       "localizations": {
@@ -3697,22 +3086,6 @@
         }
       }
     },
-    "搜索类型或问题": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Search types or questions"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "搜索类型或问题"
-          }
-        }
-      }
-    },
     "搜索类型，例如 网盘、SMB、相机": {
       "localizations": {
         "en": {
@@ -3729,38 +3102,6 @@
         }
       }
     },
-    "支持": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Supported"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "支持"
-          }
-        }
-      }
-    },
-    "改名与移动": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rename and Move"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "改名与移动"
-          }
-        }
-      }
-    },
     "数据线或无线调试": {
       "localizations": {
         "en": {
@@ -3773,22 +3114,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "数据线或无线调试"
-          }
-        }
-      }
-    },
-    "文件仍保存在你选择的设备或服务中。删除前请确认操作后果，并保留重要文件的备份。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Files remain on the device or service you choose. Check what will be deleted and keep backups of important files."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "文件仍保存在你选择的设备或服务中。删除前请确认操作后果，并保留重要文件的备份。"
           }
         }
       }
@@ -3922,38 +3247,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "无线调试"
-          }
-        }
-      }
-    },
-    "无线调试需要 Android 11 或更新版本。让 Mac 和手机连接同一个局域网。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wireless debugging requires Android 11 or later. Connect your Mac and phone to the same local network."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无线调试需要 Android 11 或更新版本。让 Mac 和手机连接同一个局域网。"
-          }
-        }
-      }
-    },
-    "无线连接为什么断开了？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why did my wireless connection disconnect?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无线连接为什么断开了？"
           }
         }
       }
@@ -4106,22 +3399,6 @@
         }
       }
     },
-    "服务商可能限制账号权限、分享访问、会员权益或请求频率。请先确认该账号在服务商页面能访问目标文件。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The provider may limit account permissions, shared access, membership benefits, or request frequency. Check that your account can access the files on the provider’s website."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "服务商可能限制账号权限、分享访问、会员权益或请求频率。请先确认该账号在服务商页面能访问目标文件。"
-          }
-        }
-      }
-    },
     "服务器地址": {
       "extractionState": "manual",
       "localizations": {
@@ -4206,22 +3483,6 @@
         }
       }
     },
-    "本版本可测试连接，尚不提供此类型的 Finder 挂载。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This version can test the connection but cannot mount this type in Finder."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本版本可测试连接，尚不提供此类型的 Finder 挂载。"
-          }
-        }
-      }
-    },
     "构建 %@": {
       "localizations": {
         "en": {
@@ -4250,22 +3511,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "检查更新…"
-          }
-        }
-      }
-    },
-    "检查用户名、密码和共享目录权限。账号能登录网页，不代表它也有文件共享的访问权限。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check the username, password, and shared folder permissions. Being able to sign in on the website does not necessarily grant file sharing access."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "检查用户名、密码和共享目录权限。账号能登录网页，不代表它也有文件共享的访问权限。"
           }
         }
       }
@@ -4746,22 +3991,6 @@
         }
       }
     },
-    "浏览与读取": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Browse and Read"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "浏览与读取"
-          }
-        }
-      }
-    },
     "浏览账号或分享链接": {
       "localizations": {
         "en": {
@@ -4774,22 +4003,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "浏览账号或分享链接"
-          }
-        }
-      }
-    },
-    "添加 PikPak 位置，填写账号和密码后登录。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a PikPak location, enter your account and password, and sign in."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加 PikPak 位置，填写账号和密码后登录。"
           }
         }
       }
@@ -4840,22 +4053,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "添加位置…"
-          }
-        }
-      }
-    },
-    "添加位置后点击登录，在服务商自己的页面选择账号并完成授权。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "When adding a location, click Sign In, then choose your account and authorize access on the provider’s own page."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加位置后点击登录，在服务商自己的页面选择账号并完成授权。"
           }
         }
       }
@@ -4974,22 +4171,6 @@
         }
       }
     },
-    "点击登录，在服务商自己的页面扫码或输入账号信息。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Click Sign In, then scan the code or enter your account details on the provider’s own page."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "点击登录，在服务商自己的页面扫码或输入账号信息。"
-          }
-        }
-      }
-    },
     "版本 %@": {
       "localizations": {
         "en": {
@@ -5068,38 +4249,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "用支持数据传输的 USB 线连接相机，并在相机上允许访问存储卡。"
-          }
-        }
-      }
-    },
-    "用支持数据传输的数据线连接相机，并选择相机提供的电脑传输模式。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect the camera with a cable that supports data transfer and select its computer transfer mode."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用支持数据传输的数据线连接相机，并选择相机提供的电脑传输模式。"
-          }
-        }
-      }
-    },
-    "用数据线连接相机，读取照片前先确认相机允许电脑访问。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect the camera by cable and confirm that it allows computer access before reading photos."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用数据线连接相机，读取照片前先确认相机允许电脑访问。"
           }
         }
       }
@@ -5265,22 +4414,6 @@
         }
       }
     },
-    "登录完成后返回 Kayoi，确认账号信息，再测试并保存位置。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After signing in, return to Kayoi, confirm the account details, then test and save the location."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "登录完成后返回 Kayoi，确认账号信息，再测试并保存位置。"
-          }
-        }
-      }
-    },
     "登录已失效，请重新登录": {
       "extractionState": "manual",
       "localizations": {
@@ -5410,22 +4543,6 @@
         }
       }
     },
-    "登录过期后怎么办？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What should I do when my sign-in expires?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "登录过期后怎么办？"
-          }
-        }
-      }
-    },
     "百度网盘": {
       "localizations": {
         "en": {
@@ -5438,22 +4555,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "百度网盘"
-          }
-        }
-      }
-    },
-    "百度网盘只访问为 Kayoi 授权的应用目录，不能浏览账号中的其他文件。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Baidu Drive can access only the app folder authorized for Kayoi, not other files in the account."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "百度网盘只访问为 Kayoi 授权的应用目录，不能浏览账号中的其他文件。"
           }
         }
       }
@@ -5537,22 +4638,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "确认服务器的导出路径，并允许这台 Mac 访问。"
-          }
-        }
-      }
-    },
-    "确认登录的账号无误后，测试并保存位置。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Confirm that you are signed in to the correct account, then test and save the location."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "确认登录的账号无误后，测试并保存位置。"
           }
         }
       }
@@ -5987,22 +5072,6 @@
         }
       }
     },
-    "网页登录无法完成时，可在“其他登录方式”中查看替代步骤。不要把登录信息发给其他人。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If web sign-in does not work, see “Other Sign-In Methods” for alternatives. Do not share your sign-in information with anyone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "网页登录无法完成时，可在“其他登录方式”中查看替代步骤。不要把登录信息发给其他人。"
-          }
-        }
-      }
-    },
     "群晖": {
       "localizations": {
         "en": {
@@ -6015,22 +5084,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "群晖"
-          }
-        }
-      }
-    },
-    "能否删除由相机决定；不支持时不会发送删除请求。相机位置不能上传、改名或移动文件。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deletion depends on the camera. No delete request is sent if it is unsupported. Camera locations cannot upload, rename, or move files."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "能否删除由相机决定；不支持时不会发送删除请求。相机位置不能上传、改名或移动文件。"
           }
         }
       }
@@ -6149,22 +5202,6 @@
         }
       }
     },
-    "蓝奏云位置只能读取和下载，不能上传、改名、移动或删除文件。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lanzou Cloud locations support only reading and downloading. You cannot upload, rename, move, or delete files."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "蓝奏云位置只能读取和下载，不能上传、改名、移动或删除文件。"
-          }
-        }
-      }
-    },
     "蓝奏云在当前版本中只读。": {
       "localizations": {
         "en": {
@@ -6194,22 +5231,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "蓝色"
-          }
-        }
-      }
-    },
-    "解锁设备并检查数据线；部分数据线只能充电。退出可能占用设备的手机调试工具或图像捕捉，再重新连接。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unlock the device and check the cable; some cables only support charging. Quit phone debugging tools or Image Capture that may be using the device, then reconnect."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "解锁设备并检查数据线；部分数据线只能充电。退出可能占用设备的手机调试工具或图像捕捉，再重新连接。"
           }
         }
       }
@@ -6426,22 +5447,6 @@
         }
       }
     },
-    "请在可信的局域网中使用 NFS，访问权限由服务器上的导出设置决定。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use NFS on a trusted local network. The server’s export settings control access."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请在可信的局域网中使用 NFS，访问权限由服务器上的导出设置决定。"
-          }
-        }
-      }
-    },
     "请在手机上点“允许 USB 调试”": {
       "localizations": {
         "en": {
@@ -6518,22 +5523,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "请把地址模板替换为自己的账号和地址"
-          }
-        }
-      }
-    },
-    "请核对存储桶所在区域、地址格式和密钥权限。服务地址应来自服务商控制台，而不是存储桶的网页管理链接。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Check the bucket’s region, address format, and key permissions. Use the endpoint from the provider’s console, not the bucket’s web management URL."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请核对存储桶所在区域、地址格式和密钥权限。服务地址应来自服务商控制台，而不是存储桶的网页管理链接。"
           }
         }
       }
@@ -6651,22 +5640,6 @@
         }
       }
     },
-    "账号方式请在蓝奏云登录页完成登录，等待 Kayoi 识别账号，再测试并保存位置。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For account access, sign in on the Lanzou Cloud sign-in page and wait for Kayoi to recognize the account. Then test and save the location."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "账号方式请在蓝奏云登录页完成登录，等待 Kayoi 识别账号，再测试并保存位置。"
-          }
-        }
-      }
-    },
     "账户名或邮箱": {
       "extractionState": "manual",
       "localizations": {
@@ -6748,22 +5721,6 @@
         }
       }
     },
-    "这些位置使用非官方接口，可能随服务商更新暂时失效。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "These locations use unofficial interfaces and may stop working after provider updates."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这些位置使用非官方接口，可能随服务商更新暂时失效。"
-          }
-        }
-      }
-    },
     "这是离线演示页面，不会连接服务商或读取真实账号。": {
       "localizations": {
         "en": {
@@ -6808,54 +5765,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "连接云端文件"
-          }
-        }
-      }
-    },
-    "连接前先在手机上开启调试，并允许这台 Mac 访问。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Before connecting, enable debugging on your phone and allow this Mac to access it."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连接前先在手机上开启调试，并允许这台 Mac 访问。"
-          }
-        }
-      }
-    },
-    "连接已有的存储桶，并使用只允许访问该存储桶的访问密钥。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Connect an existing bucket using an access key restricted to that bucket."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连接已有的存储桶，并使用只允许访问该存储桶的访问密钥。"
-          }
-        }
-      }
-    },
-    "连接成功后为什么仍不能访问部分文件？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why can’t I access some files after connecting?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连接成功后为什么仍不能访问部分文件？"
           }
         }
       }
@@ -6959,22 +5868,6 @@
         }
       }
     },
-    "退出 Kayoi 会推出共享吗？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Does quitting Kayoi eject shares?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "退出 Kayoi 会推出共享吗？"
-          }
-        }
-      }
-    },
     "退出 · ⌘Q": {
       "localizations": {
         "en": {
@@ -7003,38 +5896,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "退出图像捕捉或其他正在占用相机的应用。"
-          }
-        }
-      }
-    },
-    "选择家庭空间时，请确认当前账号是该家庭的成员，再选择要连接的家庭空间。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For a family space, confirm that your account belongs to the family, then select the space you want to connect."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选择家庭空间时，请确认当前账号是该家庭的成员，再选择要连接的家庭空间。"
-          }
-        }
-      }
-    },
-    "选择账号登录或分享链接。分享链接需要密码时，请填写分享者提供的密码。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose account sign-in or a share link. If the link requires a password, enter the one supplied by the person who shared it."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选择账号登录或分享链接。分享链接需要密码时，请填写分享者提供的密码。"
           }
         }
       }
@@ -7133,22 +5994,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "邮箱或手机号"
-          }
-        }
-      }
-    },
-    "部分第三方访问能力需要服务商提供的权益。请在阿里云盘中确认账号的第三方应用权益是否有效。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Some third-party access features require benefits provided by the service. Check that your account’s third-party app benefits are active in Aliyun Drive."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "部分第三方访问能力需要服务商提供的权益。请在阿里云盘中确认账号的第三方应用权益是否有效。"
           }
         }
       }
@@ -7409,22 +6254,6 @@
         }
       }
     },
-    "阿里云盘为什么提示权益限制？": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Why does Aliyun Drive report a membership restriction?"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "阿里云盘为什么提示权益限制？"
-          }
-        }
-      }
-    },
     "隐藏密码": {
       "extractionState": "manual",
       "localizations": {
@@ -7438,22 +6267,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "隐藏密码"
-          }
-        }
-      }
-    },
-    "需要应用密码的服务，请先在其安全设置中创建应用密码，不要填网页登录密码。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "If the service requires an app password, create one in its security settings first. Do not enter your web sign-in password."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "需要应用密码的服务，请先在其安全设置中创建应用密码，不要填网页登录密码。"
           }
         }
       }
@@ -7508,22 +6321,6 @@
         }
       }
     },
-    "首次测试连接时，解锁手机，在授权提示中允许这台 Mac。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The first time you test the connection, unlock your phone and allow this Mac in the authorization prompt."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首次测试连接时，解锁手机，在授权提示中允许这台 Mac。"
-          }
-        }
-      }
-    },
     "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。": {
       "localizations": {
         "en": {
@@ -7536,22 +6333,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "鸿蒙 NEXT 不支持 ADB，不能通过此方式连接。"
-          }
-        }
-      }
-    },
-    "鸿蒙 NEXT 不支持 ADB，不能通过这两种安卓连接方式访问。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "HarmonyOS NEXT does not support ADB and cannot use either Android connection method."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "鸿蒙 NEXT 不支持 ADB，不能通过这两种安卓连接方式访问。"
           }
         }
       }
@@ -7840,22 +6621,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "远程对象存储需要使用 HTTPS；HTTP 仅适用于本地网络地址"
-          }
-        }
-      }
-    },
-    "对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Deleted objects do not go to a trash folder. Without bucket versioning, deletion is permanent. With versioning enabled, recovery depends on the versions retained by the service. Check your backup before deleting."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。"
           }
         }
       }

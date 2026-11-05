@@ -284,14 +284,6 @@ struct PanelView: View {
   private var footer: some View {
     HStack(spacing: 2) { // grid: ok 底栏图标间隔 2
       Button {
-        openWindow(id: "help")
-        NSApplication.shared.activate(ignoringOtherApps: true)
-      } label: {
-        Image(systemName: "questionmark.circle")
-      }
-      .keyboardShortcut("?", modifiers: .command)
-      .help(L("帮助 · ⌘?")).accessibilityLabel(L("打开 Kayoi 帮助"))
-      Button {
         openSettings()
       } label: {
         Image(systemName: "gearshape")
