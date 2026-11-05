@@ -271,7 +271,7 @@ struct PanelView: View {
     let active = (layout == value.rawValue) || (value == .grid && isGrid)
     return Button { layout = value.rawValue } label: {
       Image(systemName: symbol).font(.system(size: 12))
-        .foregroundStyle(active ? KayoiTheme.primaryText : KayoiTheme.secondaryText)
+        .foregroundStyle(active ? KayoiTheme.primaryText : KayoiTheme.tertiaryText)
         .frame(width: 26, height: 22)
         .background(active ? KayoiTheme.segmentSelected : .clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
         .contentShape(Rectangle())
