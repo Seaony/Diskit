@@ -6777,23 +6777,6 @@
           }
         }
       }
-    },
-    "选择位置类型": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Choose a Location Type"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "选择位置类型"
-          }
-        }
-      }
     }
   },
   "version": "1.0"

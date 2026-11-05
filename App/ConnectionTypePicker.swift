@@ -22,13 +22,6 @@ struct ConnectionTypePicker: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
-        Text(L("选择位置类型")).font(.system(size: 17, weight: .semibold))
-        Text(L("接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。")).font(.system(size: 12))
-          .foregroundStyle(KayoiTheme.secondaryText)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, Space.xxl).padding(.top, Space.xs).padding(.bottom, Space.md)
       HStack(spacing: Space.sm) {
         Image(systemName: "magnifyingglass").font(.system(size: 14)).foregroundStyle(KayoiTheme.secondaryText)
           .accessibilityHidden(true)
@@ -58,7 +51,7 @@ struct ConnectionTypePicker: View {
       .overlay {
         RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5)
       }
-      .padding(.horizontal, Space.xxl)
+      .padding(.horizontal, Space.xxl).padding(.top, Space.xs)
       ScrollView {
         VStack(alignment: .leading, spacing: Space.lg) {
           // 已发现的设备排在最前，选中后第二步带上预填信息
