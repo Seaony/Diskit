@@ -256,6 +256,14 @@ public actor ADBSession {
     }
   }
   public func disconnect() async {
+    // 手机关通道后可能还会多发几个包（小米 17 对同一通道连发 CLSE），没读走就留在 USB 里，
+    // 下次连接时手机有一定概率出错并重启 USB；连接还正常就先读干净再关，最多等 0.3 秒
+    if !transportFailed {
+      let end = ContinuousClock.now.advanced(by: .milliseconds(300))
+      while let left = try? RemoteTimeout.remaining(until: end),
+        let bytes = try? await transport.read(count: 4096, timeout: min(0.1, left)), !bytes.isEmpty
+      {}
+    }
     transportFailed = true
     await transport.close()
     remote = nil

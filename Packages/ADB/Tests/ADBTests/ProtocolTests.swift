@@ -37,6 +37,7 @@ private actor FakeTransport: ADBTransport {
   }
   func close() async { closed = true }
   func output() -> Data { sent.reduce(Data(), +) }
+  func unread() -> Int { input.count }
 }
 
 private func hello(_ features: String = "stat_v2,ls_v2,sendrecv_v2") -> ADBMessage {
@@ -323,6 +324,16 @@ private func shellFrame(_ id: UInt8, _ bytes: Data) -> Data {
     session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
   try await provider.connect()
   #expect(try await provider.list(RemotePath("/")).isEmpty)
+}
+
+// 手机关通道后多发的 CLSE 留在 USB 里，下次连接时手机有概率出错重启 USB，所以断开前要读干净
+@Test func disconnectReadsLeftoverPacketsBeforeClosing() async throws {
+  let transport = FakeTransport([hello(), .init(.close, 15, 1), .init(.close, 15, 1)])
+  let session = ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets()))
+  try await session.connect()
+  await session.disconnect()
+  #expect(await transport.unread() == 0)
+  #expect(await transport.closed)
 }
 
 @Test func legacyTransferRejectsLargeFilesBeforeUpload() async throws {
