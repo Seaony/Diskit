@@ -92,7 +92,7 @@ struct SavedConnectionRow: View {
   private var listRow: some View {
     let shape = RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
     return HStack(spacing: 10) { // grid: ok 设计稿图标与文字间距 10
-      PanelStatusIcon(kind: connection.kind, color: connection.color, size: 28, badge: badge, ring: listFill ?? KayoiTheme.surface)
+      PanelStatusIcon(kind: connection.kind, color: connection.color, size: 34, badge: badge, ring: listFill ?? KayoiTheme.surface)
       VStack(alignment: .leading, spacing: 0) {
         Text(connection.name).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
           .foregroundStyle(KayoiTheme.primaryText)
@@ -101,11 +101,11 @@ struct SavedConnectionRow: View {
       }
       .frame(maxWidth: .infinity, alignment: .leading)
     }
-    .padding(.horizontal, 10).padding(.vertical, 7) // grid: ok 设计稿列表行内边距
+    .padding(.horizontal, 10).padding(.vertical, 10) // grid: ok 列表行内边距，上下留宽一点不显挤
     .background(listFill ?? .clear, in: shape)
     .overlay(alignment: .top) {
       if showsDivider && listFill == nil {
-        Rectangle().fill(KayoiTheme.border).frame(height: 0.5).padding(.leading, 48).padding(.trailing, 10) // grid: ok 分隔线从文字处开始
+        Rectangle().fill(KayoiTheme.border).frame(height: 0.5).padding(.leading, 54).padding(.trailing, 10) // grid: ok 分隔线从文字处开始
       }
     }
     .overlay { if selected && isIssue { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
@@ -147,7 +147,7 @@ struct SavedConnectionRow: View {
 
   private var captionColor: Color {
     if case .failed = state { return KayoiTheme.error }
-    return state == .needsLogin ? KayoiTheme.warning : KayoiTheme.secondaryText
+    return state == .needsLogin ? KayoiTheme.warning : KayoiTheme.tertiaryText
   }
 
   private var isReadOnly: Bool { ProviderAccess.isReadOnly(capabilities) }
@@ -254,6 +254,8 @@ final class PanelMenuItem: NSMenuItem {
     super.init(title: title, action: #selector(run), keyEquivalent: "")
     target = self
     image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+    // macOS 27 默认隐藏菜单图标，这里要求显示
+    if #available(macOS 27.0, *) { preferredImageVisibility = .visible }
     if destructive {
       attributedTitle = NSAttributedString(string: title, attributes: [.foregroundColor: NSColor.systemRed])
       // 删除类操作的图标也用红色
