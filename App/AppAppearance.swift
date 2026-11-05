@@ -14,6 +14,14 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     }
   }
 
+  var symbol: String {
+    switch self {
+    case .system: "circle.lefthalf.filled"
+    case .light: "sun.max"
+    case .dark: "moon"
+    }
+  }
+
   @MainActor func apply() {
     NSApplication.shared.appearance =
       switch self {

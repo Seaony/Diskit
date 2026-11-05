@@ -100,15 +100,19 @@ struct SettingsView: View {
         Text(L("退出 Kayoi 不会推出已挂载的共享"))
       }
       Section(L("外观")) {
-        Picker(L("主题"), selection: $appearance) {
-          ForEach(AppAppearance.allCases) { Text($0.title).tag($0.rawValue) }
-        }
+        ChoiceButtons(
+          options: AppAppearance.allCases.map(\.rawValue), selection: $appearance,
+          title: { (AppAppearance(rawValue: $0) ?? .system).title },
+          symbol: { (AppAppearance(rawValue: $0) ?? .system).symbol }
+        )
+        .accessibilityElement(children: .contain).accessibilityLabel(L("主题"))
       }
       .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
       Section {
-        Picker(L("界面语言"), selection: $language) {
-          ForEach(AppLanguage.allCases) { Text($0.title).tag($0) }
-        }
+        ChoiceButtons(options: AppLanguage.allCases, selection: $language, title: \.title, symbol: \.symbol)
+          .accessibilityElement(children: .contain).accessibilityLabel(L("界面语言"))
+          // 书本图标会跟着地区换字形；按英文地区显示，English 用字母 A，简体中文已单独指定“字”
+          .environment(\.locale, Locale(identifier: "en"))
         // 演示模式不改真实的语言设置
         .onChange(of: language) { _, value in if !model.options.isDemo { value.save() } }
       } header: {

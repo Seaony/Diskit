@@ -16,6 +16,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
   }
 
+  var symbol: String {
+    switch self {
+    case .system: "globe"
+    case .chinese: "character.book.closed.zh"
+    case .english: "character.book.closed"
+    }
+  }
+
   // 只看本 App 自己的设置，不看系统全局的语言列表
   static var saved: AppLanguage {
     let domain = Bundle.main.bundleIdentifier.flatMap { UserDefaults.standard.persistentDomain(forName: $0) }
