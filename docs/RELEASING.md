@@ -12,17 +12,21 @@ Sparkle 固定为 2.10.1。`Dependencies/Package.resolved` 是生成工程的锁
 
 默认签名身份是本机 Apple Development，用于本地验证，不等于正式 Developer ID 发行。`SIGN_TIMESTAMP=auto` 只有 Developer ID 身份才启用可信时间戳；开发/临时签名明确使用 `--timestamp=none`。需要时间戳但服务不可访问时构建失败，不自动降级；离线验证可显式选 `SIGN_TIMESTAMP=none`，这种制品不得宣称已经正式发行验收。
 
-更新源为 `https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml`。公钥与 Yomi、Moni 一致，来自它们非秘密工程配置。启用 `SURequireSignedFeed` 和其前置条件 `SUVerifyUpdateBeforeExtraction`，每日自动检查；演示模式、测试宿主不会创建或启动 Sparkle 更新器。
+更新源为 `https://github.com/Seaony/Kayoi-Releases/releases/latest/download/appcast.xml`。公钥与 Yomi、Moni 一致，来自它们非秘密工程配置。启用 `SURequireSignedFeed` 和其前置条件 `SUVerifyUpdateBeforeExtraction`，每日自动检查；演示模式、测试宿主不会创建或启动 Sparkle 更新器。
 
 首次发布前，后台404保持静默；手动检查显示“还没有可用的更新信息”。不会把签名失败、500或其他网络错误当成尚未发布。
 
-## 准备临时签名发行制品
+## 一键发布
 
-在干净的 master 上执行 `scripts/publish-unsigned-release.sh`。它只在本地构建临时签名应用、打 ZIP、用 Sparkle 官方工具签名 appcast 与压缩包并验证，输出到 `build/releases/v版本号/`，不会创建标签、推送或发布。
+源码仓库 `Seaony/Kayoi` 保持私有，安装包和更新源发布到公开仓库 `Seaony/Kayoi-Releases`；私有仓库的发布文件需要登录才能下载，别人和 Sparkle 都拿不到。
+
+在干净、已推送的 master 上执行 `scripts/publish-unsigned-release.sh 0.3.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥和版本是否已发布；新版本大于当前版本时改写 `project.yml` 的版本号并把构建号加 1；运行 `make test` 与 `make release`；生成 DMG、ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送源码标签，在发布仓库创建 Release 并上传三个文件。任何一步失败即停止，未提交的版本号改动会还原。
+
+加 `--dry-run` 只在本地完整打包和验证，输出到 `build/releases/v版本号/`，不提交、不推送、不发布。撤回一次发布：`gh release delete v版本号 --repo Seaony/Kayoi-Releases --yes --cleanup-tag`，再 `git push origin :refs/tags/v版本号`。
 
 Sparkle 签名账户默认 `com.seaony.Moni`，可通过 `SPARKLE_ACCOUNT` 指定现有账户。脚本不导出、不打印私钥、不自动生成替代密钥；没有匹配密钥时失败。验签先确认账户公钥与应用公钥相同，再使用官方 `sign_update --verify` 分别验证 feed 与压缩包，验签成功后才解压检查应用。只存在 `edSignature` 字段不能算验证通过。
 
-只有用户另外明确要求发布时，才执行 `scripts/publish-unsigned-release.sh --publish`。此分支检查远端 master 一致且标签未发布，然后显式调用 GitHub 创建 release；它不是本轮验收步骤。本轮没有执行发布、推送、实际签名密钥读取或上传。
+默认使用 `Config/Validation.xcconfig` 构建，不含任何开放平台凭据，发行版里官方网盘会显示“此网盘尚未在 Kayoi 中启用”。
 
 ## Developer ID 与公证
 

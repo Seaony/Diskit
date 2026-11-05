@@ -2,7 +2,7 @@ import Foundation
 
 enum UpdatePolicy {
   static let feedURL = URL(
-    string: "https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml")!
+    string: "https://github.com/Seaony/Kayoi-Releases/releases/latest/download/appcast.xml")!
   static let publicKey = "FnPUWAEY6WKwo0yvQLOBvEt7xjuhAabwNu1Y9QalNQc="
 
   static func shouldStart(isDemo: Bool, bundleURL: URL, environment: [String: String]) -> Bool {

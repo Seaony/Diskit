@@ -20,7 +20,7 @@ versions = subprocess.check_output([sys.executable, str(root / 'scripts/project-
 require(info['CFBundleShortVersionString'] == versions[0], '营销版本不匹配')
 require(str(info['CFBundleVersion']) == versions[1], '构建号不匹配')
 require(info['LSMinimumSystemVersion'] == '26.0', '最低系统版本不匹配')
-require(info['SUFeedURL'] == 'https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml', '更新源不匹配')
+require(info['SUFeedURL'] == 'https://github.com/Seaony/Kayoi-Releases/releases/latest/download/appcast.xml', '更新源不匹配')
 require(info['SUPublicEDKey'] == 'FnPUWAEY6WKwo0yvQLOBvEt7xjuhAabwNu1Y9QalNQc=', '更新公钥不匹配')
 require(len(base64.b64decode(info['SUPublicEDKey'], validate=True)) == 32, '发行校验失败')
 require(info['SURequireSignedFeed'] and info['SUVerifyUpdateBeforeExtraction'], '必须先验签再解压，并校验feed')
@@ -39,7 +39,7 @@ if feed:
     require(item.findtext('s:shortVersionString', namespaces=namespace) == versions[0], 'feed营销版本不匹配')
     require(item.findtext('s:minimumSystemVersion', namespaces=namespace) == '26.0', 'feed最低系统版本不匹配')
     enclosure = item.find('enclosure')
-    expected = 'https://github.com/Seaony/Kayoi/releases/download/v' + versions[0] + '/' + archive.name
+    expected = 'https://github.com/Seaony/Kayoi-Releases/releases/download/v' + versions[0] + '/' + archive.name
     require(enclosure.attrib['url'] == expected, '制品URL不匹配')
     require(int(enclosure.attrib['length']) == archive.stat().st_size, '制品长度不匹配')
     require(len(base64.b64decode(enclosure.attrib['{' + namespace['s'] + '}edSignature'], validate=True)) == 64, '发行校验失败')
