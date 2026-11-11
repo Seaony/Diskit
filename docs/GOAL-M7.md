@@ -41,10 +41,10 @@
 2. **扩展分发骨架**：删掉假数据卷，扩展按 URL `kayoi-<类型>://<连接ID>` 读取连接配置和密钥，创建对应的 Provider。`FSSupportedSchemes` 覆盖所有要走 FSKit 的类型。实现 §3.4：目录缓存（设备 5 秒、网盘 30 秒，本卷内的写操作让缓存失效）；读（支持按范围读的直接读，不支持的拉整文件到扩展容器缓存，总量上限 5 GB，按最近使用淘汰）；写（写到临时文件，关闭或 fsync 时上传，失败把错误返回给关闭操作）；只读能力返回 `EROFS`；断线返回 `EIO`。
 3. **本地覆盖层**：扩展属性和 `.DS_Store`、`.VolumeIcon.icns`、`.Spotlight-V100`、`.fseventsd`、`.Trashes` 存在扩展容器里（按连接 ID 分目录），不写到远端。SPIKE 第 6 条已证明支持扩展属性后不会产生 `._*` 文件。
 4. **主 App 挂载和推出**：按系统版本走 `FSClient` 或 `mount -F`；推出用 `FileManager.unmountVolume`。F3 横幅（扩展没启用时显示，点击用 `FSClient.openFileSystemExtensionsSettings()`，26 上用等效的跳转）、F15 扩展状态。非 SMB 行的主按钮改成「挂载 / 推出」，扩展没启用时点挂载就提示并跳转系统设置。「打开 App 时自动挂载」对所有类型生效；退出 App 时推出本 App 挂的全部卷（SMB 除外）；设备消失时主动推出卷。卷名用连接名称。
-5. **安卓 USB 和 Wi‑Fi**：按 PLAN M7 第二步验收第 2、3、4 条在真机上测。测试机是 Xiaomi 17，已经插在这台 Mac 上，并已授权共享钥匙串里的那把 ADB 钥匙（迁移后要保证还是同一把钥匙，否则手机要重新授权）。
+5. **安卓 USB 和 Wi‑Fi**：按 PLAN M7 第二步验收第 2、3、4 条在真机上测。测试机是 Xiaomi 17，已经插在这台 Mac 上。ADB 钥匙以传统登录钥匙串 `com.seaony.Kayoi` 里的 `adb.private-key` 为准（用户平时一直在用、其他手机也授权过的那把），迁移它，不生成新钥匙。Xiaomi 如果因此要重新点一次「允许 USB 调试」，在报告里写一句即可。
 6. **阿里云盘、夸克**：按验收第 6、7 条测。没有登录信息就测不了的，写清楚哪条没测、为什么。
 7. **其余网盘和对象存储**：已经有 Provider 的类型，逐个接上 FSKit。每类至少验证「能挂载、能浏览」；没有账号测不了的，在报告里列出来。
-8. 清理：删掉 `App/FSKitSpike.swift` 的验证入口和 FSShared 里的 Spike 代码，保留 `docs/SPIKE.md`。
+8. 清理：删掉 `App/FSKitSpike.swift` 的验证入口和 FSShared 里的 Spike 代码，保留 `docs/SPIKE.md`。同时删掉第一步验证时建的测试数据：共享钥匙串里 service 为 `com.seaony.Kayoi.spike` 的条目（包括那把测试 ADB 钥匙），以及 App Group 里的 `spike-check.txt`。这些都是验证时临时建的，不是用户数据，第 8 步之前不要动。
 
 ## 验收与报告
 
