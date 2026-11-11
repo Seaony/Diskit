@@ -15,6 +15,8 @@ build: gen
 
 release: gen dev-tool
 	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
+	# FSKit 扩展还只是验证用的假数据卷，正式扩展做完前不进安装包
+	rm -rf build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Extensions
 	python3 scripts/sign-app.py build/DerivedData/Build/Products/Release/Kayoi.app --identity "$(SIGN_IDENTITY)" --timestamp "$(SIGN_TIMESTAMP)"
 	scripts/validate-release.sh build/DerivedData/Build/Products/Release/Kayoi.app
 
