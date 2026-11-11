@@ -356,13 +356,14 @@ public actor RemoteVolumeBackend {
     var streamSetupSeconds = 0.0
     var transferSeconds = 0.0
     var writeSeconds = 0.0
+    var writeCalls = 0
     var installSeconds = 0.0
     var firstReadSeconds = 0.0
     var downloadedBytes: Int64 = 0
     var completed = false
     defer {
       logger.info(
-        "整文件缓存汇总 connection=\(self.connectionID.uuidString, privacy: .public) path=\(path.value, privacy: .private) bytes=\(downloadedBytes) preflight_s=\(preflightSeconds) reserve_s=\(reserveSeconds) stream_setup_s=\(streamSetupSeconds) transfer_including_write_s=\(transferSeconds) local_write_s=\(writeSeconds) install_s=\(installSeconds) first_read_s=\(firstReadSeconds) total_s=\(Self.seconds(since: started)) success=\(completed)"
+        "整文件缓存汇总 connection=\(self.connectionID.uuidString, privacy: .public) path=\(path.value, privacy: .private) bytes=\(downloadedBytes) preflight_s=\(preflightSeconds) reserve_s=\(reserveSeconds) stream_setup_s=\(streamSetupSeconds) transfer_including_write_s=\(transferSeconds) local_write_s=\(writeSeconds) local_write_calls=\(writeCalls) install_s=\(installSeconds) first_read_s=\(firstReadSeconds) total_s=\(Self.seconds(since: started)) success=\(completed)"
       )
     }
     guard cached.item.size <= cacheLimit else { throw RemoteError.posix(EFBIG) }
@@ -383,6 +384,7 @@ public actor RemoteVolumeBackend {
         transferSeconds = $1
         writeSeconds = $2
         downloadedBytes = $3
+        writeCalls = $4
       }
       downloadedBytes = size
       guard size == cached.item.size else { throw RemoteError.protocolError }
@@ -411,7 +413,7 @@ public actor RemoteVolumeBackend {
 
   func download(
     _ path: RemotePath, to file: URL, maximumSize: Int64? = nil,
-    timing: ((Double, Double, Double, Int64) -> Void)? = nil
+    timing: ((Double, Double, Double, Int64, Int) -> Void)? = nil
   ) async throws -> Int64 {
     guard FileManager.default.createFile(atPath: file.path, contents: nil) else {
       throw CocoaError(.fileWriteUnknown)
@@ -423,24 +425,57 @@ public actor RemoteVolumeBackend {
     var transferStarted: ContinuousClock.Instant?
     var setupSeconds = 0.0
     var writeSeconds = 0.0
+    var writeCalls = 0
     defer {
       timing?(
         transferStarted == nil ? Self.seconds(since: setupStarted) : setupSeconds,
-        transferStarted.map { Self.seconds(since: $0) } ?? 0, writeSeconds, size)
+        transferStarted.map { Self.seconds(since: $0) } ?? 0, writeSeconds, size,
+        writeCalls)
     }
     let stream = try await provider.read(path, range: nil)
     setupSeconds = Self.seconds(since: setupStarted)
     transferStarted = .now
+    // 小块攒到 1MiB 再落盘，减少写入系统调用；不按整文件预留内存。
+    let writeSize = 1024 * 1024
+    var pending = Data()
+    pending.reserveCapacity(writeSize)
+    func write(_ data: Data) throws {
+      try Task.checkCancellation()
+      let writeStarted = timing == nil ? nil : ContinuousClock.now
+      defer {
+        if let writeStarted { writeSeconds += Self.seconds(since: writeStarted) }
+      }
+      writeCalls += 1
+      try handle.write(contentsOf: data)
+    }
+    func flushPending() throws {
+      guard !pending.isEmpty else { return }
+      try write(pending)
+      pending.removeAll(keepingCapacity: true)
+    }
     for try await chunk in stream {
       try Task.checkCancellation()
       if let maximumSize, Int64(chunk.count) > maximumSize - size {
         throw RemoteError.protocolError
       }
-      let writeStarted = timing == nil ? nil : ContinuousClock.now
-      try handle.write(contentsOf: chunk)
-      if let writeStarted { writeSeconds += Self.seconds(since: writeStarted) }
       size += Int64(chunk.count)
+      if chunk.count >= writeSize {
+        try flushPending()
+        try write(chunk)
+      } else {
+        let available = writeSize - pending.count
+        if chunk.count > available {
+          pending.append(chunk.prefix(available))
+          try flushPending()
+          pending.append(chunk.suffix(chunk.count - available))
+        } else {
+          pending.append(chunk)
+        }
+        if pending.count == writeSize { try flushPending() }
+      }
     }
+    try Task.checkCancellation()
+    try flushPending()
     return size
   }
 

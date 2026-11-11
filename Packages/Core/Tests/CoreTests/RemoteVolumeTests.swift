@@ -70,6 +70,7 @@ private actor VolumeProvider: RemoteFileProvider {
   var listing: [RemoteItem]?
   var nextReadControl: VolumeReadControl?
   var nextReadContents: Data?
+  var readChunkSize: Int?
   var activeLists = 0
   var peakLists = 0
 
@@ -78,6 +79,7 @@ private actor VolumeProvider: RemoteFileProvider {
     self.rejectsExisting = rejectsExisting
   }
   func put(_ path: String, data: String) throws { files[try RemotePath(path)] = Data(data.utf8) }
+  func put(_ path: String, bytes: Data) throws { files[try RemotePath(path)] = bytes }
   func content(_ path: String) throws -> Data? { files[try RemotePath(path)] }
   func recorded() -> [String] { events }
   func resetEvents() { events = [] }
@@ -88,6 +90,7 @@ private actor VolumeProvider: RemoteFileProvider {
   func setListing(_ items: [RemoteItem]) { listing = items }
   func holdNextRead(_ control: VolumeReadControl) { nextReadControl = control }
   func replaceNextRead(with data: Data) { nextReadContents = data }
+  func splitReads(into bytes: Int) { readChunkSize = bytes }
   func maximumLists() -> Int { peakLists }
   func connect() async throws { disconnected = false }
   func disconnect() async { disconnected = true }
@@ -146,9 +149,16 @@ private actor VolumeProvider: RemoteFileProvider {
     } else {
       slice = data
     }
+    let chunkSize = readChunkSize
     return AsyncThrowingStream { continuation in
-      continuation.yield(slice.prefix(2))
-      if slice.count > 2 { continuation.yield(slice.dropFirst(2)) }
+      if let chunkSize {
+        for start in stride(from: 0, to: slice.count, by: chunkSize) {
+          continuation.yield(slice.subdata(in: start..<min(start + chunkSize, slice.count)))
+        }
+      } else {
+        continuation.yield(slice.prefix(2))
+        if slice.count > 2 { continuation.yield(slice.dropFirst(2)) }
+      }
       continuation.finish()
     }
   }
@@ -676,4 +686,28 @@ private struct VolumeFixture {
     #expect(try await fixture.backend.read(path, offset: 0, length: 4) == Data("abcd".utf8))
     await fixture.backend.disconnect()
   }
+}
+
+@Test func remoteVolumeChunkedDownloadPreservesMegabyteBoundariesAndTheFinalTail() async throws {
+  let megabyte = 1024 * 1024
+  let size = 2 * megabyte + 17
+  let contents = Data((0..<size).map { UInt8(($0 * 31 + $0 / 257) % 251 + 1) })
+  var capabilities = volumeFullAccess
+  capabilities.supportsRangeRead = false
+  let fixture = VolumeFixture(capabilities: capabilities, cacheLimit: Int64(size))
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", bytes: contents)
+  await fixture.provider.splitReads(into: 64 * 1024)
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: false)
+
+  #expect(try await fixture.backend.read(path, offset: 0, length: size) == contents)
+  for window in [(megabyte - 11)..<(megabyte + 29), (2 * megabyte - 11)..<size] {
+    #expect(try await fixture.backend.read(path, offset: Int64(window.lowerBound),
+                                          length: window.count) == contents.subdata(in: window))
+  }
+  #expect(await fixture.provider.recorded().filter { $0 == "read:/file:all" }.count == 1)
+  try await fixture.backend.close(path)
+  await fixture.backend.disconnect()
 }

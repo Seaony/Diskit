@@ -722,3 +722,7 @@ Kayoi.app: satisfies its Designated Requirement
 P2 诊断记录：`getAttributes` 共出现 5 次 EINVAL，目前未观察到功能影响，原因未判定。
 
 缓存回归红测：在独立 Core 副本中，仅把新 `attributes` 入口退为即时 `stat`，模拟原来的逐次远端查询；编译成功，指定测试实际执行后 8 处断言失败、退出 1。共享源代码未回退，当前相关 18 项及 Core 187 项保持通过。红测日志为 `build/agents/attribute-red-20261112-004426-237373/test.log`，不是对旧提交的完整构建。
+
+后续诊断未作为吞吐验收：独立下载任务没有提速，已撤回；进程优先级和短时系统追踪不支持扩展因 CPU 低优先级多等数秒；同 Debug CLI 仅切换 `MallocSpaceEfficient=1/0` 为 293.12/295.23 MB/s，校验一致，没有复现扩展差距。细节和 trace 位置见 [M7 报告](M7-REPORT.md)。用户随后确认先完成 USB 速度和真实拔线，再测 Wi-Fi；USB 速度仍未通过，70% 门槛不变。
+
+1 MiB 合并写入小步：清理临时诊断后的 `make build`、深度签名、Core 188 项及 App 186 项测试通过；其中 19 项为 RemoteVolume 相关回归。新增 2 MiB 加 17 字节非零分段数据验证全文件、跨 1 MiB 边界和尾块。清理前同一候选的真机单点 SHA-256 一致，写调用降到 1,024 次；传输 5.333 秒、本地写 0.362 秒，Finder 全程 169.12 MB/s，同构建 CLI 单点 251.66 MB/s，比值约 67.2%，仍未通过 70% 门槛。记录位于 `build/m7-step5-run.json` 的 `coldProbes.write-batch-1`，没有拿该单点冒充最终两次冷读中位数。
