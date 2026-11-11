@@ -103,12 +103,14 @@ extension RemoteVolumeBackend {
 
   public func flushAll() async throws {
     try await perform("flush-all") { backend in
+      backend.attributesByPath.removeAll()
       try backend.overlay.flush(RemotePath("/"))
       for path in Array(backend.staged.keys) { try await backend.flushUnlocked(path) }
     }
   }
 
   func flushUnlocked(_ path: RemotePath) async throws {
+    attributesByPath.removeValue(forKey: path)
     if LocalMetadataOverlay.handles(path) {
       try overlay.flush(path)
       return
@@ -166,6 +168,8 @@ extension RemoteVolumeBackend {
 
   public func close(_ path: RemotePath) async throws {
     try await perform("close", path: path) { backend in
+      backend.openedPaths.remove(path)
+      backend.attributesByPath.removeValue(forKey: path)
       try await backend.flushUnlocked(path)
       if let stage = backend.staged[path], !stage.retainedForRecovery {
         backend.staged.removeValue(forKey: path)
@@ -193,6 +197,7 @@ extension RemoteVolumeBackend {
           try? FileManager.default.removeItem(at: stage.url)
         }
       }
+      backend.openedPaths = backend.openedPaths.filter { !Self.contains(path, $0) }
       await backend.invalidate([path])
       do { try backend.overlay.removeMetadata(path) } catch {
         backend.logger.error("远端删除已完成，本地元数据未清理：\(path.value, privacy: .public)")
@@ -260,6 +265,14 @@ extension RemoteVolumeBackend {
         stage.item.name = destination.basename
         stage.retainedForRecovery = false
         backend.staged[destination] = stage
+      }
+      let opened = backend.openedPaths.filter { Self.contains(from, $0) }
+      backend.openedPaths = backend.openedPaths.filter {
+        !Self.contains(from, $0) && !Self.contains(to, $0)
+      }
+      for path in opened {
+        backend.openedPaths.insert(
+          try RemotePath(to.value + path.value.dropFirst(from.value.count)))
       }
       await backend.invalidate([from, to])
       do { try backend.overlay.moveMetadata(from, to: to) } catch {

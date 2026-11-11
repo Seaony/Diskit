@@ -187,7 +187,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
                      replyHandler: @escaping (FSItem.Attributes?, Error?) -> Void) {
     perform("getattr", item: item, body: {
       let node = try self.item(item)
-      let remote = try await self.backend.stat(self.path(of: node))
+      let remote = try await self.backend.attributes(self.path(of: node))
       let updated = self.node(for: remote, parentID: self.locked { node.parentID })
       return self.locked { self.attributes(desiredAttributes, of: updated) }
     }) { result in replyHandler(try? result.get(), result.failure) }

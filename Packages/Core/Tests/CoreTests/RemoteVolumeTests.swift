@@ -8,6 +8,54 @@ import Testing
 private let volumeFullAccess = ProviderCapabilities(
   canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
 
+private actor VolumeReadControl {
+  let started = TestEvent()
+  let cancelled = TestEvent()
+  let finished = TestEvent()
+  private let data: Data
+  private var step = 0
+  private var released = false
+  private var waiter: CheckedContinuation<Void, Never>?
+
+  init(data: Data) { self.data = data }
+
+  func next() async throws -> Data? {
+    if step == 0 {
+      step = 1
+      return Data(data.prefix(2))
+    }
+    guard step == 1 else { return nil }
+    step = 2
+    defer { finished.signal() }
+    return try await withTaskCancellationHandler {
+      started.signal()
+      if !released { await withCheckedContinuation { waiter = $0 } }
+      try Task.checkCancellation()
+      return Data(data.dropFirst(2))
+    } onCancel: {
+      cancelled.signal()
+    }
+  }
+
+  func release() {
+    released = true
+    waiter?.resume()
+    waiter = nil
+  }
+}
+
+private func waitForVolumeReadEvent(_ event: TestEvent) async throws {
+  try await withThrowingTaskGroup(of: Void.self) { group in
+    group.addTask { try await event.wait() }
+    group.addTask {
+      try await Task.sleep(for: .seconds(5))
+      throw RemoteError.posix(ETIMEDOUT)
+    }
+    defer { group.cancelAll() }
+    _ = try await group.next()
+  }
+}
+
 private actor VolumeProvider: RemoteFileProvider {
   nonisolated let capabilities: ProviderCapabilities
   var files: [RemotePath: Data] = [:]
@@ -20,6 +68,8 @@ private actor VolumeProvider: RemoteFileProvider {
   var rejectsExisting: Bool
   var slowListing = false
   var listing: [RemoteItem]?
+  var nextReadControl: VolumeReadControl?
+  var nextReadContents: Data?
   var activeLists = 0
   var peakLists = 0
 
@@ -36,6 +86,8 @@ private actor VolumeProvider: RemoteFileProvider {
   func loseConnection() { disconnected = true }
   func delayListing() { slowListing = true }
   func setListing(_ items: [RemoteItem]) { listing = items }
+  func holdNextRead(_ control: VolumeReadControl) { nextReadControl = control }
+  func replaceNextRead(with data: Data) { nextReadContents = data }
   func maximumLists() -> Int { peakLists }
   func connect() async throws { disconnected = false }
   func disconnect() async { disconnected = true }
@@ -78,7 +130,15 @@ private actor VolumeProvider: RemoteFileProvider {
   > {
     try checkConnection()
     events.append("read:\(path):\(range.map { "\($0.lowerBound)-\($0.upperBound)" } ?? "all")")
-    guard let data = files[path] else { throw RemoteError.posix(ENOENT) }
+    guard var data = files[path] else { throw RemoteError.posix(ENOENT) }
+    if let control = nextReadControl {
+      nextReadControl = nil
+      return AsyncThrowingStream(unfolding: { try await control.next() })
+    }
+    if let replacement = nextReadContents {
+      nextReadContents = nil
+      data = replacement
+    }
     let slice: Data
     if let range {
       let lower = min(data.count, Int(range.lowerBound))
@@ -395,4 +455,225 @@ private struct VolumeFixture {
   try await fixture.backend.close(fresh)
   #expect(try await fixture.provider.content("/existing") == Data("keep".utf8))
   #expect(try await fixture.provider.content("/fresh") == Data("new".utf8))
+}
+
+@Test func remoteVolumeOpenedAttributesUseDeviceAndCloudTTLButStatAndOpenStayFresh() async throws {
+  for (kind, ttl) in [(ConnectionKind.androidUSB, 5.0), (.aliyunDrive, 30.0)] {
+    let clock = Mutex(Date(timeIntervalSince1970: 100))
+    let fixture = VolumeFixture(kind: kind, now: { clock.withLock { $0 } })
+    defer { fixture.clean() }
+    let path = try fixture.path("/file")
+    try await fixture.provider.put("/file", data: "old")
+    _ = try await fixture.backend.connect()
+    #expect(try await fixture.backend.attributes(path).size == 3)
+    try await fixture.provider.put("/file", data: "unopened")
+    #expect(try await fixture.backend.attributes(path).size == 8)
+    #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 2)
+
+    await fixture.provider.resetEvents()
+    try await fixture.backend.open(path, writable: false)
+    for _ in 0..<32 { #expect(try await fixture.backend.attributes(path).size == 8) }
+    #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 1)
+    try await fixture.provider.put("/file", data: "changed externally")
+    clock.withLock { $0 += ttl - 1 }
+    #expect(try await fixture.backend.attributes(path).size == 8)
+    clock.withLock { $0 += 1 }
+    #expect(try await fixture.backend.attributes(path).size == 18)
+    #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 2)
+
+    try await fixture.provider.put("/file", data: "strict stat")
+    #expect(try await fixture.backend.stat(path).size == 11)
+    #expect(try await fixture.backend.attributes(path).size == 11)
+    try await fixture.provider.put("/file", data: "reopened")
+    try await fixture.backend.open(path, writable: false)
+    #expect(try await fixture.backend.attributes(path).size == 8)
+    #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 4)
+    try await fixture.backend.close(path)
+    await fixture.backend.disconnect()
+  }
+}
+
+@Test func remoteVolumeAttributeCacheEndsAtCloseAndDisconnectAndFollowsRename() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  let source = try fixture.path("/file")
+  let renamed = try fixture.path("/renamed")
+  try await fixture.provider.put("/file", data: "initial")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(source, writable: false)
+  #expect(try await fixture.backend.attributes(source).size == 7)
+  try await fixture.backend.close(source)
+  try await fixture.provider.put("/file", data: "after close")
+  #expect(try await fixture.backend.attributes(source).size == 11)
+  try await fixture.provider.put("/file", data: "next")
+  #expect(try await fixture.backend.attributes(source).size == 4)
+
+  try await fixture.backend.open(source, writable: false)
+  await fixture.backend.disconnect()
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.attributes(source)
+  }
+  try await fixture.provider.put("/file", data: "reconnected")
+  _ = try await fixture.backend.connect()
+  #expect(try await fixture.backend.attributes(source).size == 11)
+  try await fixture.provider.put("/file", data: "fresh")
+  #expect(try await fixture.backend.attributes(source).size == 5)
+
+  try await fixture.backend.open(source, writable: false)
+  try await fixture.backend.move(source, to: renamed)
+  await fixture.provider.resetEvents()
+  #expect(try await fixture.backend.attributes(renamed).size == 5)
+  for _ in 0..<8 { #expect(try await fixture.backend.attributes(renamed).size == 5) }
+  #expect(await fixture.provider.recorded().filter { $0 == "stat:/renamed" }.count == 1)
+  await #expect(throws: RemoteError.posix(ENOENT)) {
+    _ = try await fixture.backend.attributes(source)
+  }
+  try await fixture.backend.remove(renamed, recursive: false)
+  await #expect(throws: RemoteError.posix(ENOENT)) {
+    _ = try await fixture.backend.attributes(renamed)
+  }
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeExpiredOpenAttributesAlsoRefreshTheWholeFileReadCache() async throws {
+  let clock = Mutex(Date(timeIntervalSince1970: 100))
+  var capabilities = volumeFullAccess
+  capabilities.supportsRangeRead = false
+  let fixture = VolumeFixture(capabilities: capabilities, now: { clock.withLock { $0 } })
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "old")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: false)
+  #expect(try await fixture.backend.read(path, offset: 0, length: 99) == Data("old".utf8))
+  try await fixture.provider.put("/file", data: "new contents")
+  clock.withLock { $0 += 5 }
+  #expect(try await fixture.backend.attributes(path).size == 12)
+  #expect(try await fixture.backend.read(path, offset: 0, length: 99) == Data("new contents".utf8))
+  #expect(await fixture.provider.recorded().filter { $0 == "read:/file:all" }.count == 2)
+  try await fixture.backend.close(path)
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeStagedAttributesStayCurrentAcrossWritesTruncationDatesAndFlush() async throws {
+  let fixture = VolumeFixture()
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "old")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: false)
+  #expect(try await fixture.backend.attributes(path).size == 3)
+  try await fixture.provider.put("/file", data: "abcdefgh")
+  try await fixture.backend.open(path, writable: true)
+  #expect(try await fixture.backend.attributes(path).size == 8)
+  await fixture.provider.resetEvents()
+
+  _ = try await fixture.backend.write(path, offset: 8, data: Data("XYZ".utf8))
+  #expect(try await fixture.backend.attributes(path).size == 11)
+  try await fixture.backend.resize(path, size: 4)
+  #expect(try await fixture.backend.attributes(path).size == 4)
+  let modified = Date(timeIntervalSince1970: 1_234)
+  try await fixture.backend.setModifiedDate(path, date: modified)
+  #expect(try await fixture.backend.attributes(path).modified == modified)
+  #expect(await fixture.provider.recorded().filter { $0.hasPrefix("stat:") }.isEmpty)
+  try await fixture.backend.flush(path)
+  #expect(try await fixture.provider.content("/file") == Data("abcd".utf8))
+  #expect(try await fixture.backend.attributes(path).size == 4)
+  #expect(try await fixture.backend.attributes(path).modified == modified)
+
+  try await fixture.backend.close(path)
+  try await fixture.provider.put("/file", data: "outside after close")
+  #expect(try await fixture.backend.attributes(path).size == 19)
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeCachedAttributesCannotHideANameCollisionWhenFlushingNewContent() async throws {
+  let fixture = VolumeFixture()
+  defer { fixture.clean() }
+  let path = try fixture.path("/new")
+  _ = try await fixture.backend.connect()
+  _ = try await fixture.backend.createFile(path)
+  try await fixture.backend.open(path, writable: false)
+  #expect(try await fixture.backend.attributes(path).size == 0)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("ours".utf8))
+  #expect(try await fixture.backend.attributes(path).size == 4)
+  try await fixture.provider.put("/new", data: "created by another client")
+  await fixture.provider.resetEvents()
+
+  await #expect(throws: RemoteError.posix(EEXIST)) { try await fixture.backend.flush(path) }
+  #expect(try await fixture.provider.content("/new") == Data("created by another client".utf8))
+  #expect(await fixture.provider.recorded().contains("stat:/new"))
+  #expect(await fixture.provider.recorded().filter { $0.hasPrefix("upload:") }.isEmpty)
+  let retained = try #require(await fixture.backend.pendingWriteFiles[path])
+  #expect(try Data(contentsOf: retained) == Data("ours".utf8))
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeCancelledDownloadWaitsForCleanupBeforeReleasingTheVolumeAndQuota() async throws {
+  var capabilities = volumeFullAccess
+  capabilities.supportsRangeRead = false
+  let fixture = VolumeFixture(capabilities: capabilities, cacheLimit: 4)
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "abcd")
+  _ = try await fixture.backend.connect()
+  let control = VolumeReadControl(data: Data("abcd".utf8))
+  await fixture.provider.holdNextRead(control)
+  let readFinished = TestEvent()
+  let read = Task {
+    defer { readFinished.signal() }
+    return try await fixture.backend.read(path, offset: 0, length: 4)
+  }
+  do {
+    try await waitForVolumeReadEvent(control.started)
+    read.cancel()
+    try await waitForVolumeReadEvent(control.cancelled)
+    let queued = TestEvent()
+    let listed = TestEvent()
+    let next = Task {
+      queued.signal()
+      _ = try await fixture.backend.list(fixture.path("/"))
+      listed.signal()
+    }
+    try await waitForVolumeReadEvent(queued)
+    for _ in 0..<3 { await Task.yield() }
+    #expect(!readFinished.isSignaled)
+    #expect(!listed.isSignaled)
+    #expect(await fixture.provider.recorded().filter { $0 == "list:/" }.isEmpty)
+    await control.release()
+    await #expect(throws: CancellationError.self) { _ = try await read.value }
+    try await next.value
+    #expect(control.finished.isSignaled)
+    #expect(listed.isSignaled)
+  } catch {
+    read.cancel()
+    await control.release()
+    _ = try? await read.value
+    throw error
+  }
+  let directory = RemoteReadCache.directory(root: fixture.root, connectionID: await fixture.backend.connectionID)
+  #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+  #expect(try await fixture.backend.read(path, offset: 0, length: 4) == Data("abcd".utf8))
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeWrongDownloadSizeKeepsDisconnectErrorAndClearsPartialCacheForRetry() async throws {
+  for received in [Data("ab".utf8), Data("abcdef".utf8)] {
+    var capabilities = volumeFullAccess
+    capabilities.supportsRangeRead = false
+    let fixture = VolumeFixture(capabilities: capabilities, cacheLimit: 4)
+    defer { fixture.clean() }
+    let path = try fixture.path("/file")
+    try await fixture.provider.put("/file", data: "abcd")
+    _ = try await fixture.backend.connect()
+    await fixture.provider.replaceNextRead(with: received)
+    await #expect(throws: RemoteError.notConnected) {
+      _ = try await fixture.backend.read(path, offset: 0, length: 4)
+    }
+    let directory = RemoteReadCache.directory(root: fixture.root, connectionID: await fixture.backend.connectionID)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
+    _ = try await fixture.backend.connect()
+    #expect(try await fixture.backend.read(path, offset: 0, length: 4) == Data("abcd".utf8))
+    await fixture.backend.disconnect()
+  }
 }

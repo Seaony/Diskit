@@ -21,6 +21,10 @@ public actor RemoteVolumeBackend {
     let url: URL
     let item: RemoteItem
   }
+  struct AttributeEntry {
+    let item: RemoteItem
+    let expires: Date
+  }
 
   let connectionID: UUID
   let cacheRoot: URL
@@ -33,6 +37,8 @@ public actor RemoteVolumeBackend {
   var directories: [RemotePath: DirectoryEntry] = [:]
   var staged: [RemotePath: StagedFile] = [:]
   var wholeFiles: [RemotePath: CachedFile] = [:]
+  var openedPaths: Set<RemotePath> = []
+  var attributesByPath: [RemotePath: AttributeEntry] = [:]
   var hiddenUploads: Set<RemotePath> = []
   private var running = false
   private var waiters: [CheckedContinuation<Void, Never>] = []
@@ -102,6 +108,8 @@ public actor RemoteVolumeBackend {
       }
       if Self.isDisconnect(error) {
         connected = false
+        openedPaths.removeAll()
+        attributesByPath.removeAll()
         await provider.disconnect()
         throw RemoteError.notConnected
       }
@@ -151,6 +159,8 @@ public actor RemoteVolumeBackend {
         return space
       } catch {
         backend.connected = false
+        backend.openedPaths.removeAll()
+        backend.attributesByPath.removeAll()
         await backend.provider.disconnect()
         throw error
       }
@@ -162,6 +172,8 @@ public actor RemoteVolumeBackend {
     defer { release() }
     connected = false
     directories.removeAll()
+    openedPaths.removeAll()
+    attributesByPath.removeAll()
     await provider.disconnect()
     logger.info(
       "连接 \(self.connectionID.uuidString, privacy: .public) 已断开，保留写入暂存文件 \(self.staged.count)")
@@ -198,6 +210,20 @@ public actor RemoteVolumeBackend {
     try await perform("stat", path: path) { try await $0.statUnlocked(path) }
   }
 
+  public func attributes(_ path: RemotePath) async throws -> RemoteItem {
+    try await perform("attributes", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) { return try backend.overlay.stat(path) }
+      try backend.requireConnection()
+      if let stage = backend.staged[path] { return stage.item }
+      if backend.openedPaths.contains(path), let entry = backend.attributesByPath[path],
+        entry.expires > backend.now()
+      {
+        return entry.item
+      }
+      return try await backend.statUnlocked(path)
+    }
+  }
+
   func statUnlocked(_ path: RemotePath) async throws -> RemoteItem {
     if LocalMetadataOverlay.handles(path) { return try overlay.stat(path) }
     try requireConnection()
@@ -205,6 +231,10 @@ public actor RemoteVolumeBackend {
     guard !hiddenUploads.contains(path) else { throw RemoteError.posix(ENOENT) }
     let item = try await provider.stat(path)
     if let cached = wholeFiles[path], cached.item != item { wholeFiles.removeValue(forKey: path) }
+    if openedPaths.contains(path) {
+      attributesByPath[path] = AttributeEntry(
+        item: item, expires: now().addingTimeInterval(directoryTTL))
+    }
     return item
   }
 
@@ -252,10 +282,15 @@ public actor RemoteVolumeBackend {
         return
       }
       try backend.requireConnection()
+      let item = try await backend.statUnlocked(path)
       if writable {
         try await backend.prepareStage(path)
-      } else {
-        _ = try await backend.statUnlocked(path)
+      }
+      if !item.isDirectory {
+        backend.openedPaths.insert(path)
+        backend.attributesByPath[path] = AttributeEntry(
+          item: backend.staged[path]?.item ?? item,
+          expires: backend.now().addingTimeInterval(backend.directoryTTL))
       }
     }
   }
@@ -299,6 +334,7 @@ public actor RemoteVolumeBackend {
   }
 
   func readWholeFile(_ path: RemotePath, offset: Int64, length: Int) async throws -> Data {
+    let started = ContinuousClock.now
     let cached: CachedFile
     if let current = wholeFiles[path] {
       cached = current
@@ -315,6 +351,20 @@ public actor RemoteVolumeBackend {
     {
       return data
     }
+    let preflightSeconds = Self.seconds(since: started)
+    var reserveSeconds = 0.0
+    var streamSetupSeconds = 0.0
+    var transferSeconds = 0.0
+    var writeSeconds = 0.0
+    var installSeconds = 0.0
+    var firstReadSeconds = 0.0
+    var downloadedBytes: Int64 = 0
+    var completed = false
+    defer {
+      logger.info(
+        "整文件缓存汇总 connection=\(self.connectionID.uuidString, privacy: .public) path=\(path.value, privacy: .private) bytes=\(downloadedBytes) preflight_s=\(preflightSeconds) reserve_s=\(reserveSeconds) stream_setup_s=\(streamSetupSeconds) transfer_including_write_s=\(transferSeconds) local_write_s=\(writeSeconds) install_s=\(installSeconds) first_read_s=\(firstReadSeconds) total_s=\(Self.seconds(since: started)) success=\(completed)"
+      )
+    }
     guard cached.item.size <= cacheLimit else { throw RemoteError.posix(EFBIG) }
     let manager = FileManager.default
     try manager.createDirectory(
@@ -323,37 +373,72 @@ public actor RemoteVolumeBackend {
       path: ".download-" + UUID().uuidString)
     defer { try? manager.removeItem(at: temporary) }
     let reservation = UUID()
+    let reserveStarted = ContinuousClock.now
     try await RemoteReadCache.shared.reserve(
       root: cacheRoot, bytes: cached.item.size, limit: cacheLimit, id: reservation)
+    reserveSeconds = Self.seconds(since: reserveStarted)
     do {
-      let size = try await download(path, to: temporary, maximumSize: cached.item.size)
+      let size = try await download(path, to: temporary, maximumSize: cached.item.size) {
+        streamSetupSeconds = $0
+        transferSeconds = $1
+        writeSeconds = $2
+        downloadedBytes = $3
+      }
+      downloadedBytes = size
       guard size == cached.item.size else { throw RemoteError.protocolError }
+      let installStarted = ContinuousClock.now
       try await RemoteReadCache.shared.install(
         temporary, as: cached.url, root: cacheRoot, limit: cacheLimit, reservation: reservation)
+      installSeconds = Self.seconds(since: installStarted)
     } catch {
       await RemoteReadCache.shared.cancel(root: cacheRoot, id: reservation)
       throw error
     }
+    let firstReadStarted = ContinuousClock.now
     guard
       let data = try await RemoteReadCache.shared.read(
         cached.url, expectedSize: cached.item.size, offset: offset, length: length)
     else { throw RemoteError.posix(EIO) }
+    firstReadSeconds = Self.seconds(since: firstReadStarted)
+    completed = true
     return data
   }
 
-  func download(_ path: RemotePath, to file: URL, maximumSize: Int64? = nil) async throws -> Int64 {
+  private static func seconds(since start: ContinuousClock.Instant) -> Double {
+    let duration = start.duration(to: .now).components
+    return Double(duration.seconds) + Double(duration.attoseconds) / 1e18
+  }
+
+  func download(
+    _ path: RemotePath, to file: URL, maximumSize: Int64? = nil,
+    timing: ((Double, Double, Double, Int64) -> Void)? = nil
+  ) async throws -> Int64 {
     guard FileManager.default.createFile(atPath: file.path, contents: nil) else {
       throw CocoaError(.fileWriteUnknown)
     }
     let handle = try FileHandle(forWritingTo: file)
     defer { try? handle.close() }
     var size: Int64 = 0
-    for try await chunk in try await provider.read(path, range: nil) {
+    let setupStarted = ContinuousClock.now
+    var transferStarted: ContinuousClock.Instant?
+    var setupSeconds = 0.0
+    var writeSeconds = 0.0
+    defer {
+      timing?(
+        transferStarted == nil ? Self.seconds(since: setupStarted) : setupSeconds,
+        transferStarted.map { Self.seconds(since: $0) } ?? 0, writeSeconds, size)
+    }
+    let stream = try await provider.read(path, range: nil)
+    setupSeconds = Self.seconds(since: setupStarted)
+    transferStarted = .now
+    for try await chunk in stream {
       try Task.checkCancellation()
       if let maximumSize, Int64(chunk.count) > maximumSize - size {
         throw RemoteError.protocolError
       }
+      let writeStarted = timing == nil ? nil : ContinuousClock.now
       try handle.write(contentsOf: chunk)
+      if let writeStarted { writeSeconds += Self.seconds(since: writeStarted) }
       size += Int64(chunk.count)
     }
     return size
@@ -362,6 +447,9 @@ public actor RemoteVolumeBackend {
   func invalidate(_ paths: [RemotePath]) async {
     for path in paths {
       directories.removeValue(forKey: path.parent)
+      for key in Array(attributesByPath.keys) where key == path.parent || Self.contains(path, key) {
+        attributesByPath.removeValue(forKey: key)
+      }
       for key in Array(directories.keys) where Self.contains(path, key) {
         directories.removeValue(forKey: key)
       }
