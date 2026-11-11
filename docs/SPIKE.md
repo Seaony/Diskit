@@ -5,7 +5,7 @@
 验证代码：
 
 - 扩展 `FSExtension/`（`KayoiFS.appex`，bundle ID `com.seaony.Kayoi.FS`）：内存假数据卷，根目录有 `readme.txt`、`big.bin`（1 GiB，内容按偏移现算，不占内存）和 `Folder/inside.txt`。所有新建、删除、改名、设属性、设扩展属性的操作都写日志（subsystem `com.seaony.Kayoi.FS`，category `spike`）。
-- 主 App 验证入口 `App/FSKitSpike.swift`：只有带 `--fskit-spike` 参数启动时才运行，跑完就退出，不进入正常界面。子命令有 `seed`（写 App Group 文件和共享钥匙串条目）、`status`（列出系统里的 FSKit 扩展和是否启用）、`mount <URL>`、`unmount <路径>`、`settings`（打开系统设置的扩展页）。
+- 主 App 验证入口 `App/FSKitSpike.swift`：只有带 `--fskit-spike` 参数启动时才运行，跑完就退出，不进入正常界面。子命令有 `seed`（写 App Group 文件和共享钥匙串条目）、`status`（列出系统里的 FSKit 扩展和是否启用）、`mount <URL>`、`unmount <路径>`、`usbcheck`（在主 App 里跑和扩展相同的 USB 握手检查）、`settings`（打开系统设置的扩展页）。
 - 签名：`project.yml` 改为自动签名加 `DEVELOPMENT_TEAM`。`make build` 带 `-allowProvisioningUpdates`，Xcode 会自动注册 App ID、生成描述文件。
 
 ## 结论汇总
@@ -15,7 +15,7 @@
 | 1 | 系统识别扩展、系统设置里能打开开关 | 通过 |
 | 2 | 不需要管理员密码挂载 / 推出 | 通过（macOS 27 用 `FSClient`；macOS 26 用 `mount -F`） |
 | 3 | 扩展读到 App Group 和共享钥匙串 | 读写通过；§7 一次性迁移**未验证**，原因见下文 |
-| 4 | 扩展进程内通过 IOUSBHost 连安卓并握手 | 代码已就绪，枚举不崩溃；**待插手机实测** |
+| 4 | 扩展进程内通过 IOUSBHost 连安卓并握手 | 通过（需要加一条沙盒 IOKit 例外权限） |
 | 5 | 扩展进程内用 ImageCaptureCore 看 GR IV | 未测（没有相机） |
 | 6 | Finder 产生的 `._*` / `.DS_Store`，覆盖层方案 | 可行，并且找到了更简单的做法 |
 | 7 | 1 GiB 读吞吐和 CPU | 冷读约 5 GB/s，扩展每 GiB 用 0.25 秒 CPU |
@@ -51,9 +51,14 @@ Finder 中的表现：
 
 ## 4. 扩展进程内连 USB 安卓
 
-- 扩展已经链接 ADB 包，权限带 `com.apple.security.device.usb`。挂载 `kayoi-adb://usbcheck` 时，扩展会在后台枚举 ADB 接口、握手，并执行 `shell:getprop ro.product.model`，结果写进卷里的 `usb-check.txt`。ADB 私钥存在共享钥匙串里，手机只需要授权一次。
-- 没插手机时：扩展在沙盒里枚举到 0 台设备，没有报错，也没有崩溃。
-- 待补：插上手机之后的实测结果。
+测试手机：Xiaomi 17，USB 连接。
+
+- 扩展已经链接 ADB 包。挂载 `kayoi-adb://usbcheck` 时，扩展会在后台枚举 ADB 接口，直接调一次 `IOServiceOpen` 记下返回码，然后用 `USBTransport` 加 `ADBSession` 握手，结果写进卷里的 `usb-check.txt`。主 App 用 `--fskit-spike usbcheck` 能跑同一段检查，用来对比。
+- 只带 `com.apple.security.device.usb` 时，扩展里 `IOServiceOpen` 返回 `0xe00002e2`（`kIOReturnNotPermitted`），握手报 EIO。内核日志：`Sandbox: KayoiFS deny(1) iokit-open-user-client AppleUSBHostFrameworkInterfaceClient`。同一时间主 App（不开沙盒）能打开这个接口，所以不是被别的进程占用了。
+- 加上 `com.apple.security.temporary-exception.iokit-user-client-class` = `AppleUSBHostFrameworkInterfaceClient`、`AppleUSBHostFrameworkDeviceClient` 之后，扩展里 `IOServiceOpen` 返回 0，**握手成功**，手机报了 23 项 features。
+- ADB 私钥存在共享钥匙串访问组里。主 App 第一次握手时，手机弹出授权，点了允许；之后扩展用同一把钥匙握手，手机没有再弹。说明两个进程能共用一把钥匙，手机只需要授权一次。
+- 代价：`temporary-exception` 这类权限 Mac App Store 不收，但 Kayoi 走 GitHub 加 Sparkle 分发，不受影响。
+- 没插手机时：扩展枚举到 0 台，不报错也不崩溃。
 
 ## 5. GR IV
 

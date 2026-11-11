@@ -18,5 +18,10 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.iokit-user-client-class</key>
+	<array>
+		<string>AppleUSBHostFrameworkInterfaceClient</string>
+		<string>AppleUSBHostFrameworkDeviceClient</string>
+	</array>
 </dict>
 </plist>

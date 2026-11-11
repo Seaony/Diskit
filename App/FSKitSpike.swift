@@ -3,7 +3,7 @@ import Foundation
 import Security
 
 /// M7 验证入口：只在带 `--fskit-spike` 参数启动时运行，做完就退出，不进正常界面。
-/// 用法：Kayoi --fskit-spike seed | status | mount <URL> | unmount <路径> | settings
+/// 用法：Kayoi --fskit-spike seed | status | mount <URL> | unmount <路径> | usbcheck | settings
 enum FSKitSpike {
   /// 任何一步失败就记下来，退出码给 1，方便脚本判断验证结果
   nonisolated(unsafe) private static var failed = false
@@ -23,11 +23,12 @@ enum FSKitSpike {
     case "mount" where rest.count > 1:
       if #available(macOS 27, *) { mount(rest[1]) } else { fail("FSClient 挂载接口需要 macOS 27") }
     case "unmount" where rest.count > 1: unmount(rest[1])
+    case "usbcheck": usbCheck()
     case "settings":
       if #available(macOS 27, *) {
         if FSClient.shared.openFileSystemExtensionsSettings() { print("已打开系统设置") } else { fail("打开系统设置失败") }
       } else { fail("需要 macOS 27") }
-    default: fail("用法：--fskit-spike seed | status | mount <URL> | unmount <路径> | settings")
+    default: fail("用法：--fskit-spike seed | status | mount <URL> | unmount <路径> | usbcheck | settings")
     }
     exit(failed ? 1 : 0)
   }
@@ -84,6 +85,16 @@ enum FSKitSpike {
     wait { done in
       FileManager.default.unmountVolume(at: URL(filePath: path), options: []) { error in
         if let error { fail("推出失败：\(error)") } else { print("已推出：\(path)") }
+        done()
+      }
+    }
+  }
+
+  /// 在主 App（不开沙盒）里跑和扩展相同的 USB 检查，用来对比。
+  private static func usbCheck() {
+    wait { done in
+      Task {
+        print(await SpikeUSBCheck.run())
         done()
       }
     }

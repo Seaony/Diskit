@@ -1,29 +1,39 @@
 import ADB
 import Core
 import Foundation
+import IOKit
 import Security
 
-/// 验证第 4 条：在扩展进程里用 IOUSBHost 打开安卓手机的 ADB 接口，完成握手并读一个属性。
+/// 验证第 4 条：在扩展进程里用 IOUSBHost 打开安卓手机的 ADB 接口并完成握手。
 enum SpikeUSBCheck {
   static func run() async -> String {
     let devices = ADBUSB.devices()
     guard let device = devices.first else { return "没找到 ADB USB 设备（扩展进程内枚举到 0 台）" }
-    var lines = ["枚举到 \(devices.count) 台：\(device.name) 序列号 \(device.serial)"]
+    var lines = ["枚举到 \(devices.count) 台：\(device.name) 序列号 \(device.serial)", rawOpenResult()]
     do {
       let transport = try USBTransport(device: device)
       let session = ADBSession(transport: transport, identity: ADBIdentity(store: SpikeKeychainStore()))
       try await session.connect()
       lines.append("握手成功，features 共 \(await session.features.count) 项")
-      try await session.open("shell:getprop ro.product.model")
-      var output = Data()
-      while let chunk = try await session.readChunk() { output.append(chunk) }
-      lines.append("型号：\(String(decoding: output, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines))")
       await session.disconnect()
     } catch {
       lines.append("失败：\(error)")
     }
     return lines.joined(separator: "\n")
   }
+}
+
+/// 直接对 ADB 接口调 IOServiceOpen，拿到内核返回码，用来区分是沙盒拦截还是被别的进程占用。
+private func rawOpenResult() -> String {
+  let match = IOServiceMatching("IOUSBHostInterface") as NSMutableDictionary
+  match[kIOPropertyMatchKey] = ["bInterfaceClass": 0xff, "bInterfaceSubClass": 0x42, "bInterfaceProtocol": 1]
+  let service = IOServiceGetMatchingService(kIOMainPortDefault, match)
+  guard service != 0 else { return "IOServiceOpen：找不到接口" }
+  defer { IOObjectRelease(service) }
+  var connect: io_connect_t = 0
+  let result = IOServiceOpen(service, mach_task_self_, 0, &connect)
+  if result == KERN_SUCCESS { IOServiceClose(connect) }
+  return String(format: "IOServiceOpen 返回 0x%08x", result)
 }
 
 /// 验证用：ADB 私钥存进共享钥匙串访问组，扩展重启后还是同一把钥匙，手机只需授权一次。
