@@ -37,10 +37,13 @@ extension RemoteVolumeBackend {
 
   public func write(_ path: RemotePath, offset: Int64, data: Data) async throws -> Int {
     try await perform("write", path: path) { backend in
-      try backend.requireConnection()
       guard offset >= 0, !offset.addingReportingOverflow(Int64(data.count)).overflow else {
         throw RemoteError.invalidPath
       }
+      if LocalMetadataOverlay.handles(path) {
+        return try backend.overlay.write(path, offset: offset, data: data)
+      }
+      try backend.requireConnection()
       try await backend.prepareStage(path)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
       let handle = try FileHandle(forWritingTo: stage.url)
@@ -58,8 +61,12 @@ extension RemoteVolumeBackend {
 
   public func resize(_ path: RemotePath, size: Int64) async throws {
     try await perform("resize", path: path) { backend in
-      try backend.requireConnection()
       guard size >= 0 else { throw RemoteError.invalidPath }
+      if LocalMetadataOverlay.handles(path) {
+        try backend.overlay.resize(path, size: size)
+        return
+      }
+      try backend.requireConnection()
       try await backend.prepareStage(path)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
       let handle = try FileHandle(forWritingTo: stage.url)
@@ -75,6 +82,10 @@ extension RemoteVolumeBackend {
 
   public func setModifiedDate(_ path: RemotePath, date: Date) async throws {
     try await perform("set-modified", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) {
+        try backend.overlay.setModifiedDate(path, date: date)
+        return
+      }
       try backend.requireConnection()
       try await backend.prepareStage(path)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
@@ -92,11 +103,16 @@ extension RemoteVolumeBackend {
 
   public func flushAll() async throws {
     try await perform("flush-all") { backend in
+      try backend.overlay.flush(RemotePath("/"))
       for path in Array(backend.staged.keys) { try await backend.flushUnlocked(path) }
     }
   }
 
   func flushUnlocked(_ path: RemotePath) async throws {
+    if LocalMetadataOverlay.handles(path) {
+      try overlay.flush(path)
+      return
+    }
     guard var stage = staged[path], stage.dirty else { return }
     try requireConnection()
     guard capabilities.canWrite else { throw RemoteError.posix(EROFS) }
@@ -163,6 +179,10 @@ extension RemoteVolumeBackend {
 
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
     try await perform("remove", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) {
+        try backend.overlay.remove(path, recursive: recursive)
+        return
+      }
       try backend.requireConnection()
       guard backend.capabilities.canDelete else { throw RemoteError.posix(EROFS) }
       if backend.staged[path]?.existedRemotely != false {
@@ -174,11 +194,23 @@ extension RemoteVolumeBackend {
         }
       }
       await backend.invalidate([path])
+      do { try backend.overlay.removeMetadata(path) } catch {
+        backend.logger.error("远端删除已完成，本地元数据未清理：\(path.value, privacy: .public)")
+        throw error
+      }
     }
   }
 
   public func move(_ from: RemotePath, to: RemotePath, replacing: Bool = false) async throws {
     try await perform("move", path: from) { backend in
+      let localSource = LocalMetadataOverlay.handles(from)
+      guard localSource == LocalMetadataOverlay.handles(to) else {
+        throw RemoteError.posix(EXDEV)
+      }
+      if localSource {
+        try backend.overlay.move(from, to: to, replacing: replacing)
+        return
+      }
       try backend.requireConnection()
       let sameParent = from.parent == to.parent
       guard sameParent ? backend.capabilities.canRename : backend.capabilities.canMove else {
@@ -230,6 +262,11 @@ extension RemoteVolumeBackend {
         backend.staged[destination] = stage
       }
       await backend.invalidate([from, to])
+      do { try backend.overlay.moveMetadata(from, to: to) } catch {
+        backend.logger.error(
+          "远端移动已完成，本地元数据未迁移：\(from.value, privacy: .public) → \(to.value, privacy: .public)")
+        throw error
+      }
     }
   }
 }

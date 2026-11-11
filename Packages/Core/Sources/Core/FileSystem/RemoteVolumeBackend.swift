@@ -3,6 +3,7 @@ import OSLog
 
 public actor RemoteVolumeBackend {
   public nonisolated let provider: any RemoteFileProvider
+  public nonisolated let overlay: LocalMetadataOverlay
   public nonisolated var capabilities: ProviderCapabilities { provider.capabilities }
 
   struct DirectoryEntry {
@@ -41,6 +42,7 @@ public actor RemoteVolumeBackend {
     cacheRoot: URL, replacesExisting: Bool, cacheLimit: Int64 = 5 * 1024 * 1024 * 1024
   ) {
     self.provider = provider
+    overlay = LocalMetadataOverlay(cacheRoot: cacheRoot, connectionID: connectionID)
     self.connectionID = connectionID
     self.cacheRoot = cacheRoot
     self.replacesExisting = replacesExisting
@@ -55,6 +57,7 @@ public actor RemoteVolumeBackend {
     now: @escaping @Sendable () -> Date
   ) {
     self.provider = provider
+    overlay = LocalMetadataOverlay(cacheRoot: cacheRoot, connectionID: connectionID)
     self.connectionID = connectionID
     self.cacheRoot = cacheRoot
     self.replacesExisting = replacesExisting
@@ -166,6 +169,7 @@ public actor RemoteVolumeBackend {
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
     try await perform("list", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) { return try backend.overlay.list(path) }
       try backend.requireConnection()
       let items: [RemoteItem]
       if let cached = backend.directories[path], cached.expires > backend.now() {
@@ -179,10 +183,12 @@ public actor RemoteVolumeBackend {
       for item in items
       where item.path.basename != "." && item.path.basename != ".."
         && !backend.hiddenUploads.contains(item.path)
+        && !LocalMetadataOverlay.handles(item.path)
       {
         guard merged[item.path] == nil else { throw RemoteError.posix(EEXIST) }
         merged[item.path] = item
       }
+      for item in try backend.overlay.list(path) { merged[item.path] = item }
       for (key, stage) in backend.staged where key.parent == path { merged[key] = stage.item }
       return merged.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
@@ -193,6 +199,7 @@ public actor RemoteVolumeBackend {
   }
 
   func statUnlocked(_ path: RemotePath) async throws -> RemoteItem {
+    if LocalMetadataOverlay.handles(path) { return try overlay.stat(path) }
     try requireConnection()
     if let stage = staged[path] { return stage.item }
     guard !hiddenUploads.contains(path) else { throw RemoteError.posix(ENOENT) }
@@ -211,6 +218,7 @@ public actor RemoteVolumeBackend {
 
   public func createFile(_ path: RemotePath) async throws -> RemoteItem {
     try await perform("create", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) { return try backend.overlay.createFile(path) }
       try backend.requireConnection()
       guard backend.capabilities.canWrite else { throw RemoteError.posix(EROFS) }
       guard backend.staged[path] == nil, try await backend.remoteItem(path) == nil else {
@@ -227,6 +235,7 @@ public actor RemoteVolumeBackend {
 
   public func makeDirectory(_ path: RemotePath) async throws -> RemoteItem {
     try await perform("mkdir", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) { return try backend.overlay.makeDirectory(path) }
       try backend.requireConnection()
       guard backend.capabilities.canWrite else { throw RemoteError.posix(EROFS) }
       try await backend.provider.makeDirectory(path)
@@ -237,6 +246,11 @@ public actor RemoteVolumeBackend {
 
   public func open(_ path: RemotePath, writable: Bool) async throws {
     try await perform("open", path: path) { backend in
+      if LocalMetadataOverlay.handles(path) {
+        let item = try backend.overlay.stat(path)
+        if writable && item.isDirectory { throw RemoteError.posix(EISDIR) }
+        return
+      }
       try backend.requireConnection()
       if writable {
         try await backend.prepareStage(path)
@@ -248,10 +262,13 @@ public actor RemoteVolumeBackend {
 
   public func read(_ path: RemotePath, offset: Int64, length: Int) async throws -> Data {
     try await perform("read", path: path) { backend in
-      try backend.requireConnection()
       guard offset >= 0, length >= 0, !offset.addingReportingOverflow(Int64(length)).overflow else {
         throw RemoteError.invalidPath
       }
+      if LocalMetadataOverlay.handles(path) {
+        return try backend.overlay.read(path, offset: offset, length: length)
+      }
+      try backend.requireConnection()
       guard length > 0 else { return Data() }
       if let stage = backend.staged[path] {
         return try backend.readLocal(stage.url, offset: offset, length: length)

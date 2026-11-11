@@ -17,6 +17,7 @@ final class KayoiRemoteItem: FSItem, @unchecked Sendable {
     self.id = id
     self.remote = remote
     self.parentID = parentID
+    let writable = writable || LocalMetadataOverlay.handles(remote.path)
     mode = UInt32(remote.isDirectory ? S_IFDIR : S_IFREG)
       | UInt32(remote.isDirectory ? (writable ? 0o755 : 0o555) : (writable ? 0o644 : 0o444))
     let time = Self.time(remote.modified)
@@ -37,7 +38,7 @@ final class KayoiRemoteItem: FSItem, @unchecked Sendable {
 }
 
 final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenCloseOperations,
-  FSVolume.ReadWriteOperations, @unchecked Sendable
+  FSVolume.ReadWriteOperations, FSVolume.XattrOperations, @unchecked Sendable
 {
   private let backend: RemoteVolumeBackend
   private let connectionID: String
@@ -93,7 +94,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
   var maximumNameLength: Int { 255 }
   var restrictsOwnershipChanges: Bool { true }
   var truncatesLongNames: Bool { false }
-  var maximumXattrSize: Int { 0 }
+  var maximumXattrSize: Int { 1 << 20 }
   var maximumFileSize: UInt64 { UInt64(Int64.max) }
   var isOpenCloseInhibited = false
 
@@ -194,8 +195,10 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
                      replyHandler: @escaping (FSItem.Attributes?, Error?) -> Void) {
     perform("setattr", item: item, body: {
       let node = try self.item(item)
-      guard self.backend.capabilities.canWrite else { throw POSIXError(.EROFS) }
       let path = self.path(of: node)
+      guard self.backend.capabilities.canWrite || LocalMetadataOverlay.handles(path) else {
+        throw POSIXError(.EROFS)
+      }
       if newAttributes.isValid(.size), !self.locked({ node.remote.isDirectory }) {
         guard newAttributes.size <= UInt64(Int64.max) else { throw POSIXError(.EFBIG) }
         try await self.backend.resize(path, size: Int64(newAttributes.size))
@@ -357,6 +360,39 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
 
   func readSymbolicLink(_ item: FSItem, replyHandler: @escaping (FSFileName?, Error?) -> Void) {
     replyHandler(nil, POSIXError(.ENOTSUP))
+  }
+
+  func getXattr(named name: FSFileName, of item: FSItem,
+                replyHandler: @escaping (Data?, Error?) -> Void) {
+    perform("getxattr", item: item, body: {
+      let node = try self.item(item)
+      return try await self.backend.getXattr(named: name.data, of: self.path(of: node))
+    }) { result in replyHandler(try? result.get(), result.failure) }
+  }
+
+  func setXattr(named name: FSFileName, to value: Data?, on item: FSItem,
+                policy: FSVolume.SetXattrPolicy, replyHandler: @escaping (Error?) -> Void) {
+    perform("setxattr", item: item, body: {
+      let node = try self.item(item)
+      let remotePolicy: RemoteXattrPolicy
+      switch policy {
+      case .alwaysSet: remotePolicy = .set
+      case .mustCreate: remotePolicy = .create
+      case .mustReplace: remotePolicy = .replace
+      case .delete: remotePolicy = .remove
+      @unknown default: throw POSIXError(.EINVAL)
+      }
+      try await self.backend.setXattr(named: name.data, to: value, on: self.path(of: node),
+                                      policy: remotePolicy)
+    }) { replyHandler($0.failure) }
+  }
+
+  func listXattrs(of item: FSItem, replyHandler: @escaping @Sendable ([FSFileName]?, Error?) -> Void) {
+    perform("listxattrs", item: item, body: {
+      let node = try self.item(item)
+      let names = try await self.backend.listXattrs(of: self.path(of: node))
+      return names.map { FSFileName(data: $0) }
+    }) { result in replyHandler(try? result.get(), result.failure) }
   }
 
   private func item(_ item: FSItem) throws -> KayoiRemoteItem {
