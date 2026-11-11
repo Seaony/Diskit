@@ -174,12 +174,12 @@ func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownS
   let directory = harness.location.cacheDirectory
   try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
   try Data(repeating: 1, count: 128).write(to: directory.appending(path: "fixture"))
-  #expect(await model.cacheSize() >= 128)
+  #expect(try await model.cacheSize() >= 128)
   harness.preferences.set(-1, forKey: "cacheLimitGB")
   await model.enforceCacheLimit()
   #expect(FileManager.default.fileExists(atPath: directory.appending(path: "fixture").path))
   await model.clearCache()
-  #expect(await model.cacheSize() == 0)
+  #expect(try await model.cacheSize() == 0)
   #expect(harness.alerts.isEmpty)
   try? FileManager.default.removeItem(
     at: harness.location.dataDirectory.deletingLastPathComponent())
