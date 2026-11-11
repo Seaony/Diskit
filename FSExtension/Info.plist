@@ -48,9 +48,28 @@
 		<key>FSSupportedSchemes</key>
 		<array>
 			<string>kayoi-adb</string>
-			<string>kayoi-gr</string>
 			<string>kayoi-aliyun</string>
+			<string>kayoi-aliyunoss</string>
+			<string>kayoi-backblazeb2</string>
+			<string>kayoi-baidudrive</string>
+			<string>kayoi-camera</string>
+			<string>kayoi-cloudflarer2</string>
+			<string>kayoi-drive115</string>
+			<string>kayoi-drive123</string>
+			<string>kayoi-dropbox</string>
+			<string>kayoi-googledrive</string>
+			<string>kayoi-lanzou</string>
+			<string>kayoi-minio</string>
+			<string>kayoi-mobilecloud</string>
+			<string>kayoi-onedrive</string>
+			<string>kayoi-pikpak</string>
+			<string>kayoi-qiniukodo</string>
 			<string>kayoi-quark</string>
+			<string>kayoi-s3</string>
+			<string>kayoi-tencentcos</string>
+			<string>kayoi-thunderdrive</string>
+			<string>kayoi-tianyidrive</string>
+			<string>kayoi-ucdrive</string>
 		</array>
 		<key>FSSupportsBlockResources</key>
 		<false/>
@@ -60,6 +79,102 @@
 		<false/>
 		<key>FSSupportsServerURLs</key>
 		<false/>
+	</dict>
+	<key>ALIYUN_CLIENT_ID</key>
+	<string>$(ALIYUN_CLIENT_ID)</string>
+	<key>ALIYUN_CLIENT_SECRET</key>
+	<string>$(ALIYUN_CLIENT_SECRET)</string>
+	<key>ALIYUN_REDIRECT_URI</key>
+	<string>$(ALIYUN_REDIRECT_URI)</string>
+	<key>BAIDU_CLIENT_ID</key>
+	<string>$(BAIDU_CLIENT_ID)</string>
+	<key>BAIDU_CLIENT_SECRET</key>
+	<string>$(BAIDU_CLIENT_SECRET)</string>
+	<key>BAIDU_APP_ID</key>
+	<string>$(BAIDU_APP_ID)</string>
+	<key>BAIDU_ROOT_PATH</key>
+	<string>$(BAIDU_ROOT_PATH)</string>
+	<key>BAIDU_REDIRECT_URI</key>
+	<string>$(BAIDU_REDIRECT_URI)</string>
+	<key>DRIVE115_CLIENT_ID</key>
+	<string>$(DRIVE115_CLIENT_ID)</string>
+	<key>DRIVE115_CLIENT_SECRET</key>
+	<string>$(DRIVE115_CLIENT_SECRET)</string>
+	<key>DRIVE115_REDIRECT_URI</key>
+	<string>$(DRIVE115_REDIRECT_URI)</string>
+	<key>DRIVE123_CLIENT_ID</key>
+	<string>$(DRIVE123_CLIENT_ID)</string>
+	<key>DRIVE123_CLIENT_SECRET</key>
+	<string>$(DRIVE123_CLIENT_SECRET)</string>
+	<key>DRIVE123_REDIRECT_URI</key>
+	<string>$(DRIVE123_REDIRECT_URI)</string>
+	<key>ONEDRIVE_CLIENT_ID</key>
+	<string>$(ONEDRIVE_CLIENT_ID)</string>
+	<key>ONEDRIVE_REDIRECT_URI</key>
+	<string>$(ONEDRIVE_REDIRECT_URI)</string>
+	<key>GOOGLE_CLIENT_ID</key>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>DROPBOX_CLIENT_ID</key>
+	<string>$(DROPBOX_CLIENT_ID)</string>
+	<key>DROPBOX_REDIRECT_URI</key>
+	<string>$(DROPBOX_REDIRECT_URI)</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>发现并连接局域网中的设备和共享。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>发现并读取通过 USB 连接的相机。</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_smb._tcp</string>
+		<string>_adb-tls-pairing._tcp</string>
+		<string>_adb-tls-connect._tcp</string>
+	</array>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>10.0.0.0/8</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>127.0.0.0/8</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>169.254.0.0/16</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>172.16.0.0/12</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>192.168.0.0/16</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>::1</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>fc00::/7</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+			<key>fe80::/10</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
 </dict>
 </plist>

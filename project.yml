@@ -152,6 +152,8 @@ targets:
     platform: macOS
     sources:
       - FSShared
+      - path: App/InfoPlist.xcstrings
+        buildPhase: resources
       - path: FSExtension
         excludes:
           - Info.plist
@@ -159,6 +161,15 @@ targets:
     dependencies:
       - package: Core
       - package: ADB
+      - package: AliyunDrive
+      - package: Quark
+      - package: S3Drive
+      - package: CloudDrive
+      - package: CameraUSB
+      - package: PikPakDrive
+      - package: LanzouDrive
+      - package: TianyiDrive
+      - package: ChinaWebDrive
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.FS
@@ -175,6 +186,7 @@ targets:
       - App/Logic
       - App/AppModel.swift
       - App/UpdateController.swift
+      - FSExtension/RemoteVolume.swift
     dependencies:
       - package: Sparkle
       - package: Core

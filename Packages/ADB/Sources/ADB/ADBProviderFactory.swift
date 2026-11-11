@@ -4,10 +4,11 @@ import OSLog
 
 public enum ADBProviderFactory {
   private static let logger = Logger(subsystem: "com.seaony.Kayoi", category: "ADBTransport")
-  public static func make(for connection: Connection) async throws -> ADBProvider {
+  public static func make(for connection: Connection, identity: ADBIdentity = ADBIdentity()) async throws -> ADBProvider {
     try await make(
       for: connection, devices: { ADBUSB.devices() },
-      usb: { try ADBProvider.usbSession(device: $0) }, wireless: wirelessSession)
+      usb: { try ADBProvider.usbSession(device: $0, identity: identity) },
+      wireless: { try await wirelessSession(guid: $0, identity: identity) })
   }
 
   static func make(
@@ -42,13 +43,13 @@ public enum ADBProviderFactory {
     return try await wireless(guid)
   }
 
-  private static func wirelessSession(guid: String) async throws -> ADBSession {
+  private static func wirelessSession(guid: String, identity: ADBIdentity) async throws -> ADBSession {
     let endpoint = try await WirelessDiscovery.resolve(guid: guid)
     logger.info("连接方式：Wi-Fi")
-    let transport = try NetworkTransport(endpoint: endpoint, startTLS: true)
+    let transport = try NetworkTransport(endpoint: endpoint, startTLS: true, identity: identity)
     do {
       try await transport.start()
-      return ADBSession(transport: transport, initialConnectSent: true)
+      return ADBSession(transport: transport, identity: identity, initialConnectSent: true)
     } catch {
       await transport.close()
       throw error

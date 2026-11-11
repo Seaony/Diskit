@@ -166,6 +166,11 @@ public struct StorageMigration: Sendable {
 }
 
 public enum SharedStorageMigration {
+  public static func isComplete(in location: any StorageLocation) -> Bool {
+    FileManager.default.fileExists(
+      atPath: location.dataDirectory.appending(path: StorageMigration.marker).path)
+  }
+
   public static func run() throws {
     let storage = RuntimeStorage.current
     guard storage.usesSharedStorage else { return }

@@ -21,15 +21,16 @@ public actor ADBProvider: RemoteFileProvider {
     self.session = session
     self.reconnect = reconnect
   }
-  public static func usb(serial: String) throws -> ADBProvider {
+  public static func usb(serial: String, identity: ADBIdentity = ADBIdentity()) throws -> ADBProvider {
     ADBProvider(
-      session: try usbSession(serial: serial), reconnect: { try usbSession(serial: serial) })
+      session: try usbSession(serial: serial, identity: identity),
+      reconnect: { try usbSession(serial: serial, identity: identity) })
   }
-  static func usbSession(serial: String) throws -> ADBSession {
-    try usbSession(device: ADBUSB.select(params: ["serial": serial], devices: ADBUSB.devices()))
+  static func usbSession(serial: String, identity: ADBIdentity = ADBIdentity()) throws -> ADBSession {
+    try usbSession(device: ADBUSB.select(params: ["serial": serial], devices: ADBUSB.devices()), identity: identity)
   }
-  static func usbSession(device: ADBDevice) throws -> ADBSession {
-    ADBSession(transport: try USBTransport(device: device))
+  static func usbSession(device: ADBDevice, identity: ADBIdentity = ADBIdentity()) throws -> ADBSession {
+    ADBSession(transport: try USBTransport(device: device), identity: identity)
   }
   public func connect() async throws {
     guard !connecting else { throw RemoteError.posix(EBUSY) }
