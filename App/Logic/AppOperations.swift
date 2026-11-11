@@ -44,6 +44,14 @@ import Foundation
     }
   }
 
+  func cancelAndWait(connectionID: UUID) async {
+    let pending = entries.values.filter { $0.connectionID == connectionID }
+    cancel(connectionID: connectionID)
+    for entry in pending { await entry.task.value }
+  }
+
+  func resume() { isStopping = false }
+
   func finishCancellation() async {
     for task in finishing { await task.value }
     finishing.removeAll()

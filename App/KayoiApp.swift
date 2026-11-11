@@ -70,8 +70,8 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificatio
     guard let model else { return .terminateNow }
     model.prepareToQuit()
     Task {
-      await model.finishQuitting()
-      sender.reply(toApplicationShouldTerminate: true)
+      let canQuit = await model.finishQuitting()
+      sender.reply(toApplicationShouldTerminate: canQuit)
     }
     return .terminateLater
   }

@@ -60,6 +60,8 @@ struct PanelView: View {
   var body: some View {
     VStack(spacing: 0) {
       header.gridProbe("header", area: "panel", edge: nil)
+      FileSystemExtensionBanner(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
+        .padding(.horizontal, Space.lg)
       if PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, hasLoadError: (model.demoSetupError ?? model.connections.loadError) != nil) {
         Group {
           devicePromptBanner
@@ -423,7 +425,7 @@ struct PanelView: View {
     } else if state == .needsLogin {
       edit(connection, reauthenticate: true)
     } else {
-      model.operations.start(connectionID: connection.id) { await model.connections.toggle(connection) }
+      model.operations.start(connectionID: connection.id) { await model.toggleConnection(connection) }
     }
   }
 
@@ -459,8 +461,8 @@ struct PanelView: View {
 
   private var deleteExplanation: String {
     guard let deleteTarget else { return "" }
-    if deleteTarget.kind.usesSystemMount {
-      return L("会先推出这个共享。保存的登录信息会删除，共享里的文件不受影响。")
+    if deleteTarget.kind.usesMount {
+      return L("会先推出这个位置。保存的登录信息会删除，远端文件不受影响。")
     }
     if deleteTarget.kind.isCloud {
       return L("会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。")

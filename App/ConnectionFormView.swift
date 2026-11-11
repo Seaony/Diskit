@@ -64,7 +64,7 @@ struct ConnectionFormView: View {
           default: CloudConnectionForm(editor: editor)
           }
         }
-        if editor.draft.kind.usesSystemMount {
+        if editor.draft.kind.usesMount {
           KayoiFormSection(title: L("选项")) {
             Toggle(L("打开 App 时自动挂载"), isOn: $editor.draft.autoMount)
             Toggle(L("挂载后自动在 Finder 中打开"), isOn: $editor.draft.openInFinderAfterMount)

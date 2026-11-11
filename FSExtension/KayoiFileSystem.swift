@@ -63,6 +63,7 @@ final class KayoiFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations, @un
         logger.info("load ready connection=\(connection.id.uuidString, privacy: .public)")
         reply.body(volume, nil)
       } catch {
+        FileSystemLoginEvent.postIfNeeded(error, connection: connection)
         if let backend { await backend.disconnect() }
         let value = error as NSError
         logger.error(

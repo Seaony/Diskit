@@ -25,13 +25,17 @@ import UserNotifications
   let updates: UpdateController
   let preferences: UserDefaults
   let secrets: any SecretStore
+  let fileSystem: FileSystemMountService?
+  var fileSystemState: FileSystemExtensionState = .checking
   private let dependencies: AppModelDependencies?
   let system: AppSystemServices
   private let info: [String: Any]
   private let location: any StorageLocation
   private let maintenance = CacheMaintenance()
+  private let fileSystemCache: FileSystemCacheMaintenance
   private let sessionCache = RemoteSessionCache()
-  private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] = [:]
+  private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] =
+    [:]
   var demoSetupError: String?
   var demoEditorStateOverride: DemoEditorState?
   var demoEditorRevision = 0
@@ -49,12 +53,15 @@ import UserNotifications
     info = dependencies?.info ?? Bundle.main.infoDictionary ?? [:]
     updates = dependencies?.updates ?? UpdateController(isDemo: options.isDemo)
     if let dependencies {
+      fileSystem = dependencies.fileSystem
       location = dependencies.location
       secrets = dependencies.secrets
       preferences = dependencies.preferences
       connections = ConnectionManager(
         location: dependencies.location, secrets: dependencies.secrets, smb: dependencies.smb)
     } else if options.isDemo {
+      fileSystem = nil
+      fileSystemState = .enabled
       let identifier = UUID().uuidString
       let home = FileManager.default.temporaryDirectory.appending(path: "KayoiDemo-" + identifier)
       let location = LocalStorageLocation(home: home)
@@ -71,13 +78,20 @@ import UserNotifications
         smb: DemoMountService(states: fixture.states), initialStates: fixture.states)
     } else {
       let storage = RuntimeStorage.current
+      let fileSystem = FileSystemMountService(location: storage.location)
+      self.fileSystem = fileSystem
       location = storage.location
       secrets = storage.secrets
       preferences = .standard
       connections = ConnectionManager(
         location: storage.location, secrets: storage.secrets,
-        smb: SystemSMBService(location: storage.location))
+        smb: RoutingMountService(
+          system: SystemSMBService(location: storage.location), fileSystem: fileSystem))
     }
+    fileSystemCache = FileSystemCacheMaintenance(
+      root: dependencies != nil || options.isDemo
+        ? location.dataDirectory.appending(path: "FileSystemCache")
+        : FileSystemCacheMaintenance.defaultRoot)
     declinedDevices = Set(preferences.stringArray(forKey: DevicePrompt.declinedKey) ?? [])
     if let notification = options.demoNotification {
       notificationAuthorization = notification.authorization
@@ -144,6 +158,7 @@ import UserNotifications
     })
   private var started = false
   private var observers: [NSObjectProtocol] = []
+  private var observesFileSystemLogin = false
   private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "connections")
   func start() {
     guard !started else { return }
@@ -158,7 +173,19 @@ import UserNotifications
     configureConnections()
     connections.deviceReturned = { [weak self] connection in
       guard let self else { return }
-      self.operations.start(connectionID: connection.id) { await self.connections.toggle(connection) }
+      self.operations.start(connectionID: connection.id) {
+        await self.connections.connectIfNeeded(connection)
+      }
+    }
+    connections.deviceDisappeared = { [weak self] connection in
+      guard let self, !operations.isStopping else { return }
+      Task { @MainActor in
+        await operations.cancelAndWait(connectionID: connection.id)
+        do { try await fileSystem?.settlePendingMounts() } catch {
+          logger.error("设备消失后的挂载未结束 id=\(connection.id.uuidString, privacy: .public)")
+        }
+        await connections.eject(connection)
+      }
     }
     usbDiscovery.changed = { [weak self] devices in
       self?.connections.usbDevicesChanged(serials: ADBUSB.availableIdentifiers(in: devices))
@@ -242,6 +269,13 @@ import UserNotifications
           Task { @MainActor in self?.loginExpired(id) }
         })
     }
+    observeFileSystemLoginEvents()
+    observers.append(
+      NotificationCenter.default.addObserver(
+        forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+      ) { [weak self] _ in
+        Task { @MainActor in await self?.refreshFileSystemState() }
+      })
     networkMonitor.pathUpdateHandler = { [weak self] path in
       Task { @MainActor in self?.networkPathChanged(path) }
     }
@@ -249,7 +283,28 @@ import UserNotifications
     recovery.start()
     Task { await refreshNotificationAuthorization() }
     Task { await enforceCacheLimit() }
+    Task { await refreshFileSystemState() }
   }
+  func observeFileSystemLoginEvents() {
+    guard !observesFileSystemLogin else { return }
+    observesFileSystemLogin = true
+    observers.append(
+      DistributedNotificationCenter.default().addObserver(
+        forName: FileSystemLoginEvent.notification, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let text = notification.object as? String, let id = UUID(uuidString: text) else {
+          return
+        }
+        Task { @MainActor in
+          guard let self,
+            let connection = self.connections.connections.first(where: { $0.id == id }),
+            connection.kind.fileSystemScheme != nil, FileSystemLoginEvent.supports(kind: connection.kind)
+          else { return }
+          self.loginExpired(id)
+        }
+      })
+  }
+
   private func networkPathChanged(_ path: NWPath) {
     guard !operations.isStopping, lastNetworkPath != path else { return }
     lastNetworkPath = path
@@ -258,12 +313,58 @@ import UserNotifications
   }
 
   func prepareToQuit() {
-    networkMonitor.cancel()
-    if !options.isDemo { discovery.stop() }
-    recovery.stop()
     operations.cancelAll()
   }
-  func finishQuitting() async { await operations.finishCancellation() }
+  @discardableResult func finishQuitting() async -> Bool {
+    await operations.finishCancellation()
+    do {
+      try await fileSystem?.unmountAll()
+      try await connections.ejectOwnedVolumes()
+      networkMonitor.cancel()
+      if !options.isDemo { discovery.stop() }
+      recovery.stop()
+      return true
+    } catch {
+      operations.resume()
+      if started && !options.isDemo { recovery.start() }
+      logger.error("退出前推出失败：\(HumanError.detail(error), privacy: .public)")
+      presentOperationAlert(
+        title: L("无法退出 Kayoi"),
+        message: L("请先关闭正在使用这些位置的文件，然后重试退出。") + "\n" + HumanError.detail(error))
+      return false
+    }
+  }
+
+  func refreshFileSystemState() async {
+    guard let fileSystem else { return }
+    fileSystemState = await fileSystem.extensionStatus()
+  }
+
+  func openFileSystemSettings() {
+    guard !options.isDemo else { return }
+    guard fileSystem?.openSettings() == true else {
+      presentOperationAlert(title: L("无法打开系统设置"), message: L("请打开系统设置，在登录项与扩展中启用 Kayoi。"))
+      return
+    }
+  }
+
+  func toggleConnection(_ connection: Connection) async {
+    if let fileSystem, connection.kind.fileSystemScheme != nil,
+      fileSystem.mounted(connection) == nil
+    {
+      await refreshFileSystemState()
+      if fileSystemState == .disabled {
+        system.alert(
+          L("启用文件系统扩展"), L("在系统设置中启用 Kayoi 后即可挂载位置。"),
+          [L("打开系统设置"), L("取消")]
+        ) { [weak self] response in
+          if response == .alertFirstButtonReturn { self?.openFileSystemSettings() }
+        }
+        return
+      }
+    }
+    await connections.toggle(connection)
+  }
 
   func configureConnections() {
     connections.openInFinder = { [system] in system.open($0) }
@@ -313,7 +414,8 @@ import UserNotifications
         supportsRangeRead: true)
     }
     guard let entry = providerAccess[connection.id], entry.connection.kind == connection.kind,
-      entry.connection.params == connection.params else { return nil }
+      entry.connection.params == connection.params
+    else { return nil }
     return entry.capabilities
   }
 
@@ -637,33 +739,45 @@ import UserNotifications
       }
     }
   }
-  func cacheSize() async -> Int64 {
-    await maintenance.size(at: location.cacheDirectory)
+  func cacheSize() async throws -> Int64 {
+    let previous = await maintenance.size(at: location.cacheDirectory)
+    let extensionSize = try await fileSystemCache.size()
+    return previous + extensionSize
   }
 
   func enforceCacheLimit() async {
     let savedLimit = preferences.object(forKey: "cacheLimitGB") as? Int ?? 5
     let limit = Int64((1...50).contains(savedLimit) ? savedLimit : 5) * 1_024 * 1_024 * 1_024
-    do { try await maintenance.enforceLimit(at: location.cacheDirectory, bytes: limit) } catch {
+    do {
+      try await maintenance.enforceLimit(at: location.cacheDirectory, bytes: limit)
+      if fileSystem?.hasActiveVolumesOrMounts != true {
+        try await fileSystem?.beginCacheMaintenance()
+        defer { fileSystem?.endCacheMaintenance() }
+        try await fileSystemCache.enforceLimit(bytes: limit)
+      }
+    } catch {
       logger.error("无法清理缓存")
     }
   }
 
   func clearCache() async {
     do {
-      for connection in connections.connections where connection.usesFileSystemCache {
-        if case .mounted = connections.states[connection.id] {
-          await connections.eject(connection)
-        }
+      try await fileSystem?.beginCacheMaintenance()
+      defer { fileSystem?.endCacheMaintenance() }
+      for connection in connections.connections where connection.kind.fileSystemScheme != nil {
+        if case .mounted = connections.states[connection.id] { await connections.eject(connection) }
       }
       connections.refreshMounts()
-      let cachedMountsRemain = connections.connections.contains { connection in
-        guard connection.usesFileSystemCache else { return false }
-        if case .mounted = connections.states[connection.id] { return true }
-        return false
-      }
-      guard !cachedMountsRemain else { throw ConnectionError.busy }
+      guard
+        !connections.connections.contains(where: { connection in
+          guard connection.kind.fileSystemScheme != nil else { return false }
+          if case .mounted = connections.states[connection.id] { return true }
+          return false
+        })
+      else { throw ConnectionError.busy }
       try await maintenance.clear(at: location.cacheDirectory)
+      try await fileSystemCache.clear()
+      connections.refreshMounts()
     } catch {
       presentOperationAlert(
         title: L("无法清除缓存"), message: HumanError.detail(error),
@@ -747,7 +861,8 @@ import UserNotifications
       content.userInfo = userInfo
       try? await system.notify(
         UNNotificationRequest(
-          identifier: identifier ?? "\(kind.rawValue)-\(UUID().uuidString)", content: content, trigger: nil))
+          identifier: identifier ?? "\(kind.rawValue)-\(UUID().uuidString)", content: content,
+          trigger: nil))
     }
   }
 }

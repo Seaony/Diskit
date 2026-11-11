@@ -1,6 +1,8 @@
 import Foundation
 
 extension ConnectionKind {
+  public var usesMount: Bool { usesSystemMount || fileSystemScheme != nil }
+
   public var fileSystemScheme: String? {
     switch self {
     case .smb, .webdav, .webdavHTTPS, .nfs, .ricohGR: nil

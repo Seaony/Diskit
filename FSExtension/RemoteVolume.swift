@@ -41,6 +41,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
   FSVolume.ReadWriteOperations, FSVolume.XattrOperations, @unchecked Sendable
 {
   private let backend: RemoteVolumeBackend
+  private let connection: Connection
   private let connectionID: String
   private let space: SpaceInfo
   private let lock = NSLock()
@@ -55,6 +56,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
 
   init(connection: Connection, backend: RemoteVolumeBackend, space: SpaceInfo) {
     self.backend = backend
+    self.connection = connection
     self.space = space
     connectionID = connection.id.uuidString
     let path = try! RemotePath("/")
@@ -519,6 +521,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
         logger.debug("connection=\(self.connectionID, privacy: .public) operation=\(operation, privacy: .public) path=\(path, privacy: .public) offset=\(offset) success")
         call.completion(.success(value))
       } catch {
+        FileSystemLoginEvent.postIfNeeded(error, connection: self.connection)
         let failure = error as NSError
         let errno: Int
         if (error as? any LoginRequiredFailure)?.requiresLogin == true {

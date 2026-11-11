@@ -223,7 +223,7 @@ struct SavedConnectionRow: View {
     case .needsLogin: [(L("重新登录…"), "key", onReauthenticate)]
     case .failed: [(L("重试"), "arrow.clockwise", onPrimary), (L("复制错误信息"), "doc.on.doc", { copy(fullStatus) })]
     case .tested, .disconnected:
-      [(PanelCopy.buttonTitle(state, kind: connection.kind), connection.kind.usesSystemMount && state == .disconnected ? "externaldrive.badge.plus" : "checkmark.circle", onPrimary)]
+      [(PanelCopy.buttonTitle(state, kind: connection.kind), connection.kind.usesMount ? "externaldrive.badge.plus" : "checkmark.circle", onPrimary)]
     }
   }
 

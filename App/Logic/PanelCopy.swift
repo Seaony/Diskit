@@ -54,13 +54,12 @@ enum PanelCopy {
   static func buttonTitle(_ state: ConnectionState, kind: ConnectionKind) -> String {
     switch state {
     case .needsLogin: L("重新登录")
-    case .tested: L("重新测试")
+    case .tested: kind.usesMount ? L("挂载") : L("重新测试")
     case .mounted: L("推出")
     case .failed: L("重试")
     case .connecting, .awaitingAuthorization: L("取消")
     case .ejecting: L("正在推出…")
-    case .unavailable: L("测试连接")
-    case .disconnected: kind.usesSystemMount ? L("挂载") : L("测试连接")
+    case .unavailable, .disconnected: kind.usesMount ? L("挂载") : L("测试连接")
     }
   }
 }

@@ -765,22 +765,6 @@
         }
       }
     },
-    "会先推出这个共享。保存的登录信息会删除，共享里的文件不受影响。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This share will be ejected first. Saved sign-in information will be deleted. Files in the share are unaffected."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "会先推出这个共享。保存的登录信息会删除，共享里的文件不受影响。"
-          }
-        }
-      }
-    },
     "会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。": {
       "localizations": {
         "en": {
@@ -1419,22 +1403,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "取消"
-          }
-        }
-      }
-    },
-    "只会删除 Kayoi 的本机缓存，设备和网盘中的文件不受影响。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Only Kayoi’s local cache will be deleted. Files on devices and cloud drives are unaffected."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "只会删除 Kayoi 的本机缓存，设备和网盘中的文件不受影响。"
           }
         }
       }
@@ -2603,22 +2571,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "当前占用"
-          }
-        }
-      }
-    },
-    "当前版本不缓存远端文件；这里可清理以前留下的本机缓存。系统挂载的共享不使用此缓存。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This version does not cache remote files. You can clear cache left by earlier versions here. System-mounted shares do not use this cache."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前版本不缓存远端文件；这里可清理以前留下的本机缓存。系统挂载的共享不使用此缓存。"
           }
         }
       }
@@ -5607,23 +5559,6 @@
         }
       }
     },
-    "退出 Kayoi 不会推出已挂载的共享": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Quitting Kayoi does not eject mounted shares."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "退出 Kayoi 不会推出已挂载的共享"
-          }
-        }
-      }
-    },
     "退出 · ⌘Q": {
       "localizations": {
         "en": {
@@ -6904,6 +6839,310 @@
           "stringUnit": {
             "state": "translated",
             "value": "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。"
+          }
+        }
+      }
+    },
+    "会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locations using the cache will be ejected before downloaded copies are removed. Metadata, pending uploads, and remote files will be kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。"
+          }
+        }
+      }
+    },
+    "会先推出这个位置。保存的登录信息会删除，远端文件不受影响。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This location will be ejected first. Saved sign-in details will be deleted. Remote files will be kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会先推出这个位置。保存的登录信息会删除，远端文件不受影响。"
+          }
+        }
+      }
+    },
+    "启用文件系统扩展": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable File System Extension"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用文件系统扩展"
+          }
+        }
+      }
+    },
+    "在系统设置中启用 Kayoi 后即可挂载位置。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable Kayoi in System Settings to mount locations."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在系统设置中启用 Kayoi 后即可挂载位置。"
+          }
+        }
+      }
+    },
+    "已启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用"
+          }
+        }
+      }
+    },
+    "当前构建不可用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unavailable in This Build"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前构建不可用"
+          }
+        }
+      }
+    },
+    "挂载命令失败（退出码 %@），请查看 Kayoi 日志。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mount failed (exit code %@). Check the Kayoi logs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "挂载命令失败（退出码 %@），请查看 Kayoi 日志。"
+          }
+        }
+      }
+    },
+    "文件系统扩展": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File System Extension"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件系统扩展"
+          }
+        }
+      }
+    },
+    "无法打开系统设置": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to Open System Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法打开系统设置"
+          }
+        }
+      }
+    },
+    "无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files without range reads are downloaded locally. Clearing removes downloaded copies. System-mounted shares do not use this cache."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。"
+          }
+        }
+      }
+    },
+    "无法退出 Kayoi": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to Quit Kayoi"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法退出 Kayoi"
+          }
+        }
+      }
+    },
+    "未启用": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未启用"
+          }
+        }
+      }
+    },
+    "正在检查…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在检查…"
+          }
+        }
+      }
+    },
+    "此版本无法使用文件系统扩展，请重新构建并签名 Kayoi。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This build cannot use the file system extension. Rebuild and sign Kayoi."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此版本无法使用文件系统扩展，请重新构建并签名 Kayoi。"
+          }
+        }
+      }
+    },
+    "请先保存这个位置，再验证挂载。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save this location before testing the mount."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先保存这个位置，再验证挂载。"
+          }
+        }
+      }
+    },
+    "请先关闭正在使用这些位置的文件，然后重试退出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close files using these locations, then try quitting again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先关闭正在使用这些位置的文件，然后重试退出。"
+          }
+        }
+      }
+    },
+    "请先在系统设置中启用 Kayoi 文件系统扩展。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable the Kayoi file system extension in System Settings first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先在系统设置中启用 Kayoi 文件系统扩展。"
+          }
+        }
+      }
+    },
+    "请打开系统设置，在登录项与扩展中启用 Kayoi。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings and enable Kayoi in Login Items & Extensions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请打开系统设置，在登录项与扩展中启用 Kayoi。"
+          }
+        }
+      }
+    },
+    "退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitting Kayoi ejects locations mounted during this session. SMB shares stay mounted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"
           }
         }
       }

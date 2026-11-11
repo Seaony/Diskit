@@ -20,6 +20,8 @@ public enum ConnectionState: Equatable, Sendable {
   private var busy: Set<UUID> = []
   private var refreshingSpace: Set<UUID> = []
   private var expectedUnmounts: Set<UUID> = []
+  private var ownedMounts: [UUID: URL] = [:]
+  private var mountingTasks: [UUID: Task<URL, Error>] = [:]
   private var autoMounting = false
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
@@ -30,6 +32,7 @@ public enum ConnectionState: Equatable, Sendable {
   public var unexpectedDisconnect: ((Connection) -> Void)?
   // 设了自动挂载的设备重新插上（含启动时已插着）时调用，由外面去连接
   public var deviceReturned: ((Connection) -> Void)?
+  public var deviceDisappeared: ((Connection) -> Void)?
   public var loginExpired: ((Connection) -> Void)?
   public var removed: ((UUID) -> Void)?
   public var testRemote: ((Connection) async throws -> SpaceInfo)?
@@ -114,7 +117,25 @@ public enum ConnectionState: Equatable, Sendable {
         changedSecret = true
         try secrets.write(Data(password.utf8), for: connection.passwordKey)
       } else {
-        if connection.kind.usesStoredRemoteSecret, !password.isEmpty || clearPassword {
+        let previous = connections.first { $0.id == connection.id }
+        let mounted = previous.flatMap { $0.kind.usesMount ? smb.mounted($0) : nil }
+        let storedPassword = try secrets.read(connection.passwordKey)
+        let changesPassword =
+          connection.kind.usesStoredRemoteSecret
+          && (clearPassword
+            ? storedPassword != nil
+            : !password.isEmpty && storedPassword != Data(password.utf8))
+        let keepsMount =
+          mounted != nil && previous?.kind == connection.kind
+          && previous?.params == connection.params && !changesPassword
+          && previousState != .needsLogin
+        if let mounted, !keepsMount {
+          try await smb.unmount(mounted.url)
+          ownedMounts.removeValue(forKey: connection.id)
+          states[connection.id] = .disconnected
+          try Task.checkCancellation()
+        }
+        if changesPassword {
           oldSecret = try secrets.read(connection.passwordKey)
           changedSecret = true
           if clearPassword {
@@ -123,23 +144,31 @@ public enum ConnectionState: Equatable, Sendable {
             try secrets.write(Data(password.utf8), for: connection.passwordKey)
           }
         }
-        guard let testRemote else { throw ConnectionError.notImplemented }
-        states[connection.id] = .connecting
-        do {
-          let result = try await testRemote(connection)
-          try Task.checkCancellation()
-          states[connection.id] = remoteState(connection, result: .tested(result))
-        } catch {
-          if error is CancellationError {
-            states[connection.id] = previousState
+        if let mounted, keepsMount {
+          states[connection.id] = .mounted(mounted)
+        } else {
+          guard let testRemote else { throw ConnectionError.notImplemented }
+          states[connection.id] = .connecting
+          do {
+            let result = try await testRemote(connection)
+            try Task.checkCancellation()
+            states[connection.id] = remoteState(connection, result: .tested(result))
+          } catch {
+            if error is CancellationError {
+              if case .mounted = previousState {
+                states[connection.id] = stateAfterCancellation(connection)
+              } else {
+                states[connection.id] = previousState
+              }
+              throw error
+            }
+            recordDetailedError(error, for: connection)
+            states[connection.id] = remoteState(
+              connection,
+              result: .failed(
+                displayMessage(error, kind: connection.kind)))
             throw error
           }
-          recordDetailedError(error, for: connection)
-          states[connection.id] = remoteState(
-            connection,
-            result: .failed(
-              displayMessage(error, kind: connection.kind)))
-          throw error
         }
       }
       var updated = connections
@@ -222,12 +251,13 @@ public enum ConnectionState: Equatable, Sendable {
     guard !busy.contains(connection.id) else { throw ConnectionError.busy }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
-    if connection.kind.usesSystemMount, let mount = smb.mounted(connection) {
+    if connection.kind.usesMount, let mount = smb.mounted(connection) {
       do { try await smb.unmount(mount.url) } catch {
         reportOperationError(error)
         throw error
       }
       states[connection.id] = .disconnected
+      ownedMounts.removeValue(forKey: connection.id)
     }
     var updated = connections.filter { $0.id != connection.id }
     for index in updated.indices { updated[index].order = index }
@@ -257,7 +287,7 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
   public func eject(_ connection: Connection) async {
-    guard connection.kind.usesSystemMount, !busy.contains(connection.id) else { return }
+    guard connection.kind.usesMount, !busy.contains(connection.id) else { return }
     busy.insert(connection.id)
     defer { busy.remove(connection.id) }
     guard let mounted = smb.mounted(connection) else {
@@ -269,6 +299,7 @@ public enum ConnectionState: Equatable, Sendable {
     do {
       try await smb.unmount(mounted.url)
       states[connection.id] = .disconnected
+      ownedMounts.removeValue(forKey: connection.id)
       detailedErrors.removeValue(forKey: connection.id)
     } catch is CancellationError {
       states[connection.id] = stateAfterCancellation(connection)
@@ -279,13 +310,46 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
 
+  public func connectIfNeeded(_ connection: Connection) async {
+    guard states[connection.id] != .needsLogin else { return }
+    if connection.kind.usesMount {
+      guard remoteState(connection, result: .connecting) != .disconnected else { return }
+      await mountIfNeeded(connection)
+    } else {
+      await toggle(connection)
+    }
+  }
+
+  public func ejectOwnedVolumes() async throws {
+    var failure: Error?
+    for (id, url) in ownedMounts {
+      guard let connection = connections.first(where: { $0.id == id }), connection.kind != .smb
+      else {
+        continue
+      }
+      guard smb.mounted(connection)?.url == url else {
+        ownedMounts.removeValue(forKey: id)
+        continue
+      }
+      do {
+        try await smb.unmount(url)
+        ownedMounts.removeValue(forKey: id)
+        states[id] = .disconnected
+      } catch {
+        recordDetailedError(error, for: connection)
+        if failure == nil { failure = error }
+      }
+    }
+    if let failure { throw failure }
+  }
+
   public func toggle(_ connection: Connection) async {
     guard !Task.isCancelled, !busy.contains(connection.id) else { return }
     if states[connection.id] == .awaitingAuthorization {
       states[connection.id] = .disconnected
       return
     }
-    if connection.kind.usesSystemMount {
+    if connection.kind.usesMount {
       if smb.mounted(connection) != nil {
         await eject(connection)
       } else {
@@ -317,7 +381,8 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   private func mountIfNeeded(_ connection: Connection) async {
-    guard !Task.isCancelled, !busy.contains(connection.id) else { return }
+    guard !Task.isCancelled, !busy.contains(connection.id), states[connection.id] != .needsLogin
+    else { return }
     if let mounted = smb.mounted(connection) {
       states[connection.id] = .mounted(mounted)
       detailedErrors.removeValue(forKey: connection.id)
@@ -327,17 +392,29 @@ public enum ConnectionState: Equatable, Sendable {
     defer { busy.remove(connection.id) }
     states[connection.id] = .connecting
     do {
-      let url = try await smb.mount(connection, password: savedPassword(connection))
+      let password = try savedPassword(connection)
+      let task = Task { try await smb.mount(connection, password: password) }
+      mountingTasks[connection.id] = task
+      defer { mountingTasks.removeValue(forKey: connection.id) }
+      let url = try await withTaskCancellationHandler {
+        try await task.value
+      } onCancel: {
+        task.cancel()
+      }
+      ownedMounts[connection.id] = url
       states[connection.id] = .mounted(smb.mounted(connection) ?? MountedShare(url: url))
       detailedErrors.removeValue(forKey: connection.id)
       if connection.openInFinderAfterMount { openInFinder?(url) }
     } catch is CancellationError {
       states[connection.id] = stateAfterCancellation(connection)
     } catch {
+      let needsLogin = isLoginFailure(error, kind: connection.kind)
+      if needsLogin { loginExpired?(connection) }
       reportOperationError(error)
       recordDetailedError(error, for: connection)
       states[connection.id] = remoteState(
-        connection, result: .failed(displayMessage(error, kind: connection.kind)))
+        connection,
+        result: needsLogin ? .needsLogin : .failed(displayMessage(error, kind: connection.kind)))
       mountFailed?(error.localizedDescription)
     }
   }
@@ -349,7 +426,8 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   private func stateAfterCancellation(_ connection: Connection) -> ConnectionState {
-    if connection.kind.usesSystemMount, let mounted = smb.mounted(connection) {
+    if states[connection.id] == .needsLogin { return .needsLogin }
+    if connection.kind.usesMount, let mounted = smb.mounted(connection) {
       return .mounted(mounted)
     }
     return .disconnected
@@ -377,12 +455,15 @@ public enum ConnectionState: Equatable, Sendable {
   }
   public func refreshMounts() {
     for connection in connections
-    where connection.kind.usesSystemMount && !busy.contains(connection.id) {
+    where connection.kind.usesMount && !busy.contains(connection.id) {
       if let mounted = smb.mounted(connection) {
+        guard states[connection.id] != .needsLogin else { continue }
         states[connection.id] = .mounted(mounted)
         expectedUnmounts.remove(connection.id)
         detailedErrors.removeValue(forKey: connection.id)
       } else if case .failed = states[connection.id] {
+      } else if case .tested = states[connection.id] {
+      } else if states[connection.id] == .needsLogin {
       } else {
         let wasMounted: Bool
         if case .mounted = states[connection.id] { wasMounted = true } else { wasMounted = false }
@@ -393,7 +474,7 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
   public func systemVolumeWillUnmount(at url: URL) {
-    for connection in connections where connection.kind.usesSystemMount {
+    for connection in connections where connection.kind.usesMount {
       if case .mounted(let mounted) = states[connection.id],
         mounted.url.standardizedFileURL == url.standardizedFileURL
       {
@@ -403,11 +484,12 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   public func systemVolumeUnmounted(at url: URL) {
-    for connection in connections where connection.kind.usesSystemMount {
+    for connection in connections where connection.kind.usesMount {
       if case .mounted(let mounted) = states[connection.id],
         mounted.url.standardizedFileURL == url.standardizedFileURL
       {
         states[connection.id] = .disconnected
+        ownedMounts.removeValue(forKey: connection.id)
         expectedUnmounts.remove(connection.id)
         detailedErrors.removeValue(forKey: connection.id)
       }
@@ -472,60 +554,36 @@ public enum ConnectionState: Equatable, Sendable {
   public func ricohDevicesChanged(serials: Set<String>) {
     let previous = ricohSerials
     ricohSerials = serials
-    reportReturnedDevices(kind: .ricohGR, previous: previous, current: serials)
-    for connection in connections
-    where connection.kind == .ricohGR
-      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-    {
-      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-        == true
-      {
-        notifyIfConnectedDisconnects(connection)
-      }
-      states[connection.id] = .disconnected
-    }
+    updateDevices(kind: .ricohGR, previous: previous, current: serials)
   }
   public func cameraUSBDevicesChanged(serials: Set<String>) {
     let previous = cameraUSBSerials
     cameraUSBSerials = serials
-    reportReturnedDevices(kind: .cameraUSB, previous: previous, current: serials)
-    for connection in connections
-    where connection.kind == .cameraUSB
-      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-    {
-      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-        == true
-      {
-        notifyIfConnectedDisconnects(connection)
-      }
-      states[connection.id] = .disconnected
-    }
+    updateDevices(kind: .cameraUSB, previous: previous, current: serials)
   }
   public func wirelessGUIDsChanged(_ guids: Set<String>) {
     let previous = wifiGUIDs
     wifiGUIDs = guids
-    for connection in connections
-    where connection.kind == .androidWiFi && !guids.contains(connection.params["guid"] ?? "") {
-      if previous?.contains(connection.params["guid"] ?? "") == true {
-        notifyIfConnectedDisconnects(connection)
-      }
-      states[connection.id] = .disconnected
-    }
+    updateDevices(kind: .androidWiFi, previous: previous, current: guids)
   }
   public func usbDevicesChanged(serials: Set<String>) {
     let previous = usbSerials
     usbSerials = serials
-    reportReturnedDevices(kind: .androidUSB, previous: previous, current: serials)
+    updateDevices(kind: .androidUSB, previous: previous, current: serials)
+  }
+  private func deviceKey(_ connection: Connection) -> String {
+    connection.kind == .androidWiFi
+      ? connection.params["guid"] ?? ""
+      : connection.params["deviceID"] ?? connection.params["serial"] ?? ""
+  }
+  private func updateDevices(kind: ConnectionKind, previous: Set<String>?, current: Set<String>) {
+    reportReturnedDevices(kind: kind, previous: previous, current: current)
     for connection in connections
-    where connection.kind == .androidUSB
-      && !serials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-    {
-      if previous?.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-        == true
-      {
-        notifyIfConnectedDisconnects(connection)
+    where connection.kind == kind && !current.contains(deviceKey(connection)) {
+      let wasAvailable = previous?.contains(deviceKey(connection)) == true
+      if wasAvailable || previous == nil {
+        deviceDisappeared(connection, wasAvailable: wasAvailable)
       }
-      states[connection.id] = .disconnected
     }
   }
   public func autoMount() async {
@@ -533,20 +591,28 @@ public enum ConnectionState: Equatable, Sendable {
     autoMounting = true
     defer { autoMounting = false }
     refreshMounts()
-    let candidates = connections.filter { $0.kind.usesSystemMount && $0.autoMount }.map(\.id)
+    let candidates = connections.filter { $0.kind.usesMount && $0.autoMount }.map(\.id)
     for id in candidates {
       guard !Task.isCancelled else { return }
       guard let connection = connections.first(where: { $0.id == id }),
-        connection.kind.usesSystemMount, connection.autoMount, !busy.contains(id)
+        connection.kind.usesMount, connection.autoMount, !busy.contains(id),
+        remoteState(connection, result: .connecting) != .disconnected,
+        states[id] != .needsLogin
       else { continue }
       await mountIfNeeded(connection)
     }
   }
 
-  private func reportReturnedDevices(kind: ConnectionKind, previous: Set<String>?, current: Set<String>) {
+  private func reportReturnedDevices(
+    kind: ConnectionKind, previous: Set<String>?, current: Set<String>
+  ) {
     for connection in connections where connection.kind == kind && connection.autoMount {
-      let key = connection.params["deviceID"] ?? connection.params["serial"] ?? ""
-      guard current.contains(key), previous?.contains(key) != true, !busy.contains(connection.id) else {
+      let key =
+        kind == .androidWiFi
+        ? connection.params["guid"] ?? ""
+        : connection.params["deviceID"] ?? connection.params["serial"] ?? ""
+      guard current.contains(key), previous?.contains(key) != true, !busy.contains(connection.id)
+      else {
         continue
       }
       deviceReturned?(connection)
@@ -560,6 +626,18 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
 
+  private func deviceDisappeared(_ connection: Connection, wasAvailable: Bool) {
+    if wasAvailable { notifyIfConnectedDisconnects(connection) }
+    mountingTasks[connection.id]?.cancel()
+    if connection.kind.usesMount, let deviceDisappeared,
+      smb.mounted(connection) != nil || busy.contains(connection.id)
+    {
+      deviceDisappeared(connection)
+    } else {
+      states[connection.id] = .disconnected
+    }
+  }
+
   private func displayMessage(_ error: Error, kind: ConnectionKind) -> String {
     if let error = error as? RemoteError { return HumanError.remote(error, kind: kind) }
     let systemError = error as NSError
@@ -570,22 +648,7 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   private func isLoginFailure(_ error: Error, kind: ConnectionKind) -> Bool {
-    guard !NetworkFailure.isTransportError(error) else { return false }
-    switch kind {
-    case .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
-      .googleDrive, .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou:
-      break
-    default:
-      return false
-    }
-    if let failure = error as? any LoginRequiredFailure { return failure.requiresLogin }
-    if let remote = error as? RemoteError {
-      switch remote {
-      case .unauthorized, .http(401): return true
-      default: return false
-      }
-    }
-    return false
+    FileSystemLoginEvent.requiresLogin(error, kind: kind)
   }
 
   private func recordDetailedError(_ error: Error, for connection: Connection) {

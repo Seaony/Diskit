@@ -25,6 +25,7 @@ private final class MemorySecrets: SecretStore, Sendable {
   var available = ["照片 共享", "Data"]
   var error: ConnectionError?
   var unmountError: ConnectionError?
+  var mountFailure: (any Error)?
   var volumes: [UUID: MountedShare] = [:]
   var calls: [String] = []
   var mountedAddresses: [UUID: URL] = [:]
@@ -49,6 +50,7 @@ private final class MemorySecrets: SecretStore, Sendable {
     calls.append("mount")
     mountedConnections.append(connection)
     await onMount?(connection)
+    if let mountFailure { throw mountFailure }
     if let error { throw error }
     let value = MountedShare(
       url: URL(fileURLWithPath: "/Volumes/" + connection.id.uuidString), availableBytes: 12345)
@@ -343,26 +345,32 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try manager.savedPassword(a) == "pass")
 }
 
-@Test @MainActor func nonSMBTestsNeverMountAndUnplugWinsOverLateResult() async throws {
+@Test @MainActor func androidSaveTestsWithoutMountingAndToggleUsesMountService() async throws {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
   let connection = Connection(kind: .androidUSB, name: "手机", params: ["serial": "serial"])
   manager.usbDevicesChanged(serials: ["serial"])
-  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  var tests = 0
+  manager.testRemote = { _ in
+    tests += 1
+    return SpaceInfo(total: 100, used: 20)
+  }
   try await manager.save(connection, password: "")
   #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 100, used: 20)))
   #expect(f.smb.calls.isEmpty)
-  manager.testRemote = { _ in
-    manager.usbDevicesChanged(serials: [])
-    throw RemoteError.notConnected
-  }
+  f.smb.onMount = { _ in manager.usbDevicesChanged(serials: []) }
+  f.smb.mountFailure = RemoteError.notConnected
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .disconnected)
   manager.usbDevicesChanged(serials: ["serial"])
-  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
+  f.smb.onMount = nil
+  f.smb.mountFailure = nil
   await manager.toggle(connection)
-  #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 100, used: 20)))
+  let mounted = try #require(f.smb.volumes[connection.id])
+  #expect(manager.states[connection.id] == .mounted(mounted))
+  #expect(f.smb.calls == ["mount", "mount"])
+  #expect(tests == 1)
 }
 
 @Test @MainActor func wirelessRediscoveryKeepsSavedGUIDAndLateFailureStaysDisconnected()
@@ -376,18 +384,18 @@ private func sample(_ name: String = "Windows") -> Connection {
   manager.wirelessGUIDsChanged([guid])
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
   try await manager.save(connection, password: "")
-  manager.testRemote = { _ in
-    manager.wirelessGUIDsChanged([])
-    throw RemoteError.notConnected
-  }
+  f.smb.onMount = { _ in manager.wirelessGUIDsChanged([]) }
+  f.smb.mountFailure = RemoteError.notConnected
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .disconnected)
   manager.wirelessGUIDsChanged([guid])
-  manager.testRemote = { _ in SpaceInfo(total: 200, used: 20) }
+  f.smb.onMount = nil
+  f.smb.mountFailure = nil
   await manager.toggle(connection)
-  #expect(manager.states[connection.id] == .tested(SpaceInfo(total: 200, used: 20)))
+  let mounted = try #require(f.smb.volumes[connection.id])
+  #expect(manager.states[connection.id] == .mounted(mounted))
   #expect(try ConnectionRepository(location: f.location).load().first?.params == ["guid": guid])
-  #expect(f.smb.calls.isEmpty)
+  #expect(f.smb.calls == ["mount", "mount"])
 }
 
 @Test @MainActor func cameraRemovalClearsConnectionTestResult() async throws {
@@ -455,10 +463,8 @@ private func sample(_ name: String = "Windows") -> Connection {
   try f.secrets.write(Data("global-key".utf8), for: "adb.private-key")
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
   try await manager.save(connection, password: "")
-  manager.testRemote = { _ in
-    manager.requireLogin(connection.id)
-    throw RemoteError.posix(EACCES)
-  }
+  f.smb.onMount = { _ in manager.requireLogin(connection.id) }
+  f.smb.mountFailure = RemoteError.posix(EACCES)
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .needsLogin)
   try await manager.remove(connection)
@@ -497,7 +503,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try f.secrets.read("another.oauth.oneDrive") == Data("other-token".utf8))
 }
 
-@Test @MainActor func connectionFailuresLogOnceWithoutExtraMountNotifications() async throws {
+@Test @MainActor func connectionFailuresLogOnceAndOnlyMountAttemptsNotify() async throws {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
@@ -508,9 +514,11 @@ private func sample(_ name: String = "Windows") -> Connection {
   let remote = Connection(kind: .androidUSB, name: "手机")
   manager.testRemote = { _ in throw RemoteError.occupied }
   await #expect(throws: RemoteError.occupied) { try await manager.save(remote, password: "") }
+  f.smb.mountFailure = RemoteError.occupied
   await manager.toggle(remote)
   #expect(logged == Array(repeating: RemoteError.occupied.localizedDescription, count: 2))
-  #expect(notified.isEmpty)
+  #expect(notified.count == 1)
+  f.smb.mountFailure = nil
   let smb = sample()
   f.smb.error = .authentication
   await #expect(throws: ConnectionError.authentication) {
@@ -521,7 +529,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   }
   await manager.toggle(smb)
   #expect(logged.count == 5)
-  #expect(notified.count == 1)
+  #expect(notified.count == 2)
   f.smb.error = nil
   try await manager.save(smb, password: "secret")
   await manager.toggle(smb)
@@ -530,7 +538,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   await #expect(throws: ConnectionError.busy) { try await manager.remove(smb) }
   #expect(logged.count == 7)
   #expect(logged.suffix(2) == Array(repeating: ConnectionError.busy.localizedDescription, count: 2))
-  #expect(notified.count == 1)
+  #expect(notified.count == 2)
 }
 
 @Test @MainActor func connectionLogsNeverIncludeUnknownErrorDetails() async throws {
@@ -539,14 +547,12 @@ private func sample(_ name: String = "Windows") -> Connection {
   let manager = f.manager()
   var logged: [String] = []
   manager.operationFailed = { logged.append($0) }
-  manager.testRemote = { _ in
-    throw NSError(
-      domain: NSURLErrorDomain, code: NSURLErrorTimedOut,
-      userInfo: [
-        NSLocalizedDescriptionKey:
-          "https://secret.example/?token=secret Cookie=secret password=secret"
-      ])
-  }
+  f.smb.mountFailure = NSError(
+    domain: NSURLErrorDomain, code: NSURLErrorTimedOut,
+    userInfo: [
+      NSLocalizedDescriptionKey:
+        "https://secret.example/?token=secret Cookie=secret password=secret"
+    ])
   await manager.toggle(Connection(kind: .quark, name: "含敏感信息的名称"))
   #expect(logged == [ConnectionError.timeout.localizedDescription])
   manager.reportOperationError(
@@ -570,9 +576,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   let connection = Connection(kind: .mobileCloud, name: "移动云盘")
   var expired: [UUID] = []
   manager.loginExpired = { expired.append($0.id) }
-  manager.testRemote = { _ in
-    throw ExplicitLoginFailure(requiresLogin: true)
-  }
+  f.smb.mountFailure = ExplicitLoginFailure(requiresLogin: true)
 
   await manager.toggle(connection)
 
@@ -918,7 +922,7 @@ private func mountedEditConnection(_ kind: ConnectionKind) -> Connection {
   let connection = Connection(kind: .mobileCloud, name: "test")
   var expired = false
   manager.loginExpired = { _ in expired = true }
-  manager.testRemote = { _ in throw NetworkFailure.posix(URLError(code)) }
+  f.smb.mountFailure = NetworkFailure.posix(URLError(code))
   await manager.toggle(connection)
   #expect(!expired)
   guard case .failed = manager.states[connection.id] else {
@@ -944,7 +948,7 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   manager.loginExpired = { _ in expired = true }
   for error in errors {
     let connection = Connection(kind: .mobileCloud, name: "test")
-    manager.testRemote = { _ in throw error }
+    f.smb.mountFailure = error
     await manager.toggle(connection)
     #expect(!expired)
     guard case .failed = manager.states[connection.id] else {
@@ -1000,16 +1004,23 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   var notices = 0
   manager.unexpectedDisconnect = { _ in notices += 1 }
   var completion: CheckedContinuation<SpaceInfo, Never>?
+  var mounting: CheckedContinuation<Void, Never>?
   var task: Task<Void, Never>?
   if connecting {
-    manager.testRemote = { _ in await withCheckedContinuation { completion = $0 } }
+    if kind.usesMount {
+      f.smb.onMount = { _ in await withCheckedContinuation { mounting = $0 } }
+    } else {
+      manager.testRemote = { _ in await withCheckedContinuation { completion = $0 } }
+    }
     task = Task { await manager.toggle(connection) }
-    while completion == nil { await Task.yield() }
+    while completion == nil && mounting == nil { await Task.yield() }
   }
   update(false)
   update(false)
   #expect(notices == 1)
   #expect(manager.states[connection.id] == .disconnected)
+  f.smb.mountFailure = RemoteError.notConnected
+  mounting?.resume()
   completion?.resume(returning: SpaceInfo(total: 10, used: 1))
   await task?.value
   #expect(manager.states[connection.id] == .disconnected)
@@ -1258,7 +1269,7 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   #expect(manager.states[connection.id] == expected)
   manager.testRemote = { _ in SpaceInfo(total: nil, used: nil) }
   try await manager.save(connection, password: "")
-  manager.testRemote = { _ in throw RemoteError.posix(ETIMEDOUT) }
+  f.smb.mountFailure = RemoteError.posix(ETIMEDOUT)
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == expected)
 }

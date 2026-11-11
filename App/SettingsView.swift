@@ -18,6 +18,7 @@ struct SettingsView: View {
   @State private var loginNeedsApproval = false
   @State private var loginError: String?
   @State private var cacheBytes: Int64?
+  @State private var cacheError: String?
   @State private var checkingCache = false
   @State private var clearingCache = false
   @State private var confirmClear = false
@@ -52,7 +53,9 @@ struct SettingsView: View {
     .controlSize(.small)
     .task(id: selectedTab) {
       switch selectedTab {
-      case "general": refreshLogin()
+      case "general":
+        refreshLogin()
+        await model.refreshFileSystemState()
       case "notifications": await model.refreshNotificationAuthorization()
       case "storage": await refreshCache()
       case "android": await refreshFingerprint()
@@ -95,7 +98,10 @@ struct SettingsView: View {
           .help(L("在系统设置中允许 Kayoi 开机自动启动"))
         }
       } footer: {
-        Text(L("退出 Kayoi 不会推出已挂载的共享"))
+        Text(L("退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"))
+      }
+      KayoiFormSection {
+        FileSystemExtensionSettings(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
       }
       KayoiFormSection(title: L("外观与语言")) {
         KayoiSideRow {
@@ -162,11 +168,15 @@ struct SettingsView: View {
             Text(L("尚未计算")).foregroundStyle(KayoiTheme.secondaryText)
           }
         }
+        if let cacheError {
+          inlineError(cacheError)
+          Button(L("重试")) { Task { await refreshCache() } }
+        }
         if confirmClear {
           VStack(alignment: .leading, spacing: Space.sm) {
             Text(L("清空本机缓存？"))
               .font(.body.weight(.semibold))
-            Text(L("只会删除 Kayoi 的本机缓存，设备和网盘中的文件不受影响。"))
+            Text(L("会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。"))
               .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
             HStack {
               Button(L("取消")) { confirmClear = false }
@@ -190,7 +200,7 @@ struct SettingsView: View {
           }
         }
       } footer: {
-        Text(L("当前版本不缓存远端文件；这里可清理以前留下的本机缓存。系统挂载的共享不使用此缓存。"))
+        Text(L("无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。"))
       }
     }
   }
@@ -307,10 +317,16 @@ struct SettingsView: View {
 
   private func refreshCache() async {
     checkingCache = true
-    let size = await model.cacheSize()
-    guard !Task.isCancelled else { return }
-    cacheBytes = size
-    checkingCache = false
+    defer { checkingCache = false }
+    do {
+      let size = try await model.cacheSize()
+      guard !Task.isCancelled else { return }
+      cacheBytes = size
+      cacheError = nil
+    } catch {
+      cacheBytes = nil
+      cacheError = HumanError.detail(error)
+    }
   }
 
   private func refreshFingerprint() async {

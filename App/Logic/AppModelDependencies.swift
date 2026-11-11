@@ -11,4 +11,5 @@ import Foundation
   let system: AppSystemServices
   var info: [String: Any] = [:]
   var providerFactory: ((Connection) async throws -> any RemoteFileProvider)?
+  var fileSystem: FileSystemMountService?
 }

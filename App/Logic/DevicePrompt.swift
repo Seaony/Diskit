@@ -69,6 +69,7 @@ extension AppModel {
     operations.start { [self] in
       do {
         try await connections.save(connection, password: "")
+        if connection.kind.usesMount { await toggleConnection(connection) }
       } catch is CancellationError {
       } catch {
         devicePromptErrors[key] = HumanError.detail(error, kind: connection.kind)
