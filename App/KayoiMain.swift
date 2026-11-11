@@ -19,17 +19,16 @@ import SwiftUI
       }
     }
     if !arguments.contains("--fskit-spike"), !RuntimeOptions.current.isDemo {
-      do {
-        try SharedStorageMigration.run()
-      } catch {
+      if let error = RuntimeStorage.prepareForApplication() {
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)
         app.activate()
         let alert = NSAlert()
         alert.messageText = L("无法迁移数据")
-        alert.informativeText = error.localizedDescription
+        alert.informativeText = LF(
+          "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。",
+          error.localizedDescription)
         alert.runModal()
-        exit(1)
       }
     }
     KayoiApp.main()

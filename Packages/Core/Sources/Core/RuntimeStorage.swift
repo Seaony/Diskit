@@ -1,14 +1,45 @@
 import Foundation
 import OSLog
+import Synchronization
 
 public struct RuntimeStorage: Sendable {
   public let location: any StorageLocation
   public let secrets: any SecretStore
   public let usesSharedStorage: Bool
 
-  public static let current = select(
-    sharedLocation: { try SharedStorageLocation() }, sharedSecrets: SharedKeychainStore(),
-    legacyLocation: LocalStorageLocation(), legacySecrets: LoginKeychainStore())
+  private static let selected = Mutex(
+    select(
+      sharedLocation: { try SharedStorageLocation() }, sharedSecrets: SharedKeychainStore(),
+      legacyLocation: LocalStorageLocation(), legacySecrets: LoginKeychainStore()))
+
+  public static var current: RuntimeStorage { selected.withLock { $0 } }
+
+  static var legacy: RuntimeStorage {
+    RuntimeStorage(
+      location: LocalStorageLocation(), secrets: LoginKeychainStore(), usesSharedStorage: false)
+  }
+
+  public static func prepareForApplication() -> Error? {
+    let result = prepare(current, migration: { try SharedStorageMigration.run() }, fallback: legacy)
+    selected.withLock { $0 = result.storage }
+    return result.error
+  }
+
+  public static func useLegacyStorage() {
+    selected.withLock { $0 = legacy }
+  }
+
+  static func prepare(
+    _ storage: RuntimeStorage, migration: () throws -> Void, fallback: RuntimeStorage
+  ) -> (storage: RuntimeStorage, error: Error?) {
+    guard storage.usesSharedStorage else { return (storage, nil) }
+    do {
+      try migration()
+      return (storage, nil)
+    } catch {
+      return (fallback, error)
+    }
+  }
 
   static func select(
     sharedLocation: () throws -> any StorageLocation, sharedSecrets: any SecretStore,

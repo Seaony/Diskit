@@ -67,6 +67,7 @@ public struct LoginKeychainStore: SecretStore {
   func query(_ key: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
+      kSecUseDataProtectionKeychain as String: false,
       kSecAttrService as String: service, kSecAttrAccount as String: key,
     ]
   }

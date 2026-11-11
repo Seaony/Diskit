@@ -1,12 +1,29 @@
 import CoreTestSupport
 import Foundation
+import Security
 import Testing
 
 @testable import Core
 
+@Test func loginKeychainQueriesExplicitlyExcludeDataProtectionStorage() {
+  let query = LoginKeychainStore().query("adb.private-key")
+  #expect(query[kSecUseDataProtectionKeychain as String] as? Bool == false)
+}
+
 private struct MigrationLocation: StorageLocation {
   let dataDirectory: URL
   var cacheDirectory: URL { dataDirectory.appending(path: "Caches") }
+}
+
+private struct RejectingKeyStore: SecretStore {
+  let base: TestSecretStore
+  let rejectedKey: String
+  func read(_ key: String) throws -> Data? { try base.read(key) }
+  func write(_ data: Data, for key: String) throws {
+    if key == rejectedKey { throw CocoaError(.fileWriteNoPermission) }
+    try base.write(data, for: key)
+  }
+  func delete(_ key: String) throws { try base.delete(key) }
 }
 
 private struct MigrationFixture {
@@ -131,4 +148,50 @@ private struct MigrationFixture {
   #expect(
     try FileManager.default.contentsOfDirectory(atPath: fixture.shared.dataDirectory.path).isEmpty)
   #expect(fixture.target.values.withLock { $0.isEmpty })
+}
+
+@Test func migrationStartupFailureKeepsLegacyStorageUsableAndNextLaunchRetries() throws {
+  let fixture = MigrationFixture()
+  defer { try? FileManager.default.removeItem(at: fixture.root) }
+  try fixture.seed()
+  let storage = RuntimeStorage.select(
+    sharedLocation: { fixture.shared }, sharedSecrets: fixture.target,
+    legacyLocation: fixture.old, legacySecrets: fixture.source)
+  let fallback = RuntimeStorage.select(
+    sharedLocation: { throw StorageMigrationError.containerUnavailable },
+    sharedSecrets: fixture.target,
+    legacyLocation: fixture.old, legacySecrets: fixture.source)
+  fixture.target.failWrites.withLock { $0 = true }
+  let failed = RuntimeStorage.prepare(storage, migration: fixture.migrate, fallback: fallback)
+  #expect(failed.error != nil)
+  #expect(!failed.storage.usesSharedStorage)
+  #expect(try ConnectionRepository(location: failed.storage.location).load().first?.name == "保留的位置")
+  #expect(try failed.storage.secrets.read("adb.private-key") == Data("原钥匙".utf8))
+  try ConnectionRepository(location: fixture.old).save([Connection(name: "失败后编辑的位置")])
+  try fixture.source.write(Data("刷新令牌".utf8), for: "account.oauth")
+  fixture.target.failWrites.withLock { $0 = false }
+  let retried = RuntimeStorage.prepare(storage, migration: fixture.migrate, fallback: fallback)
+  #expect(retried.error == nil)
+  #expect(retried.storage.usesSharedStorage)
+  #expect(try retried.storage.secrets.read("adb.private-key") == Data("原钥匙".utf8))
+  #expect(
+    try ConnectionRepository(location: retried.storage.location).load().first?.name == "失败后编辑的位置")
+  #expect(try retried.storage.secrets.read("account.oauth") == Data("刷新令牌".utf8))
+}
+
+@Test func resumedMigrationUsesLatestLegacyValuesAfterPartialSecretCopy() throws {
+  let fixture = MigrationFixture()
+  defer { try? FileManager.default.removeItem(at: fixture.root) }
+  try fixture.seed()
+  let migration = StorageMigration(
+    source: fixture.old, destination: fixture.shared, oldSecrets: fixture.source,
+    newSecrets: RejectingKeyStore(base: fixture.target, rejectedKey: "account.oauth"),
+    secretKeys: ["adb.private-key", "account.oauth"])
+  #expect(throws: (any Error).self) { try migration.run() }
+  #expect(try fixture.target.read("adb.private-key") == Data("原钥匙".utf8))
+  try fixture.source.write(Data("更新钥匙".utf8), for: "adb.private-key")
+  try fixture.source.write(Data("更新令牌".utf8), for: "account.oauth")
+  try fixture.migrate()
+  #expect(try fixture.target.read("adb.private-key") == Data("更新钥匙".utf8))
+  #expect(try fixture.target.read("account.oauth") == Data("更新令牌".utf8))
 }

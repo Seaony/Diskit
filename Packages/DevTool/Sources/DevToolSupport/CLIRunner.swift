@@ -8,7 +8,7 @@ public enum CLIRunner {
   public static func run(_ arguments: [String]) async throws {
     let options = try CLIArguments(arguments)
     if options.command != "help", options.command != "devices" {
-      try SharedStorageMigration.requireReady()
+      SharedStorageMigration.prepareForCommandLine()
     }
     switch options.command {
     case "help":

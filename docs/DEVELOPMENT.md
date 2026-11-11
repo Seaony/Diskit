@@ -21,7 +21,7 @@ open build/DerivedData/Build/Products/Debug/Kayoi.app
 
 M7 的 `make build` 由 Xcode 为 `project.yml` 中的付费团队自动签名并嵌入描述文件。`make dev-tool` 的签名身份可通过 `SIGN_IDENTITY` 指定。命令行工具只负责把原命令转交给 Kayoi App 执行，不另存凭据，也不改变参数、输出和退出码。默认查找同一构建目录下的 Debug/Release App，再查找已安装的 App；可通过 `KAYOI_APP_PATH` 指定应用包。单元测试使用内存密钥存储，不读写真实钥匙串。
 
-每个进程启动使用存储前，先实际验证 App Group 容器能写入并读回、共享钥匙串能写入并读回。通过后，配置与历史日志使用 App Group `JJJKGPY7T7.com.seaony.Kayoi`，密钥使用 data protection keychain 的共享组 `JJJKGPY7T7.com.seaony.Kayoi.shared`，service 和 account 保持原样。普通 App 启动会复制旧配置、日志和 service 为 `com.seaony.Kayoi` 的全部传统钥匙条目，全部读回核对后才清理旧值；失败显示原因，重新打开可续跑。迁移完成标记阻止重复搬移。命令行模式不执行迁移，首次使用共享存储前先打开 App。
+每个进程启动使用存储前，先实际验证 App Group 容器能写入并读回、共享钥匙串能写入并读回。通过后，配置与历史日志使用 App Group `JJJKGPY7T7.com.seaony.Kayoi`，密钥使用 data protection keychain 的共享组 `JJJKGPY7T7.com.seaony.Kayoi.shared`，service 和 account 保持原样。普通 App 启动会复制旧配置、日志和 service 为 `com.seaony.Kayoi` 的全部传统钥匙条目，全部读回核对后才清理旧值；失败显示原因和系统日志入口，本次使用旧存储继续启动，下次再试。迁移完成标记阻止重复搬移。命令行模式不执行迁移，未迁移时使用旧存储；首次使用共享存储前先打开 App。
 
 共享存储探测失败的构建继续使用 `~/Library/Application Support/Kayoi/` 和传统登录钥匙串，不迁移。当前 Release 构建仍按原流程移除扩展，不能代替带描述文件的 Debug 完成 M7 验收。正式包如何带上描述文件与扩展另行决定。若要同时使用旧版 App 和新 Debug，应先保留旧位置的数据副本；两个存储位置不做同步。
 

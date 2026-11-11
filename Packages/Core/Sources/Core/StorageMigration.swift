@@ -1,8 +1,18 @@
+import CryptoKit
 import Foundation
 import OSLog
 
+private struct PendingMigration: Codable {
+  var files: [String: Set<String>] = [:]
+  var secrets: [String: Set<String>] = [:]
+
+  static func digest(_ data: Data) -> String {
+    SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+  }
+}
+
 public enum StorageMigrationError: Error, LocalizedError {
-  case containerUnavailable, destinationConflict, verificationFailed, startAppFirst
+  case containerUnavailable, destinationConflict, verificationFailed
   case failed(String)
 
   public var errorDescription: String? {
@@ -10,7 +20,6 @@ public enum StorageMigrationError: Error, LocalizedError {
     case .containerUnavailable: L("无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。")
     case .destinationConflict: L("新旧存储中有不同的数据，已停止迁移。请保留两处数据并检查日志。")
     case .verificationFailed: L("迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。")
-    case .startAppFirst: L("请先打开 Kayoi 完成数据迁移，再运行命令行工具。")
     case .failed(let detail): LF("数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@", detail)
     }
   }
@@ -43,6 +52,17 @@ public struct StorageMigration: Sendable {
     do {
       // 先确认配置能读，避免把损坏或新版配置当作空列表。
       _ = try ConnectionRepository(location: source).load()
+      let journalURL = destination.dataDirectory.appending(
+        path: "storage-migration-pending-v1.json")
+      var journal =
+        manager.fileExists(atPath: journalURL.path)
+        ? try JSONDecoder().decode(PendingMigration.self, from: Data(contentsOf: journalURL))
+        : PendingMigration()
+      func saveJournal() throws {
+        try manager.createDirectory(
+          at: destination.dataDirectory, withIntermediateDirectories: true)
+        try JSONEncoder().encode(journal).write(to: journalURL, options: .atomic)
+      }
       var files: [(old: URL, new: URL, data: Data)] = []
       let configuration = source.dataDirectory.appending(path: "connections.json")
       if manager.fileExists(atPath: configuration.path) {
@@ -71,11 +91,18 @@ public struct StorageMigration: Sendable {
         }
       }
       for file in files {
-        if manager.fileExists(atPath: file.new.path) {
-          guard try Data(contentsOf: file.new) == file.data else {
-            throw StorageMigrationError.destinationConflict
-          }
-        } else {
+        let name = String(file.new.path.dropFirst(destination.dataDirectory.path.count))
+        let existing =
+          manager.fileExists(atPath: file.new.path) ? try Data(contentsOf: file.new) : nil
+        // 回退旧存储后用户可能继续修改，只更新上次迁移留下且未被另改的副本。
+        if let existing, existing != file.data,
+          !(journal.files[name] ?? []).contains(PendingMigration.digest(existing))
+        {
+          throw StorageMigrationError.destinationConflict
+        }
+        journal.files[name, default: []].insert(PendingMigration.digest(file.data))
+        try saveJournal()
+        if existing != file.data {
           try manager.createDirectory(
             at: file.new.deletingLastPathComponent(), withIntermediateDirectories: true)
           try file.data.write(to: file.new, options: .atomic)
@@ -88,9 +115,15 @@ public struct StorageMigration: Sendable {
       var secrets: [(key: String, data: Data)] = []
       for key in secretKeys {
         guard let data = try oldSecrets.read(key) else { continue }
-        if let existing = try newSecrets.read(key) {
-          guard existing == data else { throw StorageMigrationError.destinationConflict }
-        } else {
+        let existing = try newSecrets.read(key)
+        if let existing, existing != data,
+          !(journal.secrets[key] ?? []).contains(PendingMigration.digest(existing))
+        {
+          throw StorageMigrationError.destinationConflict
+        }
+        journal.secrets[key, default: []].insert(PendingMigration.digest(data))
+        try saveJournal()
+        if existing != data {
           try newSecrets.write(data, for: key)
         }
         guard try newSecrets.read(key) == data else {
@@ -109,10 +142,20 @@ public struct StorageMigration: Sendable {
           try newSecrets.read(secret.key) == secret.data
         else { throw StorageMigrationError.verificationFailed }
       }
-      for secret in secrets { try oldSecrets.delete(secret.key) }
-      for file in files { try manager.removeItem(at: file.old) }
       try manager.createDirectory(at: destination.dataDirectory, withIntermediateDirectories: true)
       try Data("{\"version\":1}".utf8).write(to: marker, options: .atomic)
+      try? manager.removeItem(at: journalURL)
+      // 完成标记也写好才清理，避免磁盘已满时删了旧数据却不能继续启动。
+      for secret in secrets {
+        do { try oldSecrets.delete(secret.key) } catch {
+          logger.error("共享数据已验证，旧钥匙条目未清理：\(error.localizedDescription, privacy: .public)")
+        }
+      }
+      for file in files {
+        do { try manager.removeItem(at: file.old) } catch {
+          logger.error("共享数据已验证，旧文件未清理：\(error.localizedDescription, privacy: .public)")
+        }
+      }
       logger.info("迁移核对通过：文件 \(files.count)，钥匙串条目 \(secrets.count)")
     } catch {
       let value = error as NSError
@@ -143,13 +186,14 @@ public enum SharedStorageMigration {
     }
   }
 
-  public static func requireReady() throws {
+  public static func prepareForCommandLine() {
     let storage = RuntimeStorage.current
     guard storage.usesSharedStorage else { return }
     let destination = storage.location
-    guard
-      FileManager.default.fileExists(
-        atPath: destination.dataDirectory.appending(path: StorageMigration.marker).path)
-    else { throw StorageMigrationError.startAppFirst }
+    if !FileManager.default.fileExists(
+      atPath: destination.dataDirectory.appending(path: StorageMigration.marker).path)
+    {
+      RuntimeStorage.useLegacyStorage()
+    }
   }
 }

@@ -1887,23 +1887,6 @@
         }
       }
     },
-    "请先打开 Kayoi 完成数据迁移，再运行命令行工具。": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open Kayoi to finish migrating data before using the command-line tool."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请先打开 Kayoi 完成数据迁移，再运行命令行工具。"
-          }
-        }
-      }
-    },
     "迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。": {
       "extractionState": "manual",
       "localizations": {

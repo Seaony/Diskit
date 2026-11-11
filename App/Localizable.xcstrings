@@ -6890,6 +6890,23 @@
           }
         }
       }
+    },
+    "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your old data was kept. This session will use legacy storage and retry migration on the next launch.\n%@\nSee the Kayoi logs in Console for details."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
