@@ -41,8 +41,9 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     SWIFT_EMIT_LOC_STRINGS: YES
     MACOSX_DEPLOYMENT_TARGET: "26.0"
-    CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "Apple Development: seaony@outlook.com"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: JJJKGPY7T7
+    CODE_SIGN_IDENTITY: "Apple Development"
     ENABLE_APP_SANDBOX: NO
     ENABLE_HARDENED_RUNTIME: YES
     COMBINE_HIDPI_IMAGES: YES
@@ -52,6 +53,7 @@ targets:
     platform: macOS
     sources:
       - App
+      - FSShared
       - path: README.md
         buildPhase: resources
       - path: docs/THIRD_PARTY_NOTICES.md
@@ -61,6 +63,7 @@ targets:
       - path: Packages/ADB/Vendor/BoringSSL/LICENSE
         buildPhase: resources
     dependencies:
+      - target: KayoiFS
       - package: Sparkle
       - package: Core
       - package: ADB
@@ -78,6 +81,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_ENTITLEMENTS: App/Kayoi.entitlements
         GENERATE_INFOPLIST_FILE: NO
     info:
       path: build/Info.plist
@@ -137,6 +141,27 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.seaony.Kayoi.oauth
             CFBundleURLSchemes: [kayoi]
+  # FSKit 文件系统扩展：把远端位置挂成 Finder 里的卷
+  KayoiFS:
+    type: extensionkit-extension
+    platform: macOS
+    sources:
+      - FSShared
+      - path: FSExtension
+        excludes:
+          - Info.plist
+          - KayoiFS.entitlements
+    dependencies:
+      - package: Core
+      - package: ADB
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.FS
+        PRODUCT_NAME: KayoiFS
+        INFOPLIST_FILE: FSExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: FSExtension/KayoiFS.entitlements
+        ENABLE_APP_SANDBOX: YES
   KayoiTests:
     type: bundle.unit-test
     platform: macOS

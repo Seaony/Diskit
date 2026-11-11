@@ -8,9 +8,10 @@ gen:
 	mkdir -p Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
 	cp Dependencies/Package.resolved Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
+# 开发构建由 Xcode 用付费团队自动签名：FSKit 扩展的权限必须写在团队描述文件里，事后重签会丢掉
 build: gen
-	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Debug -derivedDataPath build/DerivedData build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
-	python3 scripts/sign-app.py build/DerivedData/Build/Products/Debug/Kayoi.app --identity "$(SIGN_IDENTITY)" --timestamp none
+	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Debug -derivedDataPath build/DerivedData build -allowProvisioningUpdates -onlyUsePackageVersionsFromResolvedFile
+	codesign --verify --deep --strict --verbose=1 build/DerivedData/Build/Products/Debug/Kayoi.app
 
 release: gen dev-tool
 	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile

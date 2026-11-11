@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Kayoi</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>EXAppExtensionAttributes</key>
+	<dict>
+		<key>EXExtensionPointIdentifier</key>
+		<string>com.apple.fskit.fsmodule</string>
+		<key>FSActivateOptionSyntax</key>
+		<dict>
+			<key>shortOptions</key>
+			<string>o:</string>
+		</dict>
+		<key>FSMediaTypes</key>
+		<dict/>
+		<key>FSPersonalities</key>
+		<dict>
+			<key>KayoiPersonality</key>
+			<dict>
+				<key>FSfileObjectsAreCaseSensitive</key>
+				<true/>
+				<key>FSName</key>
+				<string>Kayoi</string>
+			</dict>
+		</dict>
+		<key>FSRequiresSecurityScopedPathURLResources</key>
+		<false/>
+		<key>FSShortName</key>
+		<string>kayoi</string>
+		<key>FSSupportedSchemes</key>
+		<array>
+			<string>kayoi-adb</string>
+			<string>kayoi-gr</string>
+			<string>kayoi-aliyun</string>
+			<string>kayoi-quark</string>
+		</array>
+		<key>FSSupportsBlockResources</key>
+		<false/>
+		<key>FSSupportsGenericURLResources</key>
+		<true/>
+		<key>FSSupportsPathURLs</key>
+		<false/>
+		<key>FSSupportsServerURLs</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

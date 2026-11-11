@@ -81,6 +81,11 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificatio
   @State private var model = AppModel()
   @NSApplicationDelegateAdaptor(KayoiAppDelegate.self) private var appDelegate
   @Environment(\.openWindow) private var openWindow
+
+  init() {
+    FSKitSpike.runIfRequested()
+  }
+
   var body: some Scene {
     MenuBarExtra {
       PanelView(model: model, closesOnOpen: true)
