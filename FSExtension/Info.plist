@@ -50,25 +50,25 @@
 			<string>kayoi-adb</string>
 			<string>kayoi-aliyun</string>
 			<string>kayoi-aliyunoss</string>
-			<string>kayoi-backblazeb2</string>
-			<string>kayoi-baidudrive</string>
+			<string>kayoi-b2</string>
+			<string>kayoi-baidu</string>
 			<string>kayoi-camera</string>
-			<string>kayoi-cloudflarer2</string>
 			<string>kayoi-drive115</string>
 			<string>kayoi-drive123</string>
 			<string>kayoi-dropbox</string>
-			<string>kayoi-googledrive</string>
+			<string>kayoi-google</string>
 			<string>kayoi-lanzou</string>
 			<string>kayoi-minio</string>
-			<string>kayoi-mobilecloud</string>
+			<string>kayoi-mobile</string>
 			<string>kayoi-onedrive</string>
 			<string>kayoi-pikpak</string>
 			<string>kayoi-qiniukodo</string>
 			<string>kayoi-quark</string>
+			<string>kayoi-r2</string>
 			<string>kayoi-s3</string>
-			<string>kayoi-tencentcos</string>
-			<string>kayoi-thunderdrive</string>
-			<string>kayoi-tianyidrive</string>
+			<string>kayoi-cos</string>
+			<string>kayoi-thunder</string>
+			<string>kayoi-tianyi</string>
 			<string>kayoi-ucdrive</string>
 		</array>
 		<key>FSSupportsBlockResources</key>

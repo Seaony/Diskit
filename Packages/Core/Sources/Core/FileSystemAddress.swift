@@ -10,6 +10,14 @@ extension ConnectionKind {
     case .cameraUSB: "kayoi-camera"
     case .aliyunDrive: "kayoi-aliyun"
     case .quark: "kayoi-quark"
+    case .baiduDrive: "kayoi-baidu"
+    case .tencentCOS: "kayoi-cos"
+    case .backblazeB2: "kayoi-b2"
+    case .cloudflareR2: "kayoi-r2"
+    case .googleDrive: "kayoi-google"
+    case .mobileCloud: "kayoi-mobile"
+    case .thunderDrive: "kayoi-thunder"
+    case .tianyiDrive: "kayoi-tianyi"
     default: "kayoi-" + rawValue.lowercased()
     }
   }

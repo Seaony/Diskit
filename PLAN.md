@@ -112,7 +112,7 @@ protocol RemoteFileProvider: Sendable {
 
 ### 3.4 FSKit 层通用规则
 
-- 一个扩展，`FSSupportedSchemes` 声明 `kayoi-adb`、`kayoi-gr`、`kayoi-aliyun`、`kayoi-quark`，URL 形如 `kayoi-adb://<连接ID>`。
+- 一个扩展，`FSSupportedSchemes` 覆盖已有的 24 种非系统类型，共 23 个 scheme；安卓 USB 与 Wi-Fi 共用 `kayoi-adb`，GR 本轮保留原行为。URL 形如 `kayoi-adb://<连接ID>`，具体映射以 Core 的 `ConnectionKind.fileSystemScheme` 为准。名称保持不超过 15 个 ASCII 字节：本机正式接入时，过长的 scheme 使整个扩展不被系统发现；此约束未见 Apple 公开说明。
 - 用 `FSUnaryFileSystem` + `FSGenericURLResource`，一个挂载一个卷。
 - 挂载方式、挂载点位置（是否能在 `/Volumes` 以外且不需要 root）、是否出现在 Finder 侧栏「位置」里：以 M7 验证结论为准。
 - **目录缓存**：目录列表按路径缓存，设备 5 秒、网盘 30 秒过期；本卷内的写/删/改名操作立即让相关目录缓存失效。
@@ -421,7 +421,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 - 阶段一不写任何依赖 Team ID 的代码，路径与钥匙串一律走 §7 的抽象。
 - 日志不打印密码、令牌、Cookie、私钥。
 - 所有远端调用有超时（设备 15 秒，网盘 30 秒，大文件传输按无进展 60 秒判超时）。
-- Bundle ID：主 App `com.seaony.Kayoi`，扩展 `com.seaony.Kayoi.FS`，开发工具 `com.seaony.Kayoi.dev`；URL scheme：OAuth 回调 `kayoi://`，FSKit 挂载 `kayoi-adb` / `kayoi-gr` / `kayoi-aliyun` / `kayoi-quark`。
+- Bundle ID：主 App `com.seaony.Kayoi`，扩展 `com.seaony.Kayoi.FS`，开发工具 `com.seaony.Kayoi.dev`；OAuth 回调 `kayoi://`，FSKit 使用单独的 `kayoi-` 前缀 scheme。百度、腾讯、B2、R2、Google、移动、迅雷、天翼分别用 `kayoi-baidu`、`kayoi-cos`、`kayoi-b2`、`kayoi-r2`、`kayoi-google`、`kayoi-mobile`、`kayoi-thunder`、`kayoi-tianyi`，其余见 `ConnectionKind.fileSystemScheme`。
 - 代码注释用简短中文，说明做什么、为什么，不写废话。
 - 每个里程碑一个或多个小提交，提交信息一句话中文，不写 AI 相关字样。
 

@@ -691,3 +691,10 @@ Kayoi.app: satisfies its Designated Requirement
 | 登录失效与缓存安全 | 通过（本地测试） | 真实分布式通知只使已保存 FSKit 云连接进入重新登录状态，重复通知一次，刷新挂载表不清除。Read 可统计和清理，Overlay/Writes 保留；损坏、不可读或符号根抛错，不假报零。沙盒扩展实际投递与真实非零缓存尚未实测。 |
 | 原生界面 | 通过（演示布局与组件） | 真实 Debug 演示面板、通用设置、英文深色编辑页已截图，新增自动挂载与 Finder 开关有无障碍文字证据；组件宿主的中英浅深四图核对了 F3 横幅与 F15 四态，无截断重叠。截图位于 `build/m7-step4-{panel-light,settings-light,editor-dark}.png` 和 `build/agents/fs-ui/screenshots/`。未操作 Dia 或模拟鼠标点击。 |
 | 真机及系统版本 | 未测 | 手机实际挂载、Finder 传输、Wi-Fi、拔插、真实退出清理留到第 5 小步。系统设置实际跳转未操作；26 未实测。 |
+
+### 第 5 小步前置：真实扩展发现失败修正
+
+- 通过：真实复现 pluginkit 有扩展、FSClient 和系统设置没有 Kayoi，原生挂载立即返回 POSIX 74。签名、描述文件及启用记录核对正常，没有重启系统代理，也没有触碰手机文件。
+- 通过：保留原配置快照，逐项构建、注册和查询，定位到过长的 scheme。保持全部 23 项，八个长名称改为短名后，实际产物最大 15 字节，列表刷新后多次稳定可见；本会话直接查询确认重新启用后为 true。日志：`build/m7-fskit-bisect/fix15-build.log`、`fix15-status.log`、`fix15-status-later.log`。
+- 通过：初次长度断言在旧映射下失败，最终最多 15 字节与声明集合断言通过；原快照八项超长另行核对，未在最终严格条件下重跑旧实现红测。统一构建和签名通过，完整测试为 969 项 Swift 测试及 14 项脚本测试，Core 180 项、App 186 项。二分日志位于 `build/m7-fskit-bisect/`，回归日志位于 `build/agents/fs-address/`。
+- 未测：手机 USB、Wi-Fi、Finder、cp、rsync、拔插与吞吐。本次前置修正不计为第 5 小步真机通过；macOS 26 未实测。
