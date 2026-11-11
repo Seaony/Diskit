@@ -8,6 +8,8 @@ packages:
     exactVersion: 2.10.1
   Core:
     path: Packages/Core
+  DevTool:
+    path: Packages/DevTool
   ADB:
     path: Packages/ADB
   AliyunDrive:
@@ -66,6 +68,8 @@ targets:
       - target: KayoiFS
       - package: Sparkle
       - package: Core
+      - package: DevTool
+        product: DevToolSupport
       - package: ADB
       - package: AliyunDrive
       - package: Quark
@@ -87,6 +91,7 @@ targets:
       path: build/Info.plist
       properties:
         CFBundleDisplayName: Kayoi
+        KayoiDevToolProtocolVersion: 1
         ALIYUN_CLIENT_ID: $(ALIYUN_CLIENT_ID)
         ALIYUN_CLIENT_SECRET: $(ALIYUN_CLIENT_SECRET)
         ALIYUN_REDIRECT_URI: $(ALIYUN_REDIRECT_URI)

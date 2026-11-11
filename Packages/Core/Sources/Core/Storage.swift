@@ -51,8 +51,9 @@ extension SecretStore {
   }
 }
 
-public struct KeychainError: Error, Sendable {
+public struct KeychainError: Error, Sendable, LocalizedError {
   public let status: OSStatus
+  public var errorDescription: String? { LF("钥匙串访问失败（错误 %@）", String(status)) }
 }
 
 public struct LoginKeychainStore: SecretStore {
@@ -63,11 +64,30 @@ public struct LoginKeychainStore: SecretStore {
       directory: LocalStorageLocation().dataDirectory.appending(path: "CredentialLocks"),
       namespace: service, key: key)
   }
-  private func query(_ key: String) -> [String: Any] {
+  func query(_ key: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service, kSecAttrAccount as String: key,
     ]
+  }
+  public func keys() throws -> [String] {
+    var attributes = query("")
+    attributes.removeValue(forKey: kSecAttrAccount as String)
+    attributes[kSecReturnAttributes as String] = true
+    attributes[kSecMatchLimit as String] = kSecMatchLimitAll
+    var result: CFTypeRef?
+    let status = SecItemCopyMatching(attributes as CFDictionary, &result)
+    if status == errSecItemNotFound { return [] }
+    guard status == errSecSuccess else { throw KeychainError(status: status) }
+    guard let entries = result as? [[String: Any]] else {
+      throw KeychainError(status: errSecDecode)
+    }
+    return try entries.map {
+      guard let key = $0[kSecAttrAccount as String] as? String else {
+        throw KeychainError(status: errSecDecode)
+      }
+      return key
+    }.sorted()
   }
   public func read(_ key: String) throws -> Data? {
     var attributes = query(key)
@@ -77,7 +97,8 @@ public struct LoginKeychainStore: SecretStore {
     let status = SecItemCopyMatching(attributes as CFDictionary, &result)
     if status == errSecItemNotFound { return nil }
     guard status == errSecSuccess else { throw KeychainError(status: status) }
-    return result as? Data
+    guard let data = result as? Data else { throw KeychainError(status: errSecDecode) }
+    return data
   }
   public func write(_ data: Data, for key: String) throws {
     let attributes = query(key)

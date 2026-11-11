@@ -70,10 +70,13 @@ import UserNotifications
         location: location, secrets: secrets,
         smb: DemoMountService(states: fixture.states), initialStates: fixture.states)
     } else {
-      location = LocalStorageLocation()
-      secrets = LoginKeychainStore()
+      let storage = RuntimeStorage.current
+      location = storage.location
+      secrets = storage.secrets
       preferences = .standard
-      connections = ConnectionManager(smb: SystemSMBService())
+      connections = ConnectionManager(
+        location: storage.location, secrets: storage.secrets,
+        smb: SystemSMBService(location: storage.location))
     }
     declinedDevices = Set(preferences.stringArray(forKey: DevicePrompt.declinedKey) ?? [])
     if let notification = options.demoNotification {

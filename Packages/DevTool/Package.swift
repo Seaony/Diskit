@@ -2,8 +2,11 @@
 import PackageDescription
 
 let package = Package(
-  name: "DevTool", platforms: [.macOS("26.0")],
-  products: [.executable(name: "kayoi-dev", targets: ["DevTool"])],
+  name: "DevTool", defaultLocalization: "zh-Hans", platforms: [.macOS("26.0")],
+  products: [
+    .executable(name: "kayoi-dev", targets: ["DevTool"]),
+    .library(name: "DevToolSupport", targets: ["DevToolSupport"]),
+  ],
   dependencies: [
     .package(path: "../Core"), .package(path: "../ADB"), .package(path: "../RicohGR"),
     .package(path: "../AliyunDrive"), .package(path: "../Quark"), .package(path: "../S3Drive"),
@@ -12,7 +15,8 @@ let package = Package(
     .package(path: "../TianyiDrive"), .package(path: "../ChinaWebDrive"),
   ],
   targets: [
-    .executableTarget(name: "DevTool", dependencies: ["DevToolSupport"]),
+    .executableTarget(name: "DevTool", dependencies: ["DevToolLauncher"]),
+    .target(name: "DevToolLauncher", resources: [.process("Resources")]),
     .target(
       name: "DevToolSupport",
       dependencies: [
@@ -28,5 +32,5 @@ let package = Package(
         .product(name: "TianyiDrive", package: "TianyiDrive"),
         .product(name: "ChinaWebDrive", package: "ChinaWebDrive"),
       ]),
-    .testTarget(name: "DevToolTests", dependencies: ["DevToolSupport"]),
+    .testTarget(name: "DevToolTests", dependencies: ["DevToolSupport", "DevToolLauncher"]),
   ], swiftLanguageModes: [.v6])

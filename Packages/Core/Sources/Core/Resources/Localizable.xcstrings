@@ -1835,6 +1835,108 @@
           }
         }
       }
+    },
+    "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data migration did not finish. Old data that has not yet been cleaned up was kept. Reopen Kayoi to try again.\n%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@"
+          }
+        }
+      }
+    },
+    "新旧存储中有不同的数据，已停止迁移。请保留两处数据并检查日志。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The old and shared stores contain different data. Migration stopped. Keep both copies and check the logs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新旧存储中有不同的数据，已停止迁移。请保留两处数据并检查日志。"
+          }
+        }
+      }
+    },
+    "无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shared storage is unavailable. Rebuild and sign Kayoi. Your old data has not been deleted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。"
+          }
+        }
+      }
+    },
+    "请先打开 Kayoi 完成数据迁移，再运行命令行工具。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Kayoi to finish migrating data before using the command-line tool."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先打开 Kayoi 完成数据迁移，再运行命令行工具。"
+          }
+        }
+      }
+    },
+    "迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migrated data could not be verified. Your old data was kept. Reopen Kayoi to try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。"
+          }
+        }
+      }
+    },
+    "钥匙串访问失败（错误 %@）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keychain access failed (error %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "钥匙串访问失败（错误 %@）"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

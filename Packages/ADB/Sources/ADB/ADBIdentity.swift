@@ -7,7 +7,7 @@ import Security
 public struct ADBIdentity: Sendable {
   private static let keyLock = NSLock()
   private let store: any SecretStore
-  public init(store: any SecretStore = LoginKeychainStore()) { self.store = store }
+  public init(store: any SecretStore = RuntimeStorage.current.secrets) { self.store = store }
   func key(regenerate: Bool = false) throws -> SecKey {
     Self.keyLock.lock()
     defer { Self.keyLock.unlock() }

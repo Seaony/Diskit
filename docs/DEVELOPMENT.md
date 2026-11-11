@@ -9,23 +9,25 @@ macOS 菜单栏连接管理工具。最低 macOS 26.0，Swift 6 严格并发检�
 
 ```sh
 make gen
+make build
 make test
-make release
-make dev-tool
+make dev-tool SIGN_IDENTITY='Apple Development'
 build/bin/kayoi-dev --help
-open build/DerivedData/Build/Products/Release/Kayoi.app
+open build/DerivedData/Build/Products/Debug/Kayoi.app
 ```
 
 `make build` 构建 Debug；`make format` 使用 Xcode 自带 swift-format。
 工程由 `project.yml` 生成，不提交 `.xcodeproj`、构建缓存或本地密钥配置。
 
-阶段一主 App 和开发工具使用本机 `Apple Development: seaony@outlook.com` 身份签名，不需要 Team ID、付费能力或描述文件。可通过 `SIGN_IDENTITY` 指定自己的 Apple Development 身份。钥匙串首次提示访问时，请核对程序后允许；开发工具需要单独允许。单元测试使用内存密钥存储，不读写真实钥匙串。
+M7 的 `make build` 由 Xcode 为 `project.yml` 中的付费团队自动签名并嵌入描述文件。`make dev-tool` 的签名身份可通过 `SIGN_IDENTITY` 指定。命令行工具只负责把原命令转交给 Kayoi App 执行，不另存凭据，也不改变参数、输出和退出码。默认查找同一构建目录下的 Debug/Release App，再查找已安装的 App；可通过 `KAYOI_APP_PATH` 指定应用包。单元测试使用内存密钥存储，不读写真实钥匙串。
 
-配置位于 `~/Library/Application Support/Kayoi/connections.json`，缓存位于 `~/Library/Caches/Kayoi/`。密钥仅存传统登录钥匙串，service 为 `com.seaony.Kayoi`，不使用共享访问组或数据保护钥匙串。
+每个进程启动使用存储前，先实际验证 App Group 容器能写入并读回、共享钥匙串能写入并读回。通过后，配置与历史日志使用 App Group `JJJKGPY7T7.com.seaony.Kayoi`，密钥使用 data protection keychain 的共享组 `JJJKGPY7T7.com.seaony.Kayoi.shared`，service 和 account 保持原样。普通 App 启动会复制旧配置、日志和 service 为 `com.seaony.Kayoi` 的全部传统钥匙条目，全部读回核对后才清理旧值；失败显示原因，重新打开可续跑。迁移完成标记阻止重复搬移。命令行模式不执行迁移，首次使用共享存储前先打开 App。
+
+共享存储探测失败的构建继续使用 `~/Library/Application Support/Kayoi/` 和传统登录钥匙串，不迁移。当前 Release 构建仍按原流程移除扩展，不能代替带描述文件的 Debug 完成 M7 验收。正式包如何带上描述文件与扩展另行决定。若要同时使用旧版 App 和新 Debug，应先保留旧位置的数据副本；两个存储位置不做同步。
 
 需要开放平台凭据时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前实现菜单栏连接管理、系统 SMB/WebDAV/NFS、安卓 USB 与无线调试、GR IV 和通用 USB 相机、七种 S3 兼容对象存储、阿里云盘、六个官方网盘、夸克/UC、天翼、移动、迅雷、PikPak 和蓝奏云。真实账号与外部设备仍按验收记录逐项验证。
 
-SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Provider 通过连接测试及 `kayoi-dev` 验证。FSKit 与 GR Wi-Fi 不在当前实现范围。
+SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Provider 目前通过连接测试及 `kayoi-dev` 验证。FSKit 正按 [M7 目标](GOAL-M7.md) 接入，进度见 [M7 报告](M7-REPORT.md)；GR Wi-Fi 不在本轮范围。
 
 ## SMB 共享
 

@@ -46,7 +46,7 @@ public actor PikPakSession {
   private let makeDeadline: @Sendable () -> HTTPProgressDeadline
 
   public init(
-    secretKey: String, secrets: any SecretStore = LoginKeychainStore(),
+    secretKey: String, secrets: any SecretStore = RuntimeStorage.current.secrets,
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
     self.init(secretKey: secretKey, secrets: secrets, transport: transport, now: { Date() })

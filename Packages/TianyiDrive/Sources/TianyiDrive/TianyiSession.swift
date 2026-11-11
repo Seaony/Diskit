@@ -173,7 +173,7 @@ public actor TianyiSession {
   private var didNotifyInvalidation = false
 
   public init(
-    secretKey: String, secrets: any SecretStore = LoginKeychainStore(),
+    secretKey: String, secrets: any SecretStore = RuntimeStorage.current.secrets,
     configuration: TianyiConfiguration = .personal,
     transport: (any HTTPTransport)? = nil
   ) {

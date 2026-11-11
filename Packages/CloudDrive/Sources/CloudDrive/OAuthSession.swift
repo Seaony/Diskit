@@ -17,7 +17,7 @@ public actor OAuthSession {
 
   public init(
     configuration: OAuthConfiguration, secretKey: String,
-    secrets: any SecretStore = LoginKeychainStore(),
+    secrets: any SecretStore = RuntimeStorage.current.secrets,
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
     self.init(

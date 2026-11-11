@@ -634,3 +634,18 @@ Kayoi.app: satisfies its Designated Requirement
 | 线性条与复用窗口标题 | 既有修后复核通过；三张 UI-WEB-01-loading-fixed 浅/深/返回浅图显示对应绿色，UI-EDIT-03-from-discovery-dark-zh.png 显示“添加位置”和 Pixel 8。只引用交接现场结果与本轮原图核对，不冒充最终 Release 重新实测。 |
 | Sparkle 升级演练 | 未做，按清单不启动回环服务。准备目录 `/var/folders/9z/gvnyl5hj1vn2kn84cy5j7gwr0000gn/T/kayoi-update-rehearsal-4uv7x6rq` 包含 `REVIEW.md`、`isolation.patch`、`0.2.0/Kayoi.app`、`0.2.1/Kayoi.app`、`feed/appcast.xml`、`feed/Kayoi-0.2.1.zip`。后续明确允许演练后，按 REVIEW：前台运行 serve-loopback-after-approval.py，仅绑定 127.0.0.1:43871；启动独立临时 0.2.0 应用，手动检查→下载→安装→重启，核对 0.2.1 与独立 bundle ID，结束退出应用并停止服务。不读取临时私钥，不开启正式更新源。 |
 | 性能长测 | 未做，按清单停止长时测试。稳定 Demo Release 后用 `python3 scripts/sample-process.py --pid <演示进程PID> --seconds 300 --interval 1 --output build/Validation/perf-panel-closed.json`，分别测关闭/打开面板 CPU；稳定性改为 1800 秒；50 次开合记录真实次数并对比稳定起止 RSS。测量期间不构建；CPU 100% 为单核，RSS 不等于 footprint。启动/面板时延也没有本轮实测数值，软件绘制探针用法见 PERFORMANCE.md。 |
+
+## M7 第二步，第 1 小步：存储迁移（2026-11-11）
+
+环境：macOS 27.2、Xcode 27.2，付费团队自动签名的 Debug。此处只验收存储和 CLI 接入，FSKit 正式卷尚未接入。
+
+| 项目 | 状态 | 现象与证据 |
+|---|---|---|
+| 单元测试与完整构建 | 通过 | `make build` 和整包签名校验通过；最终 `make test` 退出 0，916 项 Swift 测试和 14 项脚本测试通过，523 个实际本地化键通过检查。日志：`build/m7-step1-build.log`、`build/m7-step1-test.log`。 |
+| 迁移成功、部分失败、重复运行 | 通过 | Core 150 项测试包含复制后读回核对、写失败保留全部旧值后续跑、迁移后新配置与刷新令牌不被重复迁移覆盖，以及新旧值冲突停止。 |
+| 共享存储不可用时留在旧位置 | 通过 | 三项新增测试覆盖共享钥匙串不可写、共享目录不可写、共享探测成功且不触发迁移；原配置和 ADB 钥匙保持。另将临时 App 移除描述文件后重签，命令行正常进入，系统日志确认使用传统存储，无迁移错误或 GUI 弹窗。 |
+| 本机首次真实迁移前备份 | 通过 | 正常退出原 Debug 后复制整个旧数据目录到 `build/backup-20261111-205438/`，3 个文件逐字节核对一致；备份未修改。 |
+| 本机配置、日志、钥匙迁移 | 通过 | 迁移日志记录 3 个文件、1 个传统钥匙串条目核对通过；共享配置有 1 个 Android USB 连接，配置与备份逐字节一致，两份历史日志完整。旧配置已清理，`security find-generic-password -s com.seaony.Kayoi -a adb.private-key` 返回条目不存在。spike 文件与测试钥匙留到第 8 步。 |
+| CLI 保持命令行为 | 通过 | 15 项 CLI 测试覆盖配置位置、双语错误、无描述文件的兼容 App、真实 exec 参数及输出、退出码转交。实际构建的 `build/bin/kayoi-dev --help` 正常；不存在的连接返回原“路径无效”。双架构 CLI 构建用本机可用的 Apple Development 身份签名，未修改发布流程。 |
+| 手机与远端文件操作 | 未测 | 本步不做 Finder 传输验收。迁移后 App 自动连接曾返回 EACCES，尚未查明原因；第 5 小步再验证手机授权和通信。 |
+| 正式分发与 macOS 26 | 未测 | 本轮只验收带描述文件的 Debug；当前 Release 继续旧存储、不带 FSKit 扩展，正式分发签名另行决定。macOS 26 未实测。 |

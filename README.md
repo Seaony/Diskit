@@ -99,7 +99,9 @@ make build
 open build/DerivedData/Build/Products/Debug/Kayoi.app
 ```
 
-`make` signs with the maintainer's Apple Development identity; pass `SIGN_IDENTITY='Apple Development: you@example.com'` to use your own. `make test` runs the tests, `make release` builds a universal app and `make dev-tool` builds `build/bin/kayoi-dev`. Cloud drives that need app credentials read them from `Config/Secrets.xcconfig`: copy `Config/Secrets.example.xcconfig`, fill it in, and build with `make build KAYOI_BUILD_CONFIG=Config/App.xcconfig` (the default build ignores it). See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for every location type, the demo mode and the command-line tool, and [docs/RELEASING.md](docs/RELEASING.md) for releases.
+`make build` uses Xcode automatic signing for the paid development team configured in `project.yml`. It builds the provisioned Debug app used for M7 acceptance. The current `make release` still removes the FSKit extension; packaging a provisioned release is a separate step. Each process checks whether shared storage works and keeps using legacy storage if it does not.
+
+`make test` runs the tests, and `make dev-tool SIGN_IDENTITY='Apple Development'` builds `build/bin/kayoi-dev`. The tool forwards its commands to the built Debug app or an installed compatible Kayoi app, preserving arguments, output and exit status. Open the provisioned Debug app once to migrate existing data before using shared storage from the tool. Cloud drives that need app credentials read them from `Config/Secrets.xcconfig`: copy `Config/Secrets.example.xcconfig`, fill it in, and build with `make build KAYOI_BUILD_CONFIG=Config/App.xcconfig` (the default build ignores it). See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for storage paths and command-line setup, and [docs/RELEASING.md](docs/RELEASING.md) for releases.
 <!-- /source-only -->
 
 ## Acknowledgements

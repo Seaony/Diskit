@@ -77,7 +77,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificatio
   }
 }
 
-@main struct KayoiApp: App {
+struct KayoiApp: App {
   @State private var model = AppModel()
   @NSApplicationDelegateAdaptor(KayoiAppDelegate.self) private var appDelegate
   @Environment(\.openWindow) private var openWindow

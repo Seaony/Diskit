@@ -7,6 +7,9 @@ import RicohGR
 public enum CLIRunner {
   public static func run(_ arguments: [String]) async throws {
     let options = try CLIArguments(arguments)
+    if options.command != "help", options.command != "devices" {
+      try SharedStorageMigration.requireReady()
+    }
     switch options.command {
     case "help":
       print(cliHelp)
@@ -26,18 +29,24 @@ public enum CLIRunner {
       return
     default: break
     }
-    guard
-      let connection = try ConnectionRepository().load().first(where: {
-        $0.id == options.connectionID
-      })
-    else { throw RemoteError.invalidPath }
+    let storage = RuntimeStorage.current
+    let connection = try loadConnection(options.connectionID, location: storage.location)
     let values = try CLIEnvironment.load(ProcessInfo.processInfo.environment)
     let provider = try await CLIProviderFactory.make(
-      connection, values: values, secrets: LoginKeychainStore())
+      connection, values: values, secrets: storage.secrets)
     try await execute(
       options, provider: provider,
       text: { print($0) }, bytes: { try FileHandle.standardOutput.write(contentsOf: $0) },
       errors: { try? FileHandle.standardError.write(contentsOf: Data(($0 + "\n").utf8)) })
+  }
+
+  static func loadConnection(
+    _ id: UUID?, location: any StorageLocation
+  ) throws -> Connection {
+    guard let connection = try ConnectionRepository(location: location).load().first(where: {
+      $0.id == id
+    }) else { throw RemoteError.invalidPath }
+    return connection
   }
 
   static func pairingAddress(_ value: String, code: String) throws -> (String, UInt16) {

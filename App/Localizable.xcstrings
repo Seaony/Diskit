@@ -6873,6 +6873,23 @@
           }
         }
       }
+    },
+    "无法迁移数据": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to Migrate Data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法迁移数据"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -13,6 +13,7 @@ public enum CLIOutput {
 
   public static func errorMessage(_ error: Error) -> String {
     if error is CancellationError { return "操作已取消" }
+    if let error = error as? StorageMigrationError { return error.localizedDescription }
     if let error = error as? RemoteError { return HumanError.detail(error) }
     let value = error as NSError
     if value.domain == NSPOSIXErrorDomain {

@@ -1,0 +1,57 @@
+{
+  "sourceLanguage" : "zh-Hans",
+  "strings" : {
+    "找不到支持命令行的 Kayoi.app，请先构建或安装新版 Kayoi。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot find a Kayoi.app that supports the command line. Build or install the latest Kayoi first."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到支持命令行的 Kayoi.app，请先构建或安装新版 Kayoi。"
+          }
+        }
+      }
+    },
+    "指定的 Kayoi.app 不支持命令行，请先构建或安装新版 Kayoi。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The selected Kayoi.app does not support the command line. Build or install the latest Kayoi first."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "指定的 Kayoi.app 不支持命令行，请先构建或安装新版 Kayoi。"
+          }
+        }
+      }
+    },
+    "无法启动 Kayoi 命令行模式（errno %lld）。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cannot start Kayoi in command-line mode (errno %lld)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法启动 Kayoi 命令行模式（errno %lld）。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

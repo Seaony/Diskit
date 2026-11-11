@@ -67,6 +67,10 @@ private func temporary() throws -> URL {
   try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
   return url
 }
+private struct TestStorageLocation: StorageLocation {
+  let dataDirectory: URL
+  var cacheDirectory: URL { dataDirectory.appending(path: "cache") }
+}
 private func execute(
   _ args: [String], provider: FakeProvider, output: Capture<[String]> = Capture([]),
   bytes: @escaping @Sendable (Data) throws -> Void = { _ in }
@@ -115,6 +119,28 @@ private func execute(
   #expect(value.value("URL") == "https://example.invalid/a")
   #expect(value.value("QUOTED") == "a=b // c")
   #expect(value.value("MACRO") == "https://host")
+}
+
+@Test func connectionLoadingReadsSelectedStorageWithoutChangingEitherLocation() throws {
+  let root = try temporary()
+  defer { try? FileManager.default.removeItem(at: root) }
+  let legacy = TestStorageLocation(dataDirectory: root.appending(path: "old"))
+  let shared = TestStorageLocation(dataDirectory: root.appending(path: "shared"))
+  let connection = Connection(id: UUID(uuidString: identifier)!, kind: .androidUSB, name: "手机")
+  try ConnectionRepository(location: legacy).save([connection])
+  let previous = try ConfigurationStore(location: legacy).read()
+  #expect(try CLIRunner.loadConnection(connection.id, location: legacy) == connection)
+  #expect(throws: RemoteError.self) {
+    try CLIRunner.loadConnection(connection.id, location: shared)
+  }
+  #expect(try ConfigurationStore(location: legacy).read() == previous)
+  #expect(try ConfigurationStore(location: shared).read() == nil)
+  var migrated = connection
+  migrated.name = "共享存储里的手机"
+  try ConnectionRepository(location: shared).save([migrated])
+  #expect(try CLIRunner.loadConnection(connection.id, location: shared) == migrated)
+  #expect(try CLIRunner.loadConnection(connection.id, location: legacy) == connection)
+  #expect(try ConfigurationStore(location: legacy).read() == previous)
 }
 
 @Test func listingAndErrorsDoNotLoseIdentityOrLeakSecrets() throws {
