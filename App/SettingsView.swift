@@ -169,9 +169,11 @@ struct SettingsView: View {
             } else {
               Text(verbatim: "—").foregroundStyle(KayoiTheme.secondaryText)
             }
-            Button(L("清空缓存")) { confirmClear = true }
-              .disabled(cannotClearCache || confirmClear)
-              .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
+            if !confirmClear {
+              Button(L("清空缓存")) { confirmClear = true }
+                .disabled(cannotClearCache || confirmClear)
+                .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
+            }
           }
         }
         if let cacheError {
