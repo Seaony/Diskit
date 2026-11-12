@@ -1,0 +1,3 @@
+已按指定提示词用内置 image_gen 生成，核对为 1024×1024 PNG，未改动其他文件。喵
+
+/Users/seaony/Desktop/Kayoi-图标/第1批/16-jelly-cloud-balloon.png

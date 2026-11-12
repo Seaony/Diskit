@@ -1,0 +1,3 @@
+已用内置 image_gen 按指定提示词生成并保存，已验证为 1024×1024 PNG，其他文件未改动喵
+
+/Users/seaony/Desktop/Kayoi-图标/第1批/20-jelly-phone-kite.png

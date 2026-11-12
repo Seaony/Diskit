@@ -1,0 +1,3 @@
+已用内置 image_gen 按指定提示词生成并保存，已核对尺寸为 1024×1024，未改动其他文件喵
+
+/Users/seaony/Desktop/Kayoi-图标/第1批/08-jelly-camera.png

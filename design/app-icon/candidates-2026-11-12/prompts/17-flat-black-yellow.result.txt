@@ -1,0 +1,2 @@
+已按提示词使用内置 image_gen 生成并保存，已核对为 1024×1024，未改动其他文件喵
+/Users/seaony/Desktop/Kayoi-图标/第1批/17-flat-black-yellow.png

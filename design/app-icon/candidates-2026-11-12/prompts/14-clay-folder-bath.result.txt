@@ -1,0 +1,3 @@
+已用内置 image_gen 按指定提示词生成并保存，已核对为 1024×1024，其他文件未改动。喵
+
+/Users/seaony/Desktop/Kayoi-图标/第1批/14-clay-folder-bath.png
