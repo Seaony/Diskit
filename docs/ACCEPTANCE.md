@@ -637,6 +637,8 @@ Diskit.app: satisfies its Designated Requirement
 
 ## M7 第二步，第 1 小步：存储迁移（2026-11-11）
 
+改名前的原始日志使用 Kayoi；本节实际创建的手机目录、桶与容器保留原名，不随产品名替换。
+
 环境：macOS 27.2、Xcode 27.2，付费团队自动签名的 Debug。此处只验收存储和 CLI 接入，FSKit 正式卷尚未接入。
 
 | 项目 | 状态 | 现象与证据 |
@@ -645,7 +647,7 @@ Diskit.app: satisfies its Designated Requirement
 | 迁移成功、部分失败、重复运行 | 通过 | Core 150 项测试包含复制后读回核对、写失败保留全部旧值后续跑、迁移后新配置与刷新令牌不被重复迁移覆盖，以及新旧值冲突停止。 |
 | 共享存储不可用时留在旧位置 | 通过 | 三项新增测试覆盖共享钥匙串不可写、共享目录不可写、共享探测成功且不触发迁移；原配置和 ADB 钥匙保持。另将临时 App 移除描述文件后重签，命令行正常进入，系统日志确认使用传统存储，无迁移错误或 GUI 弹窗。 |
 | 本机首次真实迁移前备份 | 通过 | 正常退出原 Debug 后复制整个旧数据目录到 `build/backup-20261111-205438/`，3 个文件逐字节核对一致；备份未修改。 |
-| 本机配置、日志、钥匙迁移 | 通过 | 迁移日志记录 3 个文件、1 个传统钥匙串条目核对通过；共享配置有 1 个 Android USB 连接，配置与备份逐字节一致，两份历史日志完整。旧配置已清理，`security find-generic-password -s com.seaony.Diskit -a adb.private-key` 返回条目不存在。spike 文件与测试钥匙留到第 8 步。 |
+| 本机配置、日志、钥匙迁移 | 通过 | 迁移日志记录 3 个文件、1 个传统钥匙串条目核对通过；共享配置有 1 个 Android USB 连接，配置与备份逐字节一致，两份历史日志完整。旧配置已清理，`security find-generic-password -s com.seaony.Kayoi -a adb.private-key` 返回条目不存在。spike 文件与测试钥匙留到第 8 步。 |
 | CLI 保持命令行为 | 通过 | 15 项 CLI 测试覆盖配置位置、双语错误、无描述文件的兼容 App、真实 exec 参数及输出、退出码转交。实际构建的 `build/bin/diskit-dev --help` 正常；不存在的连接返回原“路径无效”。双架构 CLI 构建用本机可用的 Apple Development 身份签名，未修改发布流程。 |
 | 手机与远端文件操作 | 未测 | 本步不做 Finder 传输验收。迁移后 App 自动连接曾返回 EACCES，尚未查明原因；第 5 小步再验证手机授权和通信。 |
 | 正式分发与 macOS 26 | 未测 | 本轮只验收带描述文件的 Debug；当前 Release 继续旧存储、不带 FSKit 扩展，正式分发签名另行决定。macOS 26 未实测。 |
@@ -655,7 +657,7 @@ Diskit.app: satisfies its Designated Requirement
 - 通过：传统钥匙串查询明确指定 `kSecUseDataProtectionKeychain=false`。本机带共享权限的临时程序已复现默认查询能搜到共享条目、显式传统查询搜不到的差异；回归用例先失败，修改后通过。
 - 通过：迁移失败后，本次回退旧存储并继续启动，下次重试。测试包含失败后继续编辑配置、刷新令牌，以及部分钥匙已复制后旧值变化；迁移记录只保存名称与 SHA-256，重试只能覆盖属于本次迁移且未被另改的副本，未知冲突仍保留两端数据。
 - 通过：最终 `make build`、签名校验、`make test` 退出 0，919 项 Swift 测试与 14 项脚本测试通过，Core 为 153 项。日志：`build/m7-startup-build.log`、`build/m7-startup-test.log`。未改动的 HTTP 流释放用例曾失败一次，单独复跑及最终全量均通过，未扩大修改；单独复跑日志为 `build/m7-unrelated-stream-retry.log`。
-- 通过：按用户决定把备份的配置原样恢复到旧位置，并把共享原值复制回传统 `com.seaony.Diskit / adb.private-key`；文件和钥匙均读回一致，系统传统钥匙串查询已确认存在。新位置、spike 与备份未改，恢复工具留在忽略目录，未提交。没有另外启动旧版 App；本步仅核对指定恢复项。
+- 通过：按用户决定把备份的配置原样恢复到旧位置，并把共享原值复制回传统 `com.seaony.Kayoi / adb.private-key`；文件和钥匙均读回一致，系统传统钥匙串查询已确认存在。新位置、spike 与备份未改，恢复工具留在忽略目录，未提交。没有另外启动旧版 App；本步仅核对指定恢复项。
 - 未测：真实迁移失败弹窗及关闭弹窗后继续运行的界面。失败选择与重试用注入故障的单元测试核对，未为界面验收修改真实数据制造冲突。
 
 ## M7 第二步，第 2 小步：真实文件系统骨架
@@ -706,7 +708,7 @@ Diskit.app: satisfies its Designated Requirement
 | 项目 | 状态 | 现象与证据 |
 |---|---|---|
 | 属性缓存阶段的构建、测试 | 通过（相关检查） | 该阶段 `make build` 和深度签名校验通过，18 项相关测试、Core 全部 187 项及 App 全部 186 项测试通过；构建日志为 `build/m7-step5-cache-only-profile-build.log`。7 项新增测试覆盖已打开文件的设备/网盘属性有效期、关闭与断线清缓存及改名跟随、属性过期刷新整文件缓存、写入/截断/修改时间及时反映、上传前重新查询同名冲突、取消下载后等待清理并释放额度、下载长度不符后清理及重试。未将这些相关检查当成本次完整 `make test` 通过。 |
-| 正常 Debug 启动与 USB 挂载 | 通过 | 23:31:45.308 正常 Debug 启动，PID 9033；45.528 开始 USB 挂载，扩展 45.924 开始 load、45.966 ready，App 45.977 记录挂载成功。从发起到成功约 449 毫秒，扩展 load 至 ready 约 42 毫秒。真实卷为 `/Volumes/Xiaomi 17`，挂载来源为 `diskit-adb://ca35992a-2d56-4b3c-9ba4-b3426adf511d`。 |
+| 正常 Debug 启动与 USB 挂载 | 通过 | 23:31:45.308 正常 Debug 启动，PID 9033；45.528 开始 USB 挂载，扩展 45.924 开始 load、45.966 ready，App 45.977 记录挂载成功。从发起到成功约 449 毫秒，扩展 load 至 ready 约 42 毫秒。真实卷为 `/Volumes/Xiaomi 17`，挂载来源为 `kayoi-adb://ca35992a-2d56-4b3c-9ba4-b3426adf511d`。 |
 | 挂载卷只读根目录 | 通过 | 已从真实 USB 卷读取根目录。 |
 | Finder 浏览与 Quick Look 预览 | 通过 | Finder 已实际浏览 `DCIM/Camera`；Quick Look 已实际显示 7,874,792 字节 JPG 和 16,959,419 字节 MP4 的画面，不记录私人文件名。 |
 | Finder 拷入与扩展属性 | 通过（卷内读回） | 先拷入 126 字节、名称含中文、空格和 emoji 的文本，卷内 SHA-256 一致；再拷入 `small` 目录，共 3 个文件、9,437,310 字节，文件 SHA-256、嵌套空目录和自定义扩展属性读回均一致。小目录复制耗时未保留，未重复复制补测。 |
@@ -718,7 +720,7 @@ Diskit.app: satisfies its Designated Requirement
 | USB 大文件吞吐 | 未通过 | 攒写版 Finder 一次冷读为 169.12 MB/s；后续 CLI 三轮中位数为 308.33 MB/s，两组来自不同轮次。未达到既定 70% 目标，按用户最新要求停止性能工作，本轮不再优化。 |
 | USB 拷贝中拔线、自动推出和重挂 | 通过（用户手工操作及日志核对） | 用户拷出 Download 中 6 个 APK 时拔线，Finder 显示 -36；09:35:13 扩展返回 EIO，Finder 日志明确将 POSIX 5 转换为 -36。首次推出因卷忙（Cocoa 769）失败，09:35:24 卷卸载，09:35:46.829 自动重挂成功；App PID 28987 全程存活。下载临时文件、写入暂存均为 0，38 个已完成读缓存保留。 |
 | 安卓 Wi-Fi | 未测 | 需要用户配对及纯无线环境，已列入最后一次汇总清单；手机验收目录继续保留。 |
-| 手机验收目录清理 | 未完成 | 专用目录 `Diskit M7 验收 a18ba66c` 尚未删除，包含本轮验收文件和 1 GiB 测试文件；第 5 小步仍在进行中。 |
+| 手机验收目录清理 | 未完成 | 专用目录 `Kayoi M7 验收 a18ba66c` 尚未删除，包含本轮验收文件和 1 GiB 测试文件；第 5 小步仍在进行中。 |
 
 独立下载任务、读缓冲复用和边下边读均未改善吞吐，已撤回；负收益候选完整补丁留在 `build/m7-step5-progressive-rejected-20261112-091730/`，当前性能源代码恢复为 `58a0a65`。
 
@@ -757,7 +759,7 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | PikPak | 未测 | 无已登录账号。 |
 | 蓝奏 | 未测 | 无账号或测试分享链接；当前只读。 |
 | AWS S3 | 未测 | 无真实测试桶和凭据；本机兼容服务结果不代表 AWS 实测。 |
-| Cloudflare R2 | 通过 | 专用桶 `diskit-m7-test` 经真实 `diskit-r2` 卷挂载、浏览；38 字节文件拷入后卸载重挂，拷出 SHA-256 一致；删除对象后再次挂载核对根目录 0 项。 |
+| Cloudflare R2 | 通过 | 专用桶 `kayoi-m7-test` 经真实 `kayoi-r2` 卷挂载、浏览；38 字节文件拷入后卸载重挂，拷出 SHA-256 一致；删除对象后再次挂载核对根目录 0 项。 |
 | 阿里 OSS | 未测 | 无测试桶和凭据。 |
 | 腾讯 COS | 未测 | 无测试桶和凭据。 |
 | 七牛 Kodo | 未测 | 无测试桶和凭据。 |
@@ -766,7 +768,7 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | NFS | 未测 | 无已有测试导出；本机没有 /etc/exports，启动和配置服务端需要管理员授权，未执行。 |
 | 通用 USB 相机、GR IV | 未测 | 无测试硬件；GR 按约定保留原行为。 |
 
-本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 diskit-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
+本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 kayoi-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
 
 2026-11-12 补测 R2：使用仅限专用桶的对象读写凭据，显式配置 `region=auto`、`pathStyle=false`。初始目录为空，拷入名称含中文、空格和 emoji 的单个文件；卸载重挂后拷出 38 字节，SHA-256 为 `88559766157261bac65975a657f9d719b4661e9a8fd3d705e71bbb5de9c30acd`。对象删除后再次挂载，根目录仍为 0 项，随后正常卸载。全部对象操作通过正式 FSKit 卷完成，校验基于卸载重挂后的卷内读回。
 
@@ -781,10 +783,10 @@ R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；�
 | 项目 | 状态 | 证据 |
 |---|---|---|
 | 验证入口与共享 Spike 代码 | 通过 | 删除 App/FSKitSpike.swift、FSShared/SpikeShared.swift、FSShared/SpikeUSBCheck.swift，移除 DiskitApp 调用及空初始化、DiskitMain 的验证参数迁移豁免；正式 CLI、FSKit 工厂和 docs/SPIKE.md 保留。源码及测试无残留引用，未改发布流程。 |
-| 共享钥匙串验证条目 | 通过 | 只删除精确 service=com.seaony.Diskit.spike 的共享通用密码条目，数量 2→0；正式 ADB 私钥删除前后逐字节一致。 |
+| 共享钥匙串验证条目 | 通过 | 只删除精确 service=com.seaony.Kayoi.spike 的共享通用密码条目，数量 2→0；正式 ADB 私钥删除前后逐字节一致。 |
 | App Group 验证文件 | 通过 | spike-check.txt 已删除并核对不存在；未触碰其他用户文件。 |
 | 构建与回归 | 通过 | 本次完整构建、签名与 977 项 Swift、14 项脚本测试通过；日志见下节。 |
-| 手机验收目录 | 暂保留 | Diskit M7 验收 a18ba66c 继续用于 Wi-Fi，完成后再删除；不把清理阶段误写成手机目录已删。 |
+| 手机验收目录 | 暂保留 | Kayoi M7 验收 a18ba66c 继续用于 Wi-Fi，完成后再删除；不把清理阶段误写成手机目录已删。 |
 
 清理结果为 `build/m7-spike-data-cleanup.json`。使用过的临时签名检查工具、测试凭据及配置副本也已移除；没有改变钥匙串可访问性或签名配置。
 
@@ -821,3 +823,21 @@ R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；�
 主面板标题改为“有位置没能推出”，末句为“仍然退出后，这个位置可能留在 Finder 里，需要手动推出。”。卡片状态、挂载通知、操作提示与退出横幅共用错误分类：确认断开才说明连接已断开；普通 EIO 只说读写这个位置时出错；POSIX busy 和原生 Cocoa 769 说明还有程序使用。当前应用自身操作未结束仍沿用原说明，不误说成其他程序占用；第三方已有登录等操作建议继续保留。
 
 退出横幅的已知原因不带内部术语，未知原因只显示“推出失败”及可读错误码。原始 domain/code/底层链留在日志，原始错误与 FSKit errno 未改。已逐张核对单位置、多位置、未知原因的中英浅深色 12 张最终图，目录为 `build/quit-failure/banner-wording/`；原因由真实错误对象经过公共映射生成，仍属于离线注入状态。完整检查复用上节两组改动统一运行的 1004 项 Swift、14 项脚本、537 键及构建签名结果；真实窗口点击与真机拔插待最新正常构建回归。
+
+## 启用扩展后刷新及恢复挂载（2026-11-12）
+
+| 项目 | 状态 | 现象与证据 |
+|---|---|---|
+| 原因及原始失败 | 已确认 | 14:10 两次真实日志记录“扩展未启用，拒绝挂载”；原模型没有禁用期间的查询或启用后的挂载恢复。修复提交 `41776c1`。 |
+| 无前台激活也能恢复 | 通过（本地模型与挂载替身） | 旧实现实际执行一项回归，等待 3 秒后仍 disabled、mounts=0、mountedCount=0，共 3 处断言失败；修复后同一项通过。禁用时每 2 秒查询，启用、不可用或退出停止。 |
+| 精确筛选及只重试一次 | 通过（本地测试） | 保留原始挂载错误，只重试仍因 disabled 失败的位置与明确在线的自动挂载空闲设备；其他失败、需要登录、已挂载、正在操作均跳过。成功、取消及其他失败清除旧标记；4 类设备按既有发现集合判断在线，未知不当作在线。 |
+| 构建、相关测试及取消 | 通过 | App 全部 208 项、Core 全部 202 项通过；退出停止查询，退出被取消后恢复查询。主 make build 和严格深度签名通过，日志 `build/ext-refresh/{red-executed,app-green,core-green,build}.log`。本行只记录本小步的相关测试。 |
+| 真实系统设置开关 | 通过（用户操作及协调者确认） | 用户约 15:24:13 关闭、15:24:22 重新启用扩展，协调者确认约 15:24:24 手机自动挂回。本会话独立核对到 15:24:13.594 的真实禁用拒绝日志；恢复时点来自协调者界面观察，没有冒称成功日志或自行重复界面操作。证据 `build/m7-current-gates/extension-toggle-{live.log,confirmation.json}`。 |
+
+## 改名及扩展恢复后的完整门禁（2026-11-12）
+
+产品代码 `41776c1` 的完整 `make test` 退出 0：14 组共 1013 项 Swift 测试（App 208、Core 202）、14 项脚本测试、537 个实际使用本地化键均通过；主 `make build` 和严格深度签名校验通过。日志为 `build/m7-current-gates/{test,build}.log`，逐组数量见 `summary.json`。本次只改验收文档，未将相关测试或替身结果冒充真实账号、无线、系统开关及最新手机拔插通过。
+
+15:24 的只读运行核对见 `build/m7-current-gates/runtime-state.json`：正常 Debug PID 51004 无演示环境键，当前系统登记 `com.seaony.Diskit.FS`；采样时无 Diskit 卷，正处于用户关闭扩展期间，共享配置只有一个自动挂载 USB 连接。旧 IOUSB 平面的空结果不能用来认定未插手机，后续 IOUSBHostDevice 查询已确认 Xiaomi 17。未操作接口、手机或运行中的 Debug。
+
+历史资源名已按原始证据恢复：手机目录为 `Kayoi M7 验收 a18ba66c`（`build/m7-step5-run.json`、`build/m7-autonomous-delivery.json`），R2 桶为 `kayoi-m7-test`（`build/m7-r2-acceptance.json`），本机临时容器前缀为 `kayoi-m7-`（`build/agents/m7-local-final-evidence.json`）。产品改名不代表这些实际资源被重命名；手机目录仍留给 Wi-Fi，尚未删除。历史钥匙串 service 及挂载来源保留改名前标识，当前产品接口仍以源码的 Diskit 标识为准。
