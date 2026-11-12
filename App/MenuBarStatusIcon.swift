@@ -17,19 +17,25 @@ struct MenuBarStatusIcon: View {
   }
 
   var body: some View {
-    Image(systemName: status.symbol(pulse: pulse))
-      .renderingMode(.template)
-      .frame(width: 20, height: 20)
-      .transaction { $0.animation = nil }
-      .task(id: shouldPulse) {
-        if pulse { pulse = false }
-        guard shouldPulse else { return }
-        while !Task.isCancelled {
-          do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
-          guard !Task.isCancelled else { return }
-          pulse.toggle()
-        }
+    let glyph = status.glyph(pulse: pulse, reduceMotion: reduceMotion)
+    Image(
+      nsImage: MenuBarIconImage.make(
+        filled: glyph == .filled,
+        dimmed: glyph == .dimmedGlyph,
+        needsAttention: status.attention > 0)
+    )
+    .renderingMode(.original)
+    .frame(width: 22, height: 16)
+    .transaction { $0.animation = nil }
+    .task(id: shouldPulse) {
+      if pulse { pulse = false }
+      guard shouldPulse else { return }
+      while !Task.isCancelled {
+        do { try await Task.sleep(for: .milliseconds(500)) } catch { return }
+        guard !Task.isCancelled else { return }
+        pulse.toggle()
       }
+    }
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(label)
     .help(label)
@@ -37,5 +43,9 @@ struct MenuBarStatusIcon: View {
 }
 
 #Preview("菜单栏 · 空状态") { MenuBarStatusIcon(states: []).padding().preferredColorScheme(.light) }
-#Preview("菜单栏 · 连接中") { MenuBarStatusIcon(states: [.connecting]).padding().preferredColorScheme(.light) }
-#Preview("菜单栏 · 需要处理 · 深色") { MenuBarStatusIcon(states: [.needsLogin]).padding().preferredColorScheme(.dark) }
+#Preview("菜单栏 · 连接中") {
+  MenuBarStatusIcon(states: [.connecting]).padding().preferredColorScheme(.light)
+}
+#Preview("菜单栏 · 需要处理 · 深色") {
+  MenuBarStatusIcon(states: [.needsLogin]).padding().preferredColorScheme(.dark)
+}
