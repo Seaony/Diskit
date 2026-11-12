@@ -35,10 +35,10 @@ public enum RemoteError: Error, Equatable, LocalizedError, CustomNSError, Sendab
   public var errorDescription: String? {
     switch self {
     case .invalidPath: L("路径无效")
-    case .notConnected: L("设备或服务已断开")
+    case .notConnected: HumanError.posix(ENOTCONN)
     case .protocolError: L("服务返回了无法识别的数据")
     case .unauthorized: L("没有访问权限")
-    case .occupied: L("设备正被其它调试工具占用")
+    case .occupied: HumanError.posix(EBUSY)
     case .tooLarge: L("设备不支持大于 4 GB 的文件")
     case .unsupported: L("设备不支持此操作")
     case .rateLimited: L("服务请求过多，请稍后重试")

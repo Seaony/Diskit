@@ -6939,22 +6939,6 @@
         }
       }
     },
-    "无法退出 Kayoi": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Unable to Quit Kayoi"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法退出 Kayoi"
-          }
-        }
-      }
-    },
     "未启用": {
       "localizations": {
         "en": {
@@ -7115,18 +7099,36 @@
         }
       }
     },
-    "仍然退出会跳过尚未完成的推出。": {
+    "有位置没能推出": {
+      "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quitting anyway will skip ejecting any remaining locations."
+            "value": "Some locations couldn’t be ejected"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "仍然退出会跳过尚未完成的推出。"
+            "value": "有位置没能推出"
+          }
+        }
+      }
+    },
+    "仍然退出后，这个位置可能留在 Finder 里，需要手动推出。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you quit anyway, this location may remain in Finder and need to be ejected manually."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然退出后，这个位置可能留在 Finder 里，需要手动推出。"
           }
         }
       }

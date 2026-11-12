@@ -565,8 +565,62 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(
     logged == [
       ConnectionError.timeout.localizedDescription, RemoteError.posix(EACCES).localizedDescription,
-      RemoteError.posix(EIO).localizedDescription,
+      L("操作没有完成，请稍后重试"),
     ])
+}
+
+@Test(arguments: [EIO, EBUSY, ENOTCONN])
+@MainActor func cardsAndNotificationsUseTheUnderlyingHumanReason(code: Int32) async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  let failure = NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
+                        userInfo: [NSUnderlyingErrorKey: POSIXError(POSIXErrorCode(rawValue: code)!)])
+  var logged: [String] = []
+  var notified: [String] = []
+  manager.operationFailed = { logged.append($0) }
+  manager.mountFailed = { notified.append($0) }
+  f.smb.mountFailure = failure
+  await manager.toggle(connection)
+  let message = HumanError.posix(code)
+  #expect(manager.states[connection.id] == .failed(message))
+  #expect(manager.detailedErrors[connection.id] == "\(message) (errno \(code))")
+  #expect(logged == [message])
+  #expect(notified == [message])
+
+  f.smb.mountFailure = nil
+  await manager.toggle(connection)
+  f.smb.onUnmount = { _ in throw failure }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .failed(message))
+  #expect(manager.detailedErrors[connection.id] == "\(message) (errno \(code))")
+  #expect(logged == [message, message])
+  #expect(notified == [message])
+}
+
+private struct ActionableMountFailure: Error, LocalizedError {
+  var errorDescription: String? { "Sign in to the service again." }
+}
+
+@Test @MainActor func cardsAndNotificationsKeepUnrelatedServiceAdvice() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  try await manager.save(connection, password: "test")
+  let failure = ActionableMountFailure()
+  f.smb.mountFailure = failure
+  var logged: [String] = []
+  var notified: [String] = []
+  manager.operationFailed = { logged.append($0) }
+  manager.mountFailed = { notified.append($0) }
+  await manager.toggle(connection)
+  #expect(manager.states[connection.id] == .failed(failure.localizedDescription))
+  #expect(manager.detailedErrors[connection.id] == failure.localizedDescription)
+  #expect(notified == [failure.localizedDescription])
+  #expect(logged == [L("操作没有完成，请稍后重试")])
 }
 
 @Test @MainActor func webDriveAuthenticationFailureAsksForLogin() async {

@@ -12,7 +12,7 @@ struct QuitFailureBanner: View {
         .frame(width: Space.lg)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: Space.sm) {
-        Text(L("无法退出 Kayoi"))
+        Text(L("有位置没能推出"))
           .font(.subheadline.weight(.semibold))
         if failure.locations.isEmpty {
           Text(failure.reason)
@@ -27,7 +27,7 @@ struct QuitFailureBanner: View {
             .accessibilityElement(children: .combine)
           }
         }
-        Text(L("仍然退出会跳过尚未完成的推出。"))
+        Text(L("仍然退出后，这个位置可能留在 Finder 里，需要手动推出。"))
           .font(.caption)
         HStack(spacing: Space.sm) {
           Button(L("取消"), action: onCancel)

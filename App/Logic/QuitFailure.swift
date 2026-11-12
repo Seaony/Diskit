@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 struct QuitFailure: Equatable {
@@ -11,8 +12,6 @@ struct QuitFailure: Equatable {
   let reason: String
 
   static func reason(for error: Error) -> String {
-    var seen = Set<String>()
-    return ErrorDiagnostics.chain(error).map(\.localizedDescription)
-      .filter { seen.insert($0).inserted }.joined(separator: "\n")
+    HumanError.ejectionDetail(error)
   }
 }

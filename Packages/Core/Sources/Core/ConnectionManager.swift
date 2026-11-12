@@ -48,7 +48,7 @@ public enum ConnectionState: Equatable, Sendable {
     self.secrets = secrets
     self.smb = smb
     self.location = location
-    do { connections = try repository.load() } catch { loadError = error.localizedDescription }
+    do { connections = try repository.load() } catch { loadError = HumanError.detail(error) }
   }
   public var mountedCount: Int {
     states.values.filter {
@@ -416,7 +416,7 @@ public enum ConnectionState: Equatable, Sendable {
       states[connection.id] = remoteState(
         connection,
         result: needsLogin ? .needsLogin : .failed(displayMessage(error, kind: connection.kind)))
-      mountFailed?(error.localizedDescription)
+      mountFailed?(HumanError.message(error, kind: connection.kind))
     }
   }
   public func cancelIdleOperation(_ connection: Connection) {
@@ -436,23 +436,13 @@ public enum ConnectionState: Equatable, Sendable {
 
   public func reportOperationError(_ error: Error) {
     if error is CancellationError { return }
-    let message: String
-    if let error = error as? ConnectionError {
-      message = error.localizedDescription
-    } else if let error = error as? RemoteError {
-      message = error.localizedDescription
-    } else {
-      let failure = error as NSError
-      if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled { return }
-      if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorTimedOut {
-        message = ConnectionError.timeout.localizedDescription
-      } else if failure.domain == NSPOSIXErrorDomain, let code = Int32(exactly: failure.code) {
-        message = RemoteError.posix(code).localizedDescription
-      } else {
-        message = RemoteError.posix(EIO).localizedDescription
-      }
+    let failure = error as NSError
+    if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled { return }
+    if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorTimedOut {
+      operationFailed?(ConnectionError.timeout.localizedDescription)
+      return
     }
-    operationFailed?(message)
+    operationFailed?(HumanError.message(error, fallback: L("操作没有完成，请稍后重试")))
   }
   public func refreshMounts() {
     for connection in connections
@@ -640,12 +630,7 @@ public enum ConnectionState: Equatable, Sendable {
   }
 
   private func displayMessage(_ error: Error, kind: ConnectionKind) -> String {
-    if let error = error as? RemoteError { return HumanError.remote(error, kind: kind) }
-    let systemError = error as NSError
-    if systemError.domain == NSPOSIXErrorDomain && systemError.code == Int(ETIMEDOUT) {
-      return HumanError.timeout(kind: kind)
-    }
-    return error.localizedDescription
+    HumanError.message(error, kind: kind)
   }
 
   private func isLoginFailure(_ error: Error, kind: ConnectionKind) -> Bool {

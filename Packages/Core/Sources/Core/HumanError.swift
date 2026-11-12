@@ -2,7 +2,16 @@ import Foundation
 
 public enum HumanError {
   public static func posix(_ code: Int32) -> String {
+    posixMessage(code) ?? L("操作没有完成，请稍后重试")
+  }
+
+  private static func posixMessage(_ code: Int32) -> String? {
     switch code {
+    case EIO: L("读写这个位置时出错")
+    case EBUSY: L("还有程序在使用这个位置")
+    case ENODEV, ENXIO, ENOTCONN, ECONNRESET, ECONNABORTED, EPIPE, ENETDOWN, ENETRESET,
+      ENETUNREACH:
+      L("连接已断开，读不到这个位置")
     case ENOENT: L("找不到文件或位置")
     case EACCES, EPERM: L("没有访问权限")
     case EEXIST: L("同名文件已存在")
@@ -11,9 +20,7 @@ public enum HumanError {
     case ETIMEDOUT: L("连接超时，请检查网络后重试")
     case EROFS: L("该位置为只读")
     case ENOTSUP: L("该位置不支持此操作")
-    // 设备不认这个指令，重试也没用，不提示稍后重试
-    case ENODEV: L("找不到设备，请检查是否已插好")
-    default: L("操作没有完成，请稍后重试")
+    default: nil
     }
   }
 
@@ -36,8 +43,6 @@ public enum HumanError {
         L("登录已失效，请重新登录")
       default: L("没有访问权限")
       }
-    case .occupied where kind == .androidUSB || kind == .androidWiFi:
-      L("手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi")
     case .http(401):
       switch kind {
       case .androidUSB, .androidWiFi: L("请在手机上允许 USB 调试")
@@ -54,35 +59,95 @@ public enum HumanError {
     }
   }
 
+  public static func message(
+    _ error: Error, kind: ConnectionKind? = nil, fallback: String? = nil
+  ) -> String {
+    presentation(error, kind: kind)?.message ?? fallback ?? error.localizedDescription
+  }
+
   public static func detail(_ error: Error) -> String {
-    if let error = error as? RemoteError {
-      if case .posix(let code) = error {
-        return "\(error.localizedDescription) (errno \(code))"
-      }
-      if case .http(let status) = error {
-        return "\(error.localizedDescription) (HTTP \(status))"
-      }
-    }
-    if let error = error as? ConnectionError {
-      if case .system(let code) = error {
-        return "\(error.localizedDescription) (error \(code))"
-      }
-    }
-    return error.localizedDescription
+    presentation(error)?.detail ?? error.localizedDescription
   }
 
   public static func detail(_ error: Error, kind: ConnectionKind) -> String {
-    if let error = error as? RemoteError {
-      let message = remote(error, kind: kind)
-      if case .posix(let code) = error { return "\(message) (errno \(code))" }
-      if case .http(let status) = error { return "\(message) (HTTP \(status))" }
-      return message
-    }
+    presentation(error, kind: kind)?.detail ?? error.localizedDescription
+  }
+
+  public static func ejectionDetail(_ error: Error) -> String {
+    let value = presentation(error)
+    if let value, value.recognized { return value.message }
     let systemError = error as NSError
-    if systemError.domain == NSPOSIXErrorDomain && systemError.code == Int(ETIMEDOUT) {
-      return "\(timeout(kind: kind)) (errno \(ETIMEDOUT))"
+    let code: Int
+    if let connection = error as? ConnectionError, case .system(let status) = connection {
+      code = Int(status)
+    } else {
+      code = systemError.code
     }
-    return detail(error)
+    return LF("推出失败（错误码 %@）", String(code))
+  }
+
+  private struct Presentation {
+    let message: String
+    var code: String? = nil
+    var recognized = true
+    var detail: String { code.map { "\(message) (\($0))" } ?? message }
+  }
+
+  private static func presentation(_ error: Error, kind: ConnectionKind? = nil) -> Presentation? {
+    var visited = Set<ObjectIdentifier>()
+
+    func resolve(_ error: Error) -> Presentation? {
+      // 先保留明确的错误类型，不能把协议错误桥接后的 EIO 当成断开。
+      if let error = error as? RemoteError {
+        let message = kind.map { remote(error, kind: $0) } ?? error.localizedDescription
+        switch error {
+        case .posix(let code):
+          return Presentation(message: message, code: "errno \(code)", recognized: posixMessage(code) != nil)
+        case .http(let status): return Presentation(message: message, code: "HTTP \(status)")
+        default: return Presentation(message: message)
+        }
+      }
+      if let error = error as? ConnectionError {
+        if case .system(let code) = error {
+          return Presentation(message: posixMessage(code) ?? error.localizedDescription,
+                              code: "error \(code)", recognized: posixMessage(code) != nil)
+        }
+        return Presentation(message: error.localizedDescription)
+      }
+      let systemError = error as NSError
+      guard visited.insert(ObjectIdentifier(systemError)).inserted else { return nil }
+      if systemError.domain == NSCocoaErrorDomain && systemError.code == NSFileManagerUnmountBusyError {
+        return Presentation(message: posix(EBUSY), code: "\(systemError.domain) \(systemError.code)")
+      }
+      if systemError.domain == NSPOSIXErrorDomain, let code = Int32(exactly: systemError.code) {
+        let message = code == ETIMEDOUT ? kind.map { timeout(kind: $0) } : nil
+        return Presentation(message: message ?? posix(code), code: "errno \(code)",
+                            recognized: posixMessage(code) != nil)
+      }
+      if systemError.domain == NSURLErrorDomain {
+        let message: String?
+        switch systemError.code {
+        case NSURLErrorNetworkConnectionLost, NSURLErrorNotConnectedToInternet:
+          message = posix(ENOTCONN)
+        case NSURLErrorTimedOut:
+          message = kind.map { timeout(kind: $0) } ?? posix(ETIMEDOUT)
+        default: message = nil
+        }
+        if let message {
+          return Presentation(message: message, code: "\(systemError.domain) \(systemError.code)")
+        }
+      }
+      // Cocoa 的通用外层说明不覆盖底层已经明确的读写、占用或断开原因。
+      var fallback: Presentation?
+      for underlying in systemError.underlyingErrors {
+        guard let value = resolve(underlying) else { continue }
+        if value.recognized { return value }
+        if fallback == nil { fallback = value }
+      }
+      return fallback
+    }
+
+    return resolve(error)
   }
 
   public static func http(_ status: Int) -> String {

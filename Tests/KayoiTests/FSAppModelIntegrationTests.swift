@@ -184,8 +184,10 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   #expect(pendingFailure?.locations.first?.id == connection.id.uuidString)
   #expect(pendingFailure?.locations.first?.name == connection.name)
   for reason in [pendingFailure?.reason, pendingFailure?.locations.first?.reason] {
-    #expect(reason?.contains(failure.localizedDescription) == true)
-    #expect(reason?.contains(underlying.localizedDescription) == true)
+    #expect(reason == HumanError.message(RemoteError.posix(EIO)))
+    #expect(reason?.contains(failure.localizedDescription) != true)
+    #expect(reason?.contains(underlying.localizedDescription) != true)
+    #expect(reason?.contains(HumanError.message(RemoteError.notConnected)) != true)
     #expect(reason?.contains(L("请先关闭正在使用这些位置的文件，然后重试退出。")) != true)
   }
   #expect(!harness.alerts.contains {
@@ -300,8 +302,8 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   #expect(model.quitFailure?.locations.count == 1)
   #expect(model.quitFailure?.locations.first?.id == connection.id.uuidString)
   #expect(model.quitFailure?.locations.first?.name == connection.name)
-  #expect(model.quitFailure?.locations.first?.reason == failure.localizedDescription)
-  #expect(model.quitFailure?.reason == failure.localizedDescription)
+  #expect(model.quitFailure?.locations.first?.reason == HumanError.message(failure))
+  #expect(model.quitFailure?.reason == HumanError.message(failure))
   #expect(calls.withLock { $0 } == previousCalls + 1)
   #expect(harness.unmounts == 0)
   #expect(systemMount.mounted(connection) == mounted)

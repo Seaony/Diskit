@@ -427,23 +427,6 @@
         }
       }
     },
-    "手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The phone is busy in another debugging tool. Quit that tool or restart Kayoi."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi"
-          }
-        }
-      }
-    },
     "手机返回了无效的配对数据": {
       "extractionState": "manual",
       "localizations": {
@@ -1271,40 +1254,6 @@
         }
       }
     },
-    "设备或服务已断开": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The device or service is disconnected"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备或服务已断开"
-          }
-        }
-      }
-    },
-    "设备正被其它调试工具占用": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The device is busy in another debugging tool"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备正被其它调试工具占用"
-          }
-        }
-      }
-    },
     "该位置不支持此操作": {
       "extractionState": "manual",
       "localizations": {
@@ -1318,23 +1267,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "该位置不支持此操作"
-          }
-        }
-      }
-    },
-    "找不到设备，请检查是否已插好": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Device not found. Check that it's plugged in."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "找不到设备，请检查是否已插好"
           }
         }
       }
@@ -1917,6 +1849,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "钥匙串访问失败（错误 %@）"
+          }
+        }
+      }
+    },
+    "连接已断开，读不到这个位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The connection was lost. This location can’t be read."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接已断开，读不到这个位置"
+          }
+        }
+      }
+    },
+    "读写这个位置时出错": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An error occurred while reading or writing this location."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "读写这个位置时出错"
+          }
+        }
+      }
+    },
+    "还有程序在使用这个位置": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Another app is still using this location."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还有程序在使用这个位置"
+          }
+        }
+      }
+    },
+    "推出失败（错误码 %@）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eject failed (error code %@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "推出失败（错误码 %@）"
           }
         }
       }
