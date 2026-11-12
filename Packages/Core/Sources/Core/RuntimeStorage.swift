@@ -22,6 +22,16 @@ public struct RuntimeStorage: Sendable {
   public static func prepareForApplication() -> Error? {
     let result = prepare(current, migration: { try SharedStorageMigration.run() }, fallback: legacy)
     selected.withLock { $0 = result.storage }
+    if result.storage.usesSharedStorage {
+      let logger = Logger(subsystem: "com.seaony.Diskit", category: "storage")
+      do {
+        let result = try SharedKeychainStore().upgradeAccessibility()
+        logger.info("钥匙串条目 \(result.total) 条，未改为首次解锁后可读 \(result.pending) 条")
+      } catch {
+        let status = (error as? KeychainError)?.status ?? 0
+        logger.error("钥匙串可读级别升级失败：OSStatus=\(status, privacy: .public)")
+      }
+    }
     return result.error
   }
 
