@@ -1,6 +1,8 @@
 # Kayoi 应用图标
 
-当前 AppIcon 是小花怪兽 `coral-crown-turtle.png`，与面板左上角的 BrandLogo 一致。在仓库根目录运行 `swift design/app-icon/export-turtle.swift`，按下面同样的 1024 画布、824 圆角主体与投影规格导出 AppIcon 全部尺寸和 `docs/assets/icon-512.png`。
+当前 AppIcon 是小花怪兽从蓝色文件夹里探头的 `folder-peek.png`（2026-11-12 第 1 批 20 张候选里的 06），面板左上角的 BrandLogo 用同一张图。在仓库根目录运行 `swift design/app-icon/export-app-icon.swift`，按 1024 画布、824 圆角主体与投影的规格导出 AppIcon 全部尺寸、`docs/assets/icon-512.png` 和 BrandLogo。
+
+其余 19 张候选和每张的提示词备份在 `candidates-2026-11-12/`，`overview.png` 是总览。上一版图标是 `coral-crown-turtle.png`（小花怪兽原画，菜单栏字形也按它画）。
 
 以下是早期的三个方向，已不再使用：
 
