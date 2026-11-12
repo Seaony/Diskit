@@ -70,7 +70,11 @@ public struct RuntimeStorage: Sendable {
       return RuntimeStorage(location: location, secrets: sharedSecrets, usesSharedStorage: true)
     } catch {
       let value = error as NSError
-      logger.notice("共享存储不可用，继续使用传统存储：\(value.domain, privacy: .public) code=\(value.code)")
+      if let keychain = error as? KeychainError {
+        logger.notice("共享存储不可用，继续使用传统存储：\(value.domain, privacy: .public) OSStatus=\(keychain.status, privacy: .public)")
+      } else {
+        logger.notice("共享存储不可用，继续使用传统存储：\(value.domain, privacy: .public) code=\(value.code)")
+      }
       return RuntimeStorage(
         location: legacyLocation, secrets: legacySecrets, usesSharedStorage: false)
     }
