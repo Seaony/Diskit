@@ -14,6 +14,8 @@ import UserNotifications
   var enabled: Bool? = true
   var queries = 0
   var mounts = 0
+  var mountAttempts: [UUID: Int] = [:]
+  var mountFailures: [UUID: Error] = [:]
   var unmounts = 0
   var settings = 0
   var unmountFailure: Error?
@@ -31,7 +33,10 @@ import UserNotifications
       filesystemID: Data(connection.id.uuidString.utf8), availableBytes: 4096)
   }
 
-  func model(connections: [Connection], systemMount: (any SMBServing)? = nil) throws -> AppModel {
+  func model(
+    connections: [Connection], systemMount: (any SMBServing)? = nil,
+    pollWait: (@MainActor () async throws -> Void)? = nil
+  ) throws -> AppModel {
     saved = connections
     try ConnectionRepository(location: location).save(connections)
     var operations = FileSystemMountService.Operations()
@@ -44,6 +49,8 @@ import UserNotifications
     operations.mountClient = { [self] address, completion in
       mounts += 1
       let connection = try FileSystemAddress.connection(for: address, in: saved)
+      mountAttempts[connection.id, default: 0] += 1
+      if let failure = mountFailures[connection.id] { throw failure }
       let mounted = try entry(connection)
       entries.append(mounted)
       completion(.success(mounted.path))
@@ -72,11 +79,12 @@ import UserNotifications
         completion(.alertFirstButtonReturn)
       }, requestNotifications: {}, notificationStatus: { .authorized },
       notify: { [self] in notifications.append($0) })
-    let dependencies = AppModelDependencies(
+    var dependencies = AppModelDependencies(
       location: location, secrets: secrets, preferences: preferences,
       smb: RoutingMountService(system: systemMount ?? DemoMountService(delay: {}), fileSystem: fileSystem),
       httpTransport: EditorLoginHTTP { _ in throw RemoteError.unsupported },
       updates: UpdateController(isDemo: true), system: system, fileSystem: fileSystem)
+    if let pollWait { dependencies.fileSystemStatePollWait = pollWait }
     let model = AppModel(options: RuntimeOptions(environment: [:]), dependencies: dependencies)
     model.configureConnections()
     return model
@@ -377,4 +385,191 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   try FileManager.default.createDirectory(at: read, withIntermediateDirectories: true)
   try Data(repeating: 1, count: 128).write(to: read.appending(path: "file.data"))
   #expect(try await model.cacheSize() == 128)
+}
+
+@MainActor @Test func fsAppModelDisabledExtensionRecoversWithoutActivation() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  harness.enabled = false
+  let connection = fsAppModelConnection()
+  let model = try harness.model(connections: [connection])
+  await model.refreshFileSystemState()
+  await model.connections.connectIfNeeded(connection)
+  #expect(model.fileSystemState == .disabled)
+  if case .failed = model.connections.states[connection.id] {} else {
+    Issue.record("禁用扩展应阻止挂载")
+  }
+  #expect(harness.mounts == 0)
+
+  harness.enabled = true
+  try await Task.sleep(for: .seconds(3))
+  #expect(model.fileSystemState == .enabled)
+  #expect(harness.mounts == 1)
+  #expect(model.connections.mountedCount == 1)
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+@MainActor private final class FSStatePollClock {
+  var calls = 0
+  private(set) var waiting: [UUID: TestEvent] = [:]
+
+  func wait() async throws {
+    let id = UUID()
+    let event = TestEvent()
+    calls += 1
+    waiting[id] = event
+    defer { waiting.removeValue(forKey: id) }
+    try await event.wait()
+  }
+
+  func tick() { for event in waiting.values { event.signal() } }
+}
+
+@MainActor @Test func fsAppModelPollsOnlyDisabledAndStopsForEnabledOrUnavailable() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let model = try harness.model(connections: [], pollWait: { try await clock.wait() })
+  await model.refreshFileSystemState()
+  #expect(model.fileSystemState == .enabled)
+  #expect(clock.calls == 0)
+
+  harness.enabled = false
+  await model.refreshFileSystemState()
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  #expect(clock.calls == 1)
+  harness.enabled = true
+  clock.tick()
+  try await fsAppModelWait { model.fileSystemState == .enabled && clock.waiting.isEmpty }
+  let queries = harness.queries
+  for _ in 0..<10 { await Task.yield() }
+  #expect(harness.queries == queries)
+  #expect(clock.calls == 1)
+
+  harness.enabled = false
+  await model.refreshFileSystemState()
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  harness.enabled = nil
+  clock.tick()
+  try await fsAppModelWait { model.fileSystemState == .unavailable && clock.waiting.isEmpty }
+  #expect(clock.calls == 2)
+  let unavailableQueries = harness.queries
+  for _ in 0..<10 { await Task.yield() }
+  #expect(harness.queries == unavailableQueries)
+  #expect(clock.calls == 2)
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+@MainActor @Test func fsAppModelEnablingRetriesOnlyBlockedFailuresAndOnlineAutomaticDevices() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let blocked = fsAppModelConnection()
+  let bad = Connection(kind: .androidUSB, name: "其他失败", autoMount: true,
+    openInFinderAfterMount: false, params: ["deviceID": "bad"])
+  let ready = Connection(kind: .androidUSB, name: "在线自动", autoMount: true,
+    openInFinderAfterMount: false, params: ["deviceID": "ready"])
+  let manual = Connection(kind: .androidUSB, autoMount: false,
+    openInFinderAfterMount: false, params: ["deviceID": "manual"])
+  let absent = Connection(kind: .androidUSB, autoMount: true,
+    openInFinderAfterMount: false, params: ["deviceID": "absent"])
+  let login = fsAppModelConnection()
+  let untouchedCloud = Connection(kind: .quark, autoMount: true, openInFinderAfterMount: false)
+  let model = try harness.model(connections: [blocked, bad, ready, manual, absent, login, untouchedCloud],
+    pollWait: { try await clock.wait() })
+  model.connections.usbDevicesChanged(serials: ["bad", "ready", "manual"])
+  harness.mountFailures[bad.id] = RemoteError.posix(EIO)
+  harness.mountFailures[login.id] = RemoteError.unauthorized
+  await model.connections.connectIfNeeded(bad)
+  await model.connections.connectIfNeeded(login)
+  #expect(model.connections.states[login.id] == .needsLogin)
+  if case .failed = model.connections.states[bad.id] {} else { Issue.record("应保留其他挂载失败") }
+
+  harness.enabled = false
+  await model.connections.connectIfNeeded(blocked)
+  #expect(model.fileSystemState == .disabled)
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  harness.enabled = true
+  clock.tick()
+  try await fsAppModelWait { model.connections.mountedCount == 2 }
+  #expect(model.fileSystemState == .enabled)
+  #expect(harness.mountAttempts[blocked.id] == 1)
+  #expect(harness.mountAttempts[ready.id] == 1)
+  #expect(harness.mountAttempts[bad.id] == 1)
+  #expect(harness.mountAttempts[login.id] == 1)
+  for connection in [manual, absent, untouchedCloud] { #expect(harness.mountAttempts[connection.id] == nil) }
+  #expect(model.connections.states[login.id] == .needsLogin)
+  if case .failed = model.connections.states[bad.id] {} else { Issue.record("不能重试其他原因的失败") }
+  await model.refreshFileSystemState()
+  #expect(harness.mounts == 4)
+  #expect(clock.waiting.isEmpty)
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+@MainActor @Test func fsAppModelNewMountFailureReplacesAnEarlierDisabledFailure() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let connection = fsAppModelConnection()
+  let model = try harness.model(connections: [connection], pollWait: { try await clock.wait() })
+  harness.enabled = false
+  await model.connections.connectIfNeeded(connection)
+  #expect(model.fileSystemState == .disabled)
+  harness.enabled = true
+  harness.mountFailures[connection.id] = RemoteError.posix(EIO)
+  await model.connections.connectIfNeeded(connection)
+  #expect(harness.mounts == 1)
+  await model.refreshFileSystemState()
+  for _ in 0..<10 { await Task.yield() }
+  #expect(harness.mounts == 1)
+  #expect(model.connections.mountedCount == 0)
+  if case .failed = model.connections.states[connection.id] {} else { Issue.record("新错误应留下，不应重试") }
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+@MainActor @Test func fsAppModelQuitStopsDisabledPolling() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let model = try harness.model(connections: [], pollWait: { try await clock.wait() })
+  harness.enabled = false
+  await model.refreshFileSystemState()
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+  try await fsAppModelWait { clock.waiting.isEmpty }
+  let queries = harness.queries
+  harness.enabled = true
+  clock.tick()
+  for _ in 0..<10 { await Task.yield() }
+  #expect(harness.queries == queries)
+  #expect(clock.calls == 1)
+  #expect(model.fileSystemState == .disabled)
+}
+
+@MainActor @Test func fsAppModelFailedQuitResumesDisabledPolling() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let connection = fsAppModelConnection()
+  let model = try harness.model(connections: [connection], pollWait: { try await clock.wait() })
+  await model.connections.connectIfNeeded(connection)
+  harness.enabled = false
+  await model.refreshFileSystemState()
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  harness.unmountFailure = POSIXError(.EBUSY)
+  model.prepareToQuit()
+  #expect(await model.finishQuitting() == false)
+  try await fsAppModelWait { clock.calls == 2 && clock.waiting.count == 1 }
+  harness.enabled = true
+  clock.tick()
+  try await fsAppModelWait { model.fileSystemState == .enabled && clock.waiting.isEmpty }
+  #expect(harness.mounts == 1)
+  harness.unmountFailure = nil
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
 }

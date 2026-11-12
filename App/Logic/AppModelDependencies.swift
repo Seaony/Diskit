@@ -12,4 +12,7 @@ import Foundation
   var info: [String: Any] = [:]
   var providerFactory: ((Connection) async throws -> any RemoteFileProvider)?
   var fileSystem: FileSystemMountService?
+  var fileSystemStatePollWait: @MainActor () async throws -> Void = {
+    try await Task.sleep(for: .seconds(2))
+  }
 }

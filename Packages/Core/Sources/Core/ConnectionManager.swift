@@ -29,6 +29,7 @@ public enum ConnectionState: Equatable, Sendable {
   private var cameraUSBSerials: Set<String>?
   public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
+  public var mountFinished: ((Connection, Error?) -> Void)?
   public var unexpectedDisconnect: ((Connection) -> Void)?
   // 设了自动挂载的设备重新插上（含启动时已插着）时调用，由外面去连接
   public var deviceReturned: ((Connection) -> Void)?
@@ -56,6 +57,20 @@ public enum ConnectionState: Equatable, Sendable {
       return false
     }.count
   }
+  public var availableAutoMountDevices: [Connection] {
+    connections.filter { connection in
+      guard connection.autoMount else { return false }
+      let key = deviceKey(connection)
+      switch connection.kind {
+      case .androidUSB: return usbSerials?.contains(key) == true
+      case .androidWiFi: return wifiGUIDs?.contains(key) == true
+      case .ricohGR: return ricohSerials?.contains(key) == true
+      case .cameraUSB: return cameraUSBSerials?.contains(key) == true
+      default: return false
+      }
+    }
+  }
+
   public func savedPassword(_ connection: Connection) throws -> String {
     guard let data = try secrets.read(connection.passwordKey) else { return "" }
     return String(decoding: data, as: UTF8.self)
@@ -387,6 +402,7 @@ public enum ConnectionState: Equatable, Sendable {
     if let mounted = smb.mounted(connection) {
       states[connection.id] = .mounted(mounted)
       detailedErrors.removeValue(forKey: connection.id)
+      mountFinished?(connection, nil)
       return
     }
     busy.insert(connection.id)
@@ -405,9 +421,11 @@ public enum ConnectionState: Equatable, Sendable {
       ownedMounts[connection.id] = url
       states[connection.id] = .mounted(smb.mounted(connection) ?? MountedShare(url: url))
       detailedErrors.removeValue(forKey: connection.id)
+      mountFinished?(connection, nil)
       if connection.openInFinderAfterMount { openInFinder?(url) }
     } catch is CancellationError {
       states[connection.id] = stateAfterCancellation(connection)
+      mountFinished?(connection, nil)
     } catch {
       let needsLogin = isLoginFailure(error, kind: connection.kind)
       if needsLogin { loginExpired?(connection) }
@@ -416,6 +434,7 @@ public enum ConnectionState: Equatable, Sendable {
       states[connection.id] = remoteState(
         connection,
         result: needsLogin ? .needsLogin : .failed(displayMessage(error, kind: connection.kind)))
+      mountFinished?(connection, error)
       mountFailed?(HumanError.message(error, kind: connection.kind))
     }
   }

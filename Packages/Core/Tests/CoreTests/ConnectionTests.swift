@@ -1348,3 +1348,78 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   manager.usbDevicesChanged(serials: ["a", "b"])
   #expect(returned == ["手机", "手机"])
 }
+
+@Test @MainActor func mountFinishedPreservesTheErrorAndFinalState() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let connection = sample()
+  try ConnectionRepository(location: f.location).save([connection])
+  let manager = f.manager()
+  let failure = NSError(domain: "MountFixture", code: 42)
+  var results: [(UUID, Error?, ConnectionState?)] = []
+  var notifications: [String] = []
+  manager.mountFinished = { connection, error in
+    results.append((connection.id, error, manager.states[connection.id]))
+  }
+  manager.mountFailed = { notifications.append($0) }
+  f.smb.mountFailure = failure
+  await manager.connectIfNeeded(connection)
+  #expect(results.count == 1)
+  #expect(results.first?.0 == connection.id)
+  #expect((results.first?.1 as? NSError) === failure)
+  if case .failed = results.first?.2 {} else { Issue.record("回调应看到失败状态") }
+  #expect(notifications.count == 1)
+
+  f.smb.mountFailure = nil
+  await manager.connectIfNeeded(connection)
+  #expect(results.count == 2)
+  #expect(results.last?.1 == nil)
+  if case .mounted = results.last?.2 {} else { Issue.record("回调应看到挂载状态") }
+  await manager.connectIfNeeded(connection)
+  #expect(results.count == 3)
+  #expect(results.last?.1 == nil)
+  #expect(f.smb.calls.filter { $0 == "mount" }.count == 2)
+  #expect(notifications.count == 1)
+}
+
+@Test @MainActor func cancelledMountClearsTheRecoveryReasonWithoutFailureNotification() async throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let manager = f.manager()
+  let connection = sample()
+  var results = 0
+  var notifications = 0
+  manager.mountFinished = { _, error in
+    #expect(error == nil)
+    #expect(manager.states[connection.id] == .disconnected)
+    results += 1
+  }
+  manager.mountFailed = { _ in notifications += 1 }
+  f.smb.mountFailure = CancellationError()
+  await manager.connectIfNeeded(connection)
+  #expect(results == 1)
+  #expect(notifications == 0)
+}
+
+@Test @MainActor func availableAutoMountDevicesRequireCurrentDiscoveryAndPreference() throws {
+  let f = Fixture()
+  defer { f.clean() }
+  let usb = Connection(kind: .androidUSB, autoMount: true, params: ["deviceID": "usb"])
+  let wifi = Connection(kind: .androidWiFi, autoMount: true, params: ["guid": "wifi"])
+  let ricoh = Connection(kind: .ricohGR, autoMount: true, params: ["serial": "ricoh"])
+  let camera = Connection(kind: .cameraUSB, autoMount: true, params: ["serial": "camera"])
+  let manual = Connection(kind: .androidUSB, autoMount: false, params: ["deviceID": "usb"])
+  let absent = Connection(kind: .androidUSB, autoMount: true, params: ["deviceID": "absent"])
+  let cloud = Connection(kind: .quark, autoMount: true)
+  let system = Connection(kind: .smb, autoMount: true)
+  try ConnectionRepository(location: f.location).save([usb, wifi, ricoh, camera, manual, absent, cloud, system])
+  let manager = f.manager()
+  #expect(manager.availableAutoMountDevices.isEmpty)
+  manager.usbDevicesChanged(serials: ["usb"])
+  manager.wirelessGUIDsChanged(["wifi"])
+  manager.ricohDevicesChanged(serials: ["ricoh"])
+  manager.cameraUSBDevicesChanged(serials: ["camera"])
+  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([usb.id, wifi.id, ricoh.id, camera.id]))
+  manager.usbDevicesChanged(serials: [])
+  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([wifi.id, ricoh.id, camera.id]))
+}

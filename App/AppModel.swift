@@ -27,6 +27,9 @@ import UserNotifications
   let secrets: any SecretStore
   let fileSystem: FileSystemMountService?
   var fileSystemState: FileSystemExtensionState = .checking
+  @ObservationIgnored private var fileSystemStatePolling: Task<Void, Never>?
+  private var refreshingFileSystemState = false
+  private var extensionBlockedConnections: Set<UUID> = []
   private let dependencies: AppModelDependencies?
   let system: AppSystemServices
   private let info: [String: Any]
@@ -102,6 +105,7 @@ import UserNotifications
     connections.removed = { [weak self] id in
       self?.sessionCache.remove(id)
       self?.providerAccess.removeValue(forKey: id)
+      self?.extensionBlockedConnections.remove(id)
     }
   }
 
@@ -315,6 +319,7 @@ import UserNotifications
   }
 
   func prepareToQuit() {
+    stopFileSystemStatePolling()
     operations.cancelAll()
   }
 
@@ -361,6 +366,7 @@ import UserNotifications
       return true
     } catch {
       operations.resume()
+      updateFileSystemStatePolling()
       if started && !options.isDemo { recovery.start() }
       logger.error("退出前推出失败：\(ErrorDiagnostics.summary(error), privacy: .public)")
       quitFailure = QuitFailure(locations: failures, reason: QuitFailure.reason(for: error))
@@ -369,8 +375,59 @@ import UserNotifications
   }
 
   func refreshFileSystemState() async {
-    guard let fileSystem else { return }
-    fileSystemState = await fileSystem.extensionStatus()
+    guard let fileSystem, !refreshingFileSystemState, !operations.isStopping,
+      !Task.isCancelled else { return }
+    refreshingFileSystemState = true
+    defer { refreshingFileSystemState = false }
+    let state = await fileSystem.extensionStatus()
+    guard !operations.isStopping, !Task.isCancelled else { return }
+    let previous = fileSystemState
+    fileSystemState = state
+    updateFileSystemStatePolling()
+    if previous == .disabled, state == .enabled { retryExtensionBlockedMounts() }
+  }
+
+  private func updateFileSystemStatePolling() {
+    guard fileSystem != nil, fileSystemState == .disabled, !operations.isStopping else {
+      stopFileSystemStatePolling()
+      return
+    }
+    guard fileSystemStatePolling == nil else { return }
+    let wait = dependencies?.fileSystemStatePollWait ?? { try await Task.sleep(for: .seconds(2)) }
+    fileSystemStatePolling = Task { [weak self] in
+      while !Task.isCancelled {
+        do { try await wait() } catch { return }
+        guard !Task.isCancelled, let self, fileSystemState == .disabled,
+          !operations.isStopping else { return }
+        await refreshFileSystemState()
+      }
+    }
+  }
+
+  private func stopFileSystemStatePolling() {
+    fileSystemStatePolling?.cancel()
+    fileSystemStatePolling = nil
+  }
+
+  private func retryExtensionBlockedMounts() {
+    let blocked = extensionBlockedConnections
+    extensionBlockedConnections.removeAll()
+    let devices = Set(connections.availableAutoMountDevices.map(\.id))
+    for connection in connections.connections where connection.kind.fileSystemScheme != nil {
+      switch connections.states[connection.id] {
+      case .failed:
+        guard blocked.contains(connection.id) else { continue }
+      case .mounted, .needsLogin, .connecting, .awaitingAuthorization, .ejecting:
+        continue
+      default:
+        guard devices.contains(connection.id) else { continue }
+      }
+      operations.start(connectionID: connection.id) { [weak self] in
+        guard let self, fileSystemState == .enabled,
+          connections.connections.contains(connection) else { return }
+        await connections.connectIfNeeded(connection)
+      }
+    }
   }
 
   func openFileSystemSettings() {
@@ -406,6 +463,15 @@ import UserNotifications
       self?.writeError(message)
     }
     connections.mountFailed = { [weak self] message in self?.reportMountFailure(message) }
+    connections.mountFinished = { [weak self] connection, error in
+      guard let self, connection.kind.fileSystemScheme != nil else { return }
+      extensionBlockedConnections.remove(connection.id)
+      if case .disabled? = error as? FileSystemMountError {
+        extensionBlockedConnections.insert(connection.id)
+        fileSystemState = .disabled
+        updateFileSystemStatePolling()
+      }
+    }
     connections.loginExpired = { [weak self] connection in self?.loginExpired(connection.id) }
     connections.unexpectedDisconnect = { [weak self] connection in
       self?.writeError(L("位置意外断开"))
