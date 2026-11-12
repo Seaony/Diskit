@@ -9,7 +9,7 @@ struct CLIEnvironment {
     read: (URL) throws -> String = { try String(contentsOf: $0, encoding: .utf8) }
   ) throws -> CLIEnvironment {
     var values: [String: String] = [:]
-    if let path = environment["KAYOI_SECRETS_FILE"], !path.isEmpty {
+    if let path = environment["DISKIT_SECRETS_FILE"], !path.isEmpty {
       values = parse(try read(URL(fileURLWithPath: path)))
     }
     values.merge(environment) { _, override in override }

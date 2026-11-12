@@ -269,7 +269,7 @@ public actor QuarkProvider: RemoteFileProvider {
       if basename(from) != basename(to),
         destinationFiles.contains(where: { $0.name == basename(from) && $0.fid != file.fid })
       {
-        let temporaryName = ".kayoi-move-" + UUID().uuidString
+        let temporaryName = ".diskit-move-" + UUID().uuidString
         try await rename(file.fid, to: temporaryName)
         var moved = false
         do {

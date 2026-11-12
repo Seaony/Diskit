@@ -4,7 +4,7 @@ import Foundation
 
 public actor PikPakSession {
   public static let loginInvalidatedNotification = Notification.Name(
-    "com.seaony.Kayoi.pikPakLoginInvalidated")
+    "com.seaony.Diskit.pikPakLoginInvalidated")
   public static let userAgent =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 

@@ -12,4 +12,4 @@
 
 ## 相机候选未采用
 
-NativeCameraSession 与 ImageCaptureDeviceAccess 初次提案虽小于 150 行，但仍含文件索引、目录转换和会话状态判断，因此未加入例外。随后保留这些业务逻辑在可注入适配器中，以假 hardware 覆盖目录、句柄、读删失败和会话生命周期。CameraUSB 原始覆盖 703/896（78.46%，28 项通过）；RicohGR 原始覆盖 745/888（83.90%，35 项通过）。新 ICC 转发层仍计入分母，没有相机文件被排除。证据：/tmp/kayoi-camera-coverage-final.log、/tmp/kayoi-ricoh-coverage-refined.log；最终以完整 make coverage 输出为准。
+NativeCameraSession 与 ImageCaptureDeviceAccess 初次提案虽小于 150 行，但仍含文件索引、目录转换和会话状态判断，因此未加入例外。随后保留这些业务逻辑在可注入适配器中，以假 hardware 覆盖目录、句柄、读删失败和会话生命周期。CameraUSB 原始覆盖 703/896（78.46%，28 项通过）；RicohGR 原始覆盖 745/888（83.90%，35 项通过）。新 ICC 转发层仍计入分母，没有相机文件被排除。证据：/tmp/diskit-camera-coverage-final.log、/tmp/diskit-ricoh-coverage-refined.log；最终以完整 make coverage 输出为准。

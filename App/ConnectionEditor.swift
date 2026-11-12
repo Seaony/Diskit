@@ -24,18 +24,18 @@ struct ConnectionEditor: View {
             VStack(alignment: .leading, spacing: 3) { // grid: ok 标题与说明贴近
               Text(editor.draft.kind.title).font(.system(size: 14, weight: .semibold))
               Text(ConnectionTypeCatalog.caption(editor.draft.kind)).font(.system(size: 11))
-                .foregroundStyle(KayoiTheme.secondaryText)
+                .foregroundStyle(DiskitTheme.secondaryText)
             }
             Spacer(minLength: 0)
           }
           .padding(.horizontal, 28).padding(.top, Space.sm) // grid: ok 设计稿第二步左右 28
           ConnectionFormView(editor: editor).disabled(editor.busy)
           // 底部操作栏和可滚动的表单之间用分割线隔开，左右和表单卡片对齐
-          KayoiSeparator().padding(.horizontal, 28) // grid: ok 同表单左右 28
+          DiskitSeparator().padding(.horizontal, 28) // grid: ok 同表单左右 28
           footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(KayoiTheme.background)
+        .background(DiskitTheme.background)
         .transition(Motion.push(from: .trailing, reduceMotion: reduceMotion))
       } else {
         VStack(spacing: 0) {
@@ -48,15 +48,15 @@ struct ConnectionEditor: View {
           if editor.visibleError != nil { footer }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(KayoiTheme.background)
+        .background(DiskitTheme.background)
         .transition(Motion.push(from: .leading, reduceMotion: reduceMotion))
       }
     }
     .clipped()
     .animation(Motion.page(reduceMotion: reduceMotion), value: editor.chosen)
     .buttonStyle(FlatButtonStyle())
-    .tint(KayoiTheme.accent)
-    .background(KayoiTheme.background)
+    .tint(DiskitTheme.accent)
+    .background(DiskitTheme.background)
     // 高度限制在 520–680，保存过的窗口尺寸再大也会被收回来
     .frame(width: 576).frame(minHeight: 520, maxHeight: 680) // grid: ok 窗口高度上限
     .gridDiagnostics("editor")
@@ -65,7 +65,7 @@ struct ConnectionEditor: View {
       EditorWindowAccessor { window in
         editor.anchorWindow = window
         editor.synchronizeWindowTitle()
-        if !editor.model.options.isDemo { window.setFrameAutosaveName("Kayoi.ConnectionEditor") }
+        if !editor.model.options.isDemo { window.setFrameAutosaveName("Diskit.ConnectionEditor") }
       }
     )
     .task(id: editor.model.demoEditorRevision) {
@@ -89,7 +89,7 @@ struct ConnectionEditor: View {
     VStack(alignment: .leading, spacing: Space.md) {
       if editor.testSucceeded {
         Label(L("连接测试成功"), systemImage: "checkmark.circle.fill")
-          .foregroundStyle(KayoiTheme.accent).font(.callout)
+          .foregroundStyle(DiskitTheme.accent).font(.callout)
           .transition(Motion.appear(reduceMotion: reduceMotion))
       }
       if editor.visibleError != nil {
@@ -110,7 +110,7 @@ struct ConnectionEditor: View {
       }
       if editor.busy {
         ProgressView().nativeProgressAppearance().controlSize(.small)
-        Text(editor.stage ?? L("正在连接…")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+        Text(editor.stage ?? L("正在连接…")).font(.caption).foregroundStyle(DiskitTheme.secondaryText)
           .lineLimit(2)
       }
       Spacer(minLength: Space.sm)
@@ -156,16 +156,16 @@ struct EditorWindowAccessor: NSViewRepresentable {
 }
 
 #Preview("类型选择") {
-  ConnectionEditor(model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+  ConnectionEditor(model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
 }
 
 #Preview("类型选择 · 深色") {
-  ConnectionEditor(model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+  ConnectionEditor(model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
     .preferredColorScheme(.dark)
 }
 
 #Preview("SMB 表单") {
-  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
   var connection = Connection()
   connection.kind = .smb
   connection.name = "我的 SMB 共享"
@@ -174,7 +174,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
 }
 
 #Preview("SMB 表单 · 深色") {
-  let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+  let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
   var connection = Connection()
   connection.kind = .smb
   connection.name = "我的 SMB 共享"
@@ -186,7 +186,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "blank",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "blank",
       ]))
   ).preferredColorScheme(.light)
 }
@@ -194,7 +194,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "blank",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "blank",
       ]))
   ).preferredColorScheme(.dark)
 }
@@ -202,7 +202,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "filled",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "filled",
       ]))
   ).preferredColorScheme(.light)
 }
@@ -210,7 +210,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "filled",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "filled",
       ]))
   ).preferredColorScheme(.dark)
 }
@@ -218,7 +218,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "error",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "error",
       ]))
   ).preferredColorScheme(.light)
 }
@@ -226,7 +226,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "error",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "error",
       ]))
   ).preferredColorScheme(.dark)
 }
@@ -234,7 +234,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "testing",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "testing",
       ]))
   ).preferredColorScheme(.light)
 }
@@ -242,7 +242,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "testing",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "testing",
       ]))
   ).preferredColorScheme(.dark)
 }
@@ -250,7 +250,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "success",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "success",
       ]))
   ).preferredColorScheme(.light)
 }
@@ -258,7 +258,7 @@ struct EditorWindowAccessor: NSViewRepresentable {
   ConnectionEditor(
     model: AppModel(
       options: RuntimeOptions(environment: [
-        "KAYOI_DEMO": "1", "KAYOI_DEMO_EDITOR_TYPE": "smb", "KAYOI_DEMO_EDITOR_STATE": "success",
+        "DISKIT_DEMO": "1", "DISKIT_DEMO_EDITOR_TYPE": "smb", "DISKIT_DEMO_EDITOR_STATE": "success",
       ]))
   ).preferredColorScheme(.dark)
 }

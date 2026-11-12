@@ -61,7 +61,7 @@ private func recoveryGoogle(_ http: GoogleRecoveryHTTP) throws -> GoogleDrivePro
     accessToken: "local", refreshToken: "local", expiresAt: .distantFuture)), for: "recovery")
   return GoogleDriveProvider(session: OAuthSession(configuration: OAuthConfiguration(
     clientID: "local", clientSecret: "", authorizationURL: URL(string: "https://local.invalid/auth")!,
-    tokenURL: URL(string: "https://local.invalid/token")!, redirectURI: "kayoi://test", scopes: []),
+    tokenURL: URL(string: "https://local.invalid/token")!, redirectURI: "diskit://test", scopes: []),
     secretKey: "recovery", secrets: secrets, transport: http))
 }
 

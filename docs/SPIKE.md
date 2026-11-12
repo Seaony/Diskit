@@ -4,7 +4,7 @@
 
 验证代码：
 
-- 扩展 `FSExtension/`（`KayoiFS.appex`，bundle ID `com.seaony.Kayoi.FS`）：内存假数据卷，根目录有 `readme.txt`、`big.bin`（1 GiB，内容按偏移现算，不占内存）和 `Folder/inside.txt`。所有新建、删除、改名、设属性、设扩展属性的操作都写日志（subsystem `com.seaony.Kayoi.FS`，category `spike`）。
+- 扩展 `FSExtension/`（`DiskitFS.appex`，bundle ID `com.seaony.Diskit.FS`）：内存假数据卷，根目录有 `readme.txt`、`big.bin`（1 GiB，内容按偏移现算，不占内存）和 `Folder/inside.txt`。所有新建、删除、改名、设属性、设扩展属性的操作都写日志（subsystem `com.seaony.Diskit.FS`，category `spike`）。
 - 主 App 验证入口 `App/FSKitSpike.swift`：只有带 `--fskit-spike` 参数启动时才运行，跑完就退出，不进入正常界面。子命令有 `seed`（写 App Group 文件和共享钥匙串条目）、`status`（列出系统里的 FSKit 扩展和是否启用）、`mount <URL>`、`unmount <路径>`、`usbcheck`（在主 App 里跑和扩展相同的 USB 握手检查）、`settings`（打开系统设置的扩展页）。
 - 签名：`project.yml` 改为自动签名加 `DEVELOPMENT_TEAM`。`make build` 带 `-allowProvisioningUpdates`，Xcode 会自动注册 App ID、生成描述文件。
 
@@ -23,8 +23,8 @@
 ## 1. 系统识别扩展
 
 - 签名后，扩展和主 App 的描述文件（Mac Team Provisioning Profile）都授权了 `com.apple.developer.fskit.fsmodule` 和 `com.apple.developer.fskit.mount`，在开发者后台不用手动开能力。
-- 执行 `lsregister -f` 后，`pluginkit -m -i com.seaony.Kayoi.FS` 能列出扩展；`FSClient.installedExtensions` 返回 `com.seaony.Kayoi.FS 已启用=false`。
-- `FSClient.shared.openFileSystemExtensionsSettings()`（macOS 27）能直接打开「登录项与扩展 › 文件系统扩展」，Kayoi 出现在列表里。打开开关不需要密码，之后 `status` 显示 `已启用=true`。
+- 执行 `lsregister -f` 后，`pluginkit -m -i com.seaony.Diskit.FS` 能列出扩展；`FSClient.installedExtensions` 返回 `com.seaony.Diskit.FS 已启用=false`。
+- `FSClient.shared.openFileSystemExtensionsSettings()`（macOS 27）能直接打开「登录项与扩展 › 文件系统扩展」，Diskit 出现在列表里。打开开关不需要密码，之后 `status` 显示 `已启用=true`。
 - 重新编译、重新签名后，开关仍然保持打开。
 
 ## 2. 挂载与推出
@@ -32,20 +32,20 @@
 | 方式 | 系统 | 需要密码 | 挂载点 | 结果 |
 | --- | --- | --- | --- | --- |
 | `FSClient.shared.mountSingleVolume(resource: FSGenericURLResource(url:), bundleID:options:)` | macOS 27 起，需要 `com.apple.developer.fskit.mount` | 否 | 固定在 `/Volumes/<卷名>` | 成功，耗时 0.07–0.32 秒 |
-| `mount -F -t kayoi <URL> <目录>`（普通用户执行） | macOS 26 起 | 否 | 任意自己有写权限的目录 | 成功，挂载记录显示 `mounted by seaony` |
+| `mount -F -t diskit <URL> <目录>`（普通用户执行） | macOS 26 起 | 否 | 任意自己有写权限的目录 | 成功，挂载记录显示 `mounted by seaony` |
 
 推出：`FileManager.unmountVolume(at:)`、`diskutil unmount`、Finder「推出」都成功，都不需要密码。`umount` 推出 `FSClient` 挂的卷会报 `Operation not permitted`，因为那个卷是系统守护进程挂的。
 
 Finder 中的表现：
 
 - 卷能在「电脑」窗口里看到，也有「推出“spike”」菜单。默认图标是网络卷图标。
-- **侧栏「位置」里没有出现**（同一台机器上 OrbStack 的 NFS 卷会出现）。挂载参数是 `kayoi, nodev, nosuid, noowners, noatime, fskit`，没有 `local`。要不要以及怎么进侧栏，留到第二步再处理。
+- **侧栏「位置」里没有出现**（同一台机器上 OrbStack 的 NFS 卷会出现）。挂载参数是 `diskit, nodev, nosuid, noowners, noatime, fskit`，没有 `local`。要不要以及怎么进侧栏，留到第二步再处理。
 - 卷名就是 `FSVolume` 的 `volumeName`，可以自定义（验证时用的是 URL 的主机名）。
 - 自定义图标可以做到：用 `NSWorkspace.setIcon(_:forFile:)` 设置后，Finder 显示了新图标。原理是在卷根目录写 `.VolumeIcon.icns`，并给根目录设 `com.apple.FinderInfo` 扩展属性。正式实现时，由扩展直接提供这两样东西即可。
 
 ## 3. App Group 与共享钥匙串
 
-- 主 App 执行 `seed`：写入 `~/Library/Group Containers/JJJKGPY7T7.com.seaony.Kayoi/spike-check.txt`，再写入共享访问组 `JJJKGPY7T7.com.seaony.Kayoi.shared` 里的钥匙串条目（`kSecUseDataProtectionKeychain=true`）。两项都写入成功，回读一致。
+- 主 App 执行 `seed`：写入 `~/Library/Group Containers/JJJKGPY7T7.com.seaony.Diskit/spike-check.txt`，再写入共享访问组 `JJJKGPY7T7.com.seaony.Diskit.shared` 里的钥匙串条目（`kSecUseDataProtectionKeychain=true`）。两项都写入成功，回读一致。
 - 扩展（沙盒）挂载时把两项读出来写进 `readme.txt`，内容与主 App 写入的一致。
 - §7 的一次性迁移（把用户真实的配置和钥匙串条目搬到新位置、删掉旧条目）**这次没做**。原因是它会动用户的真实数据，属于第二步的正式实现，不该放在验证代码里。这次只证明了新位置在两端都能读写。迁移流程本身还没验证：读旧配置和旧钥匙串条目、换成付费团队签名后读旧条目会不会弹窗、写入成功后删旧条目、失败时保留旧数据，这几步都还没跑过。
 
@@ -53,11 +53,11 @@ Finder 中的表现：
 
 测试手机：Xiaomi 17，USB 连接。
 
-- 扩展已经链接 ADB 包。挂载 `kayoi-adb://usbcheck` 时，扩展会在后台枚举 ADB 接口，直接调一次 `IOServiceOpen` 记下返回码，然后用 `USBTransport` 加 `ADBSession` 握手，结果写进卷里的 `usb-check.txt`。主 App 用 `--fskit-spike usbcheck` 能跑同一段检查，用来对比。
-- 只带 `com.apple.security.device.usb` 时，扩展里 `IOServiceOpen` 返回 `0xe00002e2`（`kIOReturnNotPermitted`），握手报 EIO。内核日志：`Sandbox: KayoiFS deny(1) iokit-open-user-client AppleUSBHostFrameworkInterfaceClient`。同一时间主 App（不开沙盒）能打开这个接口，所以不是被别的进程占用了。
+- 扩展已经链接 ADB 包。挂载 `diskit-adb://usbcheck` 时，扩展会在后台枚举 ADB 接口，直接调一次 `IOServiceOpen` 记下返回码，然后用 `USBTransport` 加 `ADBSession` 握手，结果写进卷里的 `usb-check.txt`。主 App 用 `--fskit-spike usbcheck` 能跑同一段检查，用来对比。
+- 只带 `com.apple.security.device.usb` 时，扩展里 `IOServiceOpen` 返回 `0xe00002e2`（`kIOReturnNotPermitted`），握手报 EIO。内核日志：`Sandbox: DiskitFS deny(1) iokit-open-user-client AppleUSBHostFrameworkInterfaceClient`。同一时间主 App（不开沙盒）能打开这个接口，所以不是被别的进程占用了。
 - 加上 `com.apple.security.temporary-exception.iokit-user-client-class` = `AppleUSBHostFrameworkInterfaceClient`、`AppleUSBHostFrameworkDeviceClient` 之后，扩展里 `IOServiceOpen` 返回 0，**握手成功**，手机报了 23 项 features。
 - ADB 私钥存在共享钥匙串访问组里。主 App 第一次握手时，手机弹出授权，点了允许；之后扩展用同一把钥匙握手，手机没有再弹。说明两个进程能共用一把钥匙，手机只需要授权一次。
-- 代价：`temporary-exception` 这类权限 Mac App Store 不收，但 Kayoi 走 GitHub 加 Sparkle 分发，不受影响。
+- 代价：`temporary-exception` 这类权限 Mac App Store 不收，但 Diskit 走 GitHub 加 Sparkle 分发，不受影响。
 - 没插手机时：扩展枚举到 0 台，不报错也不崩溃。
 
 ## 5. GR IV

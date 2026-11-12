@@ -71,10 +71,14 @@ struct PanelView: View {
         .padding(.horizontal, Space.lg)
         .padding(.bottom, Space.sm)
       }
-      FileSystemExtensionBanner(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
-        .padding(.horizontal, Space.lg)
+      if model.fileSystemState == .disabled {
+        // 和下面的位置卡片、提示条留出同样的间隔，不要贴在一起
+        FileSystemExtensionBanner(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
+          .padding(.horizontal, Space.lg)
+          .padding(.bottom, Space.sm)
+      }
       if PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, hasLoadError: (model.demoSetupError ?? model.connections.loadError) != nil) {
-        Group {
+        VStack(spacing: Space.sm) {
           devicePromptBanner
           ForEach(discoveryErrors, id: \.message) { error in
             discoveryBanner(error.message, permissionDenied: error.permissionDenied)
@@ -101,8 +105,8 @@ struct PanelView: View {
               } else {
                 VStack(spacing: 0) { cards }
                   .padding(Space.xs)
-                  .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
-                  .overlay { RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
+                  .background(DiskitTheme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))
+                  .overlay { RoundedRectangle(cornerRadius: Radius.card, style: .continuous).strokeBorder(DiskitTheme.border, lineWidth: 0.5) }
               }
             }
             .padding(.horizontal, Space.lg)
@@ -130,14 +134,14 @@ struct PanelView: View {
         }
       }
       // 底栏上方一条浅分隔线
-      Rectangle().fill(KayoiTheme.border).frame(height: 0.5)
+      Rectangle().fill(DiskitTheme.border).frame(height: 0.5)
       footer.gridProbe("footer", area: "panel", edge: nil)
     }
     .frame(width: 380)
     .gridArea("panel")
     .gridDiagnostics("panel")
     .demoAppearanceEvidence("panel")
-    .background(KayoiTheme.background)
+    .background(DiskitTheme.background)
     .buttonStyle(FlatButtonStyle())
     .onDisappear { panelVisible = false }
     .onChange(of: draggedID) { _, id in
@@ -265,8 +269,8 @@ struct PanelView: View {
           .frame(width: 20, height: 20)
           .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
           .accessibilityHidden(true)
-        Text(verbatim: "Kayoi").font(.system(size: 14, weight: .semibold))
-          .foregroundStyle(KayoiTheme.primaryText)
+        Text(verbatim: "Diskit").font(.system(size: 14, weight: .semibold))
+          .foregroundStyle(DiskitTheme.primaryText)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .accessibilityElement(children: .combine)
@@ -276,13 +280,13 @@ struct PanelView: View {
           layoutButton(.list, symbol: "rectangle.grid.1x2.fill", label: L("列表"))
         }
         .padding(2) // grid: ok 分段外框 2
-        .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-        .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
+        .background(DiskitTheme.surface, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(DiskitTheme.border, lineWidth: 0.5) }
         Button { edit(nil) } label: {
           Image(systemName: "plus").font(.system(size: 13, weight: .bold))
-            .foregroundStyle(KayoiTheme.actionText)
+            .foregroundStyle(DiskitTheme.actionText)
             .frame(width: 26, height: 26)
-            .background(KayoiTheme.accent, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+            .background(DiskitTheme.accent, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).pointerStyle(.link)
@@ -297,9 +301,9 @@ struct PanelView: View {
     let active = (layout == value.rawValue) || (value == .grid && isGrid)
     return Button { layout = value.rawValue } label: {
       Image(systemName: symbol).font(.system(size: 12))
-        .foregroundStyle(active ? KayoiTheme.primaryText : KayoiTheme.tertiaryText)
+        .foregroundStyle(active ? DiskitTheme.primaryText : DiskitTheme.tertiaryText)
         .frame(width: 26, height: 22)
-        .background(active ? KayoiTheme.segmentSelected : .clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+        .background(active ? DiskitTheme.segmentSelected : .clear, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain).pointerStyle(.link)
@@ -310,9 +314,9 @@ struct PanelView: View {
   private var footer: some View {
     HStack(spacing: 2) { // grid: ok 底栏图标间隔 2
       // 左边版本号，补齐图标按钮自带的内边距，和卡片左边对齐
-      Text(verbatim: "Kayoi " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"))
+      Text(verbatim: "Diskit " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.2.0"))
         .font(.system(size: 11)).monospacedDigit()
-        .foregroundStyle(KayoiTheme.tertiaryText)
+        .foregroundStyle(DiskitTheme.tertiaryText)
         .padding(.leading, Space.xs)
       Spacer()
       Button {
@@ -326,7 +330,7 @@ struct PanelView: View {
         Image(systemName: "power")
       }
       .keyboardShortcut("q", modifiers: .command)
-      .help(L("退出 · ⌘Q")).accessibilityLabel(L("退出 Kayoi"))
+      .help(L("退出 · ⌘Q")).accessibilityLabel(L("退出 Diskit"))
     }.buttonStyle(FlatIconButtonStyle()).padding(.horizontal, Space.md).padding(.top, 6).padding(.bottom, Space.sm) // grid: ok 底栏图标自带内边距，外边距 12 视觉上与卡片对齐
   }
 
@@ -340,9 +344,9 @@ struct PanelView: View {
           .rotationEffect(.degrees(10)).offset(x: -10, y: 4) // grid: ok 插图错落
       }
       .padding(.bottom, 10) // grid: ok 插图与标题间距
-      Text(L("还没有位置")).font(.system(size: 15, weight: .semibold)).foregroundStyle(KayoiTheme.primaryText)
+      Text(L("还没有位置")).font(.system(size: 15, weight: .semibold)).foregroundStyle(DiskitTheme.primaryText)
       Text(L("接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。"))
-        .font(.system(size: 12.5)).foregroundStyle(KayoiTheme.secondaryText)
+        .font(.system(size: 12.5)).foregroundStyle(DiskitTheme.secondaryText)
         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
       Button { edit(nil) } label: { Label(L("添加位置"), systemImage: "plus") }
         .buttonStyle(FlatButtonStyle(prominent: true))
@@ -476,9 +480,9 @@ struct PanelView: View {
       return L("会先推出这个位置，再删除保存的登录信息。原文件不受影响。")
     }
     if deleteTarget.kind.isCloud {
-      return L("会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。")
+      return L("会删除 Diskit 保存的登录信息，网盘里的文件不受影响。")
     }
-    return L("会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。")
+    return L("会删除 Diskit 保存的位置和登录信息，设备上的文件不受影响。")
   }
 
   private func removeSelectedConnection() {
@@ -517,5 +521,5 @@ struct PanelView: View {
 }
 
 extension Connection {
-  var tint: Color { KayoiTheme.locationColor(color) }
+  var tint: Color { DiskitTheme.locationColor(color) }
 }

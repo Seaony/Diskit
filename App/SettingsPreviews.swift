@@ -3,7 +3,7 @@ import SwiftUI
 private struct SettingsDemoPreview: View {
   @State private var model: AppModel
   init(tab: String) {
-    let model = AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"]))
+    let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
     model.preferences.set(tab, forKey: "settings.selectedTab")
     _model = State(initialValue: model)
   }

@@ -2,8 +2,8 @@ import Foundation
 import Security
 
 public enum SharedStorage {
-  public static let appGroup = "JJJKGPY7T7.com.seaony.Kayoi"
-  public static let keychainGroup = "JJJKGPY7T7.com.seaony.Kayoi.shared"
+  public static let appGroup = "JJJKGPY7T7.com.seaony.Diskit"
+  public static let keychainGroup = "JJJKGPY7T7.com.seaony.Diskit.shared"
 
   static var directory: URL? {
     FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup)
@@ -20,13 +20,13 @@ public struct SharedStorageLocation: StorageLocation {
     }
     dataDirectory = directory
     cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-      .appending(path: "Kayoi", directoryHint: .isDirectory)
+      .appending(path: "Diskit", directoryHint: .isDirectory)
   }
 }
 
 public struct SharedKeychainStore: SecretStore {
   public let service: String
-  public init(service: String = "com.seaony.Kayoi") { self.service = service }
+  public init(service: String = "com.seaony.Diskit") { self.service = service }
 
   public func refreshLockLocation(for key: String) -> URL {
     // 容器不可用时让锁操作报错，不能退回每个进程各自的锁。

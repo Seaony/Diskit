@@ -1,6 +1,6 @@
 #!/bin/bash
 # 一键发布新版本：scripts/publish-unsigned-release.sh <版本号> [--dry-run]
-# 源码仓库保持私有，安装包和更新源发布到公开的 Seaony/Kayoi。
+# 源码仓库保持私有，安装包和更新源发布到公开的 Seaony/Diskit。
 # --dry-run 只在本地完整打包和验证，不提交、不推送、不发布。
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +12,7 @@ dry_run=0
 if [[ $# == 2 && "$2" == '--dry-run' ]]; then dry_run=1; elif [[ $# != 1 ]]; then usage; fi
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || usage
 
-release_repo="Seaony/Kayoi"
+release_repo="Seaony/Diskit"
 account="${SPARKLE_ACCOUNT:-com.seaony.Moni}"
 tag="v$version"
 fail() { echo "$1" >&2; exit 1; }
@@ -42,7 +42,7 @@ security find-generic-password -a "$account" -s https://sparkle-project.org >/de
 # 版本号唯一来源是 project.yml；传入的新版本必须更大，构建号自动加 1
 current_version="$(python3 scripts/project-version.py | sed -n '1p')"
 current_build="$(python3 scripts/project-version.py | sed -n '2p')"
-work="$(mktemp -d /tmp/kayoi-release.XXXXXX)"
+work="$(mktemp -d /tmp/diskit-release.XXXXXX)"
 committed=0
 cleanup() {
   rm -rf "$work"
@@ -59,32 +59,32 @@ if [[ "$version" != "$current_version" ]]; then
 else
   build="$current_build"
 fi
-echo "准备发布 Kayoi ${version}（构建号 ${build}）"
+echo "准备发布 Diskit ${version}（构建号 ${build}）"
 
 output="$root/build/releases/$tag"
 rm -rf "$output"
 mkdir -p "$output" "$work/updates" "$work/dmg"
 
 make test
-export KAYOI_BUILD_CONFIG="${KAYOI_BUILD_CONFIG:-Config/Validation.xcconfig}"
+export DISKIT_BUILD_CONFIG="${DISKIT_BUILD_CONFIG:-Config/Validation.xcconfig}"
 make release SIGN_IDENTITY=- SIGN_TIMESTAMP=none
-app="$root/build/DerivedData/Build/Products/Release/Kayoi.app"
+app="$root/build/DerivedData/Build/Products/Release/Diskit.app"
 tools="$root/build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin"
 [[ -x "$tools/generate_appcast" ]] || fail '缺少 Sparkle 工具'
 
-zip_name="Kayoi-$version-unsigned.zip"
-dmg_name="Kayoi-$version-unsigned.dmg"
+zip_name="Diskit-$version-unsigned.zip"
+dmg_name="Diskit-$version-unsigned.dmg"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$output/$zip_name"
-ditto "$app" "$work/dmg/Kayoi.app"
+ditto "$app" "$work/dmg/Diskit.app"
 ln -s /Applications "$work/dmg/Applications"
-hdiutil create -quiet -volname Kayoi -srcfolder "$work/dmg" -ov -format UDZO "$output/$dmg_name"
+hdiutil create -quiet -volname Diskit -srcfolder "$work/dmg" -ov -format UDZO "$output/$dmg_name"
 
 # 更新说明：有手写的 docs/release-notes/v版本号.md 就用它；否则列上个版本以来的提交；第一次发布写固定说明
 notes="$work/notes.md"
 written_notes="$root/docs/release-notes/$tag.md"
 previous_tag="$(git describe --tags --abbrev=0 --exclude "$tag" HEAD 2>/dev/null || true)"
 {
-  printf '## Kayoi %s\n\n' "$version"
+  printf '## Diskit %s\n\n' "$version"
   if [[ -f "$written_notes" ]]; then
     cat "$written_notes"
   elif [[ -n "$previous_tag" ]]; then
@@ -120,13 +120,13 @@ if [[ -n "$(git status --porcelain project.yml)" ]]; then
   git push -q origin master
 fi
 committed=1
-git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "Kayoi $version"
+git rev-parse -q --verify "refs/tags/$tag" >/dev/null || git tag -a "$tag" -m "Diskit $version"
 [[ -n "$remote_tag" ]] || git push -q origin "$tag"
 scripts/sync-release-repo.sh
 # 上次上传失败留下的草稿先删掉再重建
 [[ "$release_draft" == true ]] && gh release delete "$tag" --repo "$release_repo" --yes
 gh release create "$tag" --repo "$release_repo" \
-  --title "Kayoi $version" --notes-file "$notes" \
+  --title "Diskit $version" --notes-file "$notes" \
   "$output/$dmg_name" "$output/$zip_name" "$output/appcast.xml"
 echo "已发布：https://github.com/$release_repo/releases/tag/$tag"
 echo "制品：$output"

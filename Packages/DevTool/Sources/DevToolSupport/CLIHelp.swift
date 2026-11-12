@@ -1,5 +1,5 @@
 let cliHelp = """
-  kayoi-dev — Kayoi 开发工具
+  diskit-dev — Diskit 开发工具
     devices                            列出安卓与 USB 相机
     pair <host:port> <配对码>            无线配对
     ls [-a] <连接ID> <路径>              列目录
@@ -14,5 +14,5 @@ let cliHelp = """
 
     -- 结束选项解析；选项也可放在连接 ID 后。
     get 拒绝覆盖已有目标；失败会清理临时下载。
-    配置取自环境变量；仅 KAYOI_SECRETS_FILE 显式指定时读取配置文件。
+    配置取自环境变量；仅 DISKIT_SECRETS_FILE 显式指定时读取配置文件。
   """

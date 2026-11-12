@@ -26,7 +26,7 @@ enum DemoDiscoveryError: String, CaseIterable, Sendable {
   var permissionDenied: Bool { self == .permission }
   var message: String {
     switch self {
-    case .permission: L("请允许 Kayoi 访问本地网络")
+    case .permission: L("请允许 Diskit 访问本地网络")
     case .network: L("暂时无法发现局域网设备，请检查网络连接")
     case .usb: L("暂时无法发现 USB 手机，请重新插拔设备")
     case .ricoh: L("暂时无法发现理光相机，请检查 USB 连接")

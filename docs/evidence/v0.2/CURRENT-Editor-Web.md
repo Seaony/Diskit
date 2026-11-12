@@ -4,8 +4,8 @@
 
 | 编号 | 当前实现与可核对入口 | 仍需验收 |
 | --- | --- | --- |
-| UI-EDIT-01 | `App/KayoiApp.swift` connection 场景根据持久列表是否包含 id 决定添加/编辑标题；`ConnectionEditorModel.isEditing` 同条件控制上一步。`discoveredDraftIsAdditionAndCanReturnToTypes`、`editingAnExistingShareRemainsEditing` | 发现入口和编辑窗口截图 |
-| UI-EDIT-02 | KayoiApp 默认 640×640；ConnectionEditor 最小 560×520；EditorWindowAccessor 在实际窗口注册非演示尺寸保存 | 拖动尺寸、重新打开、两步高度截图 |
+| UI-EDIT-01 | `App/DiskitApp.swift` connection 场景根据持久列表是否包含 id 决定添加/编辑标题；`ConnectionEditorModel.isEditing` 同条件控制上一步。`discoveredDraftIsAdditionAndCanReturnToTypes`、`editingAnExistingShareRemainsEditing` | 发现入口和编辑窗口截图 |
+| UI-EDIT-02 | DiskitApp 默认 640×640；ConnectionEditor 最小 560×520；EditorWindowAccessor 在实际窗口注册非演示尺寸保存 | 拖动尺寸、重新打开、两步高度截图 |
 | UI-EDIT-03 | `ConnectionTypePicker.swift` 四列 96 高、TypeIcon 40；`ConnectionTypeCatalog.swift` 中文/英文/拼音/首字母；HTTPS WebDAV 合一；方向键、Return、双击 | 全键盘路径与 560 宽截图；`typeSearchSupportsInitialsAndMergesWebDAV` 待运行 |
 | UI-EDIT-04 | `ConnectionFormView.swift` 原生 grouped Form，位置/连接/选项，系统挂载类型才展示自动挂载 | 各表单控件右缘、长文与滚动截图 |
 | UI-EDIT-05 | `ConnectionEditor.swift` 表头 TypeIcon 48、类型和说明，无重复大标题 | 浅深色截图 |
@@ -23,15 +23,15 @@
 | UI-WEB-01 | `WebLoginWindowController.swift` 独立 720×640、min560×520、调整尺寸、非演示记尺寸 | 网页窗口全状态截图 |
 | UI-WEB-02 | `WebLoginView.swift` 服务说明、域名、进度、加载失败重载；`ServiceWebLogin.swift` 非持久 WK 数据存储 | 官网实际登录页面兼容 |
 | UI-WEB-03 | WebLoginState 验证成功结束 continuation 自动关窗；其他登录方式说明及粘贴；demo 原生本地内容，无 WK 请求/真实验证 | 成功、失败、其他方式矩阵；`demoWebLoginNeverRunsRealValidation`、`demoWebLoginErrorReloadStaysLocal`、`closedWebLoginIgnoresLateCredentials` 待跑 |
-| FEAT-01 / K-01 | `ConnectionEditorModel+WebLogin.swift` 接入天翼/移动/迅雷与夸克/UC/蓝奏；CookieStore/官网请求凭据观察，验证后落会话，位置保存沿用钥匙串；手动粘贴仍可用 | 真实账号登录不得在本轮自动连接，必须列入 ACCEPTANCE；公开静态脚本证据 `/tmp/kayoi-web-login-evidence.md` |
+| FEAT-01 / K-01 | `ConnectionEditorModel+WebLogin.swift` 接入天翼/移动/迅雷与夸克/UC/蓝奏；CookieStore/官网请求凭据观察，验证后落会话，位置保存沿用钥匙串；手动粘贴仍可用 | 真实账号登录不得在本轮自动连接，必须列入 ACCEPTANCE；公开静态脚本证据 `/tmp/diskit-web-login-evidence.md` |
 
 ## 检查记录
 
 - 对编辑器、表单、模型和新增测试执行 `xcrun swiftc -frontend -parse`，退出 0；只表示语法通过。
 - 对自有文件执行 `xcrun swift-format format -i`，没有格式化整个仓库。
-- 自有跟踪文件 `git diff --check -- App/ConnectionEditor.swift App/KayoiApp.swift App/WebAuthorization.swift App/QuarkLoginView.swift` 退出 0。
-- Web 组件较早版本局部 Swift 6 strict-concurrency typecheck 退出 0（`/tmp/kayoi-web-login-typecheck.log`）；后续变化仅语法检查，不把旧结果当最终验收。
-- 编辑器类型检查无法用旧缓存证明：DerivedData 中 Swift 6.3.3 模块与当前 6.4.2 不兼容；另一兼容缓存缺最新 Core/ADB/CloudDrive 接口。结果记录 `/tmp/kayoi-editor-typecheck.log`，已停止缓存尝试，最终新构建统一验证。
+- 自有跟踪文件 `git diff --check -- App/ConnectionEditor.swift App/DiskitApp.swift App/WebAuthorization.swift App/QuarkLoginView.swift` 退出 0。
+- Web 组件较早版本局部 Swift 6 strict-concurrency typecheck 退出 0（`/tmp/diskit-web-login-typecheck.log`）；后续变化仅语法检查，不把旧结果当最终验收。
+- 编辑器类型检查无法用旧缓存证明：DerivedData 中 Swift 6.3.3 模块与当前 6.4.2 不兼容；另一兼容缓存缺最新 Core/ADB/CloudDrive 接口。结果记录 `/tmp/diskit-editor-typecheck.log`，已停止缓存尝试，最终新构建统一验证。
 - 未运行全套测试/构建、未启动应用、未登录真实账号、未连接真机、未提交。
 - 新增 `ConnectionEditorModelTests.swift` 八条逻辑测试、`WebLoginCredentialTests.swift` 五条逻辑测试，均待统一执行。测试名与断言是准备好的证据入口，不是通过结果。
 
@@ -55,17 +55,17 @@
 
 ### §14.3 可稳定停留的演示状态
 
-所有开关只在 `App/Logic/RuntimeOptions.swift` 读取，未设置 `KAYOI_DEMO=1` 时全部忽略：
+所有开关只在 `App/Logic/RuntimeOptions.swift` 读取，未设置 `DISKIT_DEMO=1` 时全部忽略：
 
 ```sh
-KAYOI_DEMO=1 KAYOI_DEMO_EDITOR_TYPE=smb KAYOI_DEMO_EDITOR_STATE=testing
-KAYOI_DEMO=1 KAYOI_DEMO_EDITOR_TYPE=googleDrive KAYOI_DEMO_EDITOR_STATE=success
-KAYOI_DEMO=1 KAYOI_DEMO_WEB_SERVICE=mobile KAYOI_DEMO_STATE=web-error
+DISKIT_DEMO=1 DISKIT_DEMO_EDITOR_TYPE=smb DISKIT_DEMO_EDITOR_STATE=testing
+DISKIT_DEMO=1 DISKIT_DEMO_EDITOR_TYPE=googleDrive DISKIT_DEMO_EDITOR_STATE=success
+DISKIT_DEMO=1 DISKIT_DEMO_WEB_SERVICE=mobile DISKIT_DEMO_STATE=web-error
 ```
 
-- `KAYOI_DEMO_EDITOR_TYPE` 接受全部 `ConnectionKind.rawValue`，`KAYOI_DEMO_EDITOR_STATE` 接受 `blank/filled/error/testing/success`；`ConnectionEditorModel+Demo` 直接赋本地状态，不启动 Task、provider、保存或授权，测试和成功状态不会被计时器关闭。
+- `DISKIT_DEMO_EDITOR_TYPE` 接受全部 `ConnectionKind.rawValue`，`DISKIT_DEMO_EDITOR_STATE` 接受 `blank/filled/error/testing/success`；`ConnectionEditorModel+Demo` 直接赋本地状态，不启动 Task、provider、保存或授权，测试和成功状态不会被计时器关闭。
 - 网页服务接受 `quark/uc/tianyi/mobile/xunlei/lanzou`；网页状态为 `web-empty/web-loading/web-error/web-validation-error/web-success` 或普通就绪状态。验证失败也已在 WebLoginState 集中设置，不再仅预览可见。
-- 启动时自动开相应演示窗口的接线由应用窗口代理负责；主任务需确认最终 KayoiApp 集成。
+- 启动时自动开相应演示窗口的接线由应用窗口代理负责；主任务需确认最终 DiskitApp 集成。
 - `editorDemoSwitchesAreIgnoredOutsideDemo`、`editorDemoRuntimeSupportsEveryTypeAndStableState`、`editorDemoFixturesNeverStartOperationsOrSave` 已新增，待统一测试。
 - 编辑器根部 `gridDiagnostics("editor")`，类型格与底栏接入网格区域/探针；系统 Form 仍使用系统布局。
 - 新增代码已执行局部 `swiftc -frontend -parse`（退出 0），没有跑全量构建、测试或提交。

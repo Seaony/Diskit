@@ -12,8 +12,8 @@ public struct LocalStorageLocation: StorageLocation {
 
   public init(home: URL = FileManager.default.homeDirectoryForCurrentUser) {
     dataDirectory = home.appending(
-      path: "Library/Application Support/Kayoi", directoryHint: .isDirectory)
-    cacheDirectory = home.appending(path: "Library/Caches/Kayoi", directoryHint: .isDirectory)
+      path: "Library/Application Support/Diskit", directoryHint: .isDirectory)
+    cacheDirectory = home.appending(path: "Library/Caches/Diskit", directoryHint: .isDirectory)
   }
 }
 
@@ -46,7 +46,7 @@ extension SecretStore {
       ? String(reflecting: Self.self) + String(describing: ObjectIdentifier(self as AnyObject))
       : String(reflecting: Self.self)
     return CredentialRefreshLock.location(
-      directory: FileManager.default.temporaryDirectory.appending(path: "Kayoi-CredentialLocks"),
+      directory: FileManager.default.temporaryDirectory.appending(path: "Diskit-CredentialLocks"),
       namespace: namespace, key: key)
   }
 }
@@ -58,7 +58,7 @@ public struct KeychainError: Error, Sendable, LocalizedError {
 
 public struct LoginKeychainStore: SecretStore {
   public let service: String
-  public init(service: String = "com.seaony.Kayoi") { self.service = service }
+  public init(service: String = "com.seaony.Diskit") { self.service = service }
   public func refreshLockLocation(for key: String) -> URL {
     CredentialRefreshLock.location(
       directory: LocalStorageLocation().dataDirectory.appending(path: "CredentialLocks"),

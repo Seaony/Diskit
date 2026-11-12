@@ -31,12 +31,12 @@ struct WebDAVConnectionForm: View {
     EditorTextRow(editor: editor, key: "username", title: L("用户名"), placeholder: L("账户名或邮箱"))
     EditorPasswordRow(editor: editor, title: L("密码"))
     if let preset = WebDAVPreset.all.first(where: { $0.id == editor.webdavPreset }) {
-      Text(preset.instructions).font(.caption).foregroundStyle(KayoiTheme.secondaryText).fixedSize(
+      Text(preset.instructions).font(.caption).foregroundStyle(DiskitTheme.secondaryText).fixedSize(
         horizontal: false, vertical: true)
     }
     if editor.draft.kind == .webdav {
       Label(L("HTTP 会以明文传输密码和文件，请只在可信网络中使用。"), systemImage: "exclamationmark.triangle")
-        .font(.callout).foregroundStyle(KayoiTheme.warning)
+        .font(.callout).foregroundStyle(DiskitTheme.warning)
     }
   }
 }

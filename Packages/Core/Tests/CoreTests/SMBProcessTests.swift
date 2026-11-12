@@ -5,7 +5,7 @@ import Testing
 
 private func localSMBProcess(
   executable: String = "/bin/sh", script: String, password: String = "", capacity: Int = 131_072,
-  timeout: TimeInterval = 2, io: UnsafePointer<kayoi_smb_process_io>? = nil
+  timeout: TimeInterval = 2, io: UnsafePointer<diskit_smb_process_io>? = nil
 ) -> (error: Int32, status: Int32, output: String) {
   let strings = [executable, "-c", script].map { strdup($0)! }
   defer { for value in strings { free(value) } }
@@ -14,10 +14,10 @@ private func localSMBProcess(
   var status: Int32 = -1
   let result = arguments.withUnsafeBufferPointer { pointers in
     if let io {
-      return kayoi_smb_process_with_io(
+      return diskit_smb_process_with_io(
         executable, pointers.baseAddress!, password, &output, capacity, &status, timeout, io)
     }
-    return kayoi_smb_process(
+    return diskit_smb_process(
       executable, pointers.baseAddress!, password, &output, capacity, &status, timeout)
   }
   return (
@@ -55,7 +55,7 @@ private final class BlockedPasswordIO {
 
 @Test func smbProcessDeadlineIncludesBlockedPasswordInput() {
   let state = BlockedPasswordIO()
-  var io = kayoi_smb_process_io(
+  var io = diskit_smb_process_io(
     context: Unmanaged.passUnretained(state).toOpaque(),
     now: { context in
       Unmanaged<BlockedPasswordIO>.fromOpaque(context!).takeUnretainedValue().now

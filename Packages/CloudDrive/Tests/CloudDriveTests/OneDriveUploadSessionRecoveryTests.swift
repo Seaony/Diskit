@@ -76,7 +76,7 @@ private func recoveryProvider(_ http: OneDriveRecoveryHTTP) throws -> OneDrivePr
     accessToken: "local", refreshToken: "local", expiresAt: .distantFuture)), for: "recovery")
   let session = OAuthSession(configuration: OAuthConfiguration(
     clientID: "local", clientSecret: "local", authorizationURL: URL(string: "https://oauth.example.invalid/auth")!,
-    tokenURL: URL(string: "https://oauth.example.invalid/token")!, redirectURI: "kayoi://test", scopes: []),
+    tokenURL: URL(string: "https://oauth.example.invalid/token")!, redirectURI: "diskit://test", scopes: []),
     secretKey: "recovery", secrets: secrets, transport: http)
   return OneDriveProvider(session: session, transport: http, uploadSessionThreshold: 0,
     chunkSize: 327680, recoverySleep: { _ in })

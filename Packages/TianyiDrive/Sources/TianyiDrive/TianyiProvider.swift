@@ -252,7 +252,7 @@ public actor TianyiProvider: RemoteFileProvider {
     }
 
     let source = try await resolve(sourceParent)
-    let temporaryName = ".kayoi-move-" + UUID().uuidString
+    let temporaryName = ".diskit-move-" + UUID().uuidString
     let temporary = TianyiNode(
       id: node.id, name: temporaryName, isDirectory: node.isDirectory, size: node.size,
       modified: node.modified)

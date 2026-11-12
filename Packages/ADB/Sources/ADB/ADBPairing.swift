@@ -58,26 +58,26 @@ final class PairingSPAKE {
   private var processed = false
   let message: Data
   init(password: Data, server: Bool = false) throws {
-    guard !password.isEmpty, let context = kayoi_spake_new(server ? 1 : 0) else {
+    guard !password.isEmpty, let context = diskit_spake_new(server ? 1 : 0) else {
       throw PairingError.invalidPacket
     }
     var output = Data(count: 32)
     var length = 0
     let result = output.withUnsafeMutableBytes { bytes in
       password.withUnsafeBytes { input in
-        kayoi_spake_message(
+        diskit_spake_message(
           context, input.bindMemory(to: UInt8.self).baseAddress, password.count,
           bytes.bindMemory(to: UInt8.self).baseAddress, &length, 32)
       }
     }
     guard result == 1, length == 32 else {
-      kayoi_spake_free(context)
+      diskit_spake_free(context)
       throw PairingError.invalidPacket
     }
     self.context = context
     message = output
   }
-  deinit { kayoi_spake_free(context) }
+  deinit { diskit_spake_free(context) }
   func sharedKey(peer: Data) throws -> Data {
     guard !processed, peer.count == 32 else { throw PairingError.invalidPacket }
     processed = true
@@ -85,7 +85,7 @@ final class PairingSPAKE {
     var length = 0
     let result = output.withUnsafeMutableBytes { bytes in
       peer.withUnsafeBytes { input in
-        kayoi_spake_key(
+        diskit_spake_key(
           context, input.bindMemory(to: UInt8.self).baseAddress, peer.count,
           bytes.bindMemory(to: UInt8.self).baseAddress, &length, 64)
       }

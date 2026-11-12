@@ -8,7 +8,7 @@
 
 - OAuthConfiguration 初始化时，usesPKCE=true 必定清空 clientSecret，防止调用者误配置后在授权码交换或刷新中携带静态 secret。
 - AppModel 和 DevTool 的 OneDrive/Google/Dropbox 都使用空 secret 和 PKCE；project.yml 不再把三家 *_CLIENT_SECRET 写入 Info.plist。App/Validation/示例 xcconfig 删除无效项，没有读取真实 Config/Secrets.xcconfig。
-- GoogleDesktopOAuth 从合法 Google client ID 派生 `com.googleusercontent.apps.IDENTIFIER:/oauth2redirect/google`。旧任意 `kayoi://oauth/google` 不再使用，移除 GOOGLE_REDIRECT_URI 配置。非法/缺失clientID返回空回调，配置校验不通过。
+- GoogleDesktopOAuth 从合法 Google client ID 派生 `com.googleusercontent.apps.IDENTIFIER:/oauth2redirect/google`。旧任意 `diskit://oauth/google` 不再使用，移除 GOOGLE_REDIRECT_URI 配置。非法/缺失clientID返回空回调，配置校验不通过。
 - WebAuthorization 原有 ASWebAuthenticationSession 已从真实 redirect_uri 提取 callbackURLScheme，因此无需端口监听或额外 URL handler。OAuthCallback 继续精确校验 scheme/host/port/path/state，重复code/state不接受。
 - README 更新真实配置要求；不新增依赖、不使用真实账号。
 
@@ -34,7 +34,7 @@
 ## 待用户账号验收
 
 - 三家均用公共/原生客户端配置进行一次授权，再触发过期刷新；确认平台不要求secret。
-- Google使用可用于macOS的OAuth客户端，核对实际反向clientID回调，授权页成功返回App；旧kayoi回调不可继续依赖。
+- Google使用可用于macOS的OAuth客户端，核对实际反向clientID回调，授权页成功返回App；旧diskit回调不可继续依赖。
 - OneDrive原生/公共客户端及Dropbox public clients设置需后台启用；本轮未登录控制台，未读取实际clientID或secret。
 - 在最终构建后的Info.plist只检查三家secret键不存在；不要打印任何其他平台的secret值。
 

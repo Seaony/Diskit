@@ -1,4 +1,4 @@
-# Kayoi 开发说明
+# Diskit 开发说明
 
 macOS 菜单栏连接管理工具。最低 macOS 26.0，Swift 6 严格并发检查。
 实现范围和验收标准见 [PLAN.md](../PLAN.md)，实际结果见 [ACCEPTANCE.md](ACCEPTANCE.md)。
@@ -12,22 +12,22 @@ make gen
 make build
 make test
 make dev-tool SIGN_IDENTITY='Apple Development'
-build/bin/kayoi-dev --help
-open build/DerivedData/Build/Products/Debug/Kayoi.app
+build/bin/diskit-dev --help
+open build/DerivedData/Build/Products/Debug/Diskit.app
 ```
 
 `make build` 构建 Debug；`make format` 使用 Xcode 自带 swift-format。
 工程由 `project.yml` 生成，不提交 `.xcodeproj`、构建缓存或本地密钥配置。
 
-M7 的 `make build` 由 Xcode 为 `project.yml` 中的付费团队自动签名并嵌入描述文件。`make dev-tool` 的签名身份可通过 `SIGN_IDENTITY` 指定。命令行工具只负责把原命令转交给 Kayoi App 执行，不另存凭据，也不改变参数、输出和退出码。默认查找同一构建目录下的 Debug/Release App，再查找已安装的 App；可通过 `KAYOI_APP_PATH` 指定应用包。单元测试使用内存密钥存储，不读写真实钥匙串。
+M7 的 `make build` 由 Xcode 为 `project.yml` 中的付费团队自动签名并嵌入描述文件。`make dev-tool` 的签名身份可通过 `SIGN_IDENTITY` 指定。命令行工具只负责把原命令转交给 Diskit App 执行，不另存凭据，也不改变参数、输出和退出码。默认查找同一构建目录下的 Debug/Release App，再查找已安装的 App；可通过 `DISKIT_APP_PATH` 指定应用包。单元测试使用内存密钥存储，不读写真实钥匙串。
 
-每个进程启动使用存储前，先实际验证 App Group 容器能写入并读回、共享钥匙串能写入并读回。通过后，配置与历史日志使用 App Group `JJJKGPY7T7.com.seaony.Kayoi`，密钥使用 data protection keychain 的共享组 `JJJKGPY7T7.com.seaony.Kayoi.shared`，service 和 account 保持原样。普通 App 启动会复制旧配置、日志和 service 为 `com.seaony.Kayoi` 的全部传统钥匙条目，全部读回核对后才清理旧值；失败显示原因和系统日志入口，本次使用旧存储继续启动，下次再试。迁移完成标记阻止重复搬移。命令行模式不执行迁移，未迁移时使用旧存储；首次使用共享存储前先打开 App。
+每个进程启动使用存储前，先实际验证 App Group 容器能写入并读回、共享钥匙串能写入并读回。通过后，配置与历史日志使用 App Group `JJJKGPY7T7.com.seaony.Diskit`，密钥使用 data protection keychain 的共享组 `JJJKGPY7T7.com.seaony.Diskit.shared`，service 和 account 保持原样。普通 App 启动会复制旧配置、日志和 service 为 `com.seaony.Diskit` 的全部传统钥匙条目，全部读回核对后才清理旧值；失败显示原因和系统日志入口，本次使用旧存储继续启动，下次再试。迁移完成标记阻止重复搬移。命令行模式不执行迁移，未迁移时使用旧存储；首次使用共享存储前先打开 App。
 
-共享存储探测失败的构建继续使用 `~/Library/Application Support/Kayoi/` 和传统登录钥匙串，不迁移。当前 Release 构建仍按原流程移除扩展，不能代替带描述文件的 Debug 完成 M7 验收。正式包如何带上描述文件与扩展另行决定。若要同时使用旧版 App 和新 Debug，应先保留旧位置的数据副本；两个存储位置不做同步。
+共享存储探测失败的构建继续使用 `~/Library/Application Support/Diskit/` 和传统登录钥匙串，不迁移。当前 Release 构建仍按原流程移除扩展，不能代替带描述文件的 Debug 完成 M7 验收。正式包如何带上描述文件与扩展另行决定。若要同时使用旧版 App 和新 Debug，应先保留旧位置的数据副本；两个存储位置不做同步。
 
 需要开放平台凭据时，将 `Config/Secrets.example.xcconfig` 复制为 `Config/Secrets.xcconfig` 后填写；后者被 Git 忽略。目前实现菜单栏连接管理、系统 SMB/WebDAV/NFS、安卓 USB 与无线调试、GR IV 和通用 USB 相机、七种 S3 兼容对象存储、阿里云盘、六个官方网盘、夸克/UC、天翼、移动、迅雷、PikPak 和蓝奏云。真实账号与外部设备仍按验收记录逐项验证。
 
-SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Provider 目前通过连接测试及 `kayoi-dev` 验证。FSKit 正按 [M7 目标](GOAL-M7.md) 接入，进度见 [M7 报告](M7-REPORT.md)；GR Wi-Fi 不在本轮范围。
+SMB、HTTP/HTTPS WebDAV 和 NFS 使用 macOS NetFS 挂载到 Finder；其他 Provider 目前通过连接测试及 `diskit-dev` 验证。FSKit 正按 [M7 目标](GOAL-M7.md) 接入，进度见 [M7 报告](M7-REPORT.md)；GR Wi-Fi 不在本轮范围。
 
 ## SMB 共享
 
@@ -47,7 +47,7 @@ WebDAV 支持 HTTP、HTTPS 和常见服务预设，使用完整服务器 URL、�
 
 手机开启 USB 调试后，App 发现设备并支持测试连接与保存。阶段一按钮是“测试连接”，不挂载 Finder。首次授权最多等待 60 秒；设置可查看指纹并重新生成密钥（需手机重新授权）。
 
-`build/bin/kayoi-dev devices` 列出发现设备。先在 App 保存连接，再把 connections.json 中的 UUID 传给 `ls/stat/get/put/mkdir/rm/mv/df/cat`，具体用法见 `--help`。get/put 支持递归目录，传输进度输出到 stderr。ADB 根路径映射 /sdcard；存在外置卡时根列表包含“SD 卡”。
+`build/bin/diskit-dev devices` 列出发现设备。先在 App 保存连接，再把 connections.json 中的 UUID 传给 `ls/stat/get/put/mkdir/rm/mv/df/cat`，具体用法见 `--help`。get/put 支持递归目录，传输进度输出到 stderr。ADB 根路径映射 /sdcard；存在外置卡时根列表包含“SD 卡”。
 
 没有依赖外部 adb 可执行文件。与官方 adb 不能同时占用手机接口；仅在手动对照验收时交替使用。BoringSSL 版本与 AOSP 来源见第三方说明，测试公钥不含私钥。真实手机、4 GB 哈希和 USB 3 性能尚待验收。
 
@@ -55,7 +55,7 @@ WebDAV 支持 HTTP、HTTPS 和常见服务预设，使用完整服务器 URL、�
 
 Android 11+ 手机打开无线调试和“使用配对码配对设备”。在添加窗口选择安卓 Wi-Fi、配对服务和六位码；已配对的连接可留空配对码直接测试。GUID 保存到 connections.json，端口不保存，每次按 GUID 重新发现。两端同机 USB 可用时优先 USB，选择结果记入 ADBTransport 日志。
 
-`kayoi-dev pair host:port 六位码` 只配对并打印 GUID；然后在 App 从已发现的连接服务添加并测试保存。Wi-Fi 文件命令和 USB 相同，使用各自连接 UUID。真实配对、端口切换和传输验收尚待用户完成。
+`diskit-dev pair host:port 六位码` 只配对并打印 GUID；然后在 App 从已发现的连接服务添加并测试保存。Wi-Fi 文件命令和 USB 相同，使用各自连接 UUID。真实配对、端口切换和传输验收尚待用户完成。
 
 ## GR IV USB
 
@@ -83,7 +83,7 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 
 添加时通过内嵌网页扫码，也可手动粘贴 Cookie；验证账号和容量成功后才存入登录钥匙串 `<UUID>.cookie`。非官方接口可能随时失效，实际账号字段、扫码与大文件传输仍待验收。
 
-同名上传直接报错，旧文件不改动。文件操作使用 kayoi-dev；Cookie 失效后需重新登录。不要将 Cookie 写进配置或提交到 Git。
+同名上传直接报错，旧文件不改动。文件操作使用 diskit-dev；Cookie 失效后需重新登录。不要将 Cookie 写进配置或提交到 Git。
 
 ## 官方开放平台网盘
 
@@ -94,7 +94,7 @@ Mac 上发现名可能是“RICOH GR”，连接后会核对 DeviceInfo 型号�
 - OneDrive 大文件使用上传会话；Google Drive 小于或等于 5 MiB 使用 multipart，大文件使用 resumable；Dropbox 大文件使用 upload session。
 - 六个平台遇到同名文件都报错，不改动旧文件。
 
-OneDrive、Google Drive、Dropbox 使用公共客户端 PKCE，只需配置 client ID，不携带 client secret。OneDrive 和 Dropbox 的回调须与平台登记一致；Google 按其 macOS 客户端约定，将 `IDENTIFIER.apps.googleusercontent.com` 派生为 `com.googleusercontent.apps.IDENTIFIER:/oauth2redirect/google`，不再读取旧的 `GOOGLE_REDIRECT_URI`。实际 Google 客户端类型及回调兼容性需用账号验收。其他平台按要求配置 client ID、client secret 和回调地址，百度上传还需要 App ID；桌面应用不能保密内置 secret。凭据缺失时界面只说明“此网盘尚未在 Kayoi 中启用”，不会显示开发字段。真实授权、令牌刷新、网页端结果和回收站仍待用户验收。
+OneDrive、Google Drive、Dropbox 使用公共客户端 PKCE，只需配置 client ID，不携带 client secret。OneDrive 和 Dropbox 的回调须与平台登记一致；Google 按其 macOS 客户端约定，将 `IDENTIFIER.apps.googleusercontent.com` 派生为 `com.googleusercontent.apps.IDENTIFIER:/oauth2redirect/google`，不再读取旧的 `GOOGLE_REDIRECT_URI`。实际 Google 客户端类型及回调兼容性需用账号验收。其他平台按要求配置 client ID、client secret 和回调地址，百度上传还需要 App ID；桌面应用不能保密内置 secret。凭据缺失时界面只说明“此网盘尚未在 Diskit 中启用”，不会显示开发字段。真实授权、令牌刷新、网页端结果和回收站仍待用户验收。
 
 ## 实验性网页网盘
 
@@ -104,16 +104,16 @@ OneDrive、Google Drive、Dropbox 使用公共客户端 PKCE，只需配置 clie
 
 ## 隔离验收构建
 
-`make gen`、`make test`、`make release` 默认使用 `Config/Validation.xcconfig`，不加载本机密钥文件。单元测试的密钥存储只在内存中。真实账号验收由用户另行运行 `make release KAYOI_BUILD_CONFIG=Config/App.xcconfig`；该入口会读取用户本地凭据，不用于自动验收。直接运行 XcodeGen 时也需显式设置 `KAYOI_BUILD_CONFIG`。
+`make gen`、`make test`、`make release` 默认使用 `Config/Validation.xcconfig`，不加载本机密钥文件。单元测试的密钥存储只在内存中。真实账号验收由用户另行运行 `make release DISKIT_BUILD_CONFIG=Config/App.xcconfig`；该入口会读取用户本地凭据，不用于自动验收。直接运行 XcodeGen 时也需显式设置 `DISKIT_BUILD_CONFIG`。
 
 ## 演示模式
 
-只做本地界面检查时，用 `KAYOI_DEMO=1 KAYOI_PANEL_WINDOW=1 build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi`。该路径使用随机临时配置目录、独立设置域和内存密钥，不启动设备发现、局域网浏览、真实通知与真实挂载；测试、保存、配对使用假操作。模拟共享密码填写 `error` 可触发认证失败。
+只做本地界面检查时，用 `DISKIT_DEMO=1 DISKIT_PANEL_WINDOW=1 build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit`。该路径使用随机临时配置目录、独立设置域和内存密钥，不启动设备发现、局域网浏览、真实通知与真实挂载；测试、保存、配对使用假操作。模拟共享密码填写 `error` 可触发认证失败。
 
-`KAYOI_DEMO_STATE` 支持 `mixed`（默认 20 个位置）、`empty`、`discovered`、`disconnected`、`unavailable`、`connecting`、`authorization`、`tested`、`mounted`、`ejecting`、`failed`、`login`；`types` 展示全部底层类型。20 行无法同时容纳全部类型，因此完整类型覆盖用 `types` 场景补充。`KAYOI_DEMO_APPEARANCE=light|dark` 只切换演示进程外观，不改系统设置。`KAYOI_PSEUDO_LOCALE=1` 在演示模式下强制英文并扩展约 40% 长度，用于检查长文案布局；不改变系统语言。实际截图结果记录在验收报告中。
+`DISKIT_DEMO_STATE` 支持 `mixed`（默认 20 个位置）、`empty`、`discovered`、`disconnected`、`unavailable`、`connecting`、`authorization`、`tested`、`mounted`、`ejecting`、`failed`、`login`；`types` 展示全部底层类型。20 行无法同时容纳全部类型，因此完整类型覆盖用 `types` 场景补充。`DISKIT_DEMO_APPEARANCE=light|dark` 只切换演示进程外观，不改系统设置。`DISKIT_PSEUDO_LOCALE=1` 在演示模式下强制英文并扩展约 40% 长度，用于检查长文案布局；不改变系统语言。实际截图结果记录在验收报告中。
 
-固定表单验收可设置 `KAYOI_DEMO_EDITOR_TYPE=<ConnectionKind 原始值>`、`KAYOI_DEMO_EDITOR_STATE=blank|filled|error|testing|success`，应用会打开对应演示窗口。设置页可用 `KAYOI_DEMO_SETTINGS_TAB` 选择。设置 `KAYOI_LAYOUT_DIR=<绝对目录>` 会导出演示窗口的布局测量，`APP_GRID=1` 显示辅助网格；这些开关在正式模式下忽略。运行 `tools/grid-lint.sh` 检查网格常量，再用 `swift tools/check-layout.swift <布局 JSON 路径>` 检查实际布局。
+固定表单验收可设置 `DISKIT_DEMO_EDITOR_TYPE=<ConnectionKind 原始值>`、`DISKIT_DEMO_EDITOR_STATE=blank|filled|error|testing|success`，应用会打开对应演示窗口。设置页可用 `DISKIT_DEMO_SETTINGS_TAB` 选择。设置 `DISKIT_LAYOUT_DIR=<绝对目录>` 会导出演示窗口的布局测量，`APP_GRID=1` 显示辅助网格；这些开关在正式模式下忽略。运行 `tools/grid-lint.sh` 检查网格常量，再用 `swift tools/check-layout.swift <布局 JSON 路径>` 检查实际布局。
 
 ## README 产品图
 
-先 `make build`，再运行 `tools/product-shots.sh`。脚本用演示模式的 `showcase` 场景离屏渲染真实面板（`KAYOI_PRODUCT_SHOT=<绝对路径>` 写出 PNG 后退出），再由 `tools/product-shot.swift` 合成深浅色、中英文 4 张图，写入 `docs/assets/product-*.jpg`。
+先 `make build`，再运行 `tools/product-shots.sh`。脚本用演示模式的 `showcase` 场景离屏渲染真实面板（`DISKIT_PRODUCT_SHOT=<绝对路径>` 写出 PNG 后退出），再由 `tools/product-shot.swift` 合成深浅色、中英文 4 张图，写入 `docs/assets/product-*.jpg`。

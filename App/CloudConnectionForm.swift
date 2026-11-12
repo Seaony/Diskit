@@ -8,7 +8,7 @@ struct CloudConnectionForm: View {
   var body: some View {
     if editor.draft.kind.isExperimental {
       Label(L("这种连接方式未经服务商官方支持，可能随时失效。"), systemImage: "exclamationmark.triangle")
-        .font(.callout).foregroundStyle(KayoiTheme.warning)
+        .font(.callout).foregroundStyle(DiskitTheme.warning)
     }
     if editor.draft.kind == .lanzou {
       Picker(L("访问方式"), selection: editor.parameter("authMode")) {
@@ -21,7 +21,7 @@ struct CloudConnectionForm: View {
       EditorTextRow(editor: editor, key: "shareURL", title: L("分享链接"), placeholder: "https://…")
       EditorPasswordRow(editor: editor, title: L("提取码"), placeholder: L("没有提取码时留空"))
       Text(L("分享链接以只读方式打开。清空提取码后保存，会删除之前保存的提取码。")).font(.caption).foregroundStyle(
-        KayoiTheme.secondaryText)
+        DiskitTheme.secondaryText)
     } else {
       if ready {
         HStack(spacing: Space.md) {
@@ -38,15 +38,15 @@ struct CloudConnectionForm: View {
               Image(systemName: "person.crop.circle.fill").resizable()
             }
           }.frame(width: 40, height: 40).clipShape(Circle()).foregroundStyle(
-            KayoiTheme.secondaryText
+            DiskitTheme.secondaryText
           ).accessibilityHidden(true)
           VStack(alignment: .leading, spacing: Space.xs) {
             Text(editor.draft.params["nickname"] ?? L("已登录")).font(.headline)
             if let space = editor.accountSpace {
               Text(EditorAccountSummary.text(space)).font(.caption).foregroundStyle(
-                KayoiTheme.secondaryText)
+                DiskitTheme.secondaryText)
             } else {
-              Text(L("容量暂不可用")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+              Text(L("容量暂不可用")).font(.caption).foregroundStyle(DiskitTheme.secondaryText)
             }
           }
           Spacer()
@@ -61,7 +61,7 @@ struct CloudConnectionForm: View {
           EditorPasswordRow(editor: editor, title: L("密码"))
         }
         HStack {
-          Text(L("登录后即可测试连接并保存位置。")).font(.callout).foregroundStyle(KayoiTheme.secondaryText)
+          Text(L("登录后即可测试连接并保存位置。")).font(.callout).foregroundStyle(DiskitTheme.secondaryText)
           Spacer()
           Button(
             editor.draft.kind == .pikPak
@@ -74,12 +74,12 @@ struct CloudConnectionForm: View {
       }
       if editor.webService != nil && !ready {
         // 展开后的内容各占一行，和其他行一样排
-        KayoiDisclosureButton(title: L("其他登录方式"), isExpanded: $alternatives)
+        DiskitDisclosureButton(title: L("其他登录方式"), isExpanded: $alternatives)
         if alternatives {
           Toggle(L("手动粘贴登录信息"), isOn: $editor.manualLogin)
           if editor.manualLogin {
             Text(L("可以从浏览器复制当前网盘的登录信息并粘贴到这里。")).font(.caption).foregroundStyle(
-              KayoiTheme.secondaryText)
+              DiskitTheme.secondaryText)
             if editor.draft.kind == .mobileCloud {
               EditorTextRow(
                 editor: editor, key: "phone", title: L("手机号"), placeholder: L("登录账号的手机号"))

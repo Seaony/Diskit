@@ -40,7 +40,7 @@ final class HTTPDataStream: @unchecked Sendable {
   }
 
   private let state = Mutex(State())
-  private let control = DispatchQueue(label: "com.seaony.Kayoi.http-stream-control")
+  private let control = DispatchQueue(label: "com.seaony.Diskit.http-stream-control")
   private let clock: DeadlineClock
 
   init(clock: DeadlineClock = .continuous) { self.clock = clock }

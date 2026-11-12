@@ -6,8 +6,8 @@ import SwiftUI
   static func write(model: AppModel, to path: String) async {
     let view = PanelView(model: model)
       .defaultAppStorage(model.preferences)
-      .background(KayoiTheme.background)
-      .tint(KayoiTheme.accent)
+      .background(DiskitTheme.background)
+      .tint(DiskitTheme.accent)
     let hosting = NSHostingView(rootView: view)
     let window = NSWindow(
       contentRect: NSRect(x: -20_000, y: -20_000, width: 380, height: 560),

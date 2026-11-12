@@ -1,13 +1,13 @@
 # 演示性能测量
 
-仅使用签名后的稳定 Release，启动时设置 `KAYOI_DEMO=1`。先完成构建，再测量；测量期间不运行构建、测试或其他采样工具。输出目录须提前存在。
+仅使用签名后的稳定 Release，启动时设置 `DISKIT_DEMO=1`。先完成构建，再测量；测量期间不运行构建、测试或其他采样工具。输出目录须提前存在。
 
 ## 软件绘制就绪
 
-显式设置 `KAYOI_PERF_OUTPUT=/绝对路径/launch.json` 启用探针；缺少演示标志、缺少路径或相对路径均不启用，也不写文件。
+显式设置 `DISKIT_PERF_OUTPUT=/绝对路径/launch.json` 启用探针；缺少演示标志、缺少路径或相对路径均不启用，也不写文件。
 
 ```sh
-KAYOI_DEMO=1 KAYOI_PANEL_WINDOW=1 KAYOI_PERF_OUTPUT="$PWD/build/Validation/launch.json" build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi
+DISKIT_DEMO=1 DISKIT_PANEL_WINDOW=1 DISKIT_PERF_OUTPUT="$PWD/build/Validation/launch.json" build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit
 ```
 
 - `processStartTick` 来自内核 `proc_pid_rusage(RUSAGE_INFO_V2).ri_proc_start_abstime`，事件使用 `mach_absolute_time()`；通过系统 `mach_timebase_info` 转换毫秒。起点包含进程初始化，非视图初始化或探针创建时间。

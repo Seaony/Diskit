@@ -1,7 +1,7 @@
 import AppKit
 
 // 设置里的界面语言。写进本 App 的 AppleLanguages，和系统“按 App 设置语言”是同一个设置；
-// 文案在启动时加载，所以重新打开 Kayoi 后生效
+// 文案在启动时加载，所以重新打开 Diskit 后生效
 enum AppLanguage: String, CaseIterable, Identifiable {
   case system, chinese = "zh-Hans", english = "en"
   private static let key = "AppleLanguages"
@@ -44,7 +44,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     }
   }
 
-  // 等当前进程完全退出后再打开，避免两个 Kayoi 同时在菜单栏
+  // 等当前进程完全退出后再打开，避免两个 Diskit 同时在菜单栏
   @MainActor static func relaunch() {
     let process = Process()
     process.executableURL = URL(filePath: "/bin/sh")

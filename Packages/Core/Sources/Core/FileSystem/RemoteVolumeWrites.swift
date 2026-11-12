@@ -128,7 +128,7 @@ extension RemoteVolumeBackend {
       }
       if exists && !replacesExisting {
         let temporary = try path.parent.appending(
-          ".\(path.basename).kayoi-upload-\(UUID().uuidString)")
+          ".\(path.basename).diskit-upload-\(UUID().uuidString)")
         hiddenUploads.insert(temporary)
         logger.info(
           "连接 \(self.connectionID.uuidString, privacy: .public) 开始替换，远端暂存 \(temporary.value, privacy: .public)"

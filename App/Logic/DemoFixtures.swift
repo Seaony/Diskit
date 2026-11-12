@@ -56,11 +56,11 @@ struct DemoFixtures {
   private static func showcase() -> ([Connection], [UUID: ConnectionState]) {
     let gb: Int64 = 1_000_000_000
     let items: [(ConnectionKind, String, String, ConnectionState)] = [
-      (.smb, "Synology NAS", "blue", .mounted(MountedShare(url: URL(filePath: "/tmp/KayoiDemo/nas"), availableBytes: 2_400 * gb))),
+      (.smb, "Synology NAS", "blue", .mounted(MountedShare(url: URL(filePath: "/tmp/DiskitDemo/nas"), availableBytes: 2_400 * gb))),
       (.androidUSB, "Pixel 9", "green", .tested(SpaceInfo(total: 256 * gb, used: 142 * gb))),
       (.ricohGR, "GR IV", "orange", .tested(SpaceInfo(total: 128 * gb, used: 37 * gb))),
       (.aliyunDrive, ConnectionKind.aliyunDrive.title, "purple", .tested(SpaceInfo(total: 2_000 * gb, used: 860 * gb))),
-      (.webdav, "Nextcloud", "teal", .mounted(MountedShare(url: URL(filePath: "/tmp/KayoiDemo/cloud"), availableBytes: 512 * gb))),
+      (.webdav, "Nextcloud", "teal", .mounted(MountedShare(url: URL(filePath: "/tmp/DiskitDemo/cloud"), availableBytes: 512 * gb))),
       (.oneDrive, ConnectionKind.oneDrive.title, "blue", .tested(SpaceInfo(total: 1_000 * gb, used: 318 * gb))),
       (.googleDrive, ConnectionKind.googleDrive.title, "green", .disconnected),
       (.cloudflareR2, ConnectionKind.cloudflareR2.title, "orange", .tested(SpaceInfo(total: nil, used: nil))),
@@ -87,7 +87,7 @@ struct DemoFixtures {
     case "tested": .tested(SpaceInfo(total: 256_000_000_000, used: 136_000_000_000))
     case "mounted":
       .mounted(
-        MountedShare(url: URL(filePath: "/tmp/KayoiDemo/\(id)"), availableBytes: 120_000_000_000))
+        MountedShare(url: URL(filePath: "/tmp/DiskitDemo/\(id)"), availableBytes: 120_000_000_000))
     case "ejecting": .ejecting
     case "failed": .failed(HumanError.remote(.posix(ETIMEDOUT), kind: kind))
     case "login": .needsLogin

@@ -37,7 +37,7 @@ private func uploadFixture(_ transport: DropboxRecoveryTransport) throws -> (Dro
   let configuration = OAuthConfiguration(
     clientID: "fixture", clientSecret: "",
     authorizationURL: URL(string: "https://example.invalid/auth")!,
-    tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://fixture",
+    tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://fixture",
     scopes: [])
   let provider = DropboxProvider(
     session: OAuthSession(

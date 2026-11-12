@@ -30,7 +30,7 @@ import OSLog
     var shares: @Sendable (String, String) throws -> (String, Int32) = { server, password in
       var output = [CChar](repeating: 0, count: 1_048_576)
       var status: Int32 = 0
-      let result = kayoi_smb_shares(
+      let result = diskit_smb_shares(
         server, password, &output, output.count, &status, RemoteTimeout.deviceRequest)
       guard result == 0 else { throw ConnectionError.status(result) }
       return (

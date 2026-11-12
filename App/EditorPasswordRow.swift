@@ -23,14 +23,14 @@ struct EditorPasswordRow: View {
             editor.passwordVisible.toggle()
           } label: {
             Image(systemName: editor.passwordVisible ? "eye.slash" : "eye")
-              .foregroundStyle(KayoiTheme.secondaryText)
+              .foregroundStyle(DiskitTheme.secondaryText)
           }.buttonStyle(.plain).pointerStyle(.link)
             .help(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
             .accessibilityLabel(editor.passwordVisible ? L("隐藏密码") : L("显示密码"))
         }
-        .kayoiField(focused: focused)
+        .diskitField(focused: focused)
         if let error = editor.fieldError("password") {
-          Text(error).font(.caption).foregroundStyle(KayoiTheme.error)
+          Text(error).font(.caption).foregroundStyle(DiskitTheme.error)
         }
       }
       .onChange(of: focused) { was, now in

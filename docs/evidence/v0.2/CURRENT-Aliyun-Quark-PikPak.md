@@ -19,7 +19,7 @@
 
 ## 夸克 / UC
 
-详单 /tmp/kayoi-quark-audit.md；14定向测试通过 docs/evidence/v0.2/CURRENT-quark-audit-focused.log，另新增pending状态0/1→2、目标最终名冲突两个测试尚未运行，留统一验收。
+详单 /tmp/diskit-quark-audit.md；14定向测试通过 docs/evidence/v0.2/CURRENT-quark-audit-focused.log，另新增pending状态0/1→2、目标最终名冲突两个测试尚未运行，留统一验收。
 
 - QuarkProvider.swift:11、359：代数+目录列表ID，修改/断开后旧回包不回填；按fid/size/updatedAt缓存下载URL，401/403重取，改变/断开清理。
 - :118、134：format_type依据远端目标文件名；CryptoKit分块摘要移后台，取消继续传递。

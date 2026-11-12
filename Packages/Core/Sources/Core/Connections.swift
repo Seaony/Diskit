@@ -74,7 +74,7 @@ public enum ConnectionError: Error, Equatable, LocalizedError {
   public var errorDescription: String? {
     switch self {
     case .invalidFields: return L("请检查带星号的必填项")
-    case .unsupportedVersion: return L("配置来自更新版本，请升级 Kayoi")
+    case .unsupportedVersion: return L("配置来自更新版本，请升级 Diskit")
     case .authentication: return L("用户名或密码错误")
     case .timeout: return L("连接超时，请检查主机地址和网络")
     case .missingShare: return L("找不到该共享，请检查共享名和访问权限")

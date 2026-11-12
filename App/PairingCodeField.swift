@@ -27,7 +27,7 @@ struct PairingCodeField: View {
         )
         .font(.body.monospacedDigit()).multilineTextAlignment(.center)
         .focused($focused, equals: index)
-        .kayoiField(focused: focused == index, horizontalPadding: 0)
+        .diskitField(focused: focused == index, horizontalPadding: 0)
         .frame(width: 32)
         .textContentType(.oneTimeCode)
         .accessibilityLabel(LF("配对码第 %lld 位", Int64(index + 1)))

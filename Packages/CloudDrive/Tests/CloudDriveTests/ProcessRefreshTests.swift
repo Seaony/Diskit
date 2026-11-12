@@ -93,15 +93,15 @@ private struct ProcessRefreshHTTP: HTTPTransport {
 
 @Test func processesCoordinateOAuthRefresh() async throws {
   let environment = ProcessInfo.processInfo.environment
-  if let path = environment["KAYOI_REFRESH_FIXTURE_DIRECTORY"],
-    let role = environment["KAYOI_REFRESH_FIXTURE_ROLE"]
+  if let path = environment["DISKIT_REFRESH_FIXTURE_DIRECTORY"],
+    let role = environment["DISKIT_REFRESH_FIXTURE_ROLE"]
   {
     let directory = URL(filePath: path)
     let session = OAuthSession(
       configuration: OAuthConfiguration(
         clientID: "fixture", clientSecret: "fixture",
         authorizationURL: URL(string: "https://refresh.invalid/authorize")!,
-        tokenURL: URL(string: "https://refresh.invalid/token")!, redirectURI: "kayoi://fixture",
+        tokenURL: URL(string: "https://refresh.invalid/token")!, redirectURI: "diskit://fixture",
         scopes: []),
       secretKey: "account", secrets: ProcessSecrets(directory: directory, role: role),
       transport: ProcessRefreshHTTP(directory: directory))
@@ -142,8 +142,8 @@ private struct ProcessRefreshHTTP: HTTPTransport {
       "swift-testing",
     ]
     var childEnvironment = environment
-    childEnvironment["KAYOI_REFRESH_FIXTURE_DIRECTORY"] = directory.path
-    childEnvironment["KAYOI_REFRESH_FIXTURE_ROLE"] = role
+    childEnvironment["DISKIT_REFRESH_FIXTURE_DIRECTORY"] = directory.path
+    childEnvironment["DISKIT_REFRESH_FIXTURE_ROLE"] = role
     child.environment = childEnvironment
     let logURL = directory.appending(path: role + ".log")
     try Data().write(to: logURL)

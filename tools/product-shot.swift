@@ -30,7 +30,7 @@ struct Canvas: View {
   private let size = CGSize(width: 1040, height: 640)
   private let screen = CGRect(x: 470, y: 52, width: 528, height: 536)
   private var ink: Color { dark ? .white : Color(red: 0.07, green: 0.09, blue: 0.14) }
-  // Kayoi 的强调色
+  // Diskit 的强调色
   private let accent = Color(red: 0x2A / 255, green: 0x72 / 255, blue: 0xE5 / 255)
 
   var body: some View {
@@ -71,7 +71,7 @@ struct Canvas: View {
         // 图标自带圆角和投影
         Image(nsImage: icon).resizable().frame(width: 44, height: 44)
           .padding(-4)
-        Text("Kayoi").font(.system(size: 22, weight: .bold, design: .rounded)).foregroundStyle(ink)
+        Text("Diskit").font(.system(size: 22, weight: .bold, design: .rounded)).foregroundStyle(ink)
       }
       .padding(.bottom, 26)
       Text(english ? "Every location.\nOne menu bar." : "手机、共享、网盘，\n都在菜单栏。")
@@ -88,7 +88,7 @@ struct Canvas: View {
     }
   }
 
-  // 模拟一块屏幕：面板从菜单栏的 Kayoi 图标下弹出，背后是 Finder
+  // 模拟一块屏幕：面板从菜单栏的 Diskit 图标下弹出，背后是 Finder
   private var screenView: some View {
     ZStack(alignment: .topLeading) {
       RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -118,7 +118,7 @@ struct Canvas: View {
     .shadow(color: .black.opacity(dark ? 0.5 : 0.14), radius: 40, y: 20)
   }
 
-  // 屏幕顶部的菜单栏，只是装饰；Kayoi 图标处于按下状态
+  // 屏幕顶部的菜单栏，只是装饰；Diskit 图标处于按下状态
   private var menuBar: some View {
     HStack(spacing: 14) {
       Image(systemName: "apple.logo").font(.system(size: 12, weight: .semibold))

@@ -2,13 +2,13 @@
 􀢄  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait() recorded an issue at OAuthSessionTests.swift:523:3: Expectation failed: try await secondTask.value == "new"
 􀢄  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait() recorded an issue at OAuthSessionTests.swift:524:3: Expectation failed: await transport.refreshes == 1
 􀢄  Test run with 1 test in 0 suites failed after 0.002 seconds with 2 issues.
-修复后：kayoi-lock-core.log 对应包全量测试；退出 0。
+修复后：diskit-lock-core.log 对应包全量测试；退出 0。
 􁁛  Test credentialRefreshLockRejectsSymlink() passed after 0.001 seconds.
 􁁛  Test credentialRefreshLockIdentityMatchesStorageScope() passed after 0.002 seconds.
 􁁛  Test credentialRefreshLockWaitCanBeCancelled() passed after 0.463 seconds.
 􁁛  Test credentialRefreshLockExcludesOtherProcessesAndReleases() passed after 0.485 seconds.
 􁁛  Test run with 40 tests in 0 suites passed after 0.486 seconds.
-修复后：kayoi-lock-after.log 对应包全量测试；退出 0。
+修复后：diskit-lock-after.log 对应包全量测试；退出 0。
 􁁛  Test separateOAuthSessionsReuseRefreshCompletedWhileTheyWait(force:) with 2 test cases passed after 0.018 seconds.
 􁁛  Test tenDelayedUnauthorizedRequestsShareOneRefresh(_:separateSessions:) with 4 test cases passed after 0.130 seconds.
 􁁛  Test run with 58 tests in 0 suites passed after 1.068 seconds.

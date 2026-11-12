@@ -9,7 +9,7 @@ struct EditorEmptyState: View {
     Label {
       VStack(alignment: .leading, spacing: Space.xs) {
         Text(title).font(.headline)
-        Text(detail).font(.callout).foregroundStyle(KayoiTheme.secondaryText).fixedSize(
+        Text(detail).font(.callout).foregroundStyle(DiskitTheme.secondaryText).fixedSize(
           horizontal: false, vertical: true)
       }
     } icon: {

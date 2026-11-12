@@ -45,7 +45,7 @@ public struct RuntimeStorage: Sendable {
     sharedLocation: () throws -> any StorageLocation, sharedSecrets: any SecretStore,
     legacyLocation: any StorageLocation, legacySecrets: any SecretStore
   ) -> RuntimeStorage {
-    let logger = Logger(subsystem: "com.seaony.Kayoi", category: "storage")
+    let logger = Logger(subsystem: "com.seaony.Diskit", category: "storage")
     do {
       let location = try sharedLocation()
       let identifier = UUID().uuidString

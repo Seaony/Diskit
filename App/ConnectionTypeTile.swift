@@ -20,9 +20,9 @@ struct ConnectionTypeTile: View {
       TypeIcon(kind: kind, size: 30)
       VStack(spacing: 2) { // grid: ok 名字和说明贴近
         Text(title ?? kind.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
-          .foregroundStyle(KayoiTheme.primaryText)
+          .foregroundStyle(DiskitTheme.primaryText)
         Text(subtitle ?? defaultSubtitle).font(.system(size: 10)).lineLimit(1)
-          .foregroundStyle(KayoiTheme.secondaryText)
+          .foregroundStyle(DiskitTheme.secondaryText)
       }
     }
     .padding(.horizontal, 10) // grid: ok 设计稿格子左右 10

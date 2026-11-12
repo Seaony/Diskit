@@ -34,7 +34,7 @@
 ## 静态证据
 
 2026-11-04 最终命令 `git diff --check` 无输出、退出0。
-扫描 `rg -n 'Task\.sleep|Thread\.sleep|usleep\(|Date\(\)|ContinuousClock\.now|TimeZone\.current|Calendar\.current|timeIntervalSinceNow' Packages/*/Tests Tests/KayoiTests` 零匹配。
+扫描 `rg -n 'Task\.sleep|Thread\.sleep|usleep\(|Date\(\)|ContinuousClock\.now|TimeZone\.current|Calendar\.current|timeIntervalSinceNow' Packages/*/Tests Tests/DiskitTests` 零匹配。
 扫描是补充证据，不代替逐文件审查或最终运行。
 
 ## 明确边界

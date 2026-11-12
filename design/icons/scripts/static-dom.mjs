@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
-const bundled = process.env.KAYOI_NODE_MODULES || path.join(os.homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules');
+const bundled = process.env.DISKIT_NODE_MODULES || path.join(os.homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules');
 const require = createRequire(path.join(bundled, 'package.json'));
 const xml = require('xml-js');
 export const sharp = require('sharp');
@@ -52,8 +52,8 @@ export function createRenderer(root) {
     // CoreSVG 不支持 feMerge，用相同顺序的 over 合成保留投影。
     for(const filter of svg.querySelectorAll('filter')) {
       if(!filter.querySelector('feMerge')) continue;
-      filter.querySelector('[data-sh]').setAttribute('result','kayoi-shadow');
-      filter.children=filter.children.map(child=>child.tagName==='feMerge'?new Element('feComposite',{in:'SourceGraphic',in2:'kayoi-shadow',operator:'over'}):child);
+      filter.querySelector('[data-sh]').setAttribute('result','diskit-shadow');
+      filter.children=filter.children.map(child=>child.tagName==='feMerge'?new Element('feComposite',{in:'SourceGraphic',in2:'diskit-shadow',operator:'over'}):child);
     }
     for(const el of svg.querySelectorAll('.ol, .ln')) {
       const outline=(el.attrs.class || '').split(' ').includes('ol');
@@ -63,7 +63,7 @@ export function createRenderer(root) {
     for(const el of svg.querySelectorAll('*')) for(const {name} of el.attributes) if(name.startsWith('data-'))el.removeAttribute(name);
     const side=31+pad*2;
     svg.removeAttribute('aria-hidden');svg.setAttribute('xmlns','http://www.w3.org/2000/svg');svg.setAttribute('viewBox',`${15.5-side/2} ${12.5-side/2} ${side} ${side}`);svg.setAttribute('width',size);svg.setAttribute('height',size);
-    const prefix=`kayoi-${name}-`;
+    const prefix=`diskit-${name}-`;
     return svg.outerHTML.replace(/(id="|url\(#)([^"\)]+)/g,(_,p,id)=>p+prefix+id)+'\n';
   };
 }

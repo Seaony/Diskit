@@ -20,7 +20,7 @@ struct ChoiceButtons<Value: Hashable>: View {
       }
     }
     .padding(3) // grid: ok 外框和段之间留 3
-    .background(KayoiTheme.controlFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // grid: ok 外框圆角 = 段圆角 7 + 间隙 3
+    .background(DiskitTheme.controlFill, in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // grid: ok 外框圆角 = 段圆角 7 + 间隙 3
   }
 }
 
@@ -41,14 +41,14 @@ private struct ChoiceSegment: View {
         Text(title)
       }
         .font(.system(size: 12.5, weight: .medium))
-        .foregroundStyle(selected ? KayoiTheme.actionText : KayoiTheme.primaryText)
+        .foregroundStyle(selected ? DiskitTheme.actionText : DiskitTheme.primaryText)
         .padding(.horizontal, 14) // grid: ok 和按钮左右 14 一致
         .frame(height: 28) // grid: ok 和按钮同高
         .background {
           if selected {
-            shape.fill(KayoiTheme.accent).matchedGeometryEffect(id: "selected", in: space)
+            shape.fill(DiskitTheme.accent).matchedGeometryEffect(id: "selected", in: space)
           } else if hovering {
-            shape.fill(KayoiTheme.primaryText.opacity(0.06))
+            shape.fill(DiskitTheme.primaryText.opacity(0.06))
           }
         }
         .contentShape(shape)

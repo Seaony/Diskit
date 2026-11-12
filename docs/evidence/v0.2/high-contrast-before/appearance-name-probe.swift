@@ -1,5 +1,5 @@
 import AppKit
-let bundle = Bundle(path: "/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Debug/Kayoi.app")!
+let bundle = Bundle(path: "/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Debug/Diskit.app")!
 for name in [NSAppearance.Name.aqua, .accessibilityHighContrastAqua, .darkAqua, .accessibilityHighContrastDarkAqua] {
   let appearance = NSAppearance(named: name)!
   var color = "unavailable"

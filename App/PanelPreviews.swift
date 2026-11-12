@@ -5,7 +5,7 @@ private struct PanelDemoPreview: View {
   @State private var model: AppModel
   init(scenario: String) {
     _model = State(initialValue: AppModel(options: RuntimeOptions(environment: [
-      "KAYOI_DEMO": "1", "KAYOI_DEMO_STATE": scenario,
+      "DISKIT_DEMO": "1", "DISKIT_DEMO_STATE": scenario,
     ])))
   }
   var body: some View { PanelView(model: model) }
@@ -32,7 +32,7 @@ private struct PanelRowPreview: View {
       onSelect: { focus = connection.id }, onPrimary: {}, onActivate: {}, onEdit: {},
       onReauthenticate: {}, onMove: { _ in }, onDelete: {},
       draggedID: $draggedID, dropTargetID: $dropTargetID, onDrop: { _ in }
-    ).padding(Space.lg).frame(width: 120).background(KayoiTheme.background)
+    ).padding(Space.lg).frame(width: 120).background(DiskitTheme.background)
   }
 }
 
@@ -49,7 +49,7 @@ private struct PanelRowPreview: View {
   PanelRowPreview(.tested(SpaceInfo(total: 256_000_000_000, used: 136_000_000_000)))
 }
 #Preview("位置 · 已挂载") {
-  PanelRowPreview(.mounted(MountedShare(url: URL(filePath: "/tmp/KayoiDemo"), availableBytes: 120_000_000_000)), kind: .smb)
+  PanelRowPreview(.mounted(MountedShare(url: URL(filePath: "/tmp/DiskitDemo"), availableBytes: 120_000_000_000)), kind: .smb)
 }
 #Preview("位置 · 推出中") { PanelRowPreview(.ejecting, kind: .smb) }
 #Preview("位置 · 失败") { PanelRowPreview(.failed(L("用户名或密码错误，请检查后重试"))) }

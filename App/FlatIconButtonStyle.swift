@@ -9,10 +9,10 @@ struct FlatIconButtonStyle: ButtonStyle {
   func makeBody(configuration: Configuration) -> some View {
     configuration.label
       .font(.body)
-      .foregroundStyle(isEnabled ? KayoiTheme.secondaryText : KayoiTheme.disabledText)
+      .foregroundStyle(isEnabled ? DiskitTheme.secondaryText : DiskitTheme.disabledText)
       .frame(width: 30, height: 30)
-      .background(configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.surface : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
-      .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(ControlFocus.isFocused(inherited: isFocused, explicit: focusOverride) ? KayoiTheme.focus : .clear, lineWidth: 2) }
+      .background(configuration.isPressed ? DiskitTheme.pressed : hovering ? DiskitTheme.surface : .clear, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+      .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(ControlFocus.isFocused(inherited: isFocused, explicit: focusOverride) ? DiskitTheme.focus : .clear, lineWidth: 2) }
       .contentShape(Rectangle())
       .pointerStyle(isEnabled ? .link : nil)
       .onHover { hovering = $0 }

@@ -1,5 +1,5 @@
 # 六平台上传恢复定向测试摘录
-# 原日志 /tmp/kayoi-upload-recovery-final.log；只保留测试结果，省略编译器命令。
+# 原日志 /tmp/diskit-upload-recovery-final.log；只保留测试结果，省略编译器命令。
 [原日志:67] 􁁛  Test dropboxUploadRejectsImpossibleServerOffset(offset:) with 2 test cases passed after 0.015 seconds.
 [原日志:68] 􁁛  Test dropboxRepeatedIncorrectOffsetHasBoundedRecovery() passed after 0.018 seconds.
 [原日志:69] 􁁛  Test oneDriveUploadSessionSplitsAtThreeHundredTwentyKiB() passed after 0.018 seconds.

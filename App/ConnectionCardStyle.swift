@@ -10,11 +10,11 @@ struct ConnectionCardStyle: ButtonStyle {
     let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
     return configuration.label
       .background(
-        configuration.isPressed ? KayoiTheme.pressed : hovering ? KayoiTheme.hover : KayoiTheme.surface, in: shape
+        configuration.isPressed ? DiskitTheme.pressed : hovering ? DiskitTheme.hover : DiskitTheme.surface, in: shape
       )
       // 0.5pt 淡细边；只有键盘焦点才画焦点环
       .overlay {
-        shape.strokeBorder(focused ? KayoiTheme.focus : KayoiTheme.border, lineWidth: focused ? 2 : 0.5)
+        shape.strokeBorder(focused ? DiskitTheme.focus : DiskitTheme.border, lineWidth: focused ? 2 : 0.5)
       }
       .contentShape(shape)
       .pointerStyle(.link)
@@ -54,7 +54,7 @@ extension ConnectionKind {
     case .quark, .ucDrive: name = "blue"
     default: name = "purple"
     }
-    return KayoiTheme.locationColor(name)
+    return DiskitTheme.locationColor(name)
   }
   var connectionCaption: String {
     switch self {

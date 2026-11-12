@@ -6,7 +6,7 @@ enum MenuBarIconImage {
     let image = NSImage(size: NSSize(width: 22, height: 16), flipped: false) { rect in
       NSGraphicsContext.saveGraphicsState()
       defer { NSGraphicsContext.restoreGraphicsState() }
-      guard let glyph = NSImage(named: "KayoiBrandGlyph") else { return false }
+      guard let glyph = NSImage(named: "DiskitBrandGlyph") else { return false }
       let glyphRect = NSRect(x: 1, y: 0, width: 16, height: 16)
       if filled {
         NSColor.black.setFill()

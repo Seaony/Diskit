@@ -7,7 +7,7 @@ private struct NativeProgressAppearance: ViewModifier {
   func body(content: Content) -> some View {
     content
       .progressViewStyle(.circular)
-      .tint(KayoiTheme.primaryText)
+      .tint(DiskitTheme.primaryText)
       // 外观切换后重建系统控件，避免保留上一外观的进度圈。
       .id("native-progress-\(colorScheme == .dark)-\(contrast == .increased)")
   }
@@ -20,7 +20,7 @@ private struct NativeLinearProgressAppearance: ViewModifier {
   func body(content: Content) -> some View {
     content
       .progressViewStyle(.linear)
-      .tint(KayoiTheme.accent)
+      .tint(DiskitTheme.accent)
       .id("native-linear-progress-\(colorScheme == .dark)-\(contrast == .increased)")
   }
 }
@@ -35,7 +35,7 @@ extension View {
     ProgressView().nativeProgressAppearance().controlSize(.mini)
     ProgressView().nativeProgressAppearance().controlSize(.small)
   }
-  .padding().background(KayoiTheme.surface).preferredColorScheme(.light)
+  .padding().background(DiskitTheme.surface).preferredColorScheme(.light)
 }
 
 #Preview("原生进度圈 · 深色") {
@@ -43,15 +43,15 @@ extension View {
     ProgressView().nativeProgressAppearance().controlSize(.mini)
     ProgressView().nativeProgressAppearance().controlSize(.small)
   }
-  .padding().background(KayoiTheme.surface).preferredColorScheme(.dark)
+  .padding().background(DiskitTheme.surface).preferredColorScheme(.dark)
 }
 
 #Preview("原生线性进度 · 浅色") {
   ProgressView(value: 0.36).nativeLinearProgressAppearance()
-    .frame(width: 320).padding().background(KayoiTheme.surface).preferredColorScheme(.light)
+    .frame(width: 320).padding().background(DiskitTheme.surface).preferredColorScheme(.light)
 }
 
 #Preview("原生线性进度 · 深色") {
   ProgressView(value: 0.36).nativeLinearProgressAppearance()
-    .frame(width: 320).padding().background(KayoiTheme.surface).preferredColorScheme(.dark)
+    .frame(width: 320).padding().background(DiskitTheme.surface).preferredColorScheme(.dark)
 }

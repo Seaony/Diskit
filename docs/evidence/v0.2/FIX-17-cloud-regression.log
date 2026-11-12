@@ -58,7 +58,7 @@ Note: Some test targets reported failures:
   - CloudDriveTests (Swift Testing)
 
 OneDrive 直传未包装：swift test --package-path Packages/CloudDrive --filter oneDriveDirectUploadsShareOAuthAccountAllowance；退出 1。
-Another instance of SwiftPM (PID: 22595) is already running using '/Users/seaony/code/Kayoi/Packages/CloudDrive/.build', waiting until that process has finished execution...Building for debugging...
+Another instance of SwiftPM (PID: 22595) is already running using '/Users/seaony/code/Diskit/Packages/CloudDrive/.build', waiting until that process has finished execution...Building for debugging...
 [2 / 6] CloudDrive
 [3 / 7] CloudDrive
 [7 / 10] CloudDrive

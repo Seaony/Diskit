@@ -5,7 +5,7 @@ import Security
 
 public actor OAuthSession {
   public static let invalidationNotification = Notification.Name(
-    "com.seaony.Kayoi.oauthDriveInvalidated")
+    "com.seaony.Diskit.oauthDriveInvalidated")
   private let configuration: OAuthConfiguration
   private let secretKey: String
   private let secrets: RecoverableSecretStore

@@ -28,7 +28,7 @@ private func auditSession(_ http: any HTTPTransport) throws -> OAuthSession {
     configuration: OAuthConfiguration(
       clientID: "local", clientSecret: "",
       authorizationURL: URL(string: "https://example.invalid/auth")!,
-      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test",
+      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test",
       scopes: []), secretKey: "account", secrets: store, transport: http)
 }
 
@@ -39,7 +39,7 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
 @Test func googleListingPreservesEveryUnusualNameWithStableIdentity() async throws {
   let files = [
     auditGoogleFile("one", "same"), auditGoogleFile("two", "same"), auditGoogleFile("slash", "a/b"),
-    auditGoogleFile("reserved", "~kayoi~b25l"), auditGoogleFile("ordinary", "normal"),
+    auditGoogleFile("reserved", "~diskit~b25l"), auditGoogleFile("ordinary", "normal"),
   ]
   let http = InternationalAuditHTTP { request in
     guard request.url?.host == "www.googleapis.com" else { return HTTPResponse(status: 404) }
@@ -93,7 +93,7 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
   await #expect(throws: RemoteError.posix(ENOENT)) {
-    _ = try await provider.stat(RemotePath("/folder/~kayoi~b3V0c2lkZQ"))
+    _ = try await provider.stat(RemotePath("/folder/~diskit~b3V0c2lkZQ"))
   }
 }
 
@@ -302,7 +302,7 @@ func oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination: String) as
   }
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
-  let oldIdentityPath = try RemotePath("/~kayoi~b25l")
+  let oldIdentityPath = try RemotePath("/~diskit~b25l")
   #expect(try await provider.stat(oldIdentityPath).path == oldIdentityPath)
   #expect(try await provider.list(RemotePath("/")).first?.path.value == "/same")
 }

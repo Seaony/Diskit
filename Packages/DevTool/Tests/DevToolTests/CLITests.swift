@@ -109,7 +109,7 @@ private func execute(
     return ""
   }
   #expect(empty.value("absent", fallback: "fallback") == "fallback")
-  let value = try CLIEnvironment.load(["KAYOI_SECRETS_FILE": "/fixture", "TOKEN": "override"]) {
+  let value = try CLIEnvironment.load(["DISKIT_SECRETS_FILE": "/fixture", "TOKEN": "override"]) {
     url in
     #expect(url.path == "/fixture")
     return

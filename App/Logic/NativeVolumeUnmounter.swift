@@ -32,7 +32,7 @@ struct NativeVolumeUnmounter: Sendable {
       })
   }
 
-  private static let logger = Logger(subsystem: "com.seaony.Kayoi", category: "mount")
+  private static let logger = Logger(subsystem: "com.seaony.Diskit", category: "mount")
   let operations: Operations
 
   init(operations: Operations = .live) { self.operations = operations }
@@ -46,7 +46,7 @@ struct NativeVolumeUnmounter: Sendable {
       operations.recordFailure(error)
       let value = error as NSError
       guard value.domain == NSCocoaErrorDomain, value.code == NSFileReadUnknownError,
-        let original, original.type == "kayoi", operations.mount(path) == original
+        let original, original.type == "diskit", operations.mount(path) == original
       else {
         completion(.failure(error))
         return
@@ -99,7 +99,7 @@ struct NativeVolumeUnmounter: Sendable {
       completion(.failure(NSError(domain: NSCocoaErrorDomain, code: NSFileManagerUnmountUnknownError)))
       return
     }
-    let queue = DispatchQueue(label: "com.seaony.Kayoi.unmount")
+    let queue = DispatchQueue(label: "com.seaony.Diskit.unmount")
     DASessionSetDispatchQueue(session, queue)
     let url = URL(filePath: mount.path, directoryHint: .isDirectory)
     guard let disk = DADiskCreateFromVolumePath(kCFAllocatorDefault, session, url as CFURL) else {

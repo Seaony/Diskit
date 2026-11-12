@@ -1,4 +1,4 @@
-# Kayoi 实现方案
+# Diskit 实现方案
 
 > 这份文档写给实现者（Codex）。照里程碑顺序做，每个里程碑做完按「验收标准」自证后再进入下一个。
 > 分两个阶段：M0–M6 不需要付费开发者账号；M7 起需要（FSKit 扩展）。文中「以 M7 验证结论为准」的地方，先完成 M7 第一步验证、把结论写进 `docs/SPIKE.md`，再按结论实现。
@@ -60,16 +60,16 @@ SMB 不走 FSKit，直接让系统挂载。
 - Swift 6（严格并发检查），SwiftUI 为主，必要处用 AppKit。
 - 工程用 XcodeGen 生成：仓库里提交 `project.yml`，`.xcodeproj` 不入库（App 扩展必须用 Xcode 工程构建，SwiftPM 做不了；`project.yml` 比 pbxproj 好审、好改）。
 - 签名分两个阶段（用户先开发、开发完再申请付费账号）：
-  - **阶段一（免费，M0–M6）**：主 App 和开发工具用 ad‑hoc 签名（或免费 Apple ID 的「Apple Development」证书）在本机运行，不建 FSKit 扩展、不用 App Group、不用钥匙串共享访问组。此阶段 Windows SMB 已能完整使用；安卓、GR、网盘通过开发工具 `kayoi-dev`（见 §3.2）和主 App 的连接测试验收。
+  - **阶段一（免费，M0–M6）**：主 App 和开发工具用 ad‑hoc 签名（或免费 Apple ID 的「Apple Development」证书）在本机运行，不建 FSKit 扩展、不用 App Group、不用钥匙串共享访问组。此阶段 Windows SMB 已能完整使用；安卓、GR、网盘通过开发工具 `diskit-dev`（见 §3.2）和主 App 的连接测试验收。
   - **阶段二（付费，M7）**：FSKit 扩展的 `com.apple.developer.fskit.fsmodule` 是受限权限，必须由付费团队生成的描述文件授权，ad‑hoc 或免费账号编出来的扩展系统不会加载（Apple 技术支持在开发者论坛明确说过，ntfstool、xntfs、Cryptomator 等开源项目也都这么写）。付费账号到手后再加扩展、App Group 和钥匙串共享访问组。
   - 阶段一代码不得写任何依赖 Team ID 的东西（App Group 路径、访问组名都通过 §7 的存储抽象切换），保证阶段二只是新增，不用重写。
 
 ### 3.2 进程与模块
 
 ```
-Kayoi.app                        主 App（菜单栏 UI、连接管理、设备发现、OAuth/扫码登录、发起挂载/推出）
+Diskit.app                        主 App（菜单栏 UI、连接管理、设备发现、OAuth/扫码登录、发起挂载/推出）
  └─ Contents/Extensions/
-    └─ KayoiFS.appex             FSKit 扩展（真正处理 Finder 的文件读写，按 URL scheme 分发到各 Provider）
+    └─ DiskitFS.appex             FSKit 扩展（真正处理 Finder 的文件读写，按 URL scheme 分发到各 Provider）
 
 Packages/
  ├─ Core            共享：连接模型、配置存储、钥匙串、日志、通用错误、Provider 协议
@@ -77,12 +77,12 @@ Packages/
  ├─ AliyunDrive     阿里云盘开放平台客户端
  ├─ Quark           夸克网页接口客户端
  ├─ RicohGR         GR IV（USB 走 ImageCaptureCore；Wi‑Fi 验证代码）
- └─ DevTool         开发工具 kayoi-dev（命令行，见下）
+ └─ DevTool         开发工具 diskit-dev（命令行，见下）
 
-（KayoiFS.appex 在 M7 才加；M0–M6 没有扩展。）
+（DiskitFS.appex 在 M7 才加；M0–M6 没有扩展。）
 ```
 
-- **开发工具 `kayoi-dev`**：SwiftPM 命令行程序，直接调用各 Provider，不经过 FSKit，用于阶段一验收和以后排查问题。子命令：`devices`（列出发现的安卓 / GR）、`pair <host:port> <配对码>`、`ls <连接ID> <路径>`、`stat`、`get <远端> <本地>`、`put <本地> <远端>`、`mkdir`、`rm [-r]`、`mv`、`df`、`cat --range <起>-<止>`（验证按范围读）。连接 ID 和密钥从主 App 保存的配置与钥匙串读取，所以网盘先在主 App 里登录，再用工具测。传输时打印进度和平均速度。
+- **开发工具 `diskit-dev`**：SwiftPM 命令行程序，直接调用各 Provider，不经过 FSKit，用于阶段一验收和以后排查问题。子命令：`devices`（列出发现的安卓 / GR）、`pair <host:port> <配对码>`、`ls <连接ID> <路径>`、`stat`、`get <远端> <本地>`、`put <本地> <远端>`、`mkdir`、`rm [-r]`、`mv`、`df`、`cat --range <起>-<止>`（验证按范围读）。连接 ID 和密钥从主 App 保存的配置与钥匙串读取，所以网盘先在主 App 里登录，再用工具测。传输时打印进度和平均速度。
 - 主 App 和扩展都链接 Core 和各 Provider 包；**设备连接由扩展持有**：挂载期间只有扩展打开手机的 ADB 接口，主 App 只做发现（监听 USB 插拔、mDNS），不打开接口，避免两个进程抢设备。
 - 主 App 和扩展之间不做 XPC：配置走 App Group 共享容器里的 JSON，密钥走共享钥匙串访问组。主 App 通过挂载 URL 把「连接 ID」传给扩展，扩展自己读配置和密钥。
 - 挂载状态由主 App 通过系统挂载表（`getmntinfo` / `NSWorkspace` 卷挂载通知）判断，不依赖扩展回报。
@@ -112,7 +112,7 @@ protocol RemoteFileProvider: Sendable {
 
 ### 3.4 FSKit 层通用规则
 
-- 一个扩展，`FSSupportedSchemes` 覆盖已有的 24 种非系统类型，共 23 个 scheme；安卓 USB 与 Wi-Fi 共用 `kayoi-adb`，GR 本轮保留原行为。URL 形如 `kayoi-adb://<连接ID>`，具体映射以 Core 的 `ConnectionKind.fileSystemScheme` 为准。名称保持不超过 15 个 ASCII 字节：本机正式接入时，过长的 scheme 使整个扩展不被系统发现；此约束未见 Apple 公开说明。
+- 一个扩展，`FSSupportedSchemes` 覆盖已有的 24 种非系统类型，共 23 个 scheme；安卓 USB 与 Wi-Fi 共用 `diskit-adb`，GR 本轮保留原行为。URL 形如 `diskit-adb://<连接ID>`，具体映射以 Core 的 `ConnectionKind.fileSystemScheme` 为准。名称保持不超过 15 个 ASCII 字节：本机正式接入时，过长的 scheme 使整个扩展不被系统发现；此约束未见 Apple 公开说明。
 - 用 `FSUnaryFileSystem` + `FSGenericURLResource`，一个挂载一个卷。
 - 挂载方式、挂载点位置（是否能在 `/Volumes` 以外且不需要 root）、是否出现在 Finder 侧栏「位置」里：以 M7 验证结论为准。
 - **目录缓存**：目录列表按路径缓存，设备 5 秒、网盘 30 秒过期；本卷内的写/删/改名操作立即让相关目录缓存失效。
@@ -196,7 +196,7 @@ protocol RemoteFileProvider: Sendable {
 - 按范围读的优化（可选，M2 之后做）：用 `exec:dd if=<path> bs=65536 skip=<n> count=<m>` 读片段，供 Quick Look 预览大视频时不用拉整个文件。
 - 根目录展示：卷根目录直接映射到 `/sdcard`；同时显示一个「SD 卡」子目录（检测到 `/storage/XXXX-XXXX` 时）。
 
-**传输层**：IOUSBHost（`IOUSBHostInterface` + bulk in/out 管道）。阶段一主 App 与 `kayoi-dev` 不开沙盒，无需额外权限；M7 的扩展是沙盒进程，需要 `com.apple.security.device.usb` 权限。
+**传输层**：IOUSBHost（`IOUSBHostInterface` + bulk in/out 管道）。阶段一主 App 与 `diskit-dev` 不开沙盒，无需额外权限；M7 的扩展是沙盒进程，需要 `com.apple.security.device.usb` 权限。
 
 **冲突处理**：打开接口失败（被占用）时，返回明确错误「手机正被其它 adb 程序占用，请先执行 `adb kill-server`」，面板该行显示同样提示。
 
@@ -281,30 +281,30 @@ protocol RemoteFileProvider: Sendable {
 
 | | 阶段一（M0–M6，无付费账号） | 阶段二（M7 起） |
 | --- | --- | --- |
-| 数据目录 | `~/Library/Application Support/Kayoi/` | App Group 容器 `<TeamID>.com.seaony.Kayoi` |
-| 钥匙串 | 传统登录钥匙串，service 前缀 `com.seaony.Kayoi`；**禁止**设置 `kSecUseDataProtectionKeychain=true`（没有描述文件时会报 `errSecMissingEntitlement -34018`） | 共享访问组 `<TeamID>.com.seaony.Kayoi.shared` |
-| 缓存与元数据覆盖层 | `~/Library/Caches/Kayoi/<连接ID>/` | 扩展容器内 `Caches/<连接ID>/` |
+| 数据目录 | `~/Library/Application Support/Diskit/` | App Group 容器 `<TeamID>.com.seaony.Diskit` |
+| 钥匙串 | 传统登录钥匙串，service 前缀 `com.seaony.Diskit`；**禁止**设置 `kSecUseDataProtectionKeychain=true`（没有描述文件时会报 `errSecMissingEntitlement -34018`） | 共享访问组 `<TeamID>.com.seaony.Diskit.shared` |
+| 缓存与元数据覆盖层 | `~/Library/Caches/Diskit/<连接ID>/` | 扩展容器内 `Caches/<连接ID>/` |
 
-- 阶段一签名优先用免费 Apple ID 的「Apple Development」证书：签名身份稳定，重新编译后钥匙串不会反复弹「允许访问」；Xcode 没登录 Apple ID 时退回 ad‑hoc，代价是每次重新编译后首次读钥匙串要点一次允许。`kayoi-dev` 读主 App 存的条目时也会弹一次，点「始终允许」即可。
+- 阶段一签名优先用免费 Apple ID 的「Apple Development」证书：签名身份稳定，重新编译后钥匙串不会反复弹「允许访问」；Xcode 没登录 Apple ID 时退回 ad‑hoc，代价是每次重新编译后首次读钥匙串要点一次允许。`diskit-dev` 读主 App 存的条目时也会弹一次，点「始终允许」即可。
 - 进入阶段二时做一次性迁移：主 App 启动发现旧位置有数据、新位置没有，就把配置文件搬到 App Group 容器、把钥匙串条目复制到共享访问组，确认写入成功后再删旧条目；迁移失败保留旧数据并提示，不丢数据。
 
 ## 8. 里程碑与验收标准
 
 每个里程碑结束时：`make release` 构建通过、`make test` 全部单元测试通过、按本节逐条手动验收，并在 `docs/ACCEPTANCE.md` 里记录每条的实际结果（通过 / 不通过 + 现象 + 实测数据）。不允许只写「已完成」。
 
-M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 Finder 中」的验收只针对 SMB，其余类型用 `kayoi-dev` 和主 App 的连接测试验收，Finder 相关验收统一放到 M7。
+M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 Finder 中」的验收只针对 SMB，其余类型用 `diskit-dev` 和主 App 的连接测试验收，Finder 相关验收统一放到 M7。
 
 阶段一面板行为：非 SMB 连接的行主按钮显示为「测试连接」，副标题显示连接结果和容量；「挂载」按钮在 M7 才出现。F3 横幅、F15 扩展状态也在 M7 才做。
 
 ### M0 工程骨架
 
-交付：`project.yml`（XcodeGen）、主 App target、`Packages/` 下各包的空壳与 `kayoi-dev` 可执行目标、`Makefile`（`make gen` / `make build` / `make release` / `make test` / `make dev-tool`）、`docs/ACCEPTANCE.md` 模板、`README.md`（构建步骤与签名说明）。
+交付：`project.yml`（XcodeGen）、主 App target、`Packages/` 下各包的空壳与 `diskit-dev` 可执行目标、`Makefile`（`make gen` / `make build` / `make release` / `make test` / `make dev-tool`）、`docs/ACCEPTANCE.md` 模板、`README.md`（构建步骤与签名说明）。
 
 验收：
 
 1. 新克隆的目录里依次执行 `make gen && make test && make release` 全部成功，不需要手动打开 Xcode 改设置。
 2. Release 产物 `codesign --verify --deep --strict --verbose=2` 通过；`Info.plist` 的 `LSMinimumSystemVersion` 为 `26.0`、`LSUIElement` 为 `true`。
-3. `kayoi-dev --help` 列出 §3.2 的全部子命令（M0 阶段子命令可以只打印「未实现」）。
+3. `diskit-dev --help` 列出 §3.2 的全部子命令（M0 阶段子命令可以只打印「未实现」）。
 4. `StorageLocation` / `SecretStore` 有单元测试：写入、读取、删除、覆盖。
 
 ### M1 菜单栏骨架 + 连接管理 + Windows SMB
@@ -324,13 +324,13 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 
 验收：
 
-1. 插入开了 USB 调试的安卓手机，面板「已发现」里出现手机型号，拔出后消失；`kayoi-dev devices` 同样能列出。
+1. 插入开了 USB 调试的安卓手机，面板「已发现」里出现手机型号，拔出后消失；`diskit-dev devices` 同样能列出。
 2. 首次连接：手机弹出授权框，点允许后连接成功；第二次连接不再弹框。
-3. 用 `kayoi-dev`：`ls /sdcard/DCIM`；`put` 一个文件夹（含子目录、中文文件名、空格、emoji 文件名）；`mkdir`；`mv` 改名；`rm -r`；每步之后用官方 `adb shell ls`（先退出 kayoi-dev）确认手机上的结果一致。
+3. 用 `diskit-dev`：`ls /sdcard/DCIM`；`put` 一个文件夹（含子目录、中文文件名、空格、emoji 文件名）；`mkdir`；`mv` 改名；`rm -r`；每步之后用官方 `adb shell ls`（先退出 diskit-dev）确认手机上的结果一致。
 4. `get` / `put` 一个大于 4 GB 的文件（手机支持 v2 时），两端 SHA‑256 一致。
 5. 速度：USB 3 线 + 支持 USB 3 的手机，`get` 1 GB 文件平均 ≥ 20 MB/s；记录实测值和设备型号，达不到要写出瓶颈分析。
 6. 传输中拔线：命令报错退出，不崩溃、不挂死；面板该行变为「未连接」；重新插入后能再次连接。
-7. 本机有其它 `adb server` 占用手机时，`kayoi-dev` 与面板都显示 §6.1 的占用提示。
+7. 本机有其它 `adb server` 占用手机时，`diskit-dev` 与面板都显示 §6.1 的占用提示。
 8. 单元测试：消息编解码（用 AOSP 真实字节做固定样例）、CRC/magic 校验、RSA 公钥编码（与官方 `adb` 生成的 `adbkey.pub` 格式逐字节一致）、sync v1/v2 帧解析、shell 参数转义。
 
 ### M3 安卓 Wi‑Fi
@@ -349,7 +349,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 验收（需要真机；没有相机就标「未测」并说明）：
 
 1. USB 连接相机后「已发现」里出现 GR IV。
-2. `kayoi-dev ls` 能看到内置存储和 microSD 的目录与文件；`get` 拷出 JPG 和 DNG，大小与相机端一致；`rm` 删除一张照片后相机回放里也消失（相机不允许删除时返回明确错误）。
+2. `diskit-dev ls` 能看到内置存储和 microSD 的目录与文件；`get` 拷出 JPG 和 DNG，大小与相机端一致；`rm` 删除一张照片后相机回放里也消失（相机不允许删除时返回明确错误）。
 3. 写入类命令（`put` / `mkdir` / `mv`）直接返回只读错误，不访问相机。
 
 ### M5 阿里云盘
@@ -359,7 +359,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 验收：
 
 1. 添加时弹出官方授权页，授权完成后自动回到 App，显示账号昵称和容量。
-2. 用 `kayoi-dev`：`ls` 超过 100 个文件的目录（翻页完整，条数与网页版一致）；`cat --range` 读视频文件中间一段（验证 Range）；`put` 一个 > 1 GB 文件（验证分片上传），网页版能看到且大小一致；`mkdir`、`mv`、`rm`（网页版回收站可见）。
+2. 用 `diskit-dev`：`ls` 超过 100 个文件的目录（翻页完整，条数与网页版一致）；`cat --range` 读视频文件中间一段（验证 Range）；`put` 一个 > 1 GB 文件（验证分片上传），网页版能看到且大小一致；`mkdir`、`mv`、`rm`（网页版回收站可见）。
 3. 手动把钥匙串里的 access_token 改成无效值后再操作，能用 refresh_token 自动恢复。
 4. 在网页版取消授权后，App 发出「需重新登录」通知，面板该行显示「重新登录」。
 5. 单元测试：分页拼接、路径 ↔ ID 缓存失效、分片切分（边界：0 字节、正好整片、最后一片不足）。
@@ -369,7 +369,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 验收：
 
 1. 扫码登录成功，显示账号与容量。
-2. 用 `kayoi-dev`：`ls`、`cat --range`、`put`（> 100 MB）、`get`、`mkdir`、`mv`、`rm` 全部可用，网页版结果一致。
+2. 用 `diskit-dev`：`ls`、`cat --range`、`put`（> 100 MB）、`get`、`mkdir`、`mv`、`rm` 全部可用，网页版结果一致。
 3. 清空钥匙串里的 Cookie 后操作，App 发出「需重新登录」通知，不崩溃。
 
 ### M7 FSKit 挂载进 Finder（需要付费开发者账号）
@@ -391,12 +391,12 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 **第二步：接入**（全部通过后）
 
 1. 面板出现 F3 横幅、F15 扩展状态；非 SMB 行主按钮变为「挂载 / 推出」。扩展未启用时点挂载，提示并跳转系统设置。
-2. 安卓（USB 与 Wi‑Fi 各测一遍）：在 Finder 中浏览 `DCIM`、Quick Look 预览照片和视频、拷入文件夹（含中文 / 空格 / emoji 文件名）、新建文件夹、改名、移动、删除，结果与手机一致；Finder 拷出 1 GB 文件的速度不低于 M2 用 `kayoi-dev` 实测值的 70%（记录两个数）。
+2. 安卓（USB 与 Wi‑Fi 各测一遍）：在 Finder 中浏览 `DCIM`、Quick Look 预览照片和视频、拷入文件夹（含中文 / 空格 / emoji 文件名）、新建文件夹、改名、移动、删除，结果与手机一致；Finder 拷出 1 GB 文件的速度不低于 M2 用 `diskit-dev` 实测值的 70%（记录两个数）。
 3. 拷贝中拔线：Finder 报错不卡死，卷被自动推出，App 不崩溃；重新插入后能再挂载。
 4. 终端 `cp`、`rsync -a` 往安卓卷拷一个目录，结果正确。
 5. GR IV：只读卷浏览、预览、拷出、删除可用；往卷里拷文件时 Finder 提示只读，不出现部分写入。（或「导入新照片」：第二次导入只下载新增文件。）
 6. 阿里云盘、夸克：Finder 浏览、预览视频可拖动进度、拷入大文件、新建、改名、移动、删除，网页版结果一致。
-7. 远端卷里不出现 `.DS_Store`、`._*` 文件（用 `kayoi-dev ls -a` 或网页版确认）。
+7. 远端卷里不出现 `.DS_Store`、`._*` 文件（用 `diskit-dev ls -a` 或网页版确认）。
 8. 「打开 App 时自动挂载」对所有类型生效；退出 App 时推出本 App 挂的全部卷（SMB 除外）。
 9. `pluginkit -m -v` 能看到扩展；Release 包签名校验通过。
 
@@ -421,7 +421,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 - 阶段一不写任何依赖 Team ID 的代码，路径与钥匙串一律走 §7 的抽象。
 - 日志不打印密码、令牌、Cookie、私钥。
 - 所有远端调用有超时（设备 15 秒，网盘 30 秒，大文件传输按无进展 60 秒判超时）。
-- Bundle ID：主 App `com.seaony.Kayoi`，扩展 `com.seaony.Kayoi.FS`，开发工具 `com.seaony.Kayoi.dev`；OAuth 回调 `kayoi://`，FSKit 使用单独的 `kayoi-` 前缀 scheme。百度、腾讯、B2、R2、Google、移动、迅雷、天翼分别用 `kayoi-baidu`、`kayoi-cos`、`kayoi-b2`、`kayoi-r2`、`kayoi-google`、`kayoi-mobile`、`kayoi-thunder`、`kayoi-tianyi`，其余见 `ConnectionKind.fileSystemScheme`。
+- Bundle ID：主 App `com.seaony.Diskit`，扩展 `com.seaony.Diskit.FS`，开发工具 `com.seaony.Diskit.dev`；OAuth 回调 `diskit://`，FSKit 使用单独的 `diskit-` 前缀 scheme。百度、腾讯、B2、R2、Google、移动、迅雷、天翼分别用 `diskit-baidu`、`diskit-cos`、`diskit-b2`、`diskit-r2`、`diskit-google`、`diskit-mobile`、`diskit-thunder`、`diskit-tianyi`，其余见 `ConnectionKind.fileSystemScheme`。
 - 代码注释用简短中文，说明做什么、为什么，不写废话。
 - 每个里程碑一个或多个小提交，提交信息一句话中文，不写 AI 相关字样。
 
@@ -429,7 +429,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 
 已确认（2026-11-03）：
 
-1. 名称 Kayoi。
+1. 名称 Diskit。
 2. 先开发、后申请付费开发者账号：M0–M6 不依赖付费账号，FSKit 放在 M7。
 3. 阿里云盘开放平台 `client_id` 由用户后续申请，先写代码；夸克按实验性做，接受非官方接口随时失效的风险。
 4. GR IV 以 USB 为主，Wi‑Fi 只做技术验证（M8，可选）。
@@ -437,7 +437,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 开发中需要用户提供：
 
 1. M5 真机验收前：阿里云盘 `client_id` / `client_secret`，以及开放平台登记的回调地址。
-2. M7 开始前：付费账号的 Team ID，并在开发者后台给 `com.seaony.Kayoi.FS` 打开 FSKit 能力。
+2. M7 开始前：付费账号的 Team ID，并在开发者后台给 `com.seaony.Diskit.FS` 打开 FSKit 能力。
 
 ## 12. 参考资料
 

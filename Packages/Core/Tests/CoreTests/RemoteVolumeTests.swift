@@ -391,7 +391,7 @@ private struct VolumeFixture {
   await fixture.provider.resetEvents()
   try await fixture.backend.close(path)
   let events = await fixture.provider.recorded()
-  let upload = try #require(events.firstIndex { $0.hasPrefix("upload:/.file.kayoi-upload-") })
+  let upload = try #require(events.firstIndex { $0.hasPrefix("upload:/.file.diskit-upload-") })
   let temporary = String(events[upload].dropFirst("upload:".count))
   let check = try #require(events.firstIndex(of: "stat:" + temporary))
   let remove = try #require(events.firstIndex(of: "remove:/file"))

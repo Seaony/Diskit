@@ -11,7 +11,7 @@
 - 原缺陷：start后append/finish返回409 not_found直接失败；incorrect_offset不处理；append响应丢失后直接失败。
 - 修复：`Packages/CloudDrive/Sources/CloudDrive/DropboxProvider.swift:204` sessionUpload只读本地分块；过期最多重建一次，从0重传，新会话仍使用mode=add、autorename=false、strict_conflict=true。append/finish依官方结构解析not_found/lookup_failed；correct_offset校验数值、范围及本次最多发送位置，seek后续传；网络丢响应/超时重发同游标，由服务端incorrect_offset确认实际位置，恢复合计最多3次；closed不重建，保留已提交远端文件。
 - 失败基线：`docs/evidence/v0.2/CURRENT-Dropbox-upload-before-excerpt.log`，原实现6函数/8问题，包含原有正常分片用例通过及新增恢复路径失败。
-- 修后局部：`/tmp/kayoi-upload-recovery-tests.log`，16函数通过（与Google/OneDrive共用定向过滤，不是全量）。
+- 修后局部：`/tmp/diskit-upload-recovery-tests.log`，16函数通过（与Google/OneDrive共用定向过滤，不是全量）。
 - 测试：`DropboxUploadRecoveryTests.swift:56` append/finish过期重建且提交不覆盖；`:79` 两阶段按服务端offset读对应字节；`:96` 丢响应同游标再发并按确认位置续传；`:114` 负数/越界offset拒绝；`:128` 重复过期只重建一次；`:141` 重复incorrect_offset次数有界；`:154` closed不新建文件。
 - 官方协议证据：[Upload Session Start](https://docs.dropboxapi.com/dropbox-api/api-reference/user-endpoints/files/upload-session-start)（会话有效期7天，过期not_found）；[UploadSessionAppendError](https://opensource.dropbox.com/SwiftyDropbox/api-docs/latest/Classes/Files/UploadSessionAppendError.html)（correct_offset用于恢复丢失响应）；[官方API规格](https://github.com/dropbox/dropbox-api-spec/blob/main/files.stone)。
 - 需真实账号验收：服务器实际过期/关闭时返回结构、上传后内容与原文件哈希一致、账户权限/配额、最终冲突行为。替身能证明客户端发出的游标、分块内容、请求次数、严格新增参数及错误分支，无法证明服务端在真实账户上的存储效果。不得把服务端会话删除后的数据恢复称为旧分片续传；该分支按文档重开上传。
@@ -33,7 +33,7 @@
 ## 115
 
 - `Drive115Provider.swift:311` sendUploadRequest：仅HTTP403且OSS XML Code为SecurityTokenExpired时重新取STS、重签并重试当前步骤一次；InvalidSecurityToken/AccessDenied不误判过期。单PUT(:326)、multipart初始化/part/complete(:342)共用此路径，保留uploadID、已完成片和片号。
-- `UploadExpiryRecoveryTests.swift:39` 四阶段过期重签；`:86` 重签仍过期有界、权限错误不重试。修前6问题日志 `docs/evidence/v0.2/CURRENT-Upload-expiry-before-excerpt.log`；修后4函数11参数场景通过 `/tmp/kayoi-upload-expiry-green.log`。
+- `UploadExpiryRecoveryTests.swift:39` 四阶段过期重签；`:86` 重签仍过期有界、权限错误不重试。修前6问题日志 `docs/evidence/v0.2/CURRENT-Upload-expiry-before-excerpt.log`；修后4函数11参数场景通过 `/tmp/diskit-upload-expiry-green.log`。
 - 官方：[OSS HTTP403说明](https://help.aliyun.com/en/oss/user-guide/http-403-error-code)。真实STS签名接受、账户下回调、完成后的文件内容仍须账号验收。
 
 ## 百度与123

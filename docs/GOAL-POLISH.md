@@ -1,4 +1,4 @@
-# Kayoi 打磨与扩展目标
+# Diskit 打磨与扩展目标
 
 先读 AGENTS.md、PLAN.md、docs/ACCEPTANCE.md，再读 App/ 下全部文件和 Packages/*/Sources。
 用户已批准本文件的范围；本文件和 PLAN.md 冲突时以本文件为准（PLAN §1 里「其它网盘不做」改为按本文件 B 部分做）。
@@ -14,11 +14,11 @@
 - 不删除已有功能，不悄悄降级行为。拿不准就保留原行为，写进报告。
 - 所有新文案进 Localizable.xcstrings，中文和英文都要有，复数用 String Catalog 的 plural 变体。
 - 代码注释用简短中文。每完成一个小节做一次小提交，提交信息一句中文。
-- 阶段一仍然没有 FSKit：SMB 以外的类型（以及 B1 里能走系统挂载的类型以外的）仍然只做「测试连接」加 kayoi-dev，不要假装能挂载。
+- 阶段一仍然没有 FSKit：SMB 以外的类型（以及 B1 里能走系统挂载的类型以外的）仍然只做「测试连接」加 diskit-dev，不要假装能挂载。
 
 ## A. 界面、交互、文案打磨（先做完 A 再做 B）
 
-### A1 菜单栏面板（App/PanelView.swift、KayoiApp.swift）
+### A1 菜单栏面板（App/PanelView.swift、DiskitApp.swift）
 
 1. 面板高度现在用 `contentHeight` 手算（每行 60、空状态 210、只给 SMB 的已发现分组加了 32），错误提示和分组标题没算进去，会被裁切。改成按内容自适应，最高 560pt，超出才滚动（PLAN §5）。
 2. 「已发现」4 种设备各写了一份几乎一样的 HStack，图标样式也不统一（有的有彩色底块，有的没有）。合成一个行组件：类型图标 28pt 彩色方块、标题、副标题、「添加」按钮。已保存行和已发现行视觉一致，但要能一眼区分两者。
@@ -72,7 +72,7 @@
 
 ## B. 新增位置类型（A 全部完成后再开始；按 B1 → B5 的顺序，一个做完、测完再做下一个）
 
-每个新类型都要：独立的 Package 或放进合适的已有包；实现 RemoteFileProvider；正确声明 capabilities；错误映射到 POSIX；接入添加窗口和面板；kayoi-dev 能用；用假实现写单元测试（分页、鉴权刷新、错误映射、上传分片边界）；README 和 ACCEPTANCE 加一节，没有真实账号的项目标「待用户验收」，不能写通过。
+每个新类型都要：独立的 Package 或放进合适的已有包；实现 RemoteFileProvider；正确声明 capabilities；错误映射到 POSIX；接入添加窗口和面板；diskit-dev 能用；用假实现写单元测试（分页、鉴权刷新、错误映射、上传分片边界）；README 和 ACCEPTANCE 加一节，没有真实账号的项目标「待用户验收」，不能写通过。
 需要开发者凭据的（client_id 等），照阿里云盘的做法：放 Config/Secrets.xcconfig，同时更新 Secrets.example.xcconfig，没配置时给出清楚的提示。
 
 ### B1 系统原生挂载（阶段一就能进 Finder，和 SMB 走同一套 NetFS 流程）

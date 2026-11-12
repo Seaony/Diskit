@@ -15,5 +15,5 @@ make test：退出码 0
 􁁛  Test run with 24 tests in 0 suites passed after 0.011 seconds.
 make release：退出码 0
 ** BUILD SUCCEEDED **
-build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
+build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement

@@ -165,7 +165,7 @@ final class UpdateController: NSObject, SPUUpdaterDelegate, @MainActor SPUStanda
   }
 
   init(bundle: Bundle, delegate: UpdateController) {
-    let driver = KayoiUpdateUserDriver(hostBundle: bundle, delegate: delegate)
+    let driver = DiskitUpdateUserDriver(hostBundle: bundle, delegate: delegate)
     driver.controller = delegate
     updater = SPUUpdater(
       hostBundle: bundle, applicationBundle: bundle, userDriver: driver, delegate: delegate)
@@ -189,7 +189,7 @@ final class UpdateController: NSObject, SPUUpdaterDelegate, @MainActor SPUStanda
   func setAutomaticDownloads(_ enabled: Bool) { updater.automaticallyDownloadsUpdates = enabled }
 }
 
-@MainActor private final class KayoiUpdateUserDriver: SPUStandardUserDriver {
+@MainActor private final class DiskitUpdateUserDriver: SPUStandardUserDriver {
   weak var controller: UpdateController?
   override func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
     guard let presented = controller?.presentedError(error) else {

@@ -17,10 +17,10 @@ public enum StorageMigrationError: Error, LocalizedError {
 
   public var errorDescription: String? {
     switch self {
-    case .containerUnavailable: L("无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。")
+    case .containerUnavailable: L("无法访问共享数据，请重新构建并签名 Diskit。旧数据未删除。")
     case .destinationConflict: L("新旧存储中有不同的数据，已停止迁移。请保留两处数据并检查日志。")
-    case .verificationFailed: L("迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。")
-    case .failed(let detail): LF("数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@", detail)
+    case .verificationFailed: L("迁移后的数据核对失败，旧数据已保留。请重新打开 Diskit 重试。")
+    case .failed(let detail): LF("数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Diskit 重试。\n%@", detail)
     }
   }
 }
@@ -32,7 +32,7 @@ public struct StorageMigration: Sendable {
   let newSecrets: any SecretStore
   let secretKeys: [String]
   static let marker = "storage-migration-v1.json"
-  private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "storage-migration")
+  private let logger = Logger(subsystem: "com.seaony.Diskit", category: "storage-migration")
 
   public init(
     source: any StorageLocation, destination: any StorageLocation,

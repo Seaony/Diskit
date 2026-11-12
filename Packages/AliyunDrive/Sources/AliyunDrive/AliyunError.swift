@@ -20,7 +20,7 @@ public enum AliyunError: Error, Equatable, LocalizedError, CustomNSError, LoginR
   public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
   public var errorDescription: String? {
     switch self {
-    case .missingConfiguration: L("阿里云盘尚未在 Kayoi 中启用")
+    case .missingConfiguration: L("阿里云盘尚未在 Diskit 中启用")
     case .invalidState: L("授权状态无效，请重新登录")
     case .loginRequired: L("阿里云盘需重新登录")
     case .invalidResponse: L("阿里云盘返回了无效的数据")

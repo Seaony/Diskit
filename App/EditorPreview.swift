@@ -11,7 +11,7 @@ struct EditorPreview<Content: View>: View {
     search: String = "", @ViewBuilder content: @escaping (ConnectionEditorModel) -> Content
   ) {
     let options = RuntimeOptions(environment: [
-      "KAYOI_DEMO": "1", "KAYOI_DEMO_STATE": state == .blank ? "empty" : "mixed",
+      "DISKIT_DEMO": "1", "DISKIT_DEMO_STATE": state == .blank ? "empty" : "mixed",
     ])
     let model = ConnectionEditorModel(model: AppModel(options: options))
     model.applyDemoFixture(kind: kind, state: state)
@@ -24,7 +24,7 @@ struct EditorPreview<Content: View>: View {
     VStack(spacing: 0) {
       if inForm { Form { content(editor) }.formStyle(.grouped) } else { content(editor) }
       if let error = editor.visibleError {
-        Text(error).foregroundStyle(KayoiTheme.error).padding(Space.lg)
+        Text(error).foregroundStyle(DiskitTheme.error).padding(Space.lg)
       }
       if editor.busy {
         HStack {
@@ -35,7 +35,7 @@ struct EditorPreview<Content: View>: View {
       if editor.testSucceeded {
         Label(L("连接测试成功"), systemImage: "checkmark.circle.fill").padding(Space.lg)
       }
-    }.frame(width: 640, height: 640).background(KayoiTheme.background).tint(KayoiTheme.accent)
+    }.frame(width: 640, height: 640).background(DiskitTheme.background).tint(DiskitTheme.accent)
   }
 }
 

@@ -32,7 +32,7 @@ public actor RemoteVolumeBackend {
   let replacesExisting: Bool
   let directoryTTL: TimeInterval
   let now: @Sendable () -> Date
-  let logger = Logger(subsystem: "com.seaony.Kayoi.FS", category: "remote-volume")
+  let logger = Logger(subsystem: "com.seaony.Diskit.FS", category: "remote-volume")
   var connected = false
   var directories: [RemotePath: DirectoryEntry] = [:]
   var staged: [RemotePath: StagedFile] = [:]

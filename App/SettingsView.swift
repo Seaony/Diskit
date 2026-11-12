@@ -47,7 +47,7 @@ struct SettingsView: View {
     .background(EditorWindowAccessor { $0.titlebarSeparatorStyle = .none })
     .demoAppearanceEvidence("settings")
     .fixedSize(horizontal: false, vertical: true)
-    .background(KayoiTheme.background)
+    .background(DiskitTheme.background)
     .buttonStyle(FlatButtonStyle())
     .toggleStyle(.switch)
     .controlSize(.small)
@@ -87,7 +87,7 @@ struct SettingsView: View {
 
   private var generalPage: some View {
     SettingsForm {
-      KayoiFormSection {
+      DiskitFormSection {
         Toggle(L("开机自动启动"), isOn: Binding(get: { startsAtLogin }, set: setStartsAtLogin))
         if let loginError { inlineError(loginError) }
         if loginError != nil || loginNeedsApproval {
@@ -95,16 +95,16 @@ struct SettingsView: View {
             guard !model.options.isDemo else { return }
             SMAppService.openSystemSettingsLoginItems()
           }
-          .help(L("在系统设置中允许 Kayoi 开机自动启动"))
+          .help(L("在系统设置中允许 Diskit 开机自动启动"))
         }
       }
-      KayoiFormSection {
+      DiskitFormSection {
         FileSystemExtensionSettings(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
       } footer: {
-        Text(L("退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"))
+        Text(L("退出 Diskit 会推出本次挂载的位置，SMB 共享保留。"))
       }
-      KayoiFormSection(title: L("外观与语言")) {
-        KayoiSideRow {
+      DiskitFormSection(title: L("外观与语言")) {
+        DiskitSideRow {
           ChoiceButtons(
             options: AppAppearance.allCases.map(\.rawValue), selection: $appearance,
             title: { (AppAppearance(rawValue: $0) ?? .system).title },
@@ -115,7 +115,7 @@ struct SettingsView: View {
           Text(L("主题")).accessibilityHidden(true)
         }
         .onChange(of: appearance) { _, value in (AppAppearance(rawValue: value) ?? .system).apply() }
-        KayoiSideRow {
+        DiskitSideRow {
           ChoiceButtons(options: AppLanguage.allCases, selection: $language, title: \.title, symbol: \.symbol)
             // 书本图标会跟着地区换字形；按英文地区显示，English 用字母 A，简体中文已单独指定“字”
             .environment(\.locale, Locale(identifier: "en"))
@@ -128,7 +128,7 @@ struct SettingsView: View {
       } footer: {
         if language != AppLanguage.atLaunch {
           HStack(spacing: Space.sm) {
-            Text(L("重新打开 Kayoi 后生效"))
+            Text(L("重新打开 Diskit 后生效"))
             if !model.options.isDemo {
               Button(L("立即重新打开")) { AppLanguage.relaunch() }
             }
@@ -141,10 +141,10 @@ struct SettingsView: View {
 
   private var notificationsPage: some View {
     SettingsForm {
-      KayoiFormSection(title: L("系统权限")) {
+      DiskitFormSection(title: L("系统权限")) {
         notificationPermission
       }
-      KayoiFormSection(title: L("通知时机")) {
+      DiskitFormSection(title: L("通知时机")) {
         Toggle(L("挂载失败"), isOn: $notifyMountFailure)
         Toggle(L("登录过期"), isOn: $notifyLoginExpired)
         Toggle(L("位置意外断开"), isOn: $notifyDisconnect)
@@ -157,8 +157,8 @@ struct SettingsView: View {
 
   private var storagePage: some View {
     SettingsForm {
-      KayoiFormSection(title: L("本机缓存")) {
-        KayoiSideRow(L("当前占用")) {
+      DiskitFormSection(title: L("本机缓存")) {
+        DiskitSideRow(L("当前占用")) {
           HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
             if checkingCache || clearingCache {
               ProgressView().nativeProgressAppearance().controlSize(.mini)
@@ -167,12 +167,12 @@ struct SettingsView: View {
               Text(ByteCountFormatter.string(fromByteCount: cacheBytes, countStyle: .file))
                 .monospacedDigit().lineLimit(1)
             } else {
-              Text(verbatim: "—").foregroundStyle(KayoiTheme.secondaryText)
+              Text(verbatim: "—").foregroundStyle(DiskitTheme.secondaryText)
             }
             if !confirmClear {
               Button(L("清空缓存")) { confirmClear = true }
                 .disabled(cannotClearCache || confirmClear)
-                .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
+                .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Diskit 留下的本机缓存"))
             }
           }
         }
@@ -188,7 +188,7 @@ struct SettingsView: View {
             Text(L("清空本机缓存？"))
               .font(.body.weight(.semibold))
             Text(L("会先推出正在使用缓存的位置，再删除下载副本。手机和网盘上的原文件、还没上传完的内容都不受影响。"))
-              .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+              .font(.caption).foregroundStyle(DiskitTheme.secondaryText)
               .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: Space.sm) {
               Button(L("取消")) { confirmClear = false }
@@ -206,7 +206,7 @@ struct SettingsView: View {
           }
         }
       } footer: {
-        Text(L("从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"))
+        Text(L("从手机、相机或部分网盘打开文件时，Diskit 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"))
       }
     }
   }
@@ -217,7 +217,7 @@ struct SettingsView: View {
 
   private var androidPage: some View {
     SettingsForm {
-      KayoiFormSection(title: L("USB 调试密钥")) {
+      DiskitFormSection(title: L("USB 调试密钥")) {
         if fingerprint.isEmpty {
           if let fingerprintError {
             inlineError(fingerprintError)
@@ -248,7 +248,7 @@ struct SettingsView: View {
       } footer: {
         VStack(alignment: .leading, spacing: Space.sm) {
           Text(L("连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。"))
-          Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
+          Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Diskit。"))
         }
       }
     }
@@ -262,17 +262,17 @@ struct SettingsView: View {
         .resizable().interpolation(.high).frame(width: 96, height: 96)
         .accessibilityHidden(true)
       VStack(spacing: Space.xs) {
-        Text(verbatim: "Kayoi").font(.system(size: 20, weight: .semibold))
-          .foregroundStyle(KayoiTheme.primaryText)
+        Text(verbatim: "Diskit").font(.system(size: 20, weight: .semibold))
+          .foregroundStyle(DiskitTheme.primaryText)
         Text(LF("版本 %@", version)) + Text(verbatim: " · ") + Text(LF("构建 %@", build))
       }
-      .font(.callout).monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
+      .font(.callout).monospacedDigit().foregroundStyle(DiskitTheme.secondaryText)
       UpdateCheckView(updater: model.updates, showLogs: model.showLogs)
     }
     .frame(maxWidth: .infinity)
     .padding(.vertical, Space.section)
     .settingsPageTop()
-    .background(KayoiTheme.background)
+    .background(DiskitTheme.background)
   }
 
   @ViewBuilder private var notificationPermission: some View {
@@ -280,15 +280,15 @@ struct SettingsView: View {
       || model.notificationAuthorization == .provisional
     {
       Label(L("系统通知已允许"), systemImage: "bell.fill")
-        .foregroundStyle(KayoiTheme.secondaryText)
+        .foregroundStyle(DiskitTheme.secondaryText)
     } else if model.notificationAuthorization == .denied {
-      KayoiSideRow {
+      DiskitSideRow {
         Button(L("打开系统设置")) { model.openNotificationSettings() }
       } label: {
         Label(L("系统通知已关闭"), systemImage: "bell.slash")
       }
     } else {
-      KayoiSideRow {
+      DiskitSideRow {
         Button(L("允许通知")) {
           model.operations.start { await model.requestNotificationAuthorization() }
         }
@@ -385,7 +385,7 @@ struct SettingsView: View {
 
   private func inlineError(_ message: String) -> some View {
     Label(message, systemImage: "exclamationmark.circle.fill")
-      .font(.caption).foregroundStyle(KayoiTheme.error)
+      .font(.caption).foregroundStyle(DiskitTheme.error)
       .fixedSize(horizontal: false, vertical: true)
   }
 
@@ -402,11 +402,11 @@ private struct SettingsForm<Content: View>: View {
   var body: some View {
     VStack(alignment: .leading, spacing: Space.xl) { content }
       .padding(.horizontal, Space.xl).padding(.vertical, Space.lg)
-      .labeledContentStyle(KayoiFormRowStyle()).toggleStyle(KayoiFormSwitchStyle())
+      .labeledContentStyle(DiskitFormRowStyle()).toggleStyle(DiskitFormSwitchStyle())
       .controlSize(.regular)
       .settingsPageTop()
       .fixedSize(horizontal: false, vertical: true)
-      .background(KayoiTheme.background)
+      .background(DiskitTheme.background)
   }
 }
 
@@ -416,6 +416,6 @@ extension View {
     scrollEdgeEffectHidden(true, for: .top)
       // 工具栏底色每页都显示，不随页面能否滚动变化
       .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
-      .overlay(alignment: .top) { KayoiSeparator() }
+      .overlay(alignment: .top) { DiskitSeparator() }
   }
 }

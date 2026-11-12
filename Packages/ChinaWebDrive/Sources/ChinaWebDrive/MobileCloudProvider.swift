@@ -397,7 +397,7 @@ public actor MobileCloudProvider: RemoteFileProvider {
     var lastConfirmed = from
     do {
       if needsTemporaryName {
-        let temporary = ".kayoi-move-" + UUID().uuidString
+        let temporary = ".diskit-move-" + UUID().uuidString
         try await rename(node.fileID, to: temporary)
         lastConfirmed = try source.appending(temporary)
       }

@@ -9,7 +9,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private var mimeTypes: [String: String] = [:]
   private var connected = false
   private let chunkSize = 8 * 1024 * 1024
-  private static let identityPrefix = "~kayoi~"
+  private static let identityPrefix = "~diskit~"
   private var cacheRevision: UInt64 = 0
 
   private var progress: (@Sendable (Int64, Int64) -> Void)?
@@ -170,7 +170,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       let metadata = try JSONSerialization.data(withJSONObject: [
         "name": basename(path), "parents": [try await resolve(parent(path))],
       ])
-      let boundary = "kayoi-" + UUID().uuidString
+      let boundary = "diskit-" + UUID().uuidString
       var body = Data(
         "--\(boundary)\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n".utf8)
       body.append(metadata)

@@ -20,7 +20,7 @@ enum WebLoginObservationScript {
               if (auth && typeof auth.accountPhone === 'string') result.phone = auth.accountPhone;
               if (auth && auth.userDomainId != null) result.userDomainID = String(auth.userDomainId);
             }
-            window.webkit.messageHandlers.kayoiWebLogin.postMessage(result);
+            window.webkit.messageHandlers.diskitWebLogin.postMessage(result);
           } catch (_) {}
         };
         const originalFetch = window.fetch;

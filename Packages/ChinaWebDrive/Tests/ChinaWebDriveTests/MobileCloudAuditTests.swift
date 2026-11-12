@@ -123,7 +123,7 @@ private func auditSession(
     try await provider.move(RemotePath("/old"), to: RemotePath("/dest/new"))
     Issue.record("回滚失败不应成功")
   } catch let error as MobileCloudMoveFailure {
-    #expect(error.lastConfirmedPath.hasPrefix("/.kayoi-move-"))
+    #expect(error.lastConfirmedPath.hasPrefix("/.diskit-move-"))
     #expect(error.original as? RemoteError == .http(500))
     #expect(error.recovery as? RemoteError == .http(500))
   }

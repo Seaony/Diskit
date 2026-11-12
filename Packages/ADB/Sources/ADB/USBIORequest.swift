@@ -3,7 +3,7 @@ import Foundation
 // 同一队列排列提交和取消，完成回调前保留传输缓冲区。
 final class USBIORequest: @unchecked Sendable {
   typealias Completion = @Sendable (Result<Int, Error>) -> Void
-  private let queue = DispatchQueue(label: "com.seaony.Kayoi.USBRequest")
+  private let queue = DispatchQueue(label: "com.seaony.Diskit.USBRequest")
   private let enqueue: @Sendable (@escaping Completion) throws -> Void
   private let abort: @Sendable () -> Void
   private var continuation: CheckedContinuation<Int, Error>?

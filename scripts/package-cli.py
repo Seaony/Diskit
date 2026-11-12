@@ -17,7 +17,7 @@ def verify_resources(destination):
 def package(source, destination):
     verify_resources(source)
     destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source / 'kayoi-dev', destination / 'kayoi-dev')
+    shutil.copy2(source / 'diskit-dev', destination / 'diskit-dev')
     for bundle in source.glob('*.bundle'):
         shutil.copytree(bundle, destination / bundle.name, dirs_exist_ok=True, symlinks=True)
     verify_resources(destination)

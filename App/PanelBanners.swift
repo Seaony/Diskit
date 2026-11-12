@@ -8,7 +8,7 @@ struct QuitFailureBanner: View {
   var body: some View {
     HStack(alignment: .top, spacing: Space.sm) {
       Image(systemName: "exclamationmark.triangle.fill")
-        .foregroundStyle(KayoiTheme.error)
+        .foregroundStyle(DiskitTheme.error)
         .frame(width: Space.lg)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: Space.sm) {
@@ -35,13 +35,13 @@ struct QuitFailureBanner: View {
         }
         .buttonStyle(FlatButtonStyle())
       }
-      .foregroundStyle(KayoiTheme.error)
+      .foregroundStyle(DiskitTheme.error)
       .fixedSize(horizontal: false, vertical: true)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(Space.md)
     .background(
-      KayoiTheme.errorBackground,
+      DiskitTheme.errorBackground,
       in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
     .accessibilityElement(children: .contain)
   }
@@ -54,11 +54,11 @@ struct PanelDiscoveryBanner: View {
 
   var body: some View {
     HStack(alignment: .top, spacing: Space.sm) {
-      Image(systemName: "wifi.exclamationmark").foregroundStyle(KayoiTheme.warning)
+      Image(systemName: "wifi.exclamationmark").foregroundStyle(DiskitTheme.warning)
         .frame(width: Space.lg)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: Space.sm) {
-        Text(message).font(.caption).foregroundStyle(KayoiTheme.warning)
+        Text(message).font(.caption).foregroundStyle(DiskitTheme.warning)
           .fixedSize(horizontal: false, vertical: true)
         Button(permissionDenied ? L("打开本地网络设置") : L("添加位置"), action: action)
           .buttonStyle(FlatButtonStyle())
@@ -67,7 +67,7 @@ struct PanelDiscoveryBanner: View {
     }
     .padding(Space.md)
     .gridArea("discovery-banner-" + message, inset: Space.md)
-    .background(KayoiTheme.warningBackground, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
+    .background(DiskitTheme.warningBackground, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
   }
 }
 
@@ -76,18 +76,18 @@ struct PanelFailureBanner: View {
   let message: String
   var body: some View {
     HStack(alignment: .top, spacing: Space.sm) {
-      Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(KayoiTheme.error)
+      Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(DiskitTheme.error)
         .frame(width: Space.lg)
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: Space.xs) {
         Text(title).font(.subheadline.weight(.semibold))
         Text(message).font(.caption).textSelection(.enabled)
-      }.foregroundStyle(KayoiTheme.error)
+      }.foregroundStyle(DiskitTheme.error)
         .frame(maxWidth: .infinity, alignment: .leading)
         .gridProbe("message", area: "failure-banner-" + title, edge: nil)
     }.padding(Space.md)
       .gridArea("failure-banner-" + title, inset: Space.md)
-      .background(KayoiTheme.errorBackground, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
+      .background(DiskitTheme.errorBackground, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
   }
 }
 
@@ -106,9 +106,9 @@ struct DevicePromptBanner: View {
       VStack(alignment: .leading, spacing: Space.sm) {
         VStack(alignment: .leading, spacing: 2) { // grid: ok 标题和说明贴近
           Text(LF("发现“%@”", item.title)).font(.subheadline.weight(.semibold))
-            .foregroundStyle(KayoiTheme.primaryText)
+            .foregroundStyle(DiskitTheme.primaryText)
           Text(error ?? L("要添加吗？添加后，以后插上会自动连接。")).font(.caption)
-            .foregroundStyle(error == nil ? KayoiTheme.secondaryText : KayoiTheme.error)
+            .foregroundStyle(error == nil ? DiskitTheme.secondaryText : DiskitTheme.error)
             .fixedSize(horizontal: false, vertical: true)
         }
         HStack(spacing: Space.sm) {
@@ -124,15 +124,15 @@ struct DevicePromptBanner: View {
       }.frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(Space.md)
-    .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
+    .background(DiskitTheme.surface, in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+      RoundedRectangle(cornerRadius: Radius.row, style: .continuous).strokeBorder(DiskitTheme.border, lineWidth: 0.5)
     }
   }
 }
 
 #Preview("发现错误 · 权限") {
-  PanelDiscoveryBanner(message: L("请允许 Kayoi 访问本地网络"), permissionDenied: true, action: {}).padding().frame(width: 380)
+  PanelDiscoveryBanner(message: L("请允许 Diskit 访问本地网络"), permissionDenied: true, action: {}).padding().frame(width: 380)
 }
 #Preview("发现错误 · 网络") {
   PanelDiscoveryBanner(message: L("暂时无法发现局域网设备，请检查网络连接"), permissionDenied: false, action: {}).padding().frame(width: 380)
@@ -151,7 +151,7 @@ struct DevicePromptBanner: View {
 }
 
 #Preview("发现错误 · 深色") {
-  PanelDiscoveryBanner(message: L("请允许 Kayoi 访问本地网络"), permissionDenied: true, action: {})
+  PanelDiscoveryBanner(message: L("请允许 Diskit 访问本地网络"), permissionDenied: true, action: {})
     .padding().frame(width: 380).preferredColorScheme(.dark)
 }
 #Preview("读取错误 · 深色") {

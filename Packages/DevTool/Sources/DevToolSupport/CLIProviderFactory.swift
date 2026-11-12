@@ -49,7 +49,7 @@ enum CLIProviderFactory {
     case .baiduDrive:
       provider = BaiduDriveProvider(
         configuration: BaiduDriveConfiguration(
-          rootPath: environment("BAIDU_ROOT_PATH", fallback: "apps/Kayoi"),
+          rootPath: environment("BAIDU_ROOT_PATH", fallback: "apps/Diskit"),
           appID: environment("BAIDU_APP_ID")),
         session: OAuthSession(
           configuration: oauthConfiguration(.baiduDrive, values: values),

@@ -1,10 +1,10 @@
 import Foundation
 
 /// 各调用方传入自己的资源包，命令行工具也能读取包内翻译。
-public enum KayoiLocalization {
+public enum DiskitLocalization {
   public static func text(_ key: String, bundle: Bundle, arguments: [CVarArg] = []) -> String {
     let environment = ProcessInfo.processInfo.environment
-    let pseudo = environment["KAYOI_DEMO"] == "1" && environment["KAYOI_PSEUDO_LOCALE"] == "1"
+    let pseudo = environment["DISKIT_DEMO"] == "1" && environment["DISKIT_PSEUDO_LOCALE"] == "1"
     let selected: Bundle
     if pseudo, let path = bundle.path(forResource: "en", ofType: "lproj"), let english = Bundle(path: path) {
       selected = english
@@ -23,7 +23,7 @@ public enum KayoiLocalization {
   }
 }
 
-public func L(_ value: String) -> String { KayoiLocalization.text(value, bundle: .module) }
+public func L(_ value: String) -> String { DiskitLocalization.text(value, bundle: .module) }
 public func LF(_ value: String, _ arguments: CVarArg...) -> String {
-  KayoiLocalization.text(value, bundle: .module, arguments: arguments)
+  DiskitLocalization.text(value, bundle: .module, arguments: arguments)
 }

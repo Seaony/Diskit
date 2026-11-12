@@ -16,7 +16,7 @@ private let configuration = OAuthConfiguration(
   clientSecret: "secret",
   authorizationURL: URL(string: "https://example.com/authorize")!,
   tokenURL: URL(string: "https://example.com/token")!,
-  redirectURI: "kayoi://oauth/test",
+  redirectURI: "diskit://oauth/test",
   scopes: ["files.read", "files.write"],
   additionalAuthorizationItems: ["prompt": "select_account"])
 
@@ -57,7 +57,7 @@ private func tokenResponse(
     clientID: "public-client", clientSecret: "",
     authorizationURL: URL(string: "https://example.com/authorize")!,
     tokenURL: URL(string: "https://example.com/token")!,
-    redirectURI: "kayoi://oauth/test", scopes: [], usesPKCE: true)
+    redirectURI: "diskit://oauth/test", scopes: [], usesPKCE: true)
   let session = OAuthSession(
     configuration: pkceConfiguration, secretKey: "oauth", secrets: MemorySecrets(),
     transport: transport)
@@ -141,7 +141,7 @@ private func tokenResponse(
     authorizationURL: URL(string: "https://example.com/authorize")!,
     tokenURL: URL(string: "https://example.com/token")!,
     refreshTokenURL: refreshURL,
-    redirectURI: "kayoi://oauth/test", scopes: [])
+    redirectURI: "diskit://oauth/test", scopes: [])
   let session = OAuthSession(
     configuration: refreshConfiguration, secretKey: "oauth", secrets: secrets, transport: transport)
 

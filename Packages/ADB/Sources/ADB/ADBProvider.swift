@@ -198,7 +198,7 @@ public actor ADBProvider: RemoteFileProvider {
     defer { try? file.close() }
     let destination = mapped(path)
     let temporary = URL(filePath: destination).deletingLastPathComponent()
-      .appending(path: ".kayoi-upload-" + UUID().uuidString + ".tmp").path
+      .appending(path: ".diskit-upload-" + UUID().uuidString + ".tmp").path
     do {
       try await session.open("sync:")
       try await session.write(
@@ -320,10 +320,10 @@ public actor ADBProvider: RemoteFileProvider {
         }
       }
     } else {
-      let marker = "KAYOI_STATUS_" + UUID().uuidString + ":"
+      let marker = "DISKIT_STATUS_" + UUID().uuidString + ":"
       let wrapped =
-        "(\n" + command + "\n) 2>&1; kayoi_status=$?; printf '\\n" + marker
-        + "%s\\n' \"$kayoi_status\""
+        "(\n" + command + "\n) 2>&1; diskit_status=$?; printf '\\n" + marker
+        + "%s\\n' \"$diskit_status\""
       try await session.open("shell:" + wrapped)
       while let chunk = try await session.readChunk() {
         output.append(chunk)

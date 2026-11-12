@@ -20,7 +20,7 @@ extension FocusedValues {
   }
 }
 
-@MainActor struct KayoiCommands: Commands {
+@MainActor struct DiskitCommands: Commands {
   let model: AppModel
   let windows: WindowCoordinator
   @Environment(\.openWindow) private var openWindow
@@ -28,7 +28,7 @@ extension FocusedValues {
 
   var body: some Commands {
     CommandGroup(replacing: .appInfo) {
-      Button(L("关于 Kayoi")) {
+      Button(L("关于 Diskit")) {
         windows.prepareToOpen()
         NSApplication.shared.orderFrontStandardAboutPanel(nil)
         NSApplication.shared.activate()

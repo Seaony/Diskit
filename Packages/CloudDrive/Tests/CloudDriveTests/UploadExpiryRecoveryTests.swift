@@ -27,7 +27,7 @@ private func expirySession(_ transport: any HTTPTransport) throws -> OAuthSessio
   return OAuthSession(
     configuration: OAuthConfiguration(
       clientID: "local", clientSecret: "", authorizationURL: URL(string: "https://local.invalid/auth")!,
-      tokenURL: URL(string: "https://local.invalid/token")!, redirectURI: "kayoi://local", scopes: []),
+      tokenURL: URL(string: "https://local.invalid/token")!, redirectURI: "diskit://local", scopes: []),
     secretKey: "expiry", secrets: secrets, transport: transport)
 }
 

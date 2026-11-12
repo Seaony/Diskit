@@ -2,7 +2,7 @@ import Foundation
 import Network
 
 public enum NetworkFailure {
-  private static let sourceKey = "com.seaony.Kayoi.networkFailure"
+  private static let sourceKey = "com.seaony.Diskit.networkFailure"
 
   public static func isTransportError(_ error: Error) -> Bool {
     let source = error as NSError

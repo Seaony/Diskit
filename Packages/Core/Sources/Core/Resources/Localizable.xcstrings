@@ -799,19 +799,19 @@
         }
       }
     },
-    "此网盘尚未在 Kayoi 中启用": {
+    "此网盘尚未在 Diskit 中启用": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This drive is not enabled in Kayoi yet"
+            "value": "This drive is not enabled in Diskit yet"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此网盘尚未在 Kayoi 中启用"
+            "value": "此网盘尚未在 Diskit 中启用"
           }
         }
       }
@@ -1610,36 +1610,36 @@
         }
       }
     },
-    "配置来自更新版本，请升级 Kayoi": {
+    "配置来自更新版本，请升级 Diskit": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This configuration requires a newer version of Kayoi"
+            "value": "This configuration requires a newer version of Diskit"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "配置来自更新版本，请升级 Kayoi"
+            "value": "配置来自更新版本，请升级 Diskit"
           }
         }
       }
     },
-    "阿里云盘尚未在 Kayoi 中启用": {
+    "阿里云盘尚未在 Diskit 中启用": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aliyun Drive is not enabled in Kayoi yet"
+            "value": "Aliyun Drive is not enabled in Diskit yet"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "阿里云盘尚未在 Kayoi 中启用"
+            "value": "阿里云盘尚未在 Diskit 中启用"
           }
         }
       }
@@ -1768,19 +1768,19 @@
         }
       }
     },
-    "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@": {
+    "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Diskit 重试。\n%@": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Data migration did not finish. Old data that has not yet been cleaned up was kept. Reopen Kayoi to try again.\n%@"
+            "value": "Data migration did not finish. Old data that has not yet been cleaned up was kept. Reopen Diskit to try again.\n%@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Kayoi 重试。\n%@"
+            "value": "数据迁移没有完成，尚未清理的旧数据已保留。请重新打开 Diskit 重试。\n%@"
           }
         }
       }
@@ -1802,36 +1802,36 @@
         }
       }
     },
-    "无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。": {
+    "无法访问共享数据，请重新构建并签名 Diskit。旧数据未删除。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Shared storage is unavailable. Rebuild and sign Kayoi. Your old data has not been deleted."
+            "value": "Shared storage is unavailable. Rebuild and sign Diskit. Your old data has not been deleted."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法访问共享数据，请重新构建并签名 Kayoi。旧数据未删除。"
+            "value": "无法访问共享数据，请重新构建并签名 Diskit。旧数据未删除。"
           }
         }
       }
     },
-    "迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。": {
+    "迁移后的数据核对失败，旧数据已保留。请重新打开 Diskit 重试。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Migrated data could not be verified. Your old data was kept. Reopen Kayoi to try again."
+            "value": "Migrated data could not be verified. Your old data was kept. Reopen Diskit to try again."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "迁移后的数据核对失败，旧数据已保留。请重新打开 Kayoi 重试。"
+            "value": "迁移后的数据核对失败，旧数据已保留。请重新打开 Diskit 重试。"
           }
         }
       }

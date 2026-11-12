@@ -7,7 +7,7 @@ import Testing
 @testable import AliyunDrive
 
 private let oauthConfiguration = AliyunConfiguration(
-  clientID: "test-client", clientSecret: "test-secret", redirectURI: "kayoi://oauth/callback")
+  clientID: "test-client", clientSecret: "test-secret", redirectURI: "diskit://oauth/callback")
 
 private typealias OAuthSecrets = TestSecretStore
 
@@ -76,7 +76,7 @@ private func oauthRecord(_ secrets: OAuthSecrets, key: String) throws -> AliyunS
   #expect(parts.host == "openapi.alipan.com")
   #expect(parts.path == "/oauth/authorize")
   #expect(values["client_id"] == "test-client")
-  #expect(values["redirect_uri"] == "kayoi://oauth/callback")
+  #expect(values["redirect_uri"] == "diskit://oauth/callback")
   #expect(values["scope"] == "user:base,file:all:read,file:all:write")
   #expect(values["response_type"] == "code")
   #expect(values["style"] == "folder")

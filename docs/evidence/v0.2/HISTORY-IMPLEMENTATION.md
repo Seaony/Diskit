@@ -4,7 +4,7 @@
 
 ---
 
-# Kayoi 0.2 优化验收记录
+# Diskit 0.2 优化验收记录
 
 本报告为进行中的证据账本。未列明通过的项目均未完成，历史 POLISH-REPORT 不作为本轮通过证据。真机、账号及真实菜单栏点击另列入 ACCEPTANCE，不能由替身测试代替。
 
@@ -40,8 +40,8 @@
 
 ## 应用逻辑测试与覆盖率入口
 
-- `KayoiTests` 为不宿主主应用的单元测试目标，源码范围暂为 `App/Logic`；现有视图中尚未拆出的业务逻辑仍未覆盖，不能视为 App 覆盖率验收通过。
-- `demoRequiresExplicitOptIn`、`demoOptionsSelectIsolatedScenario` 验证只有显式演示开关才启用隔离场景、面板窗口与伪语言。生产启动不受截图环境变量影响。源码：`App/Logic/RuntimeOptions.swift:3`、`Tests/KayoiTests/RuntimeOptionsTests.swift:3`。
+- `DiskitTests` 为不宿主主应用的单元测试目标，源码范围暂为 `App/Logic`；现有视图中尚未拆出的业务逻辑仍未覆盖，不能视为 App 覆盖率验收通过。
+- `demoRequiresExplicitOptIn`、`demoOptionsSelectIsolatedScenario` 验证只有显式演示开关才启用隔离场景、面板窗口与伪语言。生产启动不受截图环境变量影响。源码：`App/Logic/RuntimeOptions.swift:3`、`Tests/DiskitTests/RuntimeOptionsTests.swift:3`。
 - `make coverage` 逐包统计自有 Sources（包含未覆盖行，不计测试及依赖），对缺失测试目标、零行或低于 §13 门槛均失败；暂不配置系统薄封装例外。DevTool 尚无测试，预期不通过。输出位于 `build/Coverage/summary.txt`，基础测量已结束：包合计 69.69%，未达标，退出码非零；输出摘录 `docs/evidence/v0.2/coverage-baseline.log`。该基线的 App 9 行仅为开关解析，随后已将 AppModel 纳入统计，不能据该 100% 宣称 App 全部逻辑达标。
 - 门禁通过：应用逻辑 2 项、包测试 244 项，发布构建与签名校验通过；输出摘录 `docs/evidence/v0.2/foundation-test-target.log`。
 
@@ -57,7 +57,7 @@
 ### 演示入口复核
 
 - 当前源码证据：`AppModel.swift:27` 在构造时隔离存储，`:96` 在启动时分流，`:319` 拒绝演示模式取得真实 Provider；`App/Logic/DemoMountService.swift:29` 只更新内存挂载字典。
-- `Tests/KayoiTests/DemoCancellationTests.swift:5` 的 `cancelDemoAuthorizationNeverStartsConnection` 修复前观察到 `calls = 1`、状态变为 `tested`，修复后要求调用次数为 0 且恢复 `disconnected`。旧临时失败日志已不在当前环境，以上为先前实际失败输出摘录；本轮重新执行完整门禁验证最终代码。
+- `Tests/DiskitTests/DemoCancellationTests.swift:5` 的 `cancelDemoAuthorizationNeverStartsConnection` 修复前观察到 `calls = 1`、状态变为 `tested`，修复后要求调用次数为 0 且恢复 `disconnected`。旧临时失败日志已不在当前环境，以上为先前实际失败输出摘录；本轮重新执行完整门禁验证最终代码。
 - 电脑控制已点击“取消”，无障碍树确认同一行变为“未连接 / 测试连接”：`docs/evidence/v0.2/demo-cancel-ax.txt`；截图 `docs/screenshots/v0.2/FEAT-06-panel-cancel-light-zh.png`。此结论只覆盖演示等待授权状态，真实异步连接的取消仍需后续完善。
 - 五类发现均可见：`docs/screenshots/v0.2/FEAT-06-panel-discovered-light-zh.png`。这些是基础可操作性证据，旧布局的对齐、控件状态及最终矩阵仍未验收。
 
@@ -65,8 +65,8 @@
 
 ## 主题资源迁移（DS-11，基础部分）
 
-- `App/KayoiTheme.swift:3` 的六个主题色已改读 `App/Assets.xcassets`，不再在主题代码中散写十六进制。每个色集包含浅色、深色及对应增强对比度四个不透明变体。
-- `Tests/KayoiTests/ThemeAssetTests.swift:4` 的 `themeAssetsHaveOpaqueLightDarkAndHighContrastVariants` 检查六个实际使用的色集、全部四种组合及合法不透明颜色。Xcode 资源编译和完整门禁通过，应用逻辑 9 项、包 244 项；证据 `docs/evidence/v0.2/color-assets-gates.log`。
+- `App/DiskitTheme.swift:3` 的六个主题色已改读 `App/Assets.xcassets`，不再在主题代码中散写十六进制。每个色集包含浅色、深色及对应增强对比度四个不透明变体。
+- `Tests/DiskitTests/ThemeAssetTests.swift:4` 的 `themeAssetsHaveOpaqueLightDarkAndHighContrastVariants` 检查六个实际使用的色集、全部四种组合及合法不透明颜色。Xcode 资源编译和完整门禁通过，应用逻辑 9 项、包 244 项；证据 `docs/evidence/v0.2/color-assets-gates.log`。
 - 电脑控制观察演示空面板，确认深浅色主题资源正常解析、背景仍不透明：`docs/screenshots/v0.2/DS-11-panel-empty-light-zh.png`、`DS-11-panel-empty-dark-zh.png`。这些截图仍显示待修复的重复添加按钮和旧布局，不作为最终界面验收通过。
 - 未覆盖：其他视图中散落的状态色与位置色会在 §3 设计基准阶段统一；DS-13 全部对比度组合尚未达标，增强对比度实际界面矩阵仍待后续验收。
 
@@ -202,9 +202,9 @@
 ## FIX-07：独立进程完整授权流程与本地验收结论
 
 - `Packages/CloudDrive/Tests/CloudDriveTests/ProcessRefreshTests.swift:75` 启动两个独立测试进程，各自创建实际 OAuthSession，共享临时文件存储和账号锁。传输替身在两进程都读过旧凭据后才允许刷新完成；两进程完成资源请求并保留登录，父进程断言刷新事件恰好一次，最终访问令牌与刷新令牌均为新值。
-- 请求全部进入 `ProcessRefreshHTTP`（`:43`），只接受 `refresh.invalid` 的两条已登记路径，不建立网络连接；磁盘文件仅包含固定假令牌，测试结束删除临时目录。测试运行器通过继承的测试环境加载测试 bundle，没有启动 Kayoi 应用、真实命令行或设备发现。
+- 请求全部进入 `ProcessRefreshHTTP`（`:43`），只接受 `refresh.invalid` 的两条已登记路径，不建立网络连接；磁盘文件仅包含固定假令牌，测试结束删除临时目录。测试运行器通过继承的测试环境加载测试 bundle，没有启动 Diskit 应用、真实命令行或设备发现。
 - 负向对照仅在测试存储中临时把共享锁路径拆成每进程独立路径：同一测试观察到两次刷新及一个子进程 loginRequired，退出 1；随后恢复共享路径。证据 `docs/evidence/v0.2/FIX-07-process-refresh.log`，证明测试能发现进程间没有共享锁的问题。
-- 本地验收结论：十个并发 401 的单次刷新、四套会话的共享刷新、不同进程的互斥与凭据可见性、保存失败的保留/补存/持锁、显式删除待保存凭据均已有相应回归和证据。FIX-07 本地验收通过；前文各“部分”记录描述对应历史提交，不覆盖本节新增证据。实际 App 与 kayoi-dev 的账号授权、系统钥匙串交互仍列入 ACCEPTANCE 待用户验收。
+- 本地验收结论：十个并发 401 的单次刷新、四套会话的共享刷新、不同进程的互斥与凭据可见性、保存失败的保留/补存/持锁、显式删除待保存凭据均已有相应回归和证据。FIX-07 本地验收通过；前文各“部分”记录描述对应历史提交，不覆盖本节新增证据。实际 App 与 diskit-dev 的账号授权、系统钥匙串交互仍列入 ACCEPTANCE 待用户验收。
 - 进程异常退出会丢失尚未写入钥匙串的内存值，这是当前失败保留机制的明确边界；未通过另建明文凭据文件规避系统存储失败。刷新任务的统一等待期限另随 FIX-18 核查。
 - 本次完整提交门禁通过：应用逻辑 9 项、包测试 303 项，发布构建和签名校验通过；证据 `docs/evidence/v0.2/FIX-07-process-gates.log`。
 
@@ -232,7 +232,7 @@
 
 ## FIX-09：上传完成后替换目标与中断保护
 
-- `Packages/ADB/Sources/ADB/ADBSync.swift:262` 将 SEND/SND2 目标改为最终目标同目录下的随机 `.kayoi-upload-*.tmp` 文件。收到上传完成确认并关闭传输服务后，检查取消，再通过 `mv -T --` 替换精确目标（`:298`）；不先删除或截断原文件，不把临时文件移入目标目录。
+- `Packages/ADB/Sources/ADB/ADBSync.swift:262` 将 SEND/SND2 目标改为最终目标同目录下的随机 `.diskit-upload-*.tmp` 文件。收到上传完成确认并关闭传输服务后，检查取消，再通过 `mv -T --` 替换精确目标（`:298`）；不先删除或截断原文件，不把临时文件移入目标目录。
 - 上传或提交失败时（`:300`），保留原错误，连接仍可用则尝试删除本次临时文件；清理结束前保持操作占用状态，清理本身失败也更新会话状态。传输断开或取消后无法访问设备时可能遗留临时文件，不能据本地测试宣称断线时也已清理。
 - `executeShell`（`:352`）复用新版命令通道，并为旧版设备命令通道增加随机结束标记和退出状态解析；命令在子 shell 中执行，内部 exit 不会跳过状态报告。旧、新传输协议均使用同一安全提交顺序，未以直接覆盖作为兼容回退。
 - `adbFailedUploadKeepsOriginal`（`UploadSafetyTests.swift:8`）覆盖旧/新协议 × 传输中断、服务端空间不足、提交权限错误六组。修复前原文件均被写坏，部分情况甚至未报告错误；修复后断言具体错误、实际发送一次数据、原文件逐字节不变，连接可用的失败场景无临时文件残留。
@@ -325,7 +325,7 @@
 - `paginationUsesCanonicalEncodedQueryOnTheWire`（`S3ProviderTests.swift:421`）在路径寻址和虚拟主机寻址两组中，返回含加号、斜杠、等号、中文、空格、百分号和问号的分页 token；断言实际请求的完整编码查询串和解码后 token。修复前实际 URL 中的 +、/、? 未编码，两组共四项断言失败；修复后通过。
 - `sigV4MatchesAllOfficialSingleChunkExamples`（`:444`）逐个比较 AWS 官方单块载荷页面的全部四个示例：范围 GET、带正文和存储级别的 PUT、空值 lifecycle 查询、List Objects 查询。固定公开示例日期和凭据，比较完整 Authorization 值、实际编码路径与查询串，不只检查签名头存在。四组均通过，没有发出网络请求。
 - 参考 [AWS 官方单块载荷签名示例](https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sig-v4-header-based-auth.html)，对应 Examples: Signature Calculations 下四节；示例值直接来自文档，不由被测代码生成预期值。签名运算仍调用 CryptoKit 的 SHA256 与 HMAC，没有新增密码学实现或依赖。方法只开放模块内测试访问并允许指定日期，生产默认当前时间，公共 API 未增加测试参数。
-- 更正审查第 2 节 B2 对上一轮报告的质疑：原测试只验证 Authorization 中有 Credential，本轮才加入实际官方签名值比对。此处“全部”限定为 Kayoi 所用单块载荷签名页四个示例，不冒称分块签名或预签名 URL 已验收。
+- 更正审查第 2 节 B2 对上一轮报告的质疑：原测试只验证 Authorization 中有 Credential，本轮才加入实际官方签名值比对。此处“全部”限定为 Diskit 所用单块载荷签名页四个示例，不冒称分块签名或预签名 URL 已验收。
 - 核心回归证据 `docs/evidence/v0.2/FIX-16-query-regression.log`；完整提交门禁通过：应用逻辑 9 项、包测试 341 项，发布构建与签名校验通过；证据 `docs/evidence/v0.2/FIX-16-query-gates.log`。FIX-16 尚未整体通过：不支持条件写入的服务仍需增加 HEAD 同名检查。
 
 

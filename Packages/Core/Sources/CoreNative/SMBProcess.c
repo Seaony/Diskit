@@ -30,18 +30,18 @@ static ssize_t system_write(void *context, int descriptor, const void *bytes, si
     return write(descriptor, bytes, count);
 }
 
-int kayoi_smb_process(const char *executable, const char *const *arguments,
+int diskit_smb_process(const char *executable, const char *const *arguments,
                       const char *password, char *output, size_t capacity,
                       int *exit_status, double timeout) {
-    const kayoi_smb_process_io io = {NULL, monotonic_seconds, system_poll, system_write};
-    return kayoi_smb_process_with_io(executable, arguments, password, output, capacity,
+    const diskit_smb_process_io io = {NULL, monotonic_seconds, system_poll, system_write};
+    return diskit_smb_process_with_io(executable, arguments, password, output, capacity,
                                      exit_status, timeout, &io);
 }
 
 // 同一个期限覆盖终端读写和进程退出；退出后继续读完终端尾部。
-int kayoi_smb_process_with_io(const char *executable, const char *const *arguments,
+int diskit_smb_process_with_io(const char *executable, const char *const *arguments,
                       const char *password, char *output, size_t capacity,
-                      int *exit_status, double timeout, const kayoi_smb_process_io *io) {
+                      int *exit_status, double timeout, const diskit_smb_process_io *io) {
     if (!executable || !arguments || !password || !output || !exit_status ||
         !io || !io->now || !io->poll || !io->write || capacity == 0 || !isfinite(timeout) || timeout <= 0) return EINVAL;
     output[0] = 0;
@@ -127,8 +127,8 @@ int kayoi_smb_process_with_io(const char *executable, const char *const *argumen
 }
 
 // 密码只写入子进程的终端，不放进参数或环境。
-int kayoi_smb_shares(const char *server, const char *password, char *output,
+int diskit_smb_shares(const char *server, const char *password, char *output,
                      size_t capacity, int *exit_status, double timeout) {
     const char *args[] = {"/usr/bin/smbutil", "view", "-f", server, NULL};
-    return kayoi_smb_process(args[0], args, password, output, capacity, exit_status, timeout);
+    return diskit_smb_process(args[0], args, password, output, capacity, exit_status, timeout);
 }

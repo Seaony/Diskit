@@ -69,7 +69,7 @@ def main():
     if result.exists():
         shutil.rmtree(result)
     ok = run([
-        "xcodebuild", "-project", "Kayoi.xcodeproj", "-scheme", "KayoiTests",
+        "xcodebuild", "-project", "Diskit.xcodeproj", "-scheme", "DiskitTests",
         "-destination", "platform=macOS,arch=arm64", "-derivedDataPath", "build/Tests",
         "-enableCodeCoverage", "YES", "-resultBundlePath", str(result),
         "test", "CODE_SIGNING_ALLOWED=NO",

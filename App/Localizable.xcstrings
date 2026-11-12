@@ -219,24 +219,24 @@
         }
       }
     },
-    "Kayoi": {
+    "Diskit": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi"
+            "value": "Diskit"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi"
+            "value": "Diskit"
           }
         }
       }
     },
-    "Kayoi，%d 个位置已挂载": {
+    "Diskit，%d 个位置已挂载": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -245,13 +245,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi, %d location mounted"
+                  "value": "Diskit, %d location mounted"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi, %d locations mounted"
+                  "value": "Diskit, %d locations mounted"
                 }
               }
             }
@@ -263,13 +263,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi，%d 个位置已挂载"
+                  "value": "Diskit，%d 个位置已挂载"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi，%d 个位置已挂载"
+                  "value": "Diskit，%d 个位置已挂载"
                 }
               }
             }
@@ -277,7 +277,7 @@
         }
       }
     },
-    "Kayoi，%d 个位置需要处理": {
+    "Diskit，%d 个位置需要处理": {
       "localizations": {
         "en": {
           "variations": {
@@ -285,13 +285,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi, %d location needs attention"
+                  "value": "Diskit, %d location needs attention"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi, %d locations need attention"
+                  "value": "Diskit, %d locations need attention"
                 }
               }
             }
@@ -303,13 +303,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi，%d 个位置需要处理"
+                  "value": "Diskit，%d 个位置需要处理"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "Kayoi，%d 个位置需要处理"
+                  "value": "Diskit，%d 个位置需要处理"
                 }
               }
             }
@@ -317,34 +317,34 @@
         }
       }
     },
-    "Kayoi，正在连接位置": {
+    "Diskit，正在连接位置": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi, connecting to a location"
+            "value": "Diskit, connecting to a location"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi，正在连接位置"
+            "value": "Diskit，正在连接位置"
           }
         }
       }
     },
-    "Kayoi，没有挂载的位置": {
+    "Diskit，没有挂载的位置": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi, no mounted locations"
+            "value": "Diskit, no mounted locations"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kayoi，没有挂载的位置"
+            "value": "Diskit，没有挂载的位置"
           }
         }
       }
@@ -765,34 +765,34 @@
         }
       }
     },
-    "会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。": {
+    "会删除 Diskit 保存的位置和登录信息，设备上的文件不受影响。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The location and sign-in information saved by Kayoi will be deleted. Files on the device are unaffected."
+            "value": "The location and sign-in information saved by Diskit will be deleted. Files on the device are unaffected."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "会删除 Kayoi 保存的位置和登录信息，设备上的文件不受影响。"
+            "value": "会删除 Diskit 保存的位置和登录信息，设备上的文件不受影响。"
           }
         }
       }
     },
-    "会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。": {
+    "会删除 Diskit 保存的登录信息，网盘里的文件不受影响。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sign-in information saved by Kayoi will be deleted. Files in the cloud drive are unaffected."
+            "value": "Sign-in information saved by Diskit will be deleted. Files in the cloud drive are unaffected."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。"
+            "value": "会删除 Diskit 保存的登录信息，网盘里的文件不受影响。"
           }
         }
       }
@@ -1044,18 +1044,18 @@
         }
       }
     },
-    "关于 Kayoi": {
+    "关于 Diskit": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "About Kayoi"
+            "value": "About Diskit"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于 Kayoi"
+            "value": "关于 Diskit"
           }
         }
       }
@@ -1717,18 +1717,18 @@
         }
       }
     },
-    "在系统设置中允许 Kayoi 开机自动启动": {
+    "在系统设置中允许 Diskit 开机自动启动": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow Kayoi to launch at login in System Settings."
+            "value": "Allow Diskit to launch at login in System Settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在系统设置中允许 Kayoi 开机自动启动"
+            "value": "在系统设置中允许 Diskit 开机自动启动"
           }
         }
       }
@@ -1883,19 +1883,19 @@
         }
       }
     },
-    "如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。": {
+    "如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Diskit。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If Kayoi reports that the device is busy, quit other phone debugging tools and try again. Restart Kayoi if needed."
+            "value": "If Diskit reports that the device is busy, quit other phone debugging tools and try again. Restart Diskit if needed."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"
+            "value": "如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Diskit。"
           }
         }
       }
@@ -2762,7 +2762,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mount automatically when Kayoi opens"
+            "value": "Mount automatically when Diskit opens"
           }
         },
         "zh-Hans": {
@@ -3829,18 +3829,18 @@
         }
       }
     },
-    "清理 Kayoi 留下的本机缓存": {
+    "清理 Diskit 留下的本机缓存": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Clear the local cache left by Kayoi."
+            "value": "Clear the local cache left by Diskit."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "清理 Kayoi 留下的本机缓存"
+            "value": "清理 Diskit 留下的本机缓存"
           }
         }
       }
@@ -4566,18 +4566,18 @@
         }
       }
     },
-    "系统权限尚未开启，请在系统设置中允许 Kayoi 访问。": {
+    "系统权限尚未开启，请在系统设置中允许 Diskit 访问。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Access has not been granted. Allow Kayoi access in System Settings."
+            "value": "Access has not been granted. Allow Diskit access in System Settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "系统权限尚未开启，请在系统设置中允许 Kayoi 访问。"
+            "value": "系统权限尚未开启，请在系统设置中允许 Diskit 访问。"
           }
         }
       }
@@ -5059,18 +5059,18 @@
         }
       }
     },
-    "请允许 Kayoi 访问本地网络": {
+    "请允许 Diskit 访问本地网络": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow Kayoi to access your local network"
+            "value": "Allow Diskit to access your local network"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请允许 Kayoi 访问本地网络"
+            "value": "请允许 Diskit 访问本地网络"
           }
         }
       }
@@ -5494,19 +5494,19 @@
         }
       }
     },
-    "退出 Kayoi": {
+    "退出 Diskit": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quit Kayoi"
+            "value": "Quit Diskit"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出 Kayoi"
+            "value": "退出 Diskit"
           }
         }
       }
@@ -6524,19 +6524,19 @@
         }
       }
     },
-    "重新打开 Kayoi 后生效": {
+    "重新打开 Diskit 后生效": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Takes effect after you reopen Kayoi."
+            "value": "Takes effect after you reopen Diskit."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新打开 Kayoi 后生效"
+            "value": "重新打开 Diskit 后生效"
           }
         }
       }
@@ -6762,19 +6762,19 @@
         }
       }
     },
-    "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。": {
+    "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Diskit 日志。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your old data was kept. This session will use legacy storage and retry migration on the next launch.\n%@\nSee the Kayoi logs in Console for details."
+            "value": "Your old data was kept. This session will use legacy storage and retry migration on the next launch.\n%@\nSee the Diskit logs in Console for details."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Kayoi 日志。"
+            "value": "旧数据已保留。本次继续使用旧存储，下次启动重试。\n%@\n详情见“控制台”中的 Diskit 日志。"
           }
         }
       }
@@ -6827,18 +6827,18 @@
         }
       }
     },
-    "在系统设置中启用 Kayoi 后即可挂载位置。": {
+    "在系统设置中启用 Diskit 后即可挂载位置。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable Kayoi in System Settings to mount locations."
+            "value": "Enable Diskit in System Settings to mount locations."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在系统设置中启用 Kayoi 后即可挂载位置。"
+            "value": "在系统设置中启用 Diskit 后即可挂载位置。"
           }
         }
       }
@@ -6875,18 +6875,18 @@
         }
       }
     },
-    "挂载命令失败（退出码 %@），请查看 Kayoi 日志。": {
+    "挂载命令失败（退出码 %@），请查看 Diskit 日志。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mount failed (exit code %@). Check the Kayoi logs."
+            "value": "Mount failed (exit code %@). Check the Diskit logs."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "挂载命令失败（退出码 %@），请查看 Kayoi 日志。"
+            "value": "挂载命令失败（退出码 %@），请查看 Diskit 日志。"
           }
         }
       }
@@ -6923,18 +6923,18 @@
         }
       }
     },
-    "从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。": {
+    "从手机、相机或部分网盘打开文件时，Diskit 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When opening files from a phone, camera, or some cloud drives, Kayoi first downloads a copy to this Mac. The space shown here is used by those copies. Clearing the cache leaves the originals untouched. SMB shares do not use this space."
+            "value": "When opening files from a phone, camera, or some cloud drives, Diskit first downloads a copy to this Mac. The space shown here is used by those copies. Clearing the cache leaves the originals untouched. SMB shares do not use this space."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"
+            "value": "从手机、相机或部分网盘打开文件时，Diskit 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"
           }
         }
       }
@@ -6971,18 +6971,18 @@
         }
       }
     },
-    "此版本无法使用文件系统扩展，请重新构建并签名 Kayoi。": {
+    "此版本无法使用文件系统扩展，请重新构建并签名 Diskit。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This build cannot use the file system extension. Rebuild and sign Kayoi."
+            "value": "This build cannot use the file system extension. Rebuild and sign Diskit."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本无法使用文件系统扩展，请重新构建并签名 Kayoi。"
+            "value": "此版本无法使用文件系统扩展，请重新构建并签名 Diskit。"
           }
         }
       }
@@ -7003,50 +7003,50 @@
         }
       }
     },
-    "请先在系统设置中启用 Kayoi 文件系统扩展。": {
+    "请先在系统设置中启用 Diskit 文件系统扩展。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable the Kayoi file system extension in System Settings first."
+            "value": "Enable the Diskit file system extension in System Settings first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先在系统设置中启用 Kayoi 文件系统扩展。"
+            "value": "请先在系统设置中启用 Diskit 文件系统扩展。"
           }
         }
       }
     },
-    "请打开系统设置，在登录项与扩展中启用 Kayoi。": {
+    "请打开系统设置，在登录项与扩展中启用 Diskit。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open System Settings and enable Kayoi in Login Items & Extensions."
+            "value": "Open System Settings and enable Diskit in Login Items & Extensions."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请打开系统设置，在登录项与扩展中启用 Kayoi。"
+            "value": "请打开系统设置，在登录项与扩展中启用 Diskit。"
           }
         }
       }
     },
-    "退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。": {
+    "退出 Diskit 会推出本次挂载的位置，SMB 共享保留。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quitting Kayoi ejects locations mounted during this session. SMB shares stay mounted."
+            "value": "Quitting Diskit ejects locations mounted during this session. SMB shares stay mounted."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"
+            "value": "退出 Diskit 会推出本次挂载的位置，SMB 共享保留。"
           }
         }
       }

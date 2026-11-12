@@ -35,7 +35,7 @@ private func auditSession(_ transport: any HTTPTransport) throws -> OAuthSession
     configuration: OAuthConfiguration(
       clientID: "local", clientSecret: "",
       authorizationURL: URL(string: "https://example.invalid/auth")!,
-      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://local",
+      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://local",
       scopes: []), secretKey: "account", secrets: secrets, transport: transport)
 }
 

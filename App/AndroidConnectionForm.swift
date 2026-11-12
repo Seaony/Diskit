@@ -33,7 +33,7 @@ struct AndroidConnectionForm: View {
         }.formRow(L("设备"))
       }
     } else if editor.draft.params["guid"] != nil {
-      Label(L("配对成功"), systemImage: "checkmark.circle.fill").foregroundStyle(KayoiTheme.accent)
+      Label(L("配对成功"), systemImage: "checkmark.circle.fill").foregroundStyle(DiskitTheme.accent)
     } else {
       let devices = editor.model.wirelessDevices.filter { $0.type == .pairing }
       if devices.isEmpty {
@@ -48,10 +48,10 @@ struct AndroidConnectionForm: View {
           }
           ForEach(devices) { Text($0.name).tag($0.id) }
         }.formRow(L("设备"))
-        KayoiFormRow(L("六位配对码")) {
+        DiskitFormRow(L("六位配对码")) {
           PairingCodeField(code: $editor.pairingCode, onComplete: editor.updatePairingCode)
         }
-        Text(L("输入完整配对码后会自动配对。")).font(.caption).foregroundStyle(KayoiTheme.secondaryText)
+        Text(L("输入完整配对码后会自动配对。")).font(.caption).foregroundStyle(DiskitTheme.secondaryText)
       }
     }
   }

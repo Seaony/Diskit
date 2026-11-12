@@ -1,63 +1,63 @@
 # 原日志 build/Validation/release-final-2.log，此为结果摘录，省略编译器长命令。
 # 执行：make release（主任务执行，本次仅文档归档）
 [原日志:246] ** BUILD SUCCEEDED **
-[原日志:262] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: valid on disk
-[原日志:263] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: satisfies its Designated Requirement
-[原日志:264] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: valid on disk
-[原日志:265] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: satisfies its Designated Requirement
-[原日志:266] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: valid on disk
-[原日志:267] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: satisfies its Designated Requirement
-[原日志:268] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: valid on disk
-[原日志:269] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: satisfies its Designated Requirement
-[原日志:278] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: valid on disk
-[原日志:279] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: satisfies its Designated Requirement
-[原日志:282] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi: valid on disk
-[原日志:283] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi: satisfies its Designated Requirement
-[原日志:284] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: valid on disk
-[原日志:285] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: satisfies its Designated Requirement
-[原日志:286] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: valid on disk
-[原日志:287] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: satisfies its Designated Requirement
-[原日志:288] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: valid on disk
-[原日志:289] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: satisfies its Designated Requirement
-[原日志:290] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/swift-crypto_Crypto.bundle: valid on disk
-[原日志:291] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/swift-crypto_Crypto.bundle: satisfies its Designated Requirement
-[原日志:292] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/Core_Core.bundle: valid on disk
-[原日志:293] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/Core_Core.bundle: satisfies its Designated Requirement
-[原日志:294] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: valid on disk
-[原日志:295] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: satisfies its Designated Requirement
-[原日志:304] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework: valid on disk
-[原日志:305] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework: satisfies its Designated Requirement
-[原日志:308] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-[原日志:309] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
-[原日志:312] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: valid on disk
-[原日志:313] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: satisfies its Designated Requirement
-[原日志:314] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: valid on disk
-[原日志:315] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: satisfies its Designated Requirement
-[原日志:316] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: valid on disk
-[原日志:317] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: satisfies its Designated Requirement
-[原日志:318] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: valid on disk
-[原日志:319] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: satisfies its Designated Requirement
-[原日志:328] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: valid on disk
-[原日志:329] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: satisfies its Designated Requirement
-[原日志:332] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi: valid on disk
-[原日志:333] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi: satisfies its Designated Requirement
-[原日志:334] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: valid on disk
-[原日志:335] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: satisfies its Designated Requirement
-[原日志:336] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: valid on disk
-[原日志:337] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: satisfies its Designated Requirement
-[原日志:338] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: valid on disk
-[原日志:339] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: satisfies its Designated Requirement
-[原日志:340] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/swift-crypto_Crypto.bundle: valid on disk
-[原日志:341] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/swift-crypto_Crypto.bundle: satisfies its Designated Requirement
-[原日志:342] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/Core_Core.bundle: valid on disk
-[原日志:343] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/Core_Core.bundle: satisfies its Designated Requirement
-[原日志:344] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: valid on disk
-[原日志:345] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: satisfies its Designated Requirement
-[原日志:354] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework: valid on disk
-[原日志:355] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework: satisfies its Designated Requirement
-[原日志:358] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-[原日志:359] /Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
-[原日志:360] /Users/seaony/code/Kayoi/build/bin/kayoi-dev: valid on disk
-[原日志:361] /Users/seaony/code/Kayoi/build/bin/kayoi-dev: satisfies its Designated Requirement
+[原日志:262] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: valid on disk
+[原日志:263] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: satisfies its Designated Requirement
+[原日志:264] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: valid on disk
+[原日志:265] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: satisfies its Designated Requirement
+[原日志:266] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: valid on disk
+[原日志:267] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: satisfies its Designated Requirement
+[原日志:268] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: valid on disk
+[原日志:269] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: satisfies its Designated Requirement
+[原日志:278] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: valid on disk
+[原日志:279] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: satisfies its Designated Requirement
+[原日志:282] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit: valid on disk
+[原日志:283] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit: satisfies its Designated Requirement
+[原日志:284] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: valid on disk
+[原日志:285] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: satisfies its Designated Requirement
+[原日志:286] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: valid on disk
+[原日志:287] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: satisfies its Designated Requirement
+[原日志:288] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: valid on disk
+[原日志:289] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: satisfies its Designated Requirement
+[原日志:290] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/swift-crypto_Crypto.bundle: valid on disk
+[原日志:291] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/swift-crypto_Crypto.bundle: satisfies its Designated Requirement
+[原日志:292] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/Core_Core.bundle: valid on disk
+[原日志:293] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/Core_Core.bundle: satisfies its Designated Requirement
+[原日志:294] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: valid on disk
+[原日志:295] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: satisfies its Designated Requirement
+[原日志:304] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework: valid on disk
+[原日志:305] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework: satisfies its Designated Requirement
+[原日志:308] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+[原日志:309] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement
+[原日志:312] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: valid on disk
+[原日志:313] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader: satisfies its Designated Requirement
+[原日志:314] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: valid on disk
+[原日志:315] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer: satisfies its Designated Requirement
+[原日志:316] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: valid on disk
+[原日志:317] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater: satisfies its Designated Requirement
+[原日志:318] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: valid on disk
+[原日志:319] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: satisfies its Designated Requirement
+[原日志:328] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: valid on disk
+[原日志:329] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle: satisfies its Designated Requirement
+[原日志:332] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit: valid on disk
+[原日志:333] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit: satisfies its Designated Requirement
+[原日志:334] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: valid on disk
+[原日志:335] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: satisfies its Designated Requirement
+[原日志:336] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: valid on disk
+[原日志:337] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: satisfies its Designated Requirement
+[原日志:338] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: valid on disk
+[原日志:339] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: satisfies its Designated Requirement
+[原日志:340] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/swift-crypto_Crypto.bundle: valid on disk
+[原日志:341] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/swift-crypto_Crypto.bundle: satisfies its Designated Requirement
+[原日志:342] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/Core_Core.bundle: valid on disk
+[原日志:343] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/Core_Core.bundle: satisfies its Designated Requirement
+[原日志:344] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: valid on disk
+[原日志:345] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Resources/alibabacloud-oss-swift-sdk-v2_AlibabaCloudOSS.bundle: satisfies its Designated Requirement
+[原日志:354] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework: valid on disk
+[原日志:355] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework: satisfies its Designated Requirement
+[原日志:358] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+[原日志:359] /Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement
+[原日志:360] /Users/seaony/code/Diskit/build/bin/diskit-dev: valid on disk
+[原日志:361] /Users/seaony/code/Diskit/build/bin/diskit-dev: satisfies its Designated Requirement
 [原日志:362] 命令行工具：arm64 + x86_64，签名有效
-[原日志:363] 已验证 Kayoi 0.2.0 (2)
+[原日志:363] 已验证 Diskit 0.2.0 (2)

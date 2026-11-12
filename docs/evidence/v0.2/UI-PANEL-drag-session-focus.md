@@ -10,7 +10,7 @@
 
 当前版本恢复原位置收拢，并将 NSDraggingSource 分离成 PanelView 持有的稳定 NSObject；会话期间显式保留来源，结束回调释放。图标仍接收鼠标事件，但由稳定的 window.contentView 启动原生拖动，初始图像坐标转换到该宿主坐标系。prepare 不发布源，willBegin 才发布，因此行可以按规格收拢而不移除会话来源对象。源行移出层级不再提前结束会话，真正 endedAt 统一复位。既有 drop→move→仓库持久化与减弱动态效果分支保留；没有定时器或菜单排序替代。
 
-仅 KAYOI_DEMO=1 临时记录 `KayoiDemoDrag` 日志：mouseDown/mouseDragged/mouseUp、willBegin、ended（含 operation）、validateDrop/dropEntered/dropExited/performDrop，每条附 NSEvent.pressedMouseButtons；不记录账号、标题、凭据或文件内容。由主任务新一次实际拖动判断是否收到鼠标释放与原生终态回调，诊断完成后移除此日志。
+仅 DISKIT_DEMO=1 临时记录 `DiskitDemoDrag` 日志：mouseDown/mouseDragged/mouseUp、willBegin、ended（含 operation）、validateDrop/dropEntered/dropExited/performDrop，每条附 NSEvent.pressedMouseButtons；不记录账号、标题、凭据或文件内容。由主任务新一次实际拖动判断是否收到鼠标释放与原生终态回调，诊断完成后移除此日志。
 
 `PanelDragStateTests` 针对性状态测试：开始前不能发布源，开始后才发布，完成/取消/源移除及重复结束均清空。局部独立程序修前退出 1「原生拖动会话开始前已发布源行隐藏状态」，修后退出 0「会话开始后才发布源；完成/取消/移除均终态复位」。
 

@@ -129,7 +129,7 @@ Building for debugging...
 [18 / 27] CoreTests-product
 [28 / 37] CoreTests-product
 [32 / 36] CoreTests-product
-/Users/seaony/code/Kayoi/Packages/Core/Tests/CoreTests/HTTPConcurrencyTests.swift:35:12: warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
+/Users/seaony/code/Diskit/Packages/Core/Tests/CoreTests/HTTPConcurrencyTests.swift:35:12: warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
  33 |   #expect(first === HTTPConcurrencyLimit.shared(for: key))
  34 |   #expect(first !== HTTPConcurrencyLimit.shared(for: key + "other"))
  35 |   weak var released = first

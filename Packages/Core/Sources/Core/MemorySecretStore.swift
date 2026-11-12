@@ -10,7 +10,7 @@ public final class MemorySecretStore: SecretStore {
 
   public func refreshLockLocation(for key: String) -> URL {
     CredentialRefreshLock.location(
-      directory: FileManager.default.temporaryDirectory.appending(path: "Kayoi-CredentialLocks"),
+      directory: FileManager.default.temporaryDirectory.appending(path: "Diskit-CredentialLocks"),
       namespace: lockNamespace, key: key)
   }
 

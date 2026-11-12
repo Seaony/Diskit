@@ -1,6 +1,6 @@
 # 网页登录窗口现场验收
 
-使用 `KAYOI_DEMO=1` 的 Debug 应用，构建记录 `build/Validation/build-ui-batched.log`。服务选择夸克，仅离线演示，不访问服务商。
+使用 `DISKIT_DEMO=1` 的 Debug 应用，构建记录 `build/Validation/build-ui-batched.log`。服务选择夸克，仅离线演示，不访问服务商。
 
 - `UI-WEB-01-loading-light-zh.png`：域名、安全提示、36% 加载进度和取消入口可见。
 - `UI-WEB-01-loading-dark-zh.png`：布局可读，但从浅色切换后进度条错误回到系统蓝色；不能判通过，待外观刷新修复后重拍。

@@ -8,8 +8,8 @@ import Testing
   defer { try? FileManager.default.removeItem(at: home) }
   let location = LocalStorageLocation(home: home)
   #expect(
-    location.dataDirectory.path == home.appending(path: "Library/Application Support/Kayoi").path)
-  #expect(location.cacheDirectory.path == home.appending(path: "Library/Caches/Kayoi").path)
+    location.dataDirectory.path == home.appending(path: "Library/Application Support/Diskit").path)
+  #expect(location.cacheDirectory.path == home.appending(path: "Library/Caches/Diskit").path)
   let store = ConfigurationStore(location: location)
   #expect(try store.read() == nil)
   try store.write(Data("first".utf8))

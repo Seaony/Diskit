@@ -9,9 +9,9 @@
 
 | 标准 | 结果 | 证据 |
 | --- | --- | --- |
-| 新克隆执行 make gen / make test / make release | 通过 | 新克隆 `/tmp/kayoi-m0-clone.Ki0yAJ` 执行 `make gen && make test && make release`，退出码 0；测试 2/2 通过，Release `BUILD SUCCEEDED`，签名校验通过 |
+| 新克隆执行 make gen / make test / make release | 通过 | 新克隆 `/tmp/diskit-m0-clone.Ki0yAJ` 执行 `make gen && make test && make release`，退出码 0；测试 2/2 通过，Release `BUILD SUCCEEDED`，签名校验通过 |
 | Release 签名与 Info.plist | 通过 | `codesign --verify --deep --strict --verbose=2`：`valid on disk`、`satisfies its Designated Requirement`；PlistBuddy：LSMinimumSystemVersion=`26.0`、LSUIElement=`true` |
-| kayoi-dev --help 全部子命令 | 通过 | devices、pair、ls、stat、get、put、mkdir、rm、mv、df、cat --range 均列出；M0 执行具体命令返回未实现与非零退出码 |
+| diskit-dev --help 全部子命令 | 通过 | devices、pair、ls、stat、get、put、mkdir、rm、mv、df、cat --range 均列出；M0 执行具体命令返回未实现与非零退出码 |
 | StorageLocation / SecretStore 写读删覆盖 | 通过 | `make test`：`Test run with 2 tests in 0 suites passed`；配置使用临时目录，密钥使用真实登录钥匙串随机 service 并清理 |
 
 签名身份为指定的 Apple Development 证书。App 为 arm64 + x86_64，开发工具为本机架构。未启用沙盒、App Group、共享钥匙串、FSKit 或 Developer ID。
@@ -40,8 +40,8 @@ Test loginKeychainLifecycle() passed after 0.035 seconds.
 Test run with 13 tests in 0 suites passed after 0.035 seconds.
 $ make release
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
 ```
 
 两次命令退出码均为 0。Xcode 仅报告未链接 AppIntents 的元数据提取提示，没有编译错误。未写 UI 自动化或快照测试。
@@ -60,7 +60,7 @@ Kayoi.app: satisfies its Designated Requirement
 
 | 标准 | 结果 | 证据 |
 | --- | --- | --- |
-| 1. 插拔发现与 devices | 待用户验证 | IOKit 匹配通知、描述属性读取及 CLI 已接入；本机 `build/bin/kayoi-dev devices` 退出码 0、输出 0 行，发现 0 台设备 |
+| 1. 插拔发现与 devices | 待用户验证 | IOKit 匹配通知、描述属性读取及 CLI 已接入；本机 `build/bin/diskit-dev devices` 退出码 0、输出 0 行，发现 0 台设备 |
 | 2. 首次授权与再次连接 | 待用户验证 | 假传输验证 CNXN → AUTH 签名 → 公钥 → CNXN；真实手机授权框及重连待测 |
 | 3. 列目录、递归上传、mkdir/mv/rm | 待用户验证 | v1/v2 目录、sync 上传下载、shell 单引号转义和失败退出码测试通过；CLI 已实现递归目录操作，未操作手机 |
 | 4. 大于 4 GB 文件双向 SHA-256 | 待用户验证 | v2 解析 5,000,000,000 字节大小通过；v1 用 5 GB 稀疏测试文件验证拒绝上传；没有实际大文件传输或双端哈希结果 |
@@ -77,9 +77,9 @@ Test run with 14 tests in 0 suites passed
 Test run with 12 tests in 0 suites passed
 $ make release
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
-$ build/bin/kayoi-dev devices
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
+$ build/bin/diskit-dev devices
 # stdout 为空，退出码 0；wc -l 为 0
 ```
 
@@ -108,8 +108,8 @@ Test run with 15 tests in 0 suites passed
 Test run with 26 tests in 0 suites passed
 $ make release
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
 ```
 
 合计 41 项测试，命令退出码 0。M3 用两个子代理分别实现配对与发现，主进程负责 TLS/证书/界面/CLI 和整合验证。没有启动本地服务，没有 UI 自动化或快照测试。
@@ -133,9 +133,9 @@ Test run with 26 tests in 0 suites passed after 0.362 seconds.
 Test run with 14 tests in 0 suites passed after 0.008 seconds.
 $ make release
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
-$ build/bin/kayoi-dev devices
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
+$ build/bin/diskit-dev devices
 # stdout/stderr 均为空，退出码 0；当前 0 台设备
 ```
 
@@ -151,7 +151,7 @@ $ build/bin/kayoi-dev devices
 
 | 标准 | 结果 | 证据与限制 |
 | --- | --- | --- |
-| 1. 官方授权、回调、昵称和容量 | 待用户验证 | 接入 ASWebAuthenticationSession，校验回调 route/state/code；OAuth/token/account 假实现与回调测试通过。构建产物确认 client_id/client_secret 均未配置，redirect URI 为 kayoi://oauth/aliyun |
+| 1. 官方授权、回调、昵称和容量 | 待用户验证 | 接入 ASWebAuthenticationSession，校验回调 route/state/code；OAuth/token/account 假实现与回调测试通过。构建产物确认 client_id/client_secret 均未配置，redirect URI 为 diskit://oauth/aliyun |
 | 2. >100分页、Range、>1GB分片及文件操作 | 待用户验证 | 单测覆盖101条分页、206/Content-Range、过期下载/上传链接重取、真实10MiB+17B两片数据、mkdir/move/trash；未上传真实 >1GB 文件或核对网页版 |
 | 3. 无效 access_token 自动恢复 | 待用户验证 | 401/AccessTokenInvalid 刷新后仅重试一次，刷新令牌先写入钥匙串；假实现通过，未改真实账号令牌 |
 | 4. 撤权后通知与重新登录状态 | 待用户验证 | 官方 PermissionDenied/刷新失败触发失效通知，App 显示重新登录；Core 测试确认错误不会覆盖重登状态。真实检测发生在下一次 App 请求时，未验证系统通知展示 |
@@ -165,8 +165,8 @@ Test run with 14 tests in 0 suites passed after 0.007 seconds.
 Test run with 27 tests in 0 suites passed after 0.073 seconds.
 $ make release
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
 $ git check-ignore Config/Secrets.xcconfig
 Config/Secrets.xcconfig
 ```
@@ -189,14 +189,14 @@ M6 实现与自动验证完成。M3 首次名称差异已获用户批准修订�
 | 2. 文件操作与 >100MB 上传 | 待用户验证 | 31 项 Quark 测试覆盖分页、Range、分片、哈希、上传完成、同名拒绝及 Cookie 生命周期；未进行真实上传 |
 | 3. 删除 Cookie 后通知且不崩溃 | 待用户验证 | 假实现覆盖缺 Cookie、失效通知和 EACCES；系统通知与 UI 尚未实测 |
 
-最终实际执行 `make test`（退出码 0），五包输出分别为 `24 / 26 / 14 / 28 / 31 tests passed`，合计 123 项通过。日志：`/tmp/kayoi-final-test.log`。
-`make release` 输出 `** BUILD SUCCEEDED **`，随后签名校验输出 `valid on disk`、`satisfies its Designated Requirement`。日志：`/tmp/kayoi-final-release.log`（退出码 0）；开发工具另经 `codesign --verify --strict --verbose=2 build/bin/kayoi-dev` 校验通过。这些结果只代表自动测试与构建，不代表真实接口通过。
+最终实际执行 `make test`（退出码 0），五包输出分别为 `24 / 26 / 14 / 28 / 31 tests passed`，合计 123 项通过。日志：`/tmp/diskit-final-test.log`。
+`make release` 输出 `** BUILD SUCCEEDED **`，随后签名校验输出 `valid on disk`、`satisfies its Designated Requirement`。日志：`/tmp/diskit-final-release.log`（退出码 0）；开发工具另经 `codesign --verify --strict --verbose=2 build/bin/diskit-dev` 校验通过。这些结果只代表自动测试与构建，不代表真实接口通过。
 
 夸克仅参考 OpenList 接口行为，没有复制其代码。用户批准同名上传报错，旧文件不改动。账号接口 uid 字段尚缺真实响应确认；缺失时留空，没有从 Cookie 或昵称伪造 ID，因此 §7 用户 ID 的实际保存仍待核对。
 
 最终核对发现并补齐 F18 日志缺口：连接测试、保存、列共享、推出及前置配对/授权失败接入现有系统日志和七天文本日志。只记录已知错误文案或数字错误码，未知错误不记录原始描述、URL 或 userInfo；回归覆盖错误回调、不额外发送挂载通知及敏感内容过滤。实际系统日志和文件显示仍需用户手验。
 
-SMB 临时挂载点已移出可清理缓存目录，防止清缓存遍历到测试挂载；回归测试修改前失败、修改后通过（`/tmp/kayoi-cache-regression-before.log`、`/tmp/kayoi-cache-regression-after.log`）。此验证仅使用本地临时标记文件，没有真实远端删除操作。
+SMB 临时挂载点已移出可清理缓存目录，防止清缓存遍历到测试挂载；回归测试修改前失败、修改后通过（`/tmp/diskit-cache-regression-before.log`、`/tmp/diskit-cache-regression-after.log`）。此验证仅使用本地临时标记文件，没有真实远端删除操作。
 
 ## B3 官方开放平台网盘
 
@@ -204,7 +204,7 @@ B3 实现与自动检查完成；本地六组 client ID/secret 与百度 App ID 
 
 | 验收项 | 结果 | 证据 |
 | --- | --- | --- |
-| 六个 Provider、能力声明和 App 接入 | 通过（自动检查） | 百度、115、123、OneDrive、Google Drive、Dropbox 均实现 `RemoteFileProvider`；App 与 `kayoi-dev` 已接入。`make build` 退出码 0 |
+| 六个 Provider、能力声明和 App 接入 | 通过（自动检查） | 百度、115、123、OneDrive、Google Drive、Dropbox 均实现 `RemoteFileProvider`；App 与 `diskit-dev` 已接入。`make build` 退出码 0 |
 | 授权、令牌和刷新 | 通过（假实现） | 覆盖授权 URL、state、code 换取、401 刷新并只重试一次、115 独立 refresh URL、123 HTTP 200 业务鉴权刷新、瞬时刷新失败保留 refresh token、登录失效通知 |
 | 分页与 Range | 通过（假实现） | 覆盖百度/115/123 分页、OneDrive nextLink、Google pageToken、Dropbox cursor；六种 Range 请求和错误响应状态检查 |
 | 上传分片边界 | 通过（假实现） | 百度 4 MiB+1、115 2 MiB 自定义边界、123 服务端 sliceSize、OneDrive 320 KiB、Google 8 MiB、Dropbox 8 MiB；另测 Google 小文件 multipart |
@@ -218,7 +218,7 @@ $ make build
 ** BUILD SUCCEEDED **
 ```
 
-日志：`/tmp/kayoi-clouddrive-pkce2.log`、`/tmp/kayoi-polish-debug-current2.log`。35 项只证明假接口行为，不代表真实平台接口可用。官方接口来源和 rclone MIT 参考记录在 `docs/THIRD_PARTY_NOTICES.md`。
+日志：`/tmp/diskit-clouddrive-pkce2.log`、`/tmp/diskit-polish-debug-current2.log`。35 项只证明假接口行为，不代表真实平台接口可用。官方接口来源和 rclone MIT 参考记录在 `docs/THIRD_PARTY_NOTICES.md`。
 
 ## B1 系统原生挂载
 
@@ -251,7 +251,7 @@ $ swift test --package-path Packages/S3Drive
 Test run with 12 tests in 0 suites passed
 ```
 
-日志：`/tmp/kayoi-polish-debug-current2.log` 及本轮 `swift test` 输出。12 项只证明假接口行为。
+日志：`/tmp/diskit-polish-debug-current2.log` 及本轮 `swift test` 输出。12 项只证明假接口行为。
 
 ## B4 实验性网页网盘
 
@@ -290,7 +290,7 @@ B5 实现与自动检查完成；没有真实相机，设备兼容性和删除�
 | ImageCaptureCore 本地 USB 发现 | 通过（假实现） | 仅接受 `productKind == Camera`，过滤 iPhone/iPad；插入、更新和移除通知覆盖 |
 | 存储、DCIM 和 Range 读取 | 通过（假实现） | 真实存储列表与原始 DCIM 层级映射；Range 不返回额外字节；短读报错 |
 | 写操作和删除 | 通过（假实现） | put/mkdir/move 在连接前即 `EROFS`；删除只在设备能力允许时尝试，拒绝时映射 `EACCES` |
-| App、CLI 和类型入口 | 通过（代码） | 自动发现、`kayoi-dev devices`、添加类型卡片、表单和删除确认均接入；本轮修复了卡片遗漏和切换类型后沿用旧默认名的问题 |
+| App、CLI 和类型入口 | 通过（代码） | 自动发现、`diskit-dev devices`、添加类型卡片、表单和删除确认均接入；本轮修复了卡片遗漏和切换类型后沿用旧默认名的问题 |
 | 真机品牌兼容 | 待用户验证 | 只用模拟对象测试；富士、索尼、佳能、尼康、理光等实际 PTP/MTP 元数据与删除能力未验证 |
 
 ```text
@@ -304,68 +304,68 @@ Test run with 14 tests in 0 suites passed
 
 目前 M1–M6、B1–B5 都有待测项目，M0 无待测项。请使用专门的测试共享、账号和不重要的文件。
 
-1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Kayoi.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Kayoi 选英文后重启，检查文案与布局。
+1. **启动和面板（M1-1/2）**：在仓库执行 `open build/DerivedData/Build/Products/Release/Diskit.app`。确认没有 Dock 图标，菜单栏可打开面板；无连接时显示空状态和添加按钮。分别切换系统浅色/深色；到系统“语言与地区”给 Diskit 选英文后重启，检查文案与布局。
 2. **准备 Windows（M1-3）**：在 Windows 开启文件和打印机共享；新建测试文件夹并共享，给测试账号读写权限，记下 IP、共享名、用户名与密码。微软账户使用邮箱和账户密码，不使用 PIN。
 3. **列共享与错误密码（M1-3/5）**：添加 Windows 共享，填入主机、用户名、密码，点“列出共享”。先用错误密码点“测试并保存”，应提示“用户名或密码错误”，列表中不能新增连接；改为正确密码后保存。保存时会临时挂载再推出，此时不得影响已经挂载的共享。随后在系统已有 SMB 认证的情况下再次填写错误密码，确认仍拒绝保存。
 4. **Finder 操作（M1-3）**：点击挂载，检查 Finder 的共享位置；拷入测试文件、拷出、新建目录、改名、删除；对照 Windows 目录内容。点击推出，确认 Finder 与面板挂载状态同步消失。
 5. **编辑、排序、自动挂载和退出（M1-2/8）**：添加第二条有效连接，编辑名称/颜色，拖动行改变顺序；开启一条连接“打开 App 时自动挂载”，推出它并退出 App，再运行第 1 步命令。确认名称、顺序和开关保持，开启项自动挂载；App 退出不影响已挂载的 SMB 共享。
-6. **Bonjour（M1-4）**：在同一局域网另一台 Mac 开启文件共享；用 `dns-sd -B _smb._tcp local.` 确认其正在广播（结束按 Ctrl+C），观察 Kayoi“已发现”，点击添加应预填主机和名称。
-7. **删除密钥（M1-6）**：从 `~/Library/Application Support/Kayoi/connections.json` 找到测试连接 UUID，删除该连接。执行 `security find-generic-password -s com.seaony.Kayoi -a '<UUID>.password'`，预期查不到条目；不要使用会输出密码的 `-w` 或 `-g` 参数。
-8. **开机自启（M1-7）**：将 Release App 复制到稳定位置（例如 `~/Applications/Kayoi.app`）并从该位置启动；打开设置、开启自动启动，若系统要求则到登录项设置允许。保存其他工作后注销再登录，确认菜单栏出现；关闭开关后重复验证不再启动。
+6. **Bonjour（M1-4）**：在同一局域网另一台 Mac 开启文件共享；用 `dns-sd -B _smb._tcp local.` 确认其正在广播（结束按 Ctrl+C），观察 Diskit“已发现”，点击添加应预填主机和名称。
+7. **删除密钥（M1-6）**：从 `~/Library/Application Support/Diskit/connections.json` 找到测试连接 UUID，删除该连接。执行 `security find-generic-password -s com.seaony.Diskit -a '<UUID>.password'`，预期查不到条目；不要使用会输出密码的 `-w` 或 `-g` 参数。
+8. **开机自启（M1-7）**：将 Release App 复制到稳定位置（例如 `~/Applications/Diskit.app`）并从该位置启动；打开设置、开启自动启动，若系统要求则到登录项设置允许。保存其他工作后注销再登录，确认菜单栏出现；关闭开关后重复验证不再启动。
 9. **设置附加项（§4.4）**：查看日志目录，检查缓存显示与上限；清空缓存时必须先确认并成功推出已挂载共享。面板关闭时不应继续容量显示轮询。此项为手动检查，未声称通过。
 
-10. **安卓准备与发现（M2-1/2）**：在手机开启开发者选项和 USB 调试，用数据线连接 Mac。先关闭可能占用设备的其它工具；必要时自行执行官方 `adb kill-server`。在 Kayoi“已发现”添加手机，测试并保存，手机弹框时点“允许”。再次测试应不再弹框；CLI 执行 `build/bin/kayoi-dev devices` 应显示同一序列号。拔出后面板应移除发现项。
-11. **安卓文件操作（M2-3）**：从 connections.json 找到该连接 UUID，将下面的 `KAYOI_ID` 替换成它。在本地准备只含测试文件的目录（至少含子目录、中文、空格和 emoji 文件名）。执行：
+10. **安卓准备与发现（M2-1/2）**：在手机开启开发者选项和 USB 调试，用数据线连接 Mac。先关闭可能占用设备的其它工具；必要时自行执行官方 `adb kill-server`。在 Diskit“已发现”添加手机，测试并保存，手机弹框时点“允许”。再次测试应不再弹框；CLI 执行 `build/bin/diskit-dev devices` 应显示同一序列号。拔出后面板应移除发现项。
+11. **安卓文件操作（M2-3）**：从 connections.json 找到该连接 UUID，将下面的 `DISKIT_ID` 替换成它。在本地准备只含测试文件的目录（至少含子目录、中文、空格和 emoji 文件名）。执行：
 
 ```sh
-KAYOI_ID='替换为连接UUID'
-build/bin/kayoi-dev ls "$KAYOI_ID" /sdcard/DCIM
-build/bin/kayoi-dev mkdir "$KAYOI_ID" /sdcard/KayoiAcceptance
-build/bin/kayoi-dev put "$KAYOI_ID" '/本地测试目录' /sdcard/KayoiAcceptance/upload
-build/bin/kayoi-dev mv "$KAYOI_ID" /sdcard/KayoiAcceptance/upload /sdcard/KayoiAcceptance/renamed
-build/bin/kayoi-dev get "$KAYOI_ID" /sdcard/KayoiAcceptance/renamed '/本地下载目录'
-build/bin/kayoi-dev rm -r "$KAYOI_ID" /sdcard/KayoiAcceptance
+DISKIT_ID='替换为连接UUID'
+build/bin/diskit-dev ls "$DISKIT_ID" /sdcard/DCIM
+build/bin/diskit-dev mkdir "$DISKIT_ID" /sdcard/DiskitAcceptance
+build/bin/diskit-dev put "$DISKIT_ID" '/本地测试目录' /sdcard/DiskitAcceptance/upload
+build/bin/diskit-dev mv "$DISKIT_ID" /sdcard/DiskitAcceptance/upload /sdcard/DiskitAcceptance/renamed
+build/bin/diskit-dev get "$DISKIT_ID" /sdcard/DiskitAcceptance/renamed '/本地下载目录'
+build/bin/diskit-dev rm -r "$DISKIT_ID" /sdcard/DiskitAcceptance
 ```
 
-每步等 kayoi-dev 退出后，用官方 adb shell ls 检查手机结果。官方 adb 会启动自己的 server，检查完应执行 adb kill-server 再运行下一条 kayoi-dev，避免同时占用。不要在上述命令中使用重要目录。
+每步等 diskit-dev 退出后，用官方 adb shell ls 检查手机结果。官方 adb 会启动自己的 server，检查完应执行 adb kill-server 再运行下一条 diskit-dev，避免同时占用。不要在上述命令中使用重要目录。
 
-12. **大文件哈希和速度（M2-4/5）**：选择一个大于 4 GB 的本地测试文件，记录 `stat -f %z '/本地大文件'` 和 `shasum -a 256 '/本地大文件'`。用 `put` 上传到专门测试目录，再用 `get` 下载到另一个本地文件，比较 SHA-256；退出 kayoi-dev 后用官方 `adb shell sha256sum '/sdcard/测试大文件'` 对照手机哈希。再用 USB 3 线和支持 USB 3 的手机 `get` 一个 1 GB 文件，记录 CLI 最终平均 MB/s、手机型号和线缆信息，目标 ≥20 MB/s。当前没有任何实测数值。
-13. **中断和冲突（M2-6/7）**：传输大文件时拔线，确认命令报错退出、App 不崩溃且显示未连接；重插后重新测试。随后由用户启动官方 adb 并保持其占用，尝试 Kayoi 测试连接和 CLI，应提示“手机正被其它调试工具占用，请退出该工具或重新启动 Kayoi”；退出占用工具后重试。
+12. **大文件哈希和速度（M2-4/5）**：选择一个大于 4 GB 的本地测试文件，记录 `stat -f %z '/本地大文件'` 和 `shasum -a 256 '/本地大文件'`。用 `put` 上传到专门测试目录，再用 `get` 下载到另一个本地文件，比较 SHA-256；退出 diskit-dev 后用官方 `adb shell sha256sum '/sdcard/测试大文件'` 对照手机哈希。再用 USB 3 线和支持 USB 3 的手机 `get` 一个 1 GB 文件，记录 CLI 最终平均 MB/s、手机型号和线缆信息，目标 ≥20 MB/s。当前没有任何实测数值。
+13. **中断和冲突（M2-6/7）**：传输大文件时拔线，确认命令报错退出、App 不崩溃且显示未连接；重插后重新测试。随后由用户启动官方 adb 并保持其占用，尝试 Diskit 测试连接和 CLI，应提示“手机正被其它调试工具占用，请退出该工具或重新启动 Diskit”；退出占用工具后重试。
 14. **ADB 设置（§4.4）**：查看密钥指纹，重启后应保持不变。仅在愿意让全部手机重新授权时点击重新生成密钥并确认；之后手机应重新弹授权框。
 
-15. **无线发现与配对（M3-1/2/6）**：让 Mac 与 Android 11+ 手机处于同一局域网，手机打开“无线调试 → 使用配对码配对设备”。在 Kayoi 添加安卓 Wi-Fi，选择配对服务，先输入错误六位码，确认提示“配对码错误”且能重试；再输入正确码并保存。手机“已配对的设备”应出现本机名称。必要时允许 macOS 的本地网络权限。
+15. **无线发现与配对（M3-1/2/6）**：让 Mac 与 Android 11+ 手机处于同一局域网，手机打开“无线调试 → 使用配对码配对设备”。在 Diskit 添加安卓 Wi-Fi，选择配对服务，先输入错误六位码，确认提示“配对码错误”且能重试；再输入正确码并保存。手机“已配对的设备”应出现本机名称。必要时允许 macOS 的本地网络权限。
 16. **无线文件操作（M3-3）**：拔掉 USB，使用 Wi-Fi 连接的 UUID 重复 M2 第 11、12 步，验证目录、中文/空格/emoji、大文件双向 SHA-256。不要沿用 USB 连接 UUID。
 17. **端口变化（M3-4）**：关闭再打开手机无线调试，记录手机显示的新连接端口；保持原连接 UUID，在 App 测试连接并用 CLI ls，不能要求重新配对。
-18. **USB 优先（M3-5）**：同机 Wi-Fi 可用时重新插上 USB，启动 `log stream --style compact --info --predicate 'subsystem == "com.seaony.Kayoi" AND category == "ADBTransport"'`，然后测试该 Wi-Fi 连接。应出现“连接方式：USB（优先于同机 Wi-Fi）”；拔出 USB 再测应出现“连接方式：Wi-Fi”。结束日志用 Ctrl+C。若 USB 被官方 adb 占用，先自行执行 adb kill-server。
-19. **CLI 配对（§3.2）**：可单独执行 `build/bin/kayoi-dev pair '手机IP:配对端口' '六位码'`，成功输出 GUID；该命令只配对，不自动新增保存连接。随后从 App 已发现的连接服务添加，留空配对码，测试并保存。不要混淆手机显示的配对端口和连接端口。
+18. **USB 优先（M3-5）**：同机 Wi-Fi 可用时重新插上 USB，启动 `log stream --style compact --info --predicate 'subsystem == "com.seaony.Diskit" AND category == "ADBTransport"'`，然后测试该 Wi-Fi 连接。应出现“连接方式：USB（优先于同机 Wi-Fi）”；拔出 USB 再测应出现“连接方式：Wi-Fi”。结束日志用 Ctrl+C。若 USB 被官方 adb 占用，先自行执行 adb kill-server。
+19. **CLI 配对（§3.2）**：可单独执行 `build/bin/diskit-dev pair '手机IP:配对端口' '六位码'`，成功输出 GUID；该命令只配对，不自动新增保存连接。随后从 App 已发现的连接服务添加，留空配对码，测试并保存。不要混淆手机显示的配对端口和连接端口。
 
-20. **相机发现（M4-1）**：按理光官方 USB 步骤，先关闭相机，用数据线连接 Mac；相机会自动进入回放模式。先确认系统“图像捕捉”能看到 RICOH GR，再退出图像捕捉以避免并行占用。在 Kayoi 的已发现区添加并测试保存；执行 `build/bin/kayoi-dev devices`，记录相机名称和序列号。
+20. **相机发现（M4-1）**：按理光官方 USB 步骤，先关闭相机，用数据线连接 Mac；相机会自动进入回放模式。先确认系统“图像捕捉”能看到 RICOH GR，再退出图像捕捉以避免并行占用。在 Diskit 的已发现区添加并测试保存；执行 `build/bin/diskit-dev devices`，记录相机名称和序列号。
 21. **两存储、下载与容量（M4-2）**：确保内置存储和 microSD 各有可用于测试的 JPG/DNG。用 GR 连接 UUID 运行 `ls UUID /`、`ls UUID /内置存储/DCIM`、`ls UUID /microSD/DCIM`，再按实际返回路径执行 `stat UUID '/实际照片路径'` 和 `get UUID '/实际照片路径' '/本地下载文件'`。用 `stat -f %z '/本地下载文件'` 比较大小；运行 `df UUID` 记录相机报告的容量。若实际未暴露两个存储或 PTP 元数据返回错误，请保留错误，不能把单存储结果当两存储通过。
 23. **只读拒绝（M4-3）**：使用 GR UUID 运行 `put UUID '/任意本地测试文件' '/new.JPG'`、`mkdir UUID /new`、`mv UUID '/已有照片路径' '/renamed.JPG'`。三者应立即报“此位置为只读”，不应出现部分上传或相机文件变化。界面仍由用户手动验收。
 
 24. **准备阿里云盘配置（M5-1）**：申请开放平台 client_id/client_secret，登记与 `ALIYUN_REDIRECT_URI` 完全一致的回调地址。填写不入库的 `Config/Secrets.xcconfig`，参考 example 中 `$()` 的 URL 写法；执行 `make test && make release` 后重启 App。不要把凭据提交到 Git 或发到聊天中。
 25. **授权和账号（M5-1）**：添加阿里云盘，测试并保存会打开官方授权页，按平台提示选择授权目录。完成后应自动回到 App，显示昵称与容量；若平台要求第三方应用权益，请按平台实际提示核实。
 26. **文件与范围读取（M5-2）**：用阿里云盘连接 UUID 对一个超过100项的目录执行 `ls`，核对网页数量；对视频运行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，预期片段1MiB。运行 `put` 上传一个 >1GB 测试文件并核对网页版大小，再验证 mkdir、mv、rm，删除项应进回收站。重复上传同名文件，确认新内容可见、旧项进回收站。
-27. **令牌刷新（M5-3）**：在“钥匙串访问”中定位 service=com.seaony.Kayoi、account=`<UUID>.oauth` 的测试账号记录，保留 refreshToken 和其他字段，只把 JSON 中 accessToken 改为无效值；用 App 测试或 CLI ls，应自动恢复。不要导出或展示完整凭据记录。
+27. **令牌刷新（M5-3）**：在“钥匙串访问”中定位 service=com.seaony.Diskit、account=`<UUID>.oauth` 的测试账号记录，保留 refreshToken 和其他字段，只把 JSON 中 accessToken 改为无效值；用 App 测试或 CLI ls，应自动恢复。不要导出或展示完整凭据记录。
 28. **撤销授权（M5-4）**：在阿里云盘网页撤销测试应用授权，然后在 App 点击测试连接。应显示“重新登录”，并在已允许系统通知时收到通知；重新登录应重新走官方授权。没有请求时不承诺即时发现远端撤权。
 
 29. **夸克登录（M6-1）**：添加夸克网盘，确认显示实验性提示，打开扫码页，用手机扫码；保存后核对昵称与容量。再验证手动粘贴 Cookie 入口；不要把 Cookie 发到聊天或提交 Git。检查配置中 userID 与真实账号响应是否一致，缺失时记录为未通过，不能用昵称替代。
-30. **夸克文件操作（M6-2）**：用该连接 UUID 执行 `ls UUID /`、`df UUID`；对视频执行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，核对 1 MiB。准备不重要且大于 100 MB 的新文件，依次执行 `mkdir UUID /KayoiAcceptance`、`put UUID '/本地文件' /KayoiAcceptance/upload.bin`、`get UUID /KayoiAcceptance/upload.bin '/本地下载文件'`，比较两端 SHA-256。重复 put 同一路径应报同名错误，旧文件内容不变；执行 `mv UUID /KayoiAcceptance/upload.bin /KayoiAcceptance/renamed.bin`、`rm UUID /KayoiAcceptance/renamed.bin`，逐步核对网页版及回收站。
-31. **夸克 Cookie 删除（M6-3）**：在钥匙串访问中仅删除测试连接 service=com.seaony.Kayoi、account=`<UUID>.cookie` 的记录，再在 App 点击测试连接；应提示重新登录，在允许通知时收到系统通知，App 不崩溃。重新扫码应恢复。没有发请求时不承诺即时发现失效。
+30. **夸克文件操作（M6-2）**：用该连接 UUID 执行 `ls UUID /`、`df UUID`；对视频执行 `cat --range 1048576-2097151 UUID '/视频路径' > '/本地片段文件'`，核对 1 MiB。准备不重要且大于 100 MB 的新文件，依次执行 `mkdir UUID /DiskitAcceptance`、`put UUID '/本地文件' /DiskitAcceptance/upload.bin`、`get UUID /DiskitAcceptance/upload.bin '/本地下载文件'`，比较两端 SHA-256。重复 put 同一路径应报同名错误，旧文件内容不变；执行 `mv UUID /DiskitAcceptance/upload.bin /DiskitAcceptance/renamed.bin`、`rm UUID /DiskitAcceptance/renamed.bin`，逐步核对网页版及回收站。
+31. **夸克 Cookie 删除（M6-3）**：在钥匙串访问中仅删除测试连接 service=com.seaony.Diskit、account=`<UUID>.cookie` 的记录，再在 App 点击测试连接；应提示重新登录，在允许通知时收到系统通知，App 不崩溃。重新扫码应恢复。没有发请求时不承诺即时发现失效。
 
-32. **准备 B3 开放平台配置（B3）**：分别申请百度、115、123、Microsoft、Google 和 Dropbox 的应用凭据，登记示例配置中的 `kayoi://oauth/...` 回调。复制 `Config/Secrets.example.xcconfig` 为 `Config/Secrets.xcconfig`，填入本地值；百度还要填 App ID。不要把凭据提交或发到聊天。执行 `make test && make release` 后启动 Release。
+32. **准备 B3 开放平台配置（B3）**：分别申请百度、115、123、Microsoft、Google 和 Dropbox 的应用凭据，登记示例配置中的 `diskit://oauth/...` 回调。复制 `Config/Secrets.example.xcconfig` 为 `Config/Secrets.xcconfig`，填入本地值；百度还要填 App ID。不要把凭据提交或发到聊天。执行 `make test && make release` 后启动 Release。
 33. **六个平台授权（B3）**：逐个添加百度网盘、115 网盘、123 云盘、OneDrive、Google Drive、Dropbox。确认浏览器显示对应官方域名、完成后返回 App、昵称和容量可见；取消一次授权后应为安静取消，且随后新增其他网盘不会被迫重新授权。检查钥匙串 account 为 `<UUID>.oauth.<kind>`，但不要导出令牌。
-34. **B3 文件操作（B3）**：对每个平台使用该位置 UUID 执行 `build/bin/kayoi-dev ls UUID /`、`df UUID`、`cat --range 0-1023 UUID '/测试文件'`、`put UUID '/本地测试文件' '/Kayoi测试/upload.bin'`、`get UUID '/Kayoi测试/upload.bin' '/本地下载文件'`、`mkdir`、`mv`、`rm`。每次在网页端核对名称、大小、回收站和最终内容；不要用重要文件。
+34. **B3 文件操作（B3）**：对每个平台使用该位置 UUID 执行 `build/bin/diskit-dev ls UUID /`、`df UUID`、`cat --range 0-1023 UUID '/测试文件'`、`put UUID '/本地测试文件' '/Diskit测试/upload.bin'`、`get UUID '/Diskit测试/upload.bin' '/本地下载文件'`、`mkdir`、`mv`、`rm`。每次在网页端核对名称、大小、回收站和最终内容；不要用重要文件。
 35. **B3 同名与边界（B3）**：重复 `put` 同一路径，六个平台都应报同名错误且旧内容不变。准备 0 字节、恰好一个分片、分片加 1 字节和最后一片不足的文件，至少覆盖百度、123、OneDrive、Google、Dropbox；123 另测超过 10 GB 应拒绝。百度普通账号记录实际速度和文件大小限制说明是否准确。
-36. **B3 刷新、限流和撤权（B3）**：在钥匙串测试记录中只把 access token 改为无效值，执行 `kayoi-dev ls` 应刷新并恢复；115 应请求独立刷新端点。制造或等待一次 HTTP 429/503 时确认按 Retry-After 重试并最终显示“服务请求过多”，不是权限错误。到平台网页撤销应用授权后再测试，应显示重新登录并通知；重新登录可恢复。
+36. **B3 刷新、限流和撤权（B3）**：在钥匙串测试记录中只把 access token 改为无效值，执行 `diskit-dev ls` 应刷新并恢复；115 应请求独立刷新端点。制造或等待一次 HTTP 429/503 时确认按 Retry-After 重试并最终显示“服务请求过多”，不是权限错误。到平台网页撤销应用授权后再测试，应显示重新登录并通知；重新登录可恢复。
 
 37. **WebDAV 实际挂载（B1）**：准备坚果云、Nextcloud、ownCloud、群晖、威联通或 OpenList/AList 的 WebDAV，优先使用应用密码。添加 HTTP 或 HTTPS WebDAV，保存时应临时挂载成功；随后点击挂载，在 Finder 完成新建、读取、改名和删除，最后推出。若 `NetFSMountURLAsync` 返回认证错误而网页凭据有效，请记录服务名称、URL 协议、系统版本和错误码。不要把密码写入命令或验收文档。
 38. **NFS 实际挂载（B1）**：在 NAS 上给这台 Mac 配置只读或读写测试导出。添加 NFS，填写 NAS 地址和导出路径；测试并保存后检查 Finder、文件操作和推出。记录 NAS 型号、协议版本与挂载结果。
-39. **对象存储（B2）**：为七种服务至少各测一个测试桶，执行 `build/bin/kayoi-dev ls/stat/get/put/mkdir/mv/rm`。准备 0 字节、16 MiB 整片和 16 MiB+1 字节文件；重复上传同名文件应报错且旧对象不变。核对 ListObjects 跨页、Range 的 1 KiB 片段、multipart 完成和删除后的网页或对象存储控制台结果。AWS/R2/OSS/COS/Kodo 还需记录 endpoint、region 与 bucket 是否匹配。
-40. **UC 与天翼（B4）**：分别扫码登录 UC、填写天翼网页登录信息。天翼要分别保存个人云和家庭云，验证家庭云与个人云项目互不串用；对两个位置执行 `build/bin/kayoi-dev ls/stat/get/put/mkdir/mv/rm`，核对网页端和回收站。家庭账号有多个家庭云时，确认表单能选择正确家庭。
+39. **对象存储（B2）**：为七种服务至少各测一个测试桶，执行 `build/bin/diskit-dev ls/stat/get/put/mkdir/mv/rm`。准备 0 字节、16 MiB 整片和 16 MiB+1 字节文件；重复上传同名文件应报错且旧对象不变。核对 ListObjects 跨页、Range 的 1 KiB 片段、multipart 完成和删除后的网页或对象存储控制台结果。AWS/R2/OSS/COS/Kodo 还需记录 endpoint、region 与 bucket 是否匹配。
+40. **UC 与天翼（B4）**：分别扫码登录 UC、填写天翼网页登录信息。天翼要分别保存个人云和家庭云，验证家庭云与个人云项目互不串用；对两个位置执行 `build/bin/diskit-dev ls/stat/get/put/mkdir/mv/rm`，核对网页端和回收站。家庭账号有多个家庭云时，确认表单能选择正确家庭。
 41. **移动、PikPak、蓝奏（B4）**：按表单把网页登录信息复制到钥匙串输入框，不粘贴到聊天或 Git。移动云盘验证容量、Range、上传和整理；PikPak 验证账号密码、分页、Range 和上传；蓝奏验证账号 Cookie 或公开分享链接、密码、Range，并确认所有写操作返回只读。
-42. **迅雷上传（B4）**：保存迅雷连接后，用测试目录执行 `build/bin/kayoi-dev put <UUID> <本地文件> /测试目录/upload.bin`。先测 0 字节、一个完整分片和末片不足的文件，再测一个大于 1 GB 的文件；在迅雷网页端核对名称、大小和内容。重复上传同名文件必须报错且旧文件不变。上传中制造断网或取消，重新列出目录确认只清理本次新建的未完成条目，旧文件保持不动。
-43. **通用相机（B5）**：使用一台 macOS“图像捕捉”能识别的富士、索尼、佳能、尼康或其它 PTP/MTP 相机。先退出图像捕捉，连接相机并允许存储访问；执行 `build/bin/kayoi-dev devices`，在 App 保存“相机（USB）”，再测试 `ls`、相机 / `DCIM` 路径、`stat`、Range `get`、`df` 和删除。若删除被拒绝，应保留 `EACCES`，并记录品牌、型号和系统能力，不能把拒绝改写成成功。
+42. **迅雷上传（B4）**：保存迅雷连接后，用测试目录执行 `build/bin/diskit-dev put <UUID> <本地文件> /测试目录/upload.bin`。先测 0 字节、一个完整分片和末片不足的文件，再测一个大于 1 GB 的文件；在迅雷网页端核对名称、大小和内容。重复上传同名文件必须报错且旧文件不变。上传中制造断网或取消，重新列出目录确认只清理本次新建的未完成条目，旧文件保持不动。
+43. **通用相机（B5）**：使用一台 macOS“图像捕捉”能识别的富士、索尼、佳能、尼康或其它 PTP/MTP 相机。先退出图像捕捉，连接相机并允许存储访问；执行 `build/bin/diskit-dev devices`，在 App 保存“相机（USB）”，再测试 `ls`、相机 / `DCIM` 路径、`stat`、Range `get`、`df` 和删除。若删除被拒绝，应保留 `EACCES`，并记录品牌、型号和系统能力，不能把拒绝改写成成功。
 44. **最终界面手验（A）**：打开本仓库 `docs/screenshots/` 对照实际窗口，分别切换系统浅色/深色和中文/英文，检查菜单栏面板、28 种添加类型、设置、长名称截断、错误提示、键盘上下键与 Return、VoiceOver 标签、滚动区域和禁用态。扫码窗口、OAuth 窗口和真实错误状态需用真实账号触发。
 
 ## 未做与风险
@@ -389,17 +389,17 @@ Test run with 2 tests in 0 suites passed after 0.044 seconds.
 新克隆 `make gen && make test && make release`（退出码 0）：
 
 ```text
-Created project at /tmp/kayoi-m0-clone.Ki0yAJ/Kayoi.xcodeproj
+Created project at /tmp/diskit-m0-clone.Ki0yAJ/Diskit.xcodeproj
 Test configurationLifecycle() passed after 0.002 seconds.
 Test loginKeychainLifecycle() passed after 0.041 seconds.
 Test run with 2 tests in 0 suites passed after 0.041 seconds.
 ** BUILD SUCCEEDED **
-Kayoi.app: valid on disk
-Kayoi.app: satisfies its Designated Requirement
+Diskit.app: valid on disk
+Diskit.app: satisfies its Designated Requirement
 ```
 
 `PlistBuddy` 读取实际产物：`LSMinimumSystemVersion = 26.0`，`LSUIElement = true`。
-`codesign -dv --verbose=2`：`Identifier=com.seaony.Kayoi`，`Format=app bundle with Mach-O universal (x86_64 arm64)`，`Authority=Apple Development: seaony@outlook.com (ZB4G2AWAU9)`。
+`codesign -dv --verbose=2`：`Identifier=com.seaony.Diskit`，`Format=app bundle with Mach-O universal (x86_64 arm64)`，`Authority=Apple Development: seaony@outlook.com (ZB4G2AWAU9)`。
 
 核对 diff：仅 M0 工程、包空壳、存储与测试、构建说明及验收记录；PLAN.md 原文原样纳入首次提交。未实现 M7/M8、未增加本期之外的产品行为。
 
@@ -414,14 +414,14 @@ Kayoi.app: satisfies its Designated Requirement
 
 格式检查：Swift 文件已使用 `xcrun swift-format format`。最终 `swift-format lint` 有 17 条命名风格警告（API 字段 snake_case、L 本地化函数及测试名称），没有格式错误；未为消除命名警告重构已完成阶段。`git diff --check` 无输出。
 
-最终核对还修复了阿里云跨目录改名：目标目录已有原名但最终名空闲时，使用官方 move 的 new_name 参数，不修改原有同名文件。新增回归修前失败、修后通过；阿里云包 28 项通过，证据 `/tmp/kayoi-aliyun-move-red.log`、`/tmp/kayoi-aliyun-move-green.log`。真实账号按第 26 步补测 `/A/report.txt → /B/final.txt` 且 `/B/report.txt` 已存在的情形。
+最终核对还修复了阿里云跨目录改名：目标目录已有原名但最终名空闲时，使用官方 move 的 new_name 参数，不修改原有同名文件。新增回归修前失败、修后通过；阿里云包 28 项通过，证据 `/tmp/diskit-aliyun-move-red.log`、`/tmp/diskit-aliyun-move-green.log`。真实账号按第 26 步补测 `/A/report.txt → /B/final.txt` 且 `/B/report.txt` 已存在的情形。
 
 ## 中英文与系统外观细节（2026-11-03）
 
 本轮保留现有功能和系统跟随方式，没有新增语言/主题选择器，没有新增测试、UI 自动化或快照。
 
-- 通过：现有 `make test` 共 123 项，退出码 0（`/tmp/kayoi-ui-test.log`）。
-- 通过：`make release` 输出 `BUILD SUCCEEDED`，签名验证通过（`/tmp/kayoi-ui-release.log`）。
+- 通过：现有 `make test` 共 123 项，退出码 0（`/tmp/diskit-ui-test.log`）。
+- 通过：`make release` 输出 `BUILD SUCCEEDED`，签名验证通过（`/tmp/diskit-ui-release.log`）。
 - 通过：英文挂载数量使用 String Catalog 单复数；Release 的 en.lproj/Localizable.stringsdict 已包含 one/other 规则。
 - 已修改：行卡片和面板分别使用系统 controlBackgroundColor/windowBackgroundColor；长设备名可查看完整提示，操作按钮保持完整宽度；空状态覆盖手机、电脑、相机、网盘；取消支持 Escape，密钥指纹补充辅助功能标签。
 - 待用户验证：退出旧进程后重新启动 Release；分别在中文/英文应用语言下切换系统亮色/暗色，检查菜单栏面板、添加窗口、设置和扫码窗口。使用长连接名称，确认操作按钮可见、悬停能看完整名称；检查键盘 Escape 取消、错误提示可读。未把编译成功视为这四种组合的视觉验收通过。
@@ -430,8 +430,8 @@ Kayoi.app: satisfies its Designated Requirement
 
 用户要求不用液态玻璃，覆盖原 §5 默认 bordered 按钮外观：保留 Button 和既有操作，使用实色填充、细边框和按下状态；窗口容器及扫码弹层指定系统实色背景，表单开关使用 checkbox。保留此前中英文及系统深浅色适配，不修改系统透明度设置。
 
-- 通过：`make release` 退出码 0，`BUILD SUCCEEDED`，App 签名校验通过（`/tmp/kayoi-flat-release.log`）。
-- 通过：现有 `make test` 123 项通过（`/tmp/kayoi-flat-test.log`）；未新增测试。
+- 通过：`make release` 退出码 0，`BUILD SUCCEEDED`，App 签名校验通过（`/tmp/diskit-flat-release.log`）。
+- 通过：现有 `make test` 123 项通过（`/tmp/diskit-flat-test.log`）；未新增测试。
 - 待用户验证：退出旧版后打开新版，在亮色和暗色分别检查面板、添加窗口、设置和扫码弹层。确认背景不透底、按钮无玻璃高光，并检查键盘焦点、禁用态和按下反馈。系统窗口边缘与弹出菜单的最终观感尚未实测，不把构建通过作为视觉通过。
 - 未提交、未推送。未运行 UI 自动化或快照测试。
 
@@ -445,29 +445,29 @@ Kayoi.app: satisfies its Designated Requirement
 - 表单：基本信息、连接信息、连接选项分组；字段标签与输入框上下排列；内容滚动，底部固定操作区。设置页补标题及说明。
 - 源码尺寸：旧添加窗口宽460pt，现宽560pt；类型页高500pt，表单高620pt；卡片间距12pt、卡片高128pt、内容外边距24pt。以上为代码尺寸，未经实际截图测量。
 - 检查5处 / 修改5处 / 未改0处：类型选择、连接表单、设置、主面板、扫码页。前三处调整布局，后两处仅统一颜色及按钮。实际渲染验证仍缺5处，不能据源码检查认定视觉通过。
-- 通过：现有 `make test` 123项，退出码0（`/tmp/kayoi-cards-test.log`）；`make release` 与签名校验通过（`/tmp/kayoi-cards-release.log`）；`git diff --check` 无输出。
-- 待用户验证：电脑控制读取 Kayoi 窗口返回 timeoutReached，未取得新版界面截图。请退出旧版后重新打开 Release，检查“添加位置”卡片未选/选中/下一步/上一步，SMB、Android、GR及两种网盘表单，设置页；分别检查中文/英文、深色/浅色、键盘焦点与错误提示。未新增测试、UI自动化或快照测试。
+- 通过：现有 `make test` 123项，退出码0（`/tmp/diskit-cards-test.log`）；`make release` 与签名校验通过（`/tmp/diskit-cards-release.log`）；`git diff --check` 无输出。
+- 待用户验证：电脑控制读取 Diskit 窗口返回 timeoutReached，未取得新版界面截图。请退出旧版后重新打开 Release，检查“添加位置”卡片未选/选中/下一步/上一步，SMB、Android、GR及两种网盘表单，设置页；分别检查中文/英文、深色/浅色、键盘焦点与错误提示。未新增测试、UI自动化或快照测试。
 - 未提交、未推送。
 
 ## 打磨目标最终门禁（2026-11-04）
 
-提交前重新执行 `make test` 和 `make release`，退出码均为 0。完整输出：`/tmp/kayoi-final-ship-test.log`、`/tmp/kayoi-final-ship-release.log`；`make release` 内含 `make gen`。
+提交前重新执行 `make test` 和 `make release`，退出码均为 0。完整输出：`/tmp/diskit-final-ship-test.log`、`/tmp/diskit-final-ship-release.log`；`make release` 内含 `make gen`。
 
 | 检查项 | 结果与实测 |
 | --- | --- |
 | 单元测试 | 通过。12 个 Swift 包共 243 项，0 失败：Core 31、ADB 26、RicohGR 14、AliyunDrive 28、Quark 32、S3Drive 12、CloudDrive 35、CameraUSB 12、PikPakDrive 10、LanzouDrive 5、TianyiDrive 14、ChinaWebDrive 24。 |
 | Release 构建 | 通过。Xcode 输出 `** BUILD SUCCEEDED **`。 |
-| App 签名 | 通过。`codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Kayoi.app` 输出 `valid on disk`、`satisfies its Designated Requirement`。 |
-| DevTool 签名 | 通过。`codesign --verify --strict --verbose=2 build/bin/kayoi-dev` 输出 `valid on disk`、`satisfies its Designated Requirement`；`--help` 退出码 0，输出 12 行。 |
+| App 签名 | 通过。`codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Diskit.app` 输出 `valid on disk`、`satisfies its Designated Requirement`。 |
+| DevTool 签名 | 通过。`codesign --verify --strict --verbose=2 build/bin/diskit-dev` 输出 `valid on disk`、`satisfies its Designated Requirement`；`--help` 退出码 0，输出 12 行。 |
 | 官方 SDK | 通过构建验证。迅雷上传使用 `alibabacloud-oss-swift-sdk-v2` `0.4.0` 的基础 `AlibabaCloudOSS` product；SwiftPM 解析并固定 Swift Crypto `3.15.1`、swift-asn1 `1.7.4`、XMLCoder `0.18.2`。没有 Team ID 时，Xcode 以 `CODE_SIGNING_ALLOWED=NO` 构建，再由 Makefile 用指定 Apple Development 身份签 App 和嵌套包。 |
 | 产物结构 | 通过。主程序为 arm64 + x86_64 通用二进制；`LSMinimumSystemVersion=26.0`、`LSUIElement=true`；相机权限文案为通用的“发现并读取通过 USB 连接的相机。”。 |
 | 编译警告 | 最终日志只有 1 条既有的 `appintentsmetadataprocessor` 提示“Metadata extraction skipped. No AppIntents.framework dependency found.”；没有 Swift 或 C 编译警告。 |
 | 本地化 | 通过。`Localizable.xcstrings` 462 项：`L(...)` 缺键 0、英文缺失 0、简中缺失 0、复数变体缺失 0、未使用目录项 0。`InfoPlist.xcstrings` 的本地网络与相机权限均有简中、英文。Release 内已生成两种语言的 `Localizable.strings`、`Localizable.stringsdict` 和 `InfoPlist.strings`。 |
 | 截图 | 文件检查通过，最新迅雷文案待重截。`docs/screenshots/` 共 62 张 PNG，空文件 0；其中面板、设置、类型选择器和迅雷以外表单仍可读取。迅雷表单两张截图生成于本轮“支持上传”文案修改前，不能当作最终视觉证据；电脑控制读取菜单栏窗口仍 `timeoutReached`，需要用户用最新 Release 手验。 |
 | 新增鉴权回归 | 通过。`unauthorizedCloudErrorsAskForLogin()` 覆盖 UC、天翼、移动、迅雷、PikPak、蓝奏的 `unauthorized` 与 HTTP 401 文案；`webDriveAuthenticationFailureAsksForLogin()` 验证实验网盘鉴权失败会进入 `needsLogin` 并触发登录过期回调。 |
-| 提交前审查修复 | 通过构建和现有测试。迅雷 `kayoi-dev put` 不再在 Provider 创建前被拒绝；跨源重定向删除 `Authorization`、`Cookie`、`SessionKey`、`Signature`、`Space-Authorization` 等已知认证头；网页登录和夸克登录在任务先取消时立即结束；123 云盘列表不会为同名文件缓存单一 ID；云端改名失败会清掉相关路径缓存；移动云盘上传失败会清理本次创建的远端条目；OneDrive/Google 取消上传会话；S3 递归移动和多种分片上传失败时用未取消的清理任务执行补偿。各平台仍不承诺跨目录改名是一次原子操作，失败时会返回错误并清缓存，执行前应避免把重要文件放在测试目录。 |
+| 提交前审查修复 | 通过构建和现有测试。迅雷 `diskit-dev put` 不再在 Provider 创建前被拒绝；跨源重定向删除 `Authorization`、`Cookie`、`SessionKey`、`Signature`、`Space-Authorization` 等已知认证头；网页登录和夸克登录在任务先取消时立即结束；123 云盘列表不会为同名文件缓存单一 ID；云端改名失败会清掉相关路径缓存；移动云盘上传失败会清理本次创建的远端条目；OneDrive/Google 取消上传会话；S3 递归移动和多种分片上传失败时用未取消的清理任务执行补偿。各平台仍不承诺跨目录改名是一次原子操作，失败时会返回错误并清缓存，执行前应避免把重要文件放在测试目录。 |
 | 差异检查 | 通过。`git diff --check` 无输出。 |
-| 最新 Release 启动 | 通过。已退出旧进程并启动本次签名构建 `build/DerivedData/Build/Products/Release/Kayoi.app`，进程 PID `15236`。 |
+| 最新 Release 启动 | 通过。已退出旧进程并启动本次签名构建 `build/DerivedData/Build/Products/Release/Diskit.app`，进程 PID `15236`。 |
 
 逐条实现和假实现证据见 `docs/POLISH-REPORT.md`。真实 Windows 共享、WebDAV/NFS、开放平台账号、B4 账号、安卓手机、相机和系统通知仍按本文“待用户验证”顺序执行。
 
@@ -481,7 +481,7 @@ Kayoi.app: satisfies its Designated Requirement
 
 以下未连接真实账号，仅有本地替身与独立测试进程证据：
 
-- 待用户验收：公共授权类网盘、阿里云盘、PikPak、天翼分别在 App 与 kayoi-dev 使用同一测试账号并发读取时，刷新后两边继续可用，不互相进入重新登录状态。
+- 待用户验收：公共授权类网盘、阿里云盘、PikPak、天翼分别在 App 与 diskit-dev 使用同一测试账号并发读取时，刷新后两边继续可用，不互相进入重新登录状态。
 - 待用户验收：断网、限流或服务故障后保留登录，恢复网络后可重试；只有服务端明确拒绝刷新授权时要求重新登录。阿里云盘的普通权限不足不应当作撤销登录。
 - 待用户验收：系统钥匙串实际拒绝保存新凭据时明确报错；在进程继续运行、存储恢复后重试能够补存。此场景不通过退出应用来测试内存恢复，未保存值不能保证在进程异常退出后保留。
 - 待用户验收：删除位置后，其授权凭据不会因先前失败的补存而重新出现。实际菜单栏点击及系统钥匙串提示仍需用户操作确认。
@@ -502,20 +502,20 @@ Kayoi.app: satisfies its Designated Requirement
 
 ## 0.2 待用户验收补充：设备上传中断保护
 
-- 待用户验收：用可丢弃的原文件测试覆盖上传，在中途拔线或取消后确认原内容不变；恢复连接后检查同目录是否留下 `.kayoi-upload-*.tmp`，不可将临时文件误认成已提交文件。
+- 待用户验收：用可丢弃的原文件测试覆盖上传，在中途拔线或取消后确认原内容不变；恢复连接后检查同目录是否留下 `.diskit-upload-*.tmp`，不可将临时文件误认成已提交文件。
 - 待用户验收：旧版与新版安卓设备分别测试零字节文件、中文/引号路径、空间不足和目标为目录；成功时新内容替换精确目标，失败时原文件保留。
 - 待用户验收：设备支持所用 mv 选项，提交失败能明确报错；在设备仍可访问时临时文件会尝试清理，断线时不能保证已删除临时文件。未进行真实文件上传或设备断线操作。
 
 ## 0.2 待用户验收补充：迅雷与移动云盘回收站
 
-- 待用户验收：每个平台先准备一个可丢弃的小文件，通过 Kayoi 删除后，在官网回收站找到它并恢复，核对原内容；再单独验证空目录。每次只操作一个目标。
+- 待用户验收：每个平台先准备一个可丢弃的小文件，通过 Diskit 删除后，在官网回收站找到它并恢复，核对原内容；再单独验证空目录。每次只操作一个目标。
 - 待用户验收：非递归删除非空目录应被拒绝；允许递归删除后应能从官网回收站恢复目录内容。回收站请求被拒绝时不得自动永久删除。
 - 待用户验收：若账号空间、保险箱或服务版本不支持回收站，应报错并保留数据，不走永久删除回退。具体保留期限以账号官网提示为准。
 - 公开官网客户端的请求核对与本地方法/路径/正文断言已完成，证据见 FIX-10；本轮没有登录真实网盘、上传测试文件或删除真实文件。
 
 ## 0.2 待用户验收补充：蓝奏下载与精确大小
 
-- 待用户验收：账号文件、单文件分享和目录分享分别使用一个测试文件，比较 Kayoi 属性大小与下载后实际字节数；包含页面显示 KB/MB、文件名带数字和零字节文件。
+- 待用户验收：账号文件、单文件分享和目录分享分别使用一个测试文件，比较 Diskit 属性大小与下载后实际字节数；包含页面显示 KB/MB、文件名带数字和零字节文件。
 - 待用户验收：读取文件尾部及跨过页面估算大小的范围，不丢尾部数据；服务不支持范围时明确报错，不能把完整响应当成指定片段。
 - 待用户验收：链接要求网页验证时不能保存 HTML 验证页冒充原文件；正常 HTML 附件仍可下载并保持内容。
 - 待用户验收：不同下载站点的 HEAD/范围响应兼容性及目录加载耗时。缺少可核实的长度时应报错，不应显示假 0 字节。以上本轮均未使用真实账号或分享链接验证。
@@ -560,8 +560,8 @@ Kayoi.app: satisfies its Designated Requirement
 
 | 编号 | 用户操作步骤 | 预期结果与需记录内容 |
 |---|---|---|
-| UA-02-MENUBAR | 点击真实菜单栏Kayoi图标，依次打开、关闭，再开添加/设置；拥挤菜单栏隐藏图标时从Spotlight或Finder再次打开Kayoi。 | 面板入口可用、位置正确、Esc关闭、快捷键不冲突；四种状态图标及VoiceOver标签准确。记录是否真实点击成功；普通演示窗口截图不能替代这一项。 |
-| UA-02-SYSTEM-01 | 分别用Windows 11本地账户、微软账户，macOS共享，群晖或威联通NAS测试SMB；另测WebDAV/HTTPS WebDAV/NFS。先挂载，再退出Kayoi。 | 系统卷继续由Finder使用；退出无推出确认，不自动eject。用户名/密码错误应明确失败，不保存错误凭据。 |
+| UA-02-MENUBAR | 点击真实菜单栏Diskit图标，依次打开、关闭，再开添加/设置；拥挤菜单栏隐藏图标时从Spotlight或Finder再次打开Diskit。 | 面板入口可用、位置正确、Esc关闭、快捷键不冲突；四种状态图标及VoiceOver标签准确。记录是否真实点击成功；普通演示窗口截图不能替代这一项。 |
+| UA-02-SYSTEM-01 | 分别用Windows 11本地账户、微软账户，macOS共享，群晖或威联通NAS测试SMB；另测WebDAV/HTTPS WebDAV/NFS。先挂载，再退出Diskit。 | 系统卷继续由Finder使用；退出无推出确认，不自动eject。用户名/密码错误应明确失败，不保存错误凭据。 |
 | UA-02-SYSTEM-02 | 挂载后在Finder主动推出；另在可控网络断开后检查状态，再恢复网络。 | 主动推出不报意外断开；异常消失正确提示；网络恢复后符合自动挂载设置的位置最多自动重试一次，不重复挂载。 |
 | UA-02-SYSTEM-03 | 修改已挂载共享地址，再测试取消、旧卷被占用不能推出、仅改显示名称/颜色。 | 改地址先推出旧卷；失败保留旧配置和凭据；不留孤儿卷、不发假通知；只改显示资料不推出。 |
 | UA-02-SYSTEM-04 | 使用中文、空格、组合重音、字面百分号及路径大小写不同的共享；新建/删除少量测试文件后再次打开面板。 | 正确匹配各卷，不混淆字面百分号；可用容量按实际变化刷新，面板关闭不持续轮询。 |
@@ -571,19 +571,19 @@ Kayoi.app: satisfies its Designated Requirement
 | UA-02-ANDROID-02 | 用仅充电线、拒绝调试授权、授权等待超时分别测试；插入鸿蒙NEXT设备。 | 给可执行提示，不无期限等待；鸿蒙NEXT明确不支持ADB，不伪装支持；超时/取消后界面恢复。 |
 | UA-02-ANDROID-03 | 同一手机同时开USB和Wi-Fi调试，再拔USB；两台序列号重复设备分别接入。 | 优先同一设备USB，切换后不误报另一台断开；重复序列号按位置身份区分，不能连接错设备。 |
 | UA-02-ANDROID-04 | 查询不存在路径/无权限路径后立即继续列目录；传输中拔线再重连。 | 普通文件错误不废会话；传输错误后重建连接，恢复后正常；设备测试成功或连接中拔线会通知。 |
-| UA-02-ANDROID-05 | 用可丢弃文件测试移动到同名文件/目录/悬空链接，再测试上传覆盖中断、取消和空间不足。 | 冲突不覆盖、不移进错误目录；上传失败原内容保留；检查`.kayoi-upload-*.tmp`残留，断线清理不能保证成功须明确。 |
+| UA-02-ANDROID-05 | 用可丢弃文件测试移动到同名文件/目录/悬空链接，再测试上传覆盖中断、取消和空间不足。 | 冲突不覆盖、不移进错误目录；上传失败原内容保留；检查`.diskit-upload-*.tmp`残留，断线清理不能保证成功须明确。 |
 | UA-02-ANDROID-06 | 分别在v1/v2协议设备验证>4GB限制、范围下载、修改时间、df可用量；英文界面访问既有`SD 卡`/`内置存储`路径。 | 不静默截断，不改旧路径；仅显示名翻译；设备能力不支持时明确拒绝。 |
 | UA-02-ANDROID-07 | 对照手机授权弹框与设置显示的指纹；确认重生成后逐设备重新授权；用测试文件测USB读写速度。 | 指纹算法及值含义准确，不误称SHA256与MD5相同；吞吐记录文件大小/耗时/设备/接法，目标20MB/s，未达需瓶颈说明。 |
 | UA-02-CAMERA-01 | GR IV和至少一台富士/索尼/佳能/尼康通用相机各连接一次，切换设备USB/PTP/MTP模式。 | GR只出现一次；打开会话后能力正确，真实容量未知不显示0；设备错误有对应操作提示。 |
 | UA-02-CAMERA-02 | 无序列号相机、相同序列号多机、慢目录相机分别连接、断开、重连；允许/拒绝系统相机权限。 | 位置ID兜底稳定、不串设备；慢目录有截止与取消；重连可恢复；权限被拒提示并可打开系统设置。 |
 | UA-02-CAMERA-03 | 按能力读取、复制和删除一个可丢弃照片；目录包含异常条目时观察错误。 | 不跳过文件伪称完整目录；只读相机不提供写操作；允许删除的相机实际执行正确，失败不报成功。 |
-| UA-02-OAUTH-01 | OneDrive、Google、Dropbox使用公共/原生客户端注册完成授权，再触发一次过期刷新。 | 不依赖静态secret；OneDrive/Dropbox公共客户端开关正确；Google实际反向clientID回调返回App，旧kayoi回调不再使用。 |
-| UA-02-OAUTH-02 | 每个OAuth服务点击“切换账号”，明确选另一个测试账号；授权时把Kayoi放后台，另测用户取消。 | 不静默回到原账号；授权锚定编辑窗口，后台也可弹出；取消不保存新账号或遗留进度。 |
+| UA-02-OAUTH-01 | OneDrive、Google、Dropbox使用公共/原生客户端注册完成授权，再触发一次过期刷新。 | 不依赖静态secret；OneDrive/Dropbox公共客户端开关正确；Google实际反向clientID回调返回App，旧diskit回调不再使用。 |
+| UA-02-OAUTH-02 | 每个OAuth服务点击“切换账号”，明确选另一个测试账号；授权时把Diskit放后台，另测用户取消。 | 不静默回到原账号；授权锚定编辑窗口，后台也可弹出；取消不保存新账号或遗留进度。 |
 | UA-02-OAUTH-03 | 核对Google Drive scope和开发者控制台审核状态；阿里/百度/115/123按各自平台配置授权。 | 真实注册接受当前回调和权限；需secret的平台桌面二进制无法保密，按DECISIONS记录风险；不打印任何配置值。 |
 | UA-02-CLOUD-01 | 阿里、百度、115、123、OneDrive、Google、Dropbox、夸克、UC、天翼、移动、迅雷、PikPak、蓝奏各用一个真实测试账号。按PLAN §8逐项测列表/stat/范围读/上传/建目录/改名/移动/删除；只读类型只测允许项。 | 文件名分别含中文、空格、emoji、+、#；对照官网大小、名称、内容、分页和回收站。每类型单独记录，不能一家代表所有。 |
-| UA-02-CLOUD-02 | 各账号断网/恢复、临时限流后重试；App与kayoi-dev共用同一凭据记录并发读取；触发真实登录失效。 | 暂时错误保留登录；只有明确授权失效才重登录；并发刷新不互相作废、不重复通知；进度属于正确操作。 |
+| UA-02-CLOUD-02 | 各账号断网/恢复、临时限流后重试；App与diskit-dev共用同一凭据记录并发读取；触发真实登录失效。 | 暂时错误保留登录；只有明确授权失效才重登录；并发刷新不互相作废、不重复通知；进度属于正确操作。 |
 | UA-02-CLOUD-03 | 天翼、移动、迅雷在应用内网页登录；各测验证码、扫码过期、风控、加载失败、取消和其他登录方式；天翼个人/家庭空间分别验证。 | 正确捕获并先验证登录再保存；不误存失败凭据、不在日志中输出Cookie；切换空间和账号不复用旧会话。 |
-| UA-02-CLOUD-04 | 迅雷、移动各创建一个可丢弃小文件，Kayoi删除后到官网回收站恢复；随后单独测空目录和非空目录。 | 确实进入回收站；非递归非空拒绝；回收站不支持/被拒时不回退永久删除。 |
+| UA-02-CLOUD-04 | 迅雷、移动各创建一个可丢弃小文件，Diskit删除后到官网回收站恢复；随后单独测空目录和非空目录。 | 确实进入回收站；非递归非空拒绝；回收站不支持/被拒时不回退永久删除。 |
 | UA-02-CLOUD-05 | 夸克/UC/天翼/移动/PikPak跨目录改名，分别准备目标已有原名、源目录已有最终名、目标已有最终名；中途断网后刷新官网。 | 不误操作同名目标；恢复失败明确最后确认位置/临时名，不能谎称已恢复；异步任务未完成不报成功。 |
 | UA-02-CLOUD-06 | 百度测试分页stat、下载权益、秒传/空文件、上传同名与不同VIP分片；115测试临时OSS端点、203回调失败、同名不同ID；123测试长时间完成轮询。 | 百度fs_id对应正确；115回调失败时可能对象已存在，先官网核对再重试；重名不删错；123无进展截止明确，服务实际长处理兼容性另记录。 |
 | UA-02-CLOUD-07 | Google目录含重复名、斜杠名、点名称、保留前缀；移动虚拟ID路径并在重名消失后再次访问；OneDrive移动到根目录并中断/恢复分片上传。 | 每个文件均可区分且身份不串；CLI应显示必要的操作路径；Google原名保留，308按已确认范围续传；OneDrive根ID与上传会话正确。 |
@@ -618,7 +618,7 @@ Kayoi.app: satisfies its Designated Requirement
 | UA-02-S3-06 | 用本地名称、.local、局域网IP或回环地址访问HTTP MinIO；另试公网HTTP和内嵌用户密码地址，不发送真实密钥至公网。 | 前后端同一策略只允许本地HTTP，公网必须HTTPS；实际ATS允许本地请求，Host端口和签名正确。完整公网域名即使解析私有IP仍需HTTPS，不全局关闭ATS。 |
 | UA-02-CAPABILITIES | 连接只读蓝奏/通用相机，改变连接地址后重测，再测试允许删除的相机。 | 只读来自实际连接后ProviderCapabilities，参数改变不沿用旧能力；可删除相机不误称全部只读。演示只用固定假能力；阶段一面板没有远端写文件入口。 |
 
-非授权kayoi://链接不受支持：PLAN只将它定义为OAuth回调，本轮没有新增通用深链功能。用户只需验真实OAuth授权可返回App，不将未知链接打开指定位置列为承诺。
+非授权diskit://链接不受支持：PLAN只将它定义为OAuth回调，本轮没有新增通用深链功能。用户只需验真实OAuth授权可返回App，不将未知链接打开指定位置列为承诺。
 
 
 ## 收尾门禁与待用户验收（2026-11-05）
@@ -632,7 +632,7 @@ Kayoi.app: satisfies its Designated Requirement
 | 删除确认与无线错误详情 | AX 证据正确；删除框截图白图，无线详情超出单窗口截图边界，完整视觉未通过。用户可目检原生弹窗；本轮不再重拍。 |
 | 其它截图缺口 | 待用户验收；只读行/菜单、许可证、缓存确认、菜单栏/应用图标、剩余键盘与预览等未补矩阵，按收尾清单停止扩展。旧失败图不计通过。 |
 | 线性条与复用窗口标题 | 既有修后复核通过；三张 UI-WEB-01-loading-fixed 浅/深/返回浅图显示对应绿色，UI-EDIT-03-from-discovery-dark-zh.png 显示“添加位置”和 Pixel 8。只引用交接现场结果与本轮原图核对，不冒充最终 Release 重新实测。 |
-| Sparkle 升级演练 | 未做，按清单不启动回环服务。准备目录 `/var/folders/9z/gvnyl5hj1vn2kn84cy5j7gwr0000gn/T/kayoi-update-rehearsal-4uv7x6rq` 包含 `REVIEW.md`、`isolation.patch`、`0.2.0/Kayoi.app`、`0.2.1/Kayoi.app`、`feed/appcast.xml`、`feed/Kayoi-0.2.1.zip`。后续明确允许演练后，按 REVIEW：前台运行 serve-loopback-after-approval.py，仅绑定 127.0.0.1:43871；启动独立临时 0.2.0 应用，手动检查→下载→安装→重启，核对 0.2.1 与独立 bundle ID，结束退出应用并停止服务。不读取临时私钥，不开启正式更新源。 |
+| Sparkle 升级演练 | 未做，按清单不启动回环服务。准备目录 `/var/folders/9z/gvnyl5hj1vn2kn84cy5j7gwr0000gn/T/diskit-update-rehearsal-4uv7x6rq` 包含 `REVIEW.md`、`isolation.patch`、`0.2.0/Diskit.app`、`0.2.1/Diskit.app`、`feed/appcast.xml`、`feed/Diskit-0.2.1.zip`。后续明确允许演练后，按 REVIEW：前台运行 serve-loopback-after-approval.py，仅绑定 127.0.0.1:43871；启动独立临时 0.2.0 应用，手动检查→下载→安装→重启，核对 0.2.1 与独立 bundle ID，结束退出应用并停止服务。不读取临时私钥，不开启正式更新源。 |
 | 性能长测 | 未做，按清单停止长时测试。稳定 Demo Release 后用 `python3 scripts/sample-process.py --pid <演示进程PID> --seconds 300 --interval 1 --output build/Validation/perf-panel-closed.json`，分别测关闭/打开面板 CPU；稳定性改为 1800 秒；50 次开合记录真实次数并对比稳定起止 RSS。测量期间不构建；CPU 100% 为单核，RSS 不等于 footprint。启动/面板时延也没有本轮实测数值，软件绘制探针用法见 PERFORMANCE.md。 |
 
 ## M7 第二步，第 1 小步：存储迁移（2026-11-11）
@@ -645,8 +645,8 @@ Kayoi.app: satisfies its Designated Requirement
 | 迁移成功、部分失败、重复运行 | 通过 | Core 150 项测试包含复制后读回核对、写失败保留全部旧值后续跑、迁移后新配置与刷新令牌不被重复迁移覆盖，以及新旧值冲突停止。 |
 | 共享存储不可用时留在旧位置 | 通过 | 三项新增测试覆盖共享钥匙串不可写、共享目录不可写、共享探测成功且不触发迁移；原配置和 ADB 钥匙保持。另将临时 App 移除描述文件后重签，命令行正常进入，系统日志确认使用传统存储，无迁移错误或 GUI 弹窗。 |
 | 本机首次真实迁移前备份 | 通过 | 正常退出原 Debug 后复制整个旧数据目录到 `build/backup-20261111-205438/`，3 个文件逐字节核对一致；备份未修改。 |
-| 本机配置、日志、钥匙迁移 | 通过 | 迁移日志记录 3 个文件、1 个传统钥匙串条目核对通过；共享配置有 1 个 Android USB 连接，配置与备份逐字节一致，两份历史日志完整。旧配置已清理，`security find-generic-password -s com.seaony.Kayoi -a adb.private-key` 返回条目不存在。spike 文件与测试钥匙留到第 8 步。 |
-| CLI 保持命令行为 | 通过 | 15 项 CLI 测试覆盖配置位置、双语错误、无描述文件的兼容 App、真实 exec 参数及输出、退出码转交。实际构建的 `build/bin/kayoi-dev --help` 正常；不存在的连接返回原“路径无效”。双架构 CLI 构建用本机可用的 Apple Development 身份签名，未修改发布流程。 |
+| 本机配置、日志、钥匙迁移 | 通过 | 迁移日志记录 3 个文件、1 个传统钥匙串条目核对通过；共享配置有 1 个 Android USB 连接，配置与备份逐字节一致，两份历史日志完整。旧配置已清理，`security find-generic-password -s com.seaony.Diskit -a adb.private-key` 返回条目不存在。spike 文件与测试钥匙留到第 8 步。 |
+| CLI 保持命令行为 | 通过 | 15 项 CLI 测试覆盖配置位置、双语错误、无描述文件的兼容 App、真实 exec 参数及输出、退出码转交。实际构建的 `build/bin/diskit-dev --help` 正常；不存在的连接返回原“路径无效”。双架构 CLI 构建用本机可用的 Apple Development 身份签名，未修改发布流程。 |
 | 手机与远端文件操作 | 未测 | 本步不做 Finder 传输验收。迁移后 App 自动连接曾返回 EACCES，尚未查明原因；第 5 小步再验证手机授权和通信。 |
 | 正式分发与 macOS 26 | 未测 | 本轮只验收带描述文件的 Debug；当前 Release 继续旧存储、不带 FSKit 扩展，正式分发签名另行决定。macOS 26 未实测。 |
 
@@ -655,7 +655,7 @@ Kayoi.app: satisfies its Designated Requirement
 - 通过：传统钥匙串查询明确指定 `kSecUseDataProtectionKeychain=false`。本机带共享权限的临时程序已复现默认查询能搜到共享条目、显式传统查询搜不到的差异；回归用例先失败，修改后通过。
 - 通过：迁移失败后，本次回退旧存储并继续启动，下次重试。测试包含失败后继续编辑配置、刷新令牌，以及部分钥匙已复制后旧值变化；迁移记录只保存名称与 SHA-256，重试只能覆盖属于本次迁移且未被另改的副本，未知冲突仍保留两端数据。
 - 通过：最终 `make build`、签名校验、`make test` 退出 0，919 项 Swift 测试与 14 项脚本测试通过，Core 为 153 项。日志：`build/m7-startup-build.log`、`build/m7-startup-test.log`。未改动的 HTTP 流释放用例曾失败一次，单独复跑及最终全量均通过，未扩大修改；单独复跑日志为 `build/m7-unrelated-stream-retry.log`。
-- 通过：按用户决定把备份的配置原样恢复到旧位置，并把共享原值复制回传统 `com.seaony.Kayoi / adb.private-key`；文件和钥匙均读回一致，系统传统钥匙串查询已确认存在。新位置、spike 与备份未改，恢复工具留在忽略目录，未提交。没有另外启动旧版 App；本步仅核对指定恢复项。
+- 通过：按用户决定把备份的配置原样恢复到旧位置，并把共享原值复制回传统 `com.seaony.Diskit / adb.private-key`；文件和钥匙均读回一致，系统传统钥匙串查询已确认存在。新位置、spike 与备份未改，恢复工具留在忽略目录，未提交。没有另外启动旧版 App；本步仅核对指定恢复项。
 - 未测：真实迁移失败弹窗及关闭弹窗后继续运行的界面。失败选择与重试用注入故障的单元测试核对，未为界面验收修改真实数据制造冲突。
 
 ## M7 第二步，第 2 小步：真实文件系统骨架
@@ -694,7 +694,7 @@ Kayoi.app: satisfies its Designated Requirement
 
 ### 第 5 小步前置：真实扩展发现失败修正
 
-- 通过：真实复现 pluginkit 有扩展、FSClient 和系统设置没有 Kayoi，原生挂载立即返回 POSIX 74。签名、描述文件及启用记录核对正常，没有重启系统代理，也没有触碰手机文件。
+- 通过：真实复现 pluginkit 有扩展、FSClient 和系统设置没有 Diskit，原生挂载立即返回 POSIX 74。签名、描述文件及启用记录核对正常，没有重启系统代理，也没有触碰手机文件。
 - 通过：保留原配置快照，逐项构建、注册和查询，定位到过长的 scheme。保持全部 23 项，八个长名称改为短名后，实际产物最大 15 字节，列表刷新后多次稳定可见；本会话直接查询确认重新启用后为 true。日志：`build/m7-fskit-bisect/fix15-build.log`、`fix15-status.log`、`fix15-status-later.log`。
 - 通过：初次长度断言在旧映射下失败，最终最多 15 字节与声明集合断言通过；原快照八项超长另行核对，未在最终严格条件下重跑旧实现红测。统一构建和签名通过，完整测试为 969 项 Swift 测试及 14 项脚本测试，Core 180 项、App 186 项。二分日志位于 `build/m7-fskit-bisect/`，回归日志位于 `build/agents/fs-address/`。
 - 未测：手机 USB、Wi-Fi、Finder、cp、rsync、拔插与吞吐。本次前置修正不计为第 5 小步真机通过；macOS 26 未实测。
@@ -706,7 +706,7 @@ Kayoi.app: satisfies its Designated Requirement
 | 项目 | 状态 | 现象与证据 |
 |---|---|---|
 | 属性缓存阶段的构建、测试 | 通过（相关检查） | 该阶段 `make build` 和深度签名校验通过，18 项相关测试、Core 全部 187 项及 App 全部 186 项测试通过；构建日志为 `build/m7-step5-cache-only-profile-build.log`。7 项新增测试覆盖已打开文件的设备/网盘属性有效期、关闭与断线清缓存及改名跟随、属性过期刷新整文件缓存、写入/截断/修改时间及时反映、上传前重新查询同名冲突、取消下载后等待清理并释放额度、下载长度不符后清理及重试。未将这些相关检查当成本次完整 `make test` 通过。 |
-| 正常 Debug 启动与 USB 挂载 | 通过 | 23:31:45.308 正常 Debug 启动，PID 9033；45.528 开始 USB 挂载，扩展 45.924 开始 load、45.966 ready，App 45.977 记录挂载成功。从发起到成功约 449 毫秒，扩展 load 至 ready 约 42 毫秒。真实卷为 `/Volumes/Xiaomi 17`，挂载来源为 `kayoi-adb://ca35992a-2d56-4b3c-9ba4-b3426adf511d`。 |
+| 正常 Debug 启动与 USB 挂载 | 通过 | 23:31:45.308 正常 Debug 启动，PID 9033；45.528 开始 USB 挂载，扩展 45.924 开始 load、45.966 ready，App 45.977 记录挂载成功。从发起到成功约 449 毫秒，扩展 load 至 ready 约 42 毫秒。真实卷为 `/Volumes/Xiaomi 17`，挂载来源为 `diskit-adb://ca35992a-2d56-4b3c-9ba4-b3426adf511d`。 |
 | 挂载卷只读根目录 | 通过 | 已从真实 USB 卷读取根目录。 |
 | Finder 浏览与 Quick Look 预览 | 通过 | Finder 已实际浏览 `DCIM/Camera`；Quick Look 已实际显示 7,874,792 字节 JPG 和 16,959,419 字节 MP4 的画面，不记录私人文件名。 |
 | Finder 拷入与扩展属性 | 通过（卷内读回） | 先拷入 126 字节、名称含中文、空格和 emoji 的文本，卷内 SHA-256 一致；再拷入 `small` 目录，共 3 个文件、9,437,310 字节，文件 SHA-256、嵌套空目录和自定义扩展属性读回均一致。小目录复制耗时未保留，未重复复制补测。 |
@@ -718,7 +718,7 @@ Kayoi.app: satisfies its Designated Requirement
 | USB 大文件吞吐 | 未通过 | 攒写版 Finder 一次冷读为 169.12 MB/s；后续 CLI 三轮中位数为 308.33 MB/s，两组来自不同轮次。未达到既定 70% 目标，按用户最新要求停止性能工作，本轮不再优化。 |
 | USB 拷贝中拔线、自动推出和重挂 | 通过（用户手工操作及日志核对） | 用户拷出 Download 中 6 个 APK 时拔线，Finder 显示 -36；09:35:13 扩展返回 EIO，Finder 日志明确将 POSIX 5 转换为 -36。首次推出因卷忙（Cocoa 769）失败，09:35:24 卷卸载，09:35:46.829 自动重挂成功；App PID 28987 全程存活。下载临时文件、写入暂存均为 0，38 个已完成读缓存保留。 |
 | 安卓 Wi-Fi | 未测 | 需要用户配对及纯无线环境，已列入最后一次汇总清单；手机验收目录继续保留。 |
-| 手机验收目录清理 | 未完成 | 专用目录 `Kayoi M7 验收 a18ba66c` 尚未删除，包含本轮验收文件和 1 GiB 测试文件；第 5 小步仍在进行中。 |
+| 手机验收目录清理 | 未完成 | 专用目录 `Diskit M7 验收 a18ba66c` 尚未删除，包含本轮验收文件和 1 GiB 测试文件；第 5 小步仍在进行中。 |
 
 独立下载任务、读缓冲复用和边下边读均未改善吞吐，已撤回；负收益候选完整补丁留在 `build/m7-step5-progressive-rejected-20261112-091730/`，当前性能源代码恢复为 `58a0a65`。
 
@@ -757,7 +757,7 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | PikPak | 未测 | 无已登录账号。 |
 | 蓝奏 | 未测 | 无账号或测试分享链接；当前只读。 |
 | AWS S3 | 未测 | 无真实测试桶和凭据；本机兼容服务结果不代表 AWS 实测。 |
-| Cloudflare R2 | 通过 | 专用桶 `kayoi-m7-test` 经真实 `kayoi-r2` 卷挂载、浏览；38 字节文件拷入后卸载重挂，拷出 SHA-256 一致；删除对象后再次挂载核对根目录 0 项。 |
+| Cloudflare R2 | 通过 | 专用桶 `diskit-m7-test` 经真实 `diskit-r2` 卷挂载、浏览；38 字节文件拷入后卸载重挂，拷出 SHA-256 一致；删除对象后再次挂载核对根目录 0 项。 |
 | 阿里 OSS | 未测 | 无测试桶和凭据。 |
 | 腾讯 COS | 未测 | 无测试桶和凭据。 |
 | 七牛 Kodo | 未测 | 无测试桶和凭据。 |
@@ -766,7 +766,7 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | NFS | 未测 | 无已有测试导出；本机没有 /etc/exports，启动和配置服务端需要管理员授权，未执行。 |
 | 通用 USB 相机、GR IV | 未测 | 无测试硬件；GR 按约定保留原行为。 |
 
-本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 kayoi-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
+本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 diskit-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
 
 2026-11-12 补测 R2：使用仅限专用桶的对象读写凭据，显式配置 `region=auto`、`pathStyle=false`。初始目录为空，拷入名称含中文、空格和 emoji 的单个文件；卸载重挂后拷出 38 字节，SHA-256 为 `88559766157261bac65975a657f9d719b4661e9a8fd3d705e71bbb5de9c30acd`。对象删除后再次挂载，根目录仍为 0 项，随后正常卸载。全部对象操作通过正式 FSKit 卷完成，校验基于卸载重挂后的卷内读回。
 
@@ -780,11 +780,11 @@ R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；�
 
 | 项目 | 状态 | 证据 |
 |---|---|---|
-| 验证入口与共享 Spike 代码 | 通过 | 删除 App/FSKitSpike.swift、FSShared/SpikeShared.swift、FSShared/SpikeUSBCheck.swift，移除 KayoiApp 调用及空初始化、KayoiMain 的验证参数迁移豁免；正式 CLI、FSKit 工厂和 docs/SPIKE.md 保留。源码及测试无残留引用，未改发布流程。 |
-| 共享钥匙串验证条目 | 通过 | 只删除精确 service=com.seaony.Kayoi.spike 的共享通用密码条目，数量 2→0；正式 ADB 私钥删除前后逐字节一致。 |
+| 验证入口与共享 Spike 代码 | 通过 | 删除 App/FSKitSpike.swift、FSShared/SpikeShared.swift、FSShared/SpikeUSBCheck.swift，移除 DiskitApp 调用及空初始化、DiskitMain 的验证参数迁移豁免；正式 CLI、FSKit 工厂和 docs/SPIKE.md 保留。源码及测试无残留引用，未改发布流程。 |
+| 共享钥匙串验证条目 | 通过 | 只删除精确 service=com.seaony.Diskit.spike 的共享通用密码条目，数量 2→0；正式 ADB 私钥删除前后逐字节一致。 |
 | App Group 验证文件 | 通过 | spike-check.txt 已删除并核对不存在；未触碰其他用户文件。 |
 | 构建与回归 | 通过 | 本次完整构建、签名与 977 项 Swift、14 项脚本测试通过；日志见下节。 |
-| 手机验收目录 | 暂保留 | Kayoi M7 验收 a18ba66c 继续用于 Wi-Fi，完成后再删除；不把清理阶段误写成手机目录已删。 |
+| 手机验收目录 | 暂保留 | Diskit M7 验收 a18ba66c 继续用于 Wi-Fi，完成后再删除；不把清理阶段误写成手机目录已删。 |
 
 清理结果为 `build/m7-spike-data-cleanup.json`。使用过的临时签名检查工具、测试凭据及配置副本也已移除；没有改变钥匙串可访问性或签名配置。
 
@@ -810,7 +810,7 @@ R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；�
 
 断开对照中，FileManager 在约 0.9 毫秒返回 `NSCocoaErrorDomain/256 → NSPOSIXErrorDomain/5`，挂载表仍有该卷；同一故障卷直接 `DADiskUnmount`、默认选项 0，在约 492 毫秒成功，挂载项消失。本机实测证明根不可读时原 FileManager 路径不能完成推出，而普通磁盘仲裁可以；没有采集 Foundation 内部调用栈，“先 stat”仍是机制推断。原手机现场未保存的底层错误链没有据此补写成已采到的事实。证据为 `build/quit-failure/disconnect-{healthy-fm-unmount,healthy-da-unmount,round2-fm-unmount,round2-da-unmount}.json`。
 
-`NativeVolumeUnmounter` 现在仅在 FileManager 返回 Cocoa 256，且挂载表中仍是同一 Kayoi 卷时使用普通磁盘仲裁兜底。源、路径、fsid 必须相同，挂载项必须唯一，创建 DA 对象后再次核对；不使用 Force 或 Whole。忙卷、权限错误和其他错误不进入该兜底。两次失败保留原始错误链，C 回调持有原生请求直到完成，继续使用现有上层取消和超时语义。自动设备消失、退出、缓存维护及迟到挂载清理均通过原生入口共用此修复；系统共享仍使用原有 NSWorkspace 路径。
+`NativeVolumeUnmounter` 现在仅在 FileManager 返回 Cocoa 256，且挂载表中仍是同一 Diskit 卷时使用普通磁盘仲裁兜底。源、路径、fsid 必须相同，挂载项必须唯一，创建 DA 对象后再次核对；不使用 Force 或 Whole。忙卷、权限错误和其他错误不进入该兜底。两次失败保留原始错误链，C 回调持有原生请求直到完成，继续使用现有上层取消和超时语义。自动设备消失、退出、缓存维护及迟到挂载清理均通过原生入口共用此修复；系统共享仍使用原有 NSWorkspace 路径。
 
 新回归在隔离的旧 FileManager 行为下编译成功后实际失败；候选回归覆盖 6 个函数、14 个场景。实际产品源码被直接纳入独立签名探针，另建 UUID 重做根 EIO 对照，约 492 毫秒成功推出，源文件摘要前后一致；真实忙卷测试返回 Cocoa 769 且回调时卷仍在，释放占用后系统随后完成推出，不把这轮计作断线绿测。证据为 `build/quit-failure/native-red.log`、`build/quit-failure/disconnect-product-{green,busy,source-sha256}.json`。
 

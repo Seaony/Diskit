@@ -3,7 +3,7 @@ import Foundation
 
 public actor AliyunSession {
   public static let loginInvalidatedNotification = Notification.Name(
-    "com.seaony.Kayoi.aliyunLoginInvalidated")
+    "com.seaony.Diskit.aliyunLoginInvalidated")
   private let secretKey: String
   private let secrets: RecoverableSecretStore
   private let configuration: AliyunConfiguration

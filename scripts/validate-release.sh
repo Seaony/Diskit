@@ -6,7 +6,7 @@ feed="${2:-}"
 archive="${3:-}"
 tools="${4:-$root/build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin}"
 python3 "$root/scripts/sign-app.py" "$app" --verify
-cli="$root/build/bin/kayoi-dev"
+cli="$root/build/bin/diskit-dev"
 [[ -x "$cli" ]] || { echo '缺少命令行工具' >&2; exit 1; }
 python3 "$root/scripts/package-cli.py" --verify "$root/build/bin"
 lipo "$cli" -verify_arch arm64

@@ -15,7 +15,7 @@ struct QuarkMoveRecoveryError: Error, LocalizedError, CustomNSError {
     [
       NSLocalizedDescriptionKey: errorDescription ?? "",
       NSUnderlyingErrorKey: original as NSError,
-      "KayoiRecoveryError": recovery as NSError,
+      "DiskitRecoveryError": recovery as NSError,
     ]
   }
 }

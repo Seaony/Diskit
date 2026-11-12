@@ -6,19 +6,21 @@ extension ConnectionKind {
   public var fileSystemScheme: String? {
     switch self {
     case .smb, .webdav, .webdavHTTPS, .nfs, .ricohGR: nil
-    case .androidUSB, .androidWiFi: "kayoi-adb"
-    case .cameraUSB: "kayoi-camera"
-    case .aliyunDrive: "kayoi-aliyun"
-    case .quark: "kayoi-quark"
-    case .baiduDrive: "kayoi-baidu"
-    case .tencentCOS: "kayoi-cos"
-    case .backblazeB2: "kayoi-b2"
-    case .cloudflareR2: "kayoi-r2"
-    case .googleDrive: "kayoi-google"
-    case .mobileCloud: "kayoi-mobile"
-    case .thunderDrive: "kayoi-thunder"
-    case .tianyiDrive: "kayoi-tianyi"
-    default: "kayoi-" + rawValue.lowercased()
+    case .androidUSB, .androidWiFi: "diskit-adb"
+    case .cameraUSB: "diskit-camera"
+    case .aliyunDrive: "diskit-aliyun"
+    case .quark: "diskit-quark"
+    case .baiduDrive: "diskit-baidu"
+    case .tencentCOS: "diskit-cos"
+    case .backblazeB2: "diskit-b2"
+    case .cloudflareR2: "diskit-r2"
+    case .googleDrive: "diskit-google"
+    case .mobileCloud: "diskit-mobile"
+    case .thunderDrive: "diskit-thunder"
+    case .tianyiDrive: "diskit-tianyi"
+    case .aliyunOSS: "diskit-oss"
+    case .qiniuKodo: "diskit-kodo"
+    default: "diskit-" + rawValue.lowercased()
     }
   }
 }

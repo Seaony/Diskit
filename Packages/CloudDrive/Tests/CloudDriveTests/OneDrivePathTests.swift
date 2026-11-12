@@ -57,7 +57,7 @@ func oneDrivePathsEncodeEachSegmentOnce(_ sample: [String]) async throws {
       configuration: OAuthConfiguration(
         clientID: "demo", clientSecret: "",
         authorizationURL: URL(string: "https://example.invalid/authorize")!,
-        tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://demo",
+        tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://demo",
         scopes: []),
       secretKey: "demo", secrets: secrets, transport: transport), transport: transport)
   try await provider.connect()

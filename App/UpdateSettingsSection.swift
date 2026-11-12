@@ -5,7 +5,7 @@ struct UpdateSettingsSection: View {
   @Bindable var updater: UpdateController
 
   var body: some View {
-    KayoiFormSection(title: L("更新")) {
+    DiskitFormSection(title: L("更新")) {
       Toggle(
         L("自动检查更新"),
         isOn: Binding(
@@ -45,7 +45,7 @@ struct UpdateCheckView: View {
           Text(L("尚未检查"))
         }
       }
-      .font(.caption).monospacedDigit().foregroundStyle(KayoiTheme.secondaryText)
+      .font(.caption).monospacedDigit().foregroundStyle(DiskitTheme.secondaryText)
       .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
     }
   }

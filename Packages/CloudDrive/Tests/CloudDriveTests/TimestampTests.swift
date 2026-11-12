@@ -71,7 +71,7 @@ func officialProviderFileDatesPreserveMilliseconds(_ service: String, _ timestam
       clientID: "demo", clientSecret: "",
       authorizationURL: URL(string: "https://example.invalid/authorize")!,
       tokenURL: URL(string: "https://example.invalid/token")!,
-      redirectURI: "kayoi://demo", scopes: []), secretKey: "demo", secrets: secrets, transport: http
+      redirectURI: "diskit://demo", scopes: []), secretKey: "demo", secrets: secrets, transport: http
   )
   let provider: any RemoteFileProvider
   switch service {

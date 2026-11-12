@@ -29,7 +29,7 @@ import Foundation
   func mount(_ connection: Connection, password: String) async throws -> URL {
     try await test(connection, password: password)
     let mount = MountedShare(
-      url: URL(filePath: "/tmp/KayoiDemo/\(connection.id)"), availableBytes: 120_000_000_000)
+      url: URL(filePath: "/tmp/DiskitDemo/\(connection.id)"), availableBytes: 120_000_000_000)
     mounts[connection.id] = mount
     return mount.url
   }

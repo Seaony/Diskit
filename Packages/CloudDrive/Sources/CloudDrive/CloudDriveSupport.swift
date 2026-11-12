@@ -3,7 +3,7 @@ import CryptoKit
 import Foundation
 
 struct MultipartFormData {
-  let boundary = "kayoi-\(UUID().uuidString)"
+  let boundary = "diskit-\(UUID().uuidString)"
   private(set) var body = Data()
   private(set) var containsFile = false
 

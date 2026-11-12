@@ -18,7 +18,7 @@ struct ConnectionTypePicker: View {
   }
 
   private func groupTitle(_ title: String) -> some View {
-    Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(KayoiTheme.secondaryText)
+    Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(DiskitTheme.secondaryText)
       .padding(.horizontal, Space.xs)
   }
 
@@ -27,7 +27,7 @@ struct ConnectionTypePicker: View {
   var body: some View {
     VStack(spacing: 0) {
       HStack(spacing: Space.sm) {
-        Image(systemName: "magnifyingglass").foregroundStyle(KayoiTheme.secondaryText)
+        Image(systemName: "magnifyingglass").foregroundStyle(DiskitTheme.secondaryText)
           .accessibilityHidden(true)
         TextField(L("搜索类型，例如 网盘、SMB、相机"), text: $editor.search)
           .textFieldStyle(.plain).focused($focus, equals: .search)
@@ -50,10 +50,10 @@ struct ConnectionTypePicker: View {
       }
       .padding(.horizontal, Space.md).frame(height: 40)
       .background(
-        KayoiTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
+        DiskitTheme.surface, in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
       )
       .overlay {
-        RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+        RoundedRectangle(cornerRadius: Radius.control, style: .continuous).strokeBorder(DiskitTheme.border, lineWidth: 0.5)
       }
       .padding(.horizontal, Space.xxl).padding(.top, Space.xs)
       ScrollView {

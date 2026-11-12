@@ -11,7 +11,7 @@ public enum PackageDiagnostics {
   }
 
   static func emit(_ event: SafeDiagnostic) {
-    let logger = Logger(subsystem: "com.seaony.Kayoi", category: event.category.rawValue)
+    let logger = Logger(subsystem: "com.seaony.Diskit", category: event.category.rawValue)
     logger.error("操作失败：\(event.message, privacy: .public)")
   }
 }

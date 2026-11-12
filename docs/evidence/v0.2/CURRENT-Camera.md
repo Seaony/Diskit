@@ -38,13 +38,13 @@ Ricoh ProviderTests: ricohDeletionPreservesCancellationAndMissingFile、ricohDup
 
 本轮已重构而非排除旧长文件：CameraCatalog.swift 纯值目录解析覆盖75/75；ImageCaptureAccess.swift注入CameraDeviceSession覆盖51/54；CameraUSBDiscovery注入启动/停止/截止等待覆盖120/186；CameraUSBErrors 50/50。新CatalogTests覆盖层级、重复名/handle、非法名称/存储、能力切换、读删失败、取消映射、关闭后拒绝操作。DiscoveryTests新增无设备的幂等启动/增删发布/超时issue恢复。
 
-swift test --package-path Packages/CameraUSB --enable-code-coverage，退出0，26 tests通过；输出/tmp/kayoi-camera-coverage.log。读取 .build/out/Products/Debug/codecov/CameraUSB.json：raw 550/836=65.79%；仅剔除NativeCameraSession.swift（0/168 LLVM可执行行，格式化115物理行）后550/668=82.34%。候选是原生ICC属性、值投影、delegate、callback桥接；所有目录名/句柄安全判断、会话状态/错误业务移入可测代码。豁免由root最终审定，尚未修改coverage脚本。其余文件未豁免。
+swift test --package-path Packages/CameraUSB --enable-code-coverage，退出0，26 tests通过；输出/tmp/diskit-camera-coverage.log。读取 .build/out/Products/Debug/codecov/CameraUSB.json：raw 550/836=65.79%；仅剔除NativeCameraSession.swift（0/168 LLVM可执行行，格式化115物理行）后550/668=82.34%。候选是原生ICC属性、值投影、delegate、callback桥接；所有目录名/句柄安全判断、会话状态/错误业务移入可测代码。豁免由root最终审定，尚未修改coverage脚本。其余文件未豁免。
 
 ## 最终替代上轮豁免方案
 
 主代理退回NativeCameraSession豁免后，已把它改为可注入CameraHardware/CameraHardwareItem，新增NativeSessionTests覆盖原始对象递归类型判定、日期/空目录缺省值、文件索引ENOENT、删除成功后移除索引、原生错误与nil正文、删除失败回调、ready成功与removed失败/available状态。NativeCameraSession计153/155覆盖，不再申请豁免。
 真正ICC属性/系统call/delegate转接为 Packages/CameraUSB/Sources/CameraUSB/ICCCameraHardware.swift（swift-format后85物理行，LLVM0/72）。协议定义CameraHardware.swift无可执行行。
 
-最终命令 swift test --package-path Packages/CameraUSB --enable-code-coverage，退出0，28tests通过。日志 /tmp/kayoi-camera-coverage-final.log。
+最终命令 swift test --package-path Packages/CameraUSB --enable-code-coverage，退出0，28tests通过。日志 /tmp/diskit-camera-coverage-final.log。
 最终raw703/896=78.46%，已经超过75%门槛，不需要豁免！仅如root批准ICCCameraHardware薄桥接，则703/824=85.32%。推荐直接使用raw指标。此前65.79/82.34数字已被本轮替代。
 git diff --check -- Packages/CameraUSB 退出0。未真实设备、未改覆盖脚本、未提交。

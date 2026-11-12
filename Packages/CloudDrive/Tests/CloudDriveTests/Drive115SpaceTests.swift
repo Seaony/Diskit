@@ -33,7 +33,7 @@ private struct Drive115SpaceTransport: HTTPTransport {
     let configuration = OAuthConfiguration(
       clientID: "local", clientSecret: "",
       authorizationURL: URL(string: "https://example.invalid/auth")!,
-      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test",
+      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test",
       scopes: [])
     let session = OAuthSession(
       configuration: configuration, secretKey: "account", secrets: secrets, transport: transport)

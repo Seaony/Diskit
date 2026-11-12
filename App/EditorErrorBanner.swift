@@ -7,7 +7,7 @@ struct EditorErrorBanner: View {
     if let error = editor.visibleError {
       HStack(alignment: .top, spacing: Space.sm) {
         Image(systemName: "exclamationmark.circle.fill")
-          .foregroundStyle(KayoiTheme.error).accessibilityHidden(true)
+          .foregroundStyle(DiskitTheme.error).accessibilityHidden(true)
         VStack(alignment: .leading, spacing: Space.xs) {
           Text(L("连接未完成")).font(.headline)
           Text(error).font(.callout).textSelection(.enabled)
@@ -30,7 +30,7 @@ struct EditorErrorBanner: View {
       }
       .padding(Space.md)
       .background(
-        KayoiTheme.errorBackground,
+        DiskitTheme.errorBackground,
         in: RoundedRectangle(cornerRadius: Radius.control, style: .continuous))
     }
   }
@@ -38,7 +38,7 @@ struct EditorErrorBanner: View {
 
 #Preview("连接错误 · 浅色") {
   let editor = ConnectionEditorModel(
-    model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+    model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
   editor.applyDemoFixture(kind: .quark, state: .error)
   editor.errorNeedsLogin = false
   return EditorErrorBanner(editor: editor).padding().frame(width: 600).preferredColorScheme(.light)
@@ -46,7 +46,7 @@ struct EditorErrorBanner: View {
 
 #Preview("连接错误 · 深色") {
   let editor = ConnectionEditorModel(
-    model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+    model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
   editor.applyDemoFixture(kind: .quark, state: .error)
   editor.errorNeedsLogin = false
   return EditorErrorBanner(editor: editor).padding().frame(width: 600).preferredColorScheme(.dark)
@@ -54,7 +54,7 @@ struct EditorErrorBanner: View {
 
 #Preview("登录失效 · 浅色") {
   let editor = ConnectionEditorModel(
-    model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+    model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
   editor.applyDemoFixture(kind: .quark, state: .error)
   editor.errorNeedsLogin = true
   return EditorErrorBanner(editor: editor).padding().frame(width: 600).preferredColorScheme(.light)
@@ -62,7 +62,7 @@ struct EditorErrorBanner: View {
 
 #Preview("登录失效 · 深色") {
   let editor = ConnectionEditorModel(
-    model: AppModel(options: RuntimeOptions(environment: ["KAYOI_DEMO": "1"])))
+    model: AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"])))
   editor.applyDemoFixture(kind: .quark, state: .error)
   editor.errorNeedsLogin = true
   return EditorErrorBanner(editor: editor).padding().frame(width: 600).preferredColorScheme(.dark)

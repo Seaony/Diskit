@@ -7,12 +7,12 @@ enum CLILaunchError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .appNotFound:
-      String(localized: "找不到支持命令行的 Kayoi.app，请先构建或安装新版 Kayoi。", bundle: .module)
+      String(localized: "找不到支持命令行的 Diskit.app，请先构建或安装新版 Diskit。", bundle: .module)
     case .incompatibleApp:
-      String(localized: "指定的 Kayoi.app 不支持命令行，请先构建或安装新版 Kayoi。", bundle: .module)
+      String(localized: "指定的 Diskit.app 不支持命令行，请先构建或安装新版 Diskit。", bundle: .module)
     case .executionFailed(let code):
       String(
-        format: String(localized: "无法启动 Kayoi 命令行模式（errno %lld）。", bundle: .module),
+        format: String(localized: "无法启动 Diskit 命令行模式（errno %lld）。", bundle: .module),
         Int64(code))
     }
   }
@@ -23,7 +23,7 @@ enum CLIAppLocator {
     launcher: URL, environment: [String: String],
     home: URL = FileManager.default.homeDirectoryForCurrentUser
   ) throws -> URL {
-    if let path = environment["KAYOI_APP_PATH"], !path.isEmpty {
+    if let path = environment["DISKIT_APP_PATH"], !path.isEmpty {
       guard let executable = compatibleExecutable(in: URL(fileURLWithPath: path)) else {
         throw CLILaunchError.incompatibleApp
       }
@@ -32,10 +32,10 @@ enum CLIAppLocator {
     let build = launcher.resolvingSymlinksInPath().deletingLastPathComponent()
       .deletingLastPathComponent()
     let candidates = [
-      build.appending(path: "DerivedData/Build/Products/Debug/Kayoi.app"),
-      build.appending(path: "DerivedData/Build/Products/Release/Kayoi.app"),
-      URL(filePath: "/Applications/Kayoi.app"),
-      home.appending(path: "Applications/Kayoi.app"),
+      build.appending(path: "DerivedData/Build/Products/Debug/Diskit.app"),
+      build.appending(path: "DerivedData/Build/Products/Release/Diskit.app"),
+      URL(filePath: "/Applications/Diskit.app"),
+      home.appending(path: "Applications/Diskit.app"),
     ]
     guard let executable = candidates.compactMap(compatibleExecutable).first else {
       throw CLILaunchError.appNotFound
@@ -48,10 +48,10 @@ enum CLIAppLocator {
     guard let data = try? Data(contentsOf: contents.appending(path: "Info.plist")),
       let info = try? PropertyListSerialization.propertyList(from: data, format: nil)
         as? [String: Any],
-      info["CFBundleIdentifier"] as? String == "com.seaony.Kayoi",
-      info["KayoiDevToolProtocolVersion"] as? Int == 1
+      info["CFBundleIdentifier"] as? String == "com.seaony.Diskit",
+      info["DiskitDevToolProtocolVersion"] as? Int == 1
     else { return nil }
-    let executable = contents.appending(path: "MacOS/Kayoi")
+    let executable = contents.appending(path: "MacOS/Diskit")
     return FileManager.default.isExecutableFile(atPath: executable.path) ? executable : nil
   }
 }

@@ -102,7 +102,7 @@ https://g.alicdn.com/quark-cloud-drive/quark-cloud-drive-static-page/0.1.78/js/i
   - `Taizong547/YunpanTingshu`（MIT，commit `3ba2078ac7a86ca54c0d4b0975b0224b5e3cc71c`）仅用于交叉核对签名、路由和列表行为：https://github.com/Taizong547/YunpanTingshu
 - 迅雷云盘：
   - 官方网页：https://pan.xunlei.com/
-  - 接口行为按当前官方网页脚本核对。上传脚本确认会转入阿里云、腾讯云、华为云或火山云 SDK 分片流程；Kayoi 只请求并处理 `PROVIDER_ALIYUN`。
+  - 接口行为按当前官方网页脚本核对。上传脚本确认会转入阿里云、腾讯云、华为云或火山云 SDK 分片流程；Diskit 只请求并处理 `PROVIDER_ALIYUN`。
   - 官方 SDK：https://github.com/aliyun/alibabacloud-oss-swift-sdk-v2
   - 固定版本：`0.4.0`，commit `335c1777bf3c4aa86d7212c03e515de53b192418`。
   - 许可证：Apache-2.0，副本为 `docs/licenses/Apache-2.0.txt`。

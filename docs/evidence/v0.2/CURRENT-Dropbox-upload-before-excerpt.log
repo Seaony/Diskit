@@ -1,4 +1,4 @@
-# 失败基线摘录，原日志/tmp/kayoi-dropbox-upload-before.log；保留测试错误和终结结果，省略编译器长命令。
+# 失败基线摘录，原日志/tmp/diskit-dropbox-upload-before.log；保留测试错误和终结结果，省略编译器长命令。
 [原日志:33] 􀢄  Test dropboxUploadRejectsImpossibleServerOffset(offset:) recorded an issue with 1 argument offset → -1 at DropboxUploadRecoveryTests.swift:98:9: Expectation failed: expected error ".protocolError" of type RemoteError, but ".posix(5)" of type RemoteError was thrown instead
 [原日志:36] 􀢄  Test dropboxUploadRejectsImpossibleServerOffset(offset:) recorded an issue with 1 argument offset → 7 at DropboxUploadRecoveryTests.swift:98:9: Expectation failed: expected error ".protocolError" of type RemoteError, but ".posix(5)" of type RemoteError was thrown instead
 [原日志:39] 􀢄  Test dropboxUploadRejectsImpossibleServerOffset(offset:) with 2 test cases failed after 0.007 seconds with 2 issues.

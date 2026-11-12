@@ -26,7 +26,7 @@ private struct DemoAppearanceEvidence: ViewModifier {
     content.task(id: "\(environment.colorScheme)-\(environment.colorSchemeContrast)") {
       let options = RuntimeOptions.current
       guard options.isDemo, let directory = options.layoutDirectory else { return }
-      let border = KayoiTheme.border.resolve(in: environment)
+      let border = DiskitTheme.border.resolve(in: environment)
       let evidence = AppearanceEvidence(
         appearance: NSApp.effectiveAppearance.name.rawValue,
         colorScheme: environment.colorScheme == .dark ? "dark" : "light",

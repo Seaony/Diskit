@@ -49,7 +49,7 @@ public struct ADBIdentity: Sendable {
     var encoded = Data(count: 524)
     let result = encoded.withUnsafeMutableBytes { out in
       publicDER.withUnsafeBytes { input in
-        kayoi_android_public_key(
+        diskit_android_public_key(
           input.bindMemory(to: UInt8.self).baseAddress, publicDER.count,
           out.bindMemory(to: UInt8.self).baseAddress, 524)
       }
@@ -58,7 +58,7 @@ public struct ADBIdentity: Sendable {
     return encoded
   }
   public func publicKeyLine() throws -> Data {
-    let comment = "kayoi@mac"
+    let comment = "diskit@mac"
     return Data((try publicKeyData().base64EncodedString() + " " + comment + "\0").utf8)
   }
   public func fingerprint() throws -> String {

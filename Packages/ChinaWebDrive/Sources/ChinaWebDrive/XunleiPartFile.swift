@@ -8,7 +8,7 @@ final class XunleiPartFile: Sendable {
   init(source: URL, offset: Int64, length: Int64) throws {
     guard offset >= 0, length >= 0 else { throw RemoteError.posix(EINVAL) }
     let directory = FileManager.default.temporaryDirectory
-      .appending(path: "KayoiUpload-" + UUID().uuidString)
+      .appending(path: "DiskitUpload-" + UUID().uuidString)
     try FileManager.default.createDirectory(
       at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
     url = directory.appending(path: "part")

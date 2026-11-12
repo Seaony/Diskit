@@ -21,7 +21,7 @@ private func providerSession(_ transport: any HTTPTransport) throws -> OAuthSess
       clientID: "client", clientSecret: "secret",
       authorizationURL: URL(string: "https://example.com/authorize")!,
       tokenURL: URL(string: "https://example.com/token")!,
-      redirectURI: "kayoi://oauth/test", scopes: []),
+      redirectURI: "diskit://oauth/test", scopes: []),
     secretKey: "oauth", secrets: secrets, transport: transport)
 }
 
@@ -37,7 +37,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       "errno":0,
       "list":[{
         "fs_id":42,
-        "path":"/apps/Kayoi/照片/a.jpg",
+        "path":"/apps/Diskit/照片/a.jpg",
         "server_filename":"a.jpg",
         "size":9,
         "server_mtime":1700000000,
@@ -53,11 +53,11 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       HTTPResponse(
         status: 200,
         body: Data(
-          #"{"errno":0,"list":[{"fs_id":42,"path":"/apps/Kayoi/照片/a.jpg","server_filename":"a.jpg","size":9,"server_mtime":1700000000,"isdir":0,"dlink":"https://download.example.com/a.jpg"}]}"#
+          #"{"errno":0,"list":[{"fs_id":42,"path":"/apps/Diskit/照片/a.jpg","server_filename":"a.jpg","size":9,"server_mtime":1700000000,"isdir":0,"dlink":"https://download.example.com/a.jpg"}]}"#
             .utf8)),
     ], streamResponse: HTTPResponse(status: 206))
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(transport), transport: transport)
   try await provider.connect()
   let items = try await provider.list(try RemotePath("/照片"))
@@ -88,7 +88,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(status: 200, body: Data(#"{"errno":0,"fs_id":123}"#.utf8)),
   ])
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(transport), transport: transport)
   try await provider.connect()
   try await provider.write(try RemotePath("/large.bin"), from: file)
@@ -107,11 +107,11 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(
       status: 200,
       body: Data(
-        #"{"errno":0,"list":[{"fs_id":1,"path":"/apps/Kayoi/a","server_filename":"a"},{"fs_id":2,"path":"/apps/Kayoi/a","server_filename":"a"}]}"#
+        #"{"errno":0,"list":[{"fs_id":1,"path":"/apps/Diskit/a","server_filename":"a"},{"fs_id":2,"path":"/apps/Diskit/a","server_filename":"a"}]}"#
           .utf8)),
   ])
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(transport), transport: transport)
   try await provider.connect()
   await #expect(throws: RemoteError.posix(EEXIST)) {
@@ -391,7 +391,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
   ])
   let session = try providerSession(transport)
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: session, transport: transport)
   try await provider.connect()
 
@@ -406,7 +406,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(status: 200, body: Data(#"{"errno":0,"uk":1}"#.utf8))
   ])
   let baidu = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(baiduTransport), transport: baiduTransport)
   try await baidu.connect()
   let baiduBefore = baiduTransport.requests.withLock { $0.count }
@@ -502,7 +502,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(status: 403),
   ])
   let baidu = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(baiduTransport), transport: baiduTransport)
   try await baidu.connect()
   await #expect(throws: RemoteError.posix(EACCES)) {
@@ -605,7 +605,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
 
 @Test func baiduFetchesEveryThousandEntryPage() async throws {
   let firstEntries = (0..<1_000).map {
-    #"{"fs_id":\#($0),"path":"/apps/Kayoi/file-\#($0)","server_filename":"file-\#($0)","size":1,"isdir":0}"#
+    #"{"fs_id":\#($0),"path":"/apps/Diskit/file-\#($0)","server_filename":"file-\#($0)","size":1,"isdir":0}"#
   }.joined(separator: ",")
   let transport = ProviderFakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"errno":0,"uk":1}"#.utf8)),
@@ -615,11 +615,11 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(
       status: 200,
       body: Data(
-        #"{"errno":0,"list":[{"fs_id":1000,"path":"/apps/Kayoi/last","server_filename":"last","size":1,"isdir":0}]}"#
+        #"{"errno":0,"list":[{"fs_id":1000,"path":"/apps/Diskit/last","server_filename":"last","size":1,"isdir":0}]}"#
           .utf8)),
   ])
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(transport), transport: transport)
   try await provider.connect()
 
@@ -641,12 +641,12 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     HTTPResponse(
       status: 200,
       body: Data(
-        #"{"errno":0,"list":[{"path":"/apps/Kayoi/a.txt","server_filename":"a.txt","size":1,"isdir":0}]}"#
+        #"{"errno":0,"list":[{"path":"/apps/Diskit/a.txt","server_filename":"a.txt","size":1,"isdir":0}]}"#
           .utf8)),
     HTTPResponse(status: 200, body: Data(#"{"errno":0}"#.utf8)),
   ])
   let baidu = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(baiduTransport), transport: baiduTransport)
   try await baidu.connect()
   try await baidu.remove(try RemotePath("/a.txt"), recursive: false)
@@ -812,7 +812,7 @@ func driveBusinessAuthFailurePreservesRefreshedLogin(_ kind: String, _ business:
       HTTPResponse(status: $0.offset == 3 ? 401 : 200, body: Data($0.element.utf8))
     })
   let provider = BaiduDriveProvider(
-    configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+    configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
     session: try providerSession(transport), transport: transport)
   try await provider.connect()
   try await provider.write(try RemotePath("/small.txt"), from: file)
@@ -872,7 +872,7 @@ func providerLateRejectionReusesAlreadyRefreshedToken(kind: String) async throws
   switch kind {
   case "baidu":
     provider = BaiduDriveProvider(
-      configuration: BaiduDriveConfiguration(rootPath: "/apps/Kayoi", appID: "app"),
+      configuration: BaiduDriveConfiguration(rootPath: "/apps/Diskit", appID: "app"),
       session: session, transport: transport)
   case "115": provider = Drive115Provider(session: session, transport: transport)
   default: provider = Drive123Provider(session: session, transport: transport)

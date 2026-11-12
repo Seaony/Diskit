@@ -9,15 +9,15 @@ struct ConnectionFormView: View {
       VStack(alignment: .leading, spacing: Space.lg) {
         // 连接指南：不带边框的卡片，整行可点，展开后按 1. 2. 3. 列出步骤（对照设计稿）
         VStack(alignment: .leading, spacing: 0) {
-          KayoiDisclosureButton(title: L("连接指南"), isExpanded: $editor.preparationExpanded)
+          DiskitDisclosureButton(title: L("连接指南"), isExpanded: $editor.preparationExpanded)
             .padding(.horizontal, 14).padding(.vertical, 10) // grid: ok 设计稿指南标题内边距 10/14
           if editor.preparationExpanded {
             VStack(alignment: .leading, spacing: 6) { // grid: ok 设计稿步骤间距 6
               ForEach(Array(EditorPreparation.steps(for: editor.draft.kind).enumerated()), id: \.offset) { index, step in
                 HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
                   Text(verbatim: "\(index + 1).").font(.system(size: 12.5)).monospacedDigit()
-                    .foregroundStyle(KayoiTheme.tertiaryText)
-                  Text(Self.styledStep(step)).font(.system(size: 12.5)).foregroundStyle(KayoiTheme.secondaryText)
+                    .foregroundStyle(DiskitTheme.tertiaryText)
+                  Text(Self.styledStep(step)).font(.system(size: 12.5)).foregroundStyle(DiskitTheme.secondaryText)
                     .lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                 }
               }
@@ -26,20 +26,20 @@ struct ConnectionFormView: View {
             .transition(Motion.appear(reduceMotion: reduceMotion))
           }
         }
-        .background(KayoiTheme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // grid: ok 同分组卡片圆角
-        KayoiFormSection(title: L("位置")) {
+        .background(DiskitTheme.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous)) // grid: ok 同分组卡片圆角
+        DiskitFormSection(title: L("位置")) {
           EditorTextRow(editor: editor, key: "name", title: L("显示名称"), placeholder: L("例如：我的手机"))
-          KayoiFormRow(L("图标颜色")) {
+          DiskitFormRow(L("图标颜色")) {
             HStack(spacing: Space.sm) {
-              ForEach(KayoiTheme.locationColorNames, id: \.self) { name in
+              ForEach(DiskitTheme.locationColorNames, id: \.self) { name in
                 Button {
                   editor.draft.color = name
                 } label: {
                   // 选中色用同色外圈标出，不加勾
-                  Circle().fill(KayoiTheme.locationColor(name)).frame(width: 18, height: 18)
+                  Circle().fill(DiskitTheme.locationColor(name)).frame(width: 18, height: 18)
                     .padding(3) // grid: ok 色块与外圈间隙
                     .overlay {
-                      Circle().strokeBorder(editor.draft.color == name ? KayoiTheme.locationColor(name) : .clear, lineWidth: 2)
+                      Circle().strokeBorder(editor.draft.color == name ? DiskitTheme.locationColor(name) : .clear, lineWidth: 2)
                     }
                     .contentShape(Circle())
                 }.buttonStyle(.plain).pointerStyle(.link).help(EditorPreparation.colorName(name)).accessibilityLabel(
@@ -52,7 +52,7 @@ struct ConnectionFormView: View {
             .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 } // grid: ok 13 号字基线在中线下 4
           }
         }
-        KayoiFormSection(title: L("连接")) {
+        DiskitFormSection(title: L("连接")) {
           switch editor.draft.kind {
           case .androidUSB, .androidWiFi: AndroidConnectionForm(editor: editor)
           case .ricohGR, .cameraUSB: CameraConnectionForm(editor: editor)
@@ -65,21 +65,21 @@ struct ConnectionFormView: View {
           }
         }
         if editor.draft.kind.usesMount {
-          KayoiFormSection(title: L("选项")) {
+          DiskitFormSection(title: L("选项")) {
             Toggle(L("打开 App 时自动挂载"), isOn: $editor.draft.autoMount)
             Toggle(L("挂载后自动在 Finder 中打开"), isOn: $editor.draft.openInFinderAfterMount)
           }
         } else if DevicePrompt.kinds.contains(editor.draft.kind) {
           // 手机和相机：插上就挂载
-          KayoiFormSection(title: L("选项")) {
+          DiskitFormSection(title: L("选项")) {
             Toggle(L("插上后自动连接"), isOn: $editor.draft.autoMount)
           }
         }
       }
       .padding(.horizontal, 28).padding(.top, Space.md).padding(.bottom, Space.lg) // grid: ok 和标题区左右 28 对齐
     }
-    .labeledContentStyle(KayoiFormRowStyle()).toggleStyle(KayoiFormSwitchStyle())
-    .background(KayoiTheme.background)
+    .labeledContentStyle(DiskitFormRowStyle()).toggleStyle(DiskitFormSwitchStyle())
+    .background(DiskitTheme.background)
     // 切换登录方式、列出共享、登录成功等会增减表单行，过渡一下
     .animation(Motion.change(reduceMotion: reduceMotion), value: formShape)
   }
@@ -105,12 +105,12 @@ struct ConnectionFormView: View {
         continue
       }
       if intent.contains(.stronglyEmphasized) {
-        piece.swiftUI.foregroundColor = KayoiTheme.primaryText
+        piece.swiftUI.foregroundColor = DiskitTheme.primaryText
         piece.swiftUI.font = .system(size: 12.5, weight: .medium)
       } else if intent.contains(.emphasized) {
-        piece.swiftUI.underlineStyle = Text.LineStyle(pattern: .dash, color: KayoiTheme.tertiaryText)
+        piece.swiftUI.underlineStyle = Text.LineStyle(pattern: .dash, color: DiskitTheme.tertiaryText)
       } else if intent.contains(.strikethrough) {
-        piece.swiftUI.foregroundColor = KayoiTheme.warning
+        piece.swiftUI.foregroundColor = DiskitTheme.warning
       }
       // 不用 Markdown 默认的粗体、斜体、删除线
       piece.inlinePresentationIntent = nil

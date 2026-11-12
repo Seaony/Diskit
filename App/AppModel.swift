@@ -65,12 +65,12 @@ import UserNotifications
       fileSystem = nil
       fileSystemState = .enabled
       let identifier = UUID().uuidString
-      let home = FileManager.default.temporaryDirectory.appending(path: "KayoiDemo-" + identifier)
+      let home = FileManager.default.temporaryDirectory.appending(path: "DiskitDemo-" + identifier)
       let location = LocalStorageLocation(home: home)
       self.location = location
       let secrets = MemorySecretStore()
       self.secrets = secrets
-      preferences = UserDefaults(suiteName: "com.seaony.Kayoi.demo." + identifier)!
+      preferences = UserDefaults(suiteName: "com.seaony.Diskit.demo." + identifier)!
       let fixture = DemoFixtures(scenario: options.scenario)
       do { try ConnectionRepository(location: location).save(fixture.connections) } catch {
         demoSetupError = HumanError.detail(error)
@@ -161,7 +161,7 @@ import UserNotifications
   private var started = false
   private var observers: [NSObjectProtocol] = []
   private var observesFileSystemLogin = false
-  private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "connections")
+  private let logger = Logger(subsystem: "com.seaony.Diskit", category: "connections")
   func start() {
     guard !started else { return }
     started = true
@@ -281,7 +281,7 @@ import UserNotifications
     networkMonitor.pathUpdateHandler = { [weak self] path in
       Task { @MainActor in self?.networkPathChanged(path) }
     }
-    networkMonitor.start(queue: DispatchQueue(label: "com.seaony.Kayoi.networkRecovery"))
+    networkMonitor.start(queue: DispatchQueue(label: "com.seaony.Diskit.networkRecovery"))
     recovery.start()
     Task { await refreshNotificationAuthorization() }
     Task { await enforceCacheLimit() }
@@ -376,7 +376,7 @@ import UserNotifications
   func openFileSystemSettings() {
     guard !options.isDemo else { return }
     guard fileSystem?.openSettings() == true else {
-      presentOperationAlert(title: L("无法打开系统设置"), message: L("请打开系统设置，在登录项与扩展中启用 Kayoi。"))
+      presentOperationAlert(title: L("无法打开系统设置"), message: L("请打开系统设置，在登录项与扩展中启用 Diskit。"))
       return
     }
   }
@@ -388,7 +388,7 @@ import UserNotifications
       await refreshFileSystemState()
       if fileSystemState == .disabled {
         system.alert(
-          L("启用文件系统扩展"), L("在系统设置中启用 Kayoi 后即可挂载位置。"),
+          L("启用文件系统扩展"), L("在系统设置中启用 Diskit 后即可挂载位置。"),
           [L("打开系统设置"), L("取消")]
         ) { [weak self] response in
           if response == .alertFirstButtonReturn { self?.openFileSystemSettings() }
@@ -607,7 +607,7 @@ import UserNotifications
     case .quark, .ucDrive:
       return QuarkProvider(session: quarkSession(for: connection))
     case .baiduDrive:
-      let root = info["BAIDU_ROOT_PATH"] as? String ?? "apps/Kayoi"
+      let root = info["BAIDU_ROOT_PATH"] as? String ?? "apps/Diskit"
       let appID = info["BAIDU_APP_ID"] as? String ?? ""
       return BaiduDriveProvider(
         configuration: BaiduDriveConfiguration(rootPath: root, appID: appID),

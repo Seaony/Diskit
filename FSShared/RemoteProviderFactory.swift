@@ -52,7 +52,7 @@ enum RemoteProviderFactory {
     case .baiduDrive:
       return BaiduDriveProvider(
         configuration: BaiduDriveConfiguration(
-          rootPath: info["BAIDU_ROOT_PATH"] as? String ?? "apps/Kayoi",
+          rootPath: info["BAIDU_ROOT_PATH"] as? String ?? "apps/Diskit",
           appID: value("BAIDU_APP_ID")),
         session: try oauthSession())
     case .drive115:

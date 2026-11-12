@@ -9,7 +9,7 @@ import Testing
 private let waiterConfiguration = OAuthConfiguration(
   clientID: "local", clientSecret: "",
   authorizationURL: URL(string: "https://example.invalid/auth")!,
-  tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test", scopes: [])
+  tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test", scopes: [])
 
 private actor RefreshWaiterProbe: HTTPTransport {
   let entered = TestEvent()

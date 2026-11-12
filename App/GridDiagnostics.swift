@@ -82,10 +82,10 @@ private struct GridDiagnostics: ViewModifier {
               for y in stride(from: 0.0, through: size.height, by: 8) {
                 grid.move(to: CGPoint(x: 0, y: y)); grid.addLine(to: CGPoint(x: size.width, y: y))
               }
-              context.stroke(grid, with: .color(KayoiTheme.border.opacity(0.25)), lineWidth: 1)
+              context.stroke(grid, with: .color(DiskitTheme.border.opacity(0.25)), lineWidth: 1)
               for item in measurements {
                 let rect = CGRect(x: item.x - origin.x, y: item.y - origin.y, width: item.width, height: item.height)
-                let color = KayoiTheme.locationColor(item.isArea ? "blue" : "pink")
+                let color = DiskitTheme.locationColor(item.isArea ? "blue" : "pink")
                 context.stroke(Path(rect), with: .color(color), lineWidth: 1)
                 if item.isArea && item.inset > 0 {
                   context.stroke(Path(rect.insetBy(dx: item.inset, dy: item.inset)), with: .color(color), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))

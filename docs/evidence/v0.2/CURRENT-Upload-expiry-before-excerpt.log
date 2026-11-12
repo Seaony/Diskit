@@ -1,4 +1,4 @@
-# 失败基线摘录，原日志/tmp/kayoi-upload-expiry-red.log；保留测试错误和终结结果，省略编译器长命令。
+# 失败基线摘录，原日志/tmp/diskit-upload-expiry-red.log；保留测试错误和终结结果，省略编译器长命令。
 [原日志:25] 􁁛  Test drive123ExpiredAccessTokenRetriesSameSliceWithoutRestarting(businessCode:) with 2 test cases passed after 0.009 seconds.
 [原日志:26] 􀢄  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) recorded an issue with 1 argument code → "SecurityTokenExpired" at UploadExpiryRecoveryTests.swift:109:3: Expectation failed: tokens.withLock { $0 } == (code == "SecurityTokenExpired" ? 2 : 1)
 [原日志:30] 􀢄  Test drive115UploadCredentialRecoveryIsBoundedAndDoesNotRetryPermissions(code:) recorded an issue with 1 argument code → "SecurityTokenExpired" at UploadExpiryRecoveryTests.swift:110:3: Expectation failed: uploads.withLock { $0 } == (code == "SecurityTokenExpired" ? 2 : 1)

@@ -1,23 +1,23 @@
-$ lipo -archs build/DerivedData/Build/Products/Release/Kayoi.app/Contents/MacOS/Kayoi
+$ lipo -archs build/DerivedData/Build/Products/Release/Diskit.app/Contents/MacOS/Diskit
 x86_64 arm64
-$ lipo -archs build/bin/kayoi-dev
+$ lipo -archs build/bin/diskit-dev
 x86_64 arm64
-$ codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Kayoi.app
---prepared:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
---prepared:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
---validated:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
---prepared:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
---prepared:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
---validated:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
---validated:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
---prepared:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
---validated:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
---validated:/Users/seaony/code/Kayoi/build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
-build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
-$ codesign --verify --strict --verbose=2 build/bin/kayoi-dev
-build/bin/kayoi-dev: valid on disk
-build/bin/kayoi-dev: satisfies its Designated Requirement
+$ codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/Diskit.app
+--prepared:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+--prepared:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--validated:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate
+--prepared:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--prepared:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--validated:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app
+--validated:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc
+--prepared:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--validated:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc
+--validated:/Users/seaony/code/Diskit/build/DerivedData/Build/Products/Release/Diskit.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.
+build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement
+$ codesign --verify --strict --verbose=2 build/bin/diskit-dev
+build/bin/diskit-dev: valid on disk
+build/bin/diskit-dev: satisfies its Designated Requirement
 $ python3 scripts/package-cli.py --verify build/bin
 CFBundleShortVersionString=0.2.0
 CFBundleVersion=2

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 把 README、产品图和第三方说明同步到公开的发布仓库 Seaony/Kayoi。
+# 把 README、产品图和第三方说明同步到公开的发布仓库 Seaony/Diskit。
 # 用法：scripts/sync-release-repo.sh [--dry-run]
 # README 里 <!-- source-only -->…<!-- /source-only --> 之间的内容只属于私有源码仓库，同步时删掉；
 # <!-- public-only … --> 里的内容在源码仓库里看不到，同步时展开。
@@ -10,8 +10,8 @@ dry_run=0
 if [[ $# == 1 && "$1" == '--dry-run' ]]; then dry_run=1; elif [[ $# != 0 ]]; then
   echo '用法：scripts/sync-release-repo.sh [--dry-run]' >&2; exit 1
 fi
-release_repo="Seaony/Kayoi"
-work="$(mktemp -d /tmp/kayoi-release-repo.XXXXXX)"
+release_repo="Seaony/Diskit"
+work="$(mktemp -d /tmp/diskit-release-repo.XXXXXX)"
 trap 'rm -rf "$work"' EXIT
 
 gh repo clone "$release_repo" "$work/repo" -- --quiet

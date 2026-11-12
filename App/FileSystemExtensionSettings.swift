@@ -5,7 +5,7 @@ struct FileSystemExtensionSettings: View {
   let openSettings: () -> Void
 
   var body: some View {
-    KayoiSideRow(L("文件系统扩展")) {
+    DiskitSideRow(L("文件系统扩展")) {
       HStack(spacing: Space.md) {
         HStack(spacing: Space.sm) {
           if state == .checking {
@@ -13,7 +13,7 @@ struct FileSystemExtensionSettings: View {
               .accessibilityHidden(true)
           }
           Text(status)
-            .foregroundStyle(state == .disabled ? KayoiTheme.warning : KayoiTheme.secondaryText)
+            .foregroundStyle(state == .disabled ? DiskitTheme.warning : DiskitTheme.secondaryText)
             .fixedSize(horizontal: false, vertical: true)
             .multilineTextAlignment(.trailing)
         }
@@ -24,7 +24,7 @@ struct FileSystemExtensionSettings: View {
           .overlay {
             // 和现有 FlatButtonStyle 的轮廓保持一致。
             RoundedRectangle(cornerRadius: 7, style: .continuous)
-              .strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+              .strokeBorder(DiskitTheme.border, lineWidth: 0.5)
               .allowsHitTesting(false)
           }
       }
@@ -43,23 +43,23 @@ struct FileSystemExtensionSettings: View {
 }
 
 #Preview("扩展状态 · 浅色") {
-  KayoiFormSection {
+  DiskitFormSection {
     FileSystemExtensionSettings(state: .checking, openSettings: {})
     FileSystemExtensionSettings(state: .enabled, openSettings: {})
     FileSystemExtensionSettings(state: .disabled, openSettings: {})
     FileSystemExtensionSettings(state: .unavailable, openSettings: {})
   }
   .padding(Space.margin).frame(width: 560)
-  .background(KayoiTheme.background).preferredColorScheme(.light)
+  .background(DiskitTheme.background).preferredColorScheme(.light)
 }
 
 #Preview("扩展状态 · 深色") {
-  KayoiFormSection {
+  DiskitFormSection {
     FileSystemExtensionSettings(state: .checking, openSettings: {})
     FileSystemExtensionSettings(state: .enabled, openSettings: {})
     FileSystemExtensionSettings(state: .disabled, openSettings: {})
     FileSystemExtensionSettings(state: .unavailable, openSettings: {})
   }
   .padding(Space.margin).frame(width: 560)
-  .background(KayoiTheme.background).preferredColorScheme(.dark)
+  .background(DiskitTheme.background).preferredColorScheme(.dark)
 }

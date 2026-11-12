@@ -1,10 +1,10 @@
-Window: "Unknown", App: Kayoi.
+Window: "Unknown", App: Diskit.
 0 表单 Description: 警告, Secondary Actions: Raise
-	1 text 删除“Demo baiduDrive”？ 会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。
+	1 text 删除“Demo baiduDrive”？ 会删除 Diskit 保存的登录信息，网盘里的文件不受影响。
 	2 按钮 Description: 取消, ID: action-button-2
 	3 按钮 Description: 删除, ID: action-button-1
 4 menu bar
-	5 Kayoi
+	5 Diskit
 	6 文件
 	7 编辑
 	8 显示

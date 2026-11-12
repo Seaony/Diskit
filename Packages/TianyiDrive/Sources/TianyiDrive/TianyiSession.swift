@@ -164,7 +164,7 @@ extension TianyiStorageScope {
 
 public actor TianyiSession {
   public static let loginInvalidatedNotification = Notification.Name(
-    "com.seaony.Kayoi.tianyiLoginInvalidated")
+    "com.seaony.Diskit.tianyiLoginInvalidated")
 
   public nonisolated let configuration: TianyiConfiguration
   private let secretKey: String

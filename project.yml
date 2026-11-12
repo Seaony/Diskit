@@ -1,4 +1,4 @@
-name: Kayoi
+name: Diskit
 options:
   deploymentTarget:
     macOS: "26.0"
@@ -33,8 +33,8 @@ packages:
   ChinaWebDrive:
     path: Packages/ChinaWebDrive
 configFiles:
-  Debug: ${KAYOI_BUILD_CONFIG}
-  Release: ${KAYOI_BUILD_CONFIG}
+  Debug: ${DISKIT_BUILD_CONFIG}
+  Release: ${DISKIT_BUILD_CONFIG}
 settings:
   base:
     MARKETING_VERSION: "0.3.1"
@@ -50,7 +50,7 @@ settings:
     ENABLE_HARDENED_RUNTIME: YES
     COMBINE_HIDPI_IMAGES: YES
 targets:
-  Kayoi:
+  Diskit:
     type: application
     platform: macOS
     sources:
@@ -65,7 +65,7 @@ targets:
       - path: Packages/ADB/Vendor/BoringSSL/LICENSE
         buildPhase: resources
     dependencies:
-      - target: KayoiFS
+      - target: DiskitFS
       - package: Sparkle
       - package: Core
       - package: DevTool
@@ -83,15 +83,15 @@ targets:
       - package: ChinaWebDrive
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Diskit
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        CODE_SIGN_ENTITLEMENTS: App/Kayoi.entitlements
+        CODE_SIGN_ENTITLEMENTS: App/Diskit.entitlements
         GENERATE_INFOPLIST_FILE: NO
     info:
       path: build/Info.plist
       properties:
-        CFBundleDisplayName: Kayoi
-        KayoiDevToolProtocolVersion: 1
+        CFBundleDisplayName: Diskit
+        DiskitDevToolProtocolVersion: 1
         ALIYUN_CLIENT_ID: $(ALIYUN_CLIENT_ID)
         ALIYUN_CLIENT_SECRET: $(ALIYUN_CLIENT_SECRET)
         ALIYUN_REDIRECT_URI: $(ALIYUN_REDIRECT_URI)
@@ -113,7 +113,7 @@ targets:
         DROPBOX_REDIRECT_URI: $(DROPBOX_REDIRECT_URI)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
-        SUFeedURL: https://github.com/Seaony/Kayoi/releases/latest/download/appcast.xml
+        SUFeedURL: https://github.com/Seaony/Diskit/releases/latest/download/appcast.xml
         SUPublicEDKey: FnPUWAEY6WKwo0yvQLOBvEt7xjuhAabwNu1Y9QalNQc=
         SURequireSignedFeed: true
         SUVerifyUpdateBeforeExtraction: true
@@ -144,10 +144,10 @@ targets:
               NSExceptionAllowsInsecureHTTPLoads: true
         NSBonjourServices: ["_smb._tcp", "_adb-tls-pairing._tcp", "_adb-tls-connect._tcp"]
         CFBundleURLTypes:
-          - CFBundleURLName: com.seaony.Kayoi.oauth
-            CFBundleURLSchemes: [kayoi]
+          - CFBundleURLName: com.seaony.Diskit.oauth
+            CFBundleURLSchemes: [diskit]
   # FSKit 文件系统扩展：把远端位置挂成 Finder 里的卷
-  KayoiFS:
+  DiskitFS:
     type: extensionkit-extension
     platform: macOS
     sources:
@@ -157,7 +157,7 @@ targets:
       - path: FSExtension
         excludes:
           - Info.plist
-          - KayoiFS.entitlements
+          - DiskitFS.entitlements
     dependencies:
       - package: Core
       - package: ADB
@@ -172,17 +172,17 @@ targets:
       - package: ChinaWebDrive
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.FS
-        PRODUCT_NAME: KayoiFS
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Diskit.FS
+        PRODUCT_NAME: DiskitFS
         INFOPLIST_FILE: FSExtension/Info.plist
         GENERATE_INFOPLIST_FILE: NO
-        CODE_SIGN_ENTITLEMENTS: FSExtension/KayoiFS.entitlements
+        CODE_SIGN_ENTITLEMENTS: FSExtension/DiskitFS.entitlements
         ENABLE_APP_SANDBOX: YES
-  KayoiTests:
+  DiskitTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/KayoiTests
+      - Tests/DiskitTests
       - App/Logic
       - App/AppModel.swift
       - App/UpdateController.swift
@@ -205,18 +205,18 @@ targets:
       - package: ChinaWebDrive
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Kayoi.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.seaony.Diskit.tests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
-  KayoiTests:
+  DiskitTests:
     build:
       targets:
-        KayoiTests: all
+        DiskitTests: all
     test:
       gatherCoverageData: true
       targets:
-        - KayoiTests
-  Kayoi:
+        - DiskitTests
+  Diskit:
     build:
       targets:
-        Kayoi: all
+        Diskit: all

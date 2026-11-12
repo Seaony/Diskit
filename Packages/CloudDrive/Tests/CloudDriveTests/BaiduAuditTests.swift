@@ -46,7 +46,7 @@ private func baiduFields(_ request: URLRequest) -> [String: String] {
     })
 }
 
-private func baiduAuditProvider(_ http: any HTTPTransport, root: String = "/apps/Kayoi") throws
+private func baiduAuditProvider(_ http: any HTTPTransport, root: String = "/apps/Diskit") throws
   -> BaiduDriveProvider
 {
   let secrets = MemorySecretStore()
@@ -58,7 +58,7 @@ private func baiduAuditProvider(_ http: any HTTPTransport, root: String = "/apps
     configuration: OAuthConfiguration(
       clientID: "local", clientSecret: "",
       authorizationURL: URL(string: "https://example.invalid/auth")!,
-      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test",
+      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test",
       scopes: []), secretKey: "local", secrets: secrets, transport: http)
   return BaiduDriveProvider(
     configuration: BaiduDriveConfiguration(rootPath: root, appID: "local"), session: session,
@@ -79,7 +79,7 @@ private func baiduItem(path: String, id: Int = 42) -> [String: Any] {
     if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
     let query = baiduQuery(request)
     guard request.url?.path == "/rest/2.0/xpan/file", query["method"] == "list",
-      query["dir"] == "/apps/Kayoi/a+b"
+      query["dir"] == "/apps/Diskit/a+b"
     else { return HTTPResponse(status: 404) }
     #expect(request.url!.absoluteString.contains("a%2Bb"))
     #expect(request.url!.absoluteString.contains("access_token=a%2Bb"))
@@ -88,7 +88,7 @@ private func baiduItem(path: String, id: Int = 42) -> [String: Any] {
       return value
     }
     return try baiduJSON([
-      "errno": 0, "list": [baiduItem(path: "/apps/Kayoi/a+b/file", id: current)],
+      "errno": 0, "list": [baiduItem(path: "/apps/Diskit/a+b/file", id: current)],
     ])
   }
   let provider = try baiduAuditProvider(http)
@@ -111,12 +111,12 @@ func baiduDownloadsUseFileIDAndRejectMismatchedMetadata(wrongID: Bool) async thr
     if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
     let query = baiduQuery(request)
     if request.url?.path == "/rest/2.0/xpan/file", query["method"] == "list" {
-      return try baiduJSON(["errno": 0, "list": [baiduItem(path: "/apps/Kayoi/file")]])
+      return try baiduJSON(["errno": 0, "list": [baiduItem(path: "/apps/Diskit/file")]])
     }
     guard request.url?.path == "/rest/2.0/xpan/multimedia", query["method"] == "filemetas",
       query["fsids"] == "[42]", query["dlink"] == "1"
     else { return HTTPResponse(status: 404) }
-    var item = baiduItem(path: "/apps/Kayoi/file", id: wrongID ? 99 : 42)
+    var item = baiduItem(path: "/apps/Diskit/file", id: wrongID ? 99 : 42)
     item["dlink"] = "https://d.pcs.baidu.com/download"
     return try baiduJSON(["errno": 0, "list": [item]])
   }
@@ -149,7 +149,7 @@ func baiduUploadUsesOfficialWireContractAndValidatesParts(mode: Int) async throw
       #expect(request.httpMethod == "POST")
       #expect(query["method"] == "upload" && query["type"] == "tmpfile")
       #expect(
-        query["path"] == "/apps/Kayoi/a+b" && query["uploadid"] == "upload"
+        query["path"] == "/apps/Diskit/a+b" && query["uploadid"] == "upload"
           && query["partseq"] == "0")
       #expect(request.value(forHTTPHeaderField: "Authorization") == nil)
       #expect(String(decoding: request.httpBody!, as: UTF8.self).contains("abc"))
@@ -162,7 +162,7 @@ func baiduUploadUsesOfficialWireContractAndValidatesParts(mode: Int) async throw
     let fields = baiduFields(request)
     #expect(request.httpMethod == "POST")
     #expect(fields["method"] == nil && fields["access_token"] == nil)
-    #expect(fields["path"] == "/apps/Kayoi/a+b" && fields["rtype"] == "0")
+    #expect(fields["path"] == "/apps/Diskit/a+b" && fields["rtype"] == "0")
     #expect(fields["block_list"] == "[\"\(digest)\"]")
     if query["method"] == "precreate" {
       return try baiduJSON([

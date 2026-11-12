@@ -2,7 +2,7 @@
 
 同一序列三次触发：演示启动 → 设置 → 通知 → 存储 → 安卓 → 读取辅助功能树/截图。工具在整组调用失败时隐藏此前图像输出，借助已保存文件时间确认失败发生在安卓页，而非通用页。第三次事先关闭面板，仍触发相同崩溃。
 
-## Kayoi-2026-11-04-202631.ips
+## Diskit-2026-11-04-202631.ips
 
 Thread stack size exceeded due to excessive recursion
 
@@ -19,7 +19,7 @@ Thread stack size exceeded due to excessive recursion
 - @objc AccessibilityNode.accessibilityLabel()
 - closure #4 in AccessibilityNode.applyProperties(to:)
 
-## Kayoi-2026-11-04-203352.ips
+## Diskit-2026-11-04-203352.ips
 
 Thread stack size exceeded due to excessive recursion
 
@@ -36,7 +36,7 @@ Thread stack size exceeded due to excessive recursion
 - @objc AccessibilityNode.accessibilityLabel()
 - closure #4 in AccessibilityNode.applyProperties(to:)
 
-## Kayoi-2026-11-04-203553.ips
+## Diskit-2026-11-04-203553.ips
 
 Thread stack size exceeded due to excessive recursion
 

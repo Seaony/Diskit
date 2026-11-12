@@ -5,7 +5,7 @@ import Security
 // 仅转换 Network 与 Security 的系统调用，状态和数据判断由 NetworkTransport 负责。
 final class SystemADBNetworkIO: ADBNetworkIO, @unchecked Sendable {
   private let connection: NWConnection
-  private let queue = DispatchQueue(label: "com.seaony.Kayoi.adb.network")
+  private let queue = DispatchQueue(label: "com.seaony.Diskit.adb.network")
   init(endpoint: NWEndpoint, startTLS: Bool, identity: ADBIdentity) throws {
     let tls = NWProtocolTLS.Options()
     sec_protocol_options_set_min_tls_protocol_version(tls.securityProtocolOptions, .TLSv13)

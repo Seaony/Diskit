@@ -11,7 +11,7 @@ struct ServiceWebLogin: NSViewRepresentable {
   func makeNSView(context: Context) -> WKWebView {
     let configuration = WKWebViewConfiguration()
     configuration.websiteDataStore = .nonPersistent()
-    configuration.userContentController.add(context.coordinator, name: "kayoiWebLogin")
+    configuration.userContentController.add(context.coordinator, name: "diskitWebLogin")
     configuration.userContentController.addUserScript(
       WKUserScript(
         source: WebLoginObservationScript.source(service: state.service),
@@ -41,7 +41,7 @@ struct ServiceWebLogin: NSViewRepresentable {
     coordinator.stop()
     view.navigationDelegate = nil
     view.uiDelegate = nil
-    view.configuration.userContentController.removeScriptMessageHandler(forName: "kayoiWebLogin")
+    view.configuration.userContentController.removeScriptMessageHandler(forName: "diskitWebLogin")
     view.configuration.userContentController.removeAllUserScripts()
   }
 

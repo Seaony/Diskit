@@ -3,7 +3,7 @@ import Foundation
 import Network
 
 final class ADBStartTLS: NWProtocolFramerImplementation {
-  static let label = "Kayoi ADB STLS"
+  static let label = "Diskit ADB STLS"
   static let definition = NWProtocolFramer.Definition(implementation: ADBStartTLS.self)
   required init(framer: NWProtocolFramer.Instance) {}
   func start(framer: NWProtocolFramer.Instance) -> NWProtocolFramer.StartResult {

@@ -10,7 +10,7 @@ actor FileSystemCacheMaintenance {
 
   static var defaultRoot: URL {
     FileManager.default.homeDirectoryForCurrentUser.appending(
-      path: "Library/Containers/com.seaony.Kayoi.FS/Data/Library/Caches/Kayoi",
+      path: "Library/Containers/com.seaony.Diskit.FS/Data/Library/Caches/Diskit",
       directoryHint: .isDirectory)
   }
 

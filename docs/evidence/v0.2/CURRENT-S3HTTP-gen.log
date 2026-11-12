@@ -2,6 +2,6 @@ xcodegen generate
 ⚙️  Generating plists...
 ⚙️  Generating project...
 ⚙️  Writing project...
-Created project at /Users/seaony/code/Kayoi/Kayoi.xcodeproj
-mkdir -p Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
-cp Dependencies/Package.resolved Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+Created project at /Users/seaony/code/Diskit/Diskit.xcodeproj
+mkdir -p Diskit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+cp Dependencies/Package.resolved Diskit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved

@@ -31,7 +31,7 @@ extension ConnectionEditorModel {
     return nil
   }
   var visibleError: String? {
-    error ?? (permissionSettingsURL == nil ? nil : L("系统权限尚未开启，请在系统设置中允许 Kayoi 访问。"))
+    error ?? (permissionSettingsURL == nil ? nil : L("系统权限尚未开启，请在系统设置中允许 Diskit 访问。"))
   }
   func openPermissionSettings() {
     guard let url = permissionSettingsURL else { return }

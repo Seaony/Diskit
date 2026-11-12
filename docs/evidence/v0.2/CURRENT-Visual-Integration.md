@@ -1,6 +1,6 @@
 # 首轮界面集成验收
 
-仅使用 KAYOI_DEMO=1，Debug 构建；这些是局部证据，不替代完整矩阵与 Release 性能验收。
+仅使用 DISKIT_DEMO=1，Debug 构建；这些是局部证据，不替代完整矩阵与 Release 性能验收。
 
 - 首次启动发现菜单栏标签持续刷新，进程 CPU 100%、RSS 约 8 GB，Computer Use 两次读取超时。采样：build/Validation/demo-hang.sample.txt，主线程集中于 MenuBarExtraHost.requestUpdate → updateButton → setImage。该进程已停止。
 - 移除标签 TimelineView 后，同参数启动成功，Computer Use 可读取及操作；一次进程观察 CPU 0.0%、RSS 111840 KiB。这不是五分钟性能测量。

@@ -1,7 +1,7 @@
-Window: "Kayoi", App: Kayoi.
-0 标准窗口 Kayoi, ID: demo-panel, Secondary Actions: Raise
+Window: "Diskit", App: Diskit.
+0 标准窗口 Diskit, ID: demo-panel, Secondary Actions: Raise
 	1 container
-		2 text Kayoi 20 个位置
+		2 text Diskit 20 个位置
 		3 滚动区 Secondary Actions: Scroll Up, Scroll Down
 			4 文本 已发现
 			5 图像 smartphone
@@ -108,20 +108,20 @@ Window: "Kayoi", App: Kayoi.
 				106 减箭头按钮
 				107 增页面按钮
 				108 减页面按钮
-		109 文本 Kayoi 0.1.0
-		110 按钮 Description: 打开 Kayoi 帮助, Help: 帮助
+		109 文本 Diskit 0.1.0
+		110 按钮 Description: 打开 Diskit 帮助, Help: 帮助
 		111 按钮 Description: 打开设置, Help: 设置
-		112 按钮 Description: 退出 Kayoi, Help: 退出
+		112 按钮 Description: 退出 Diskit, Help: 退出
 	113 关闭按钮
 	114 缩放按钮 (disabled)
 	115 最小化按钮
-	116 文本 Kayoi
+	116 文本 Diskit
 117 menu bar
-	118 Kayoi
+	118 Diskit
 	119 文件
 	120 编辑
 	121 显示
 	122 窗口
 	123 帮助
 
-The focused UI element is 109 文本 Kayoi 0.1.0
+The focused UI element is 109 文本 Diskit 0.1.0

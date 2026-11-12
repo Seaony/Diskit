@@ -386,7 +386,7 @@ func quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers: Bool) as
       "sort", "sort", "rename", "move", "task", "rename",
     ])
   #expect(try body(requests[2])["fid"] as? String == "f")
-  #expect((try body(requests[2])["file_name"] as? String)?.hasPrefix(".kayoi-move-") == true)
+  #expect((try body(requests[2])["file_name"] as? String)?.hasPrefix(".diskit-move-") == true)
   #expect(try body(requests[3])["filelist"] as? [String] == ["f"])
   #expect(try body(requests[5])["file_name"] as? String == "y")
 }
@@ -455,7 +455,7 @@ func quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers: Bool) as
   } catch let error as QuarkMoveRecoveryError {
     #expect(error.original as? RemoteError == .http(500))
     #expect(error.recovery as? RemoteError == .http(503))
-    #expect(error.temporaryName.hasPrefix(".kayoi-move-"))
+    #expect(error.temporaryName.hasPrefix(".diskit-move-"))
   }
 }
 

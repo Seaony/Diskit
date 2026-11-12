@@ -36,8 +36,8 @@ func fileSystemAddressesResolveTheSavedConnection(kind: ConnectionKind) throws {
   let connection = Connection(kind: .androidUSB)
   let id = connection.id.uuidString
   for address in [
-    "kayoi-quark://\(id)", "kayoi-adb://user:password@\(id)", "kayoi-adb://\(id):123",
-    "kayoi-adb://\(id)/path", "kayoi-adb://\(id)?token=x", "kayoi-adb://\(id)#fragment",
+    "diskit-quark://\(id)", "diskit-adb://user:password@\(id)", "diskit-adb://\(id):123",
+    "diskit-adb://\(id)/path", "diskit-adb://\(id)?token=x", "diskit-adb://\(id)#fragment",
   ] {
     #expect(throws: (any Error).self) {
       try FileSystemAddress.connection(for: URL(string: address)!, in: [connection])

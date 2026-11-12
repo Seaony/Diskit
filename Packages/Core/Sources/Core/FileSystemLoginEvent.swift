@@ -1,7 +1,7 @@
 import Foundation
 
 public enum FileSystemLoginEvent {
-  public static let notification = Notification.Name("com.seaony.Kayoi.fileSystemLoginExpired")
+  public static let notification = Notification.Name("com.seaony.Diskit.fileSystemLoginExpired")
 
   public static func supports(kind: ConnectionKind) -> Bool {
     switch kind {

@@ -1212,8 +1212,8 @@ const ICONS = [
   }
 ];
 
-// Kayoi 原创图标：保持统一构造，用中性标记区分服务。
-const KAYOI_GLYPHS = {
+// Diskit 原创图标：保持统一构造，用中性标记区分服务。
+const DISKIT_GLYPHS = {
   A: 'M0 7L2.5 0L5 7M1 4.6H4', B:'M0 7V0H2.8Q5 0 5 1.8Q5 3.5 2.8 3.5H0M2.8 3.5Q5 3.5 5 5.2Q5 7 2.8 7H0',
   C:'M5 0.6Q3.8 0 2.5 0Q0 0 0 3.5Q0 7 2.5 7Q3.8 7 5 6.4', D:'M0 0H2Q5 0 5 3.5Q5 7 2 7H0Z',
   G:'M5 1Q3.8 0 2.5 0Q0 0 0 3.5Q0 7 2.5 7Q4 7 5 6V3.7H2.8', K:'M0 0V7M5 0L0 3.5L5 7',
@@ -1224,30 +1224,30 @@ const KAYOI_GLYPHS = {
   '1':'M0.8 1.4L2.8 0V7M0.6 7H5', '2':'M0 1.5Q0.8 0 2.5 0Q5 0 5 1.8Q5 3 3 4.2L0 7H5',
   '3':'M0 0H5L2.5 3.1Q5 3.1 5 5Q5 7 2.5 7Q1 7 0 6.2', '5':'M5 0H0V3.3H2.8Q5 3.3 5 5Q5 7 2.5 7Q1 7 0 6.3'
 };
-function kayoiMark(label, cx = 15.5, cy = 17.7) {
+function diskitMark(label, cx = 15.5, cy = 17.7) {
   const scale = label.length > 2 ? 0.78 : 0.88;
   const width = (label.length * 7 - 2) * scale;
-  return [...label].map((letter, index) => `<path d="${KAYOI_GLYPHS[letter]}" transform="translate(${cx - width / 2 + index * 7 * scale} ${cy - 3.5 * scale}) scale(${scale})" fill="none" ${DEEPS} stroke-width="${1.6 / scale}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
+  return [...label].map((letter, index) => `<path d="${DISKIT_GLYPHS[letter]}" transform="translate(${cx - width / 2 + index * 7 * scale} ${cy - 3.5 * scale}) scale(${scale})" fill="none" ${DEEPS} stroke-width="${1.6 / scale}" stroke-linecap="round" stroke-linejoin="round"/>`).join('');
 }
-function kayoiCloud(label) {
+function diskitCloud(label) {
   return {
     svg(u) {
       const back = cloud([8.4, 9.2, 4.6], [15.5, 6.5, 5.8], [22.5, 9.6, 4.8]);
       const front = rp([[4,10.2],[11.7,10.2],[14,12.4],[27,12.4],[27,23],[4,23]], [1.7,1.3,1.3,1.7,KR,KR]);
-      return `<g filter="${u.sh}"><g filter="${u.hi}"><path d="${back}" fill="${u.loS}"/></g></g><path d="${back}" ${OL}/><path d="${rr(8,8.2,15.4,9,CR)}" fill="#fff"/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/>${kayoiMark(label,15.5,18.2)}`;
+      return `<g filter="${u.sh}"><g filter="${u.hi}"><path d="${back}" fill="${u.loS}"/></g></g><path d="${back}" ${OL}/><path d="${rr(8,8.2,15.4,9,CR)}" fill="#fff"/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/>${diskitMark(label,15.5,18.2)}`;
     }, target: () => ({}), draw() {}
   };
 }
-function kayoiBucket(label) {
+function diskitBucket(label) {
   return {
     svg(u) {
       const back = rp([[4.4,4.2],[26.6,4.2],[24.7,23],[6.3,23]], [KR,KR,KR,KR]);
       const front = rp([[5.1,10],[25.9,10],[24.7,23],[6.3,23]], [1.8,1.8,KR,KR]);
-      return `<g filter="${u.sh}"><g filter="${u.hi}"><path d="${back}" fill="${u.loS}"/></g></g><path d="${back}" ${OL}/><path d="M8 6.8H23" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/>${kayoiMark(label,15.5,16.7)}`;
+      return `<g filter="${u.sh}"><g filter="${u.hi}"><path d="${back}" fill="${u.loS}"/></g></g><path d="${back}" ${OL}/><path d="M8 6.8H23" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/>${diskitMark(label,15.5,16.7)}`;
     }, target: () => ({}), draw() {}
   };
 }
-function kayoiPhone(wireless) {
+function diskitPhone(wireless) {
   return {
     svg(u) {
       const body=rr(6.3,1,18.4,23,KR), front=rr(6.3,17.6,18.4,6.4,1.8);
@@ -1259,8 +1259,8 @@ function kayoiPhone(wireless) {
   };
 }
 ICONS.push(
-  { name: 'androidUSB', ...kayoiPhone(false) },
-  { name: 'androidWiFi', ...kayoiPhone(true) },
+  { name: 'androidUSB', ...diskitPhone(false) },
+  { name: 'androidWiFi', ...diskitPhone(true) },
   { name: 'smb', svg(u) {
     const body=rr(4,2,23,15.4,KR), foot=rr(10,21,11,2.4,1.2), folder=rp([[12.4,12],[17.1,12],[19,14],[27,14],[27,23],[12.4,23]], [1.6,1,1,1.6,KR,KR]);
     return `<g filter="${u.sh}"><path d="${body}" fill="${u.loS}"/></g><path d="${body}" ${OL}/><path d="${rr(6.3,4.3,18.4,10.2,CR)}" fill="#fff"/><path d="${rr(13.8,17.4,3.4,4,0.6)}" fill="${u.loS}"/><path d="${foot}" fill="${u.loS}" ${OL}/><g filter="${u.hi}"><path d="${folder}" fill="${u.upS}"/></g><path d="${folder}" ${OL}/>`;
@@ -1282,13 +1282,13 @@ ICONS.push(
     const top=rp([[9,7],[11,2.5],[20,2.5],[22,7]], [1,1.5,1.5,1]), body=rr(4,6.2,23,16.2,KR), front=rr(4,13,23,9.4,1.8);
     return `<g filter="${u.sh}"><path d="${top}" fill="${u.loS}"/></g><path d="${top}" ${OL}/><g filter="${u.sh}"><path d="${body}" fill="${u.loS}"/></g><path d="${body}" ${OL}/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/><path d="${circ(15.5,13.5,6)}" fill="#fff"/><path d="${circ(15.5,13.5,6)}" ${OL}/><path d="${circ(15.5,13.5,3.3)}" ${DEEP}/>`;
   },target:()=>({}),draw(){} },
-  {name:'aliyunDrive',...kayoiCloud('A')}, {name:'quark',...kayoiCloud('Q')}, {name:'baiduDrive',...kayoiCloud('B')},
-  {name:'drive115',...kayoiCloud('115')}, {name:'drive123',...kayoiCloud('123')}, {name:'oneDrive',...kayoiCloud('O')},
-  {name:'googleDrive',...kayoiCloud('G')}, {name:'dropbox',...kayoiCloud('D')}, {name:'ucDrive',...kayoiCloud('U')},
-  {name:'tianyiDrive',...kayoiCloud('T')}, {name:'mobileCloud',...kayoiCloud('M')}, {name:'thunderDrive',...kayoiCloud('X')},
-  {name:'pikPak',...kayoiCloud('P')}, {name:'lanzou',...kayoiCloud('L')},
-  {name:'s3',...kayoiBucket('S3')}, {name:'cloudflareR2',...kayoiBucket('R2')}, {name:'aliyunOSS',...kayoiBucket('OSS')},
-  {name:'tencentCOS',...kayoiBucket('COS')}, {name:'qiniuKodo',...kayoiBucket('K')}, {name:'minIO',...kayoiBucket('M')}, {name:'backblazeB2',...kayoiBucket('B2')},
+  {name:'aliyunDrive',...diskitCloud('A')}, {name:'quark',...diskitCloud('Q')}, {name:'baiduDrive',...diskitCloud('B')},
+  {name:'drive115',...diskitCloud('115')}, {name:'drive123',...diskitCloud('123')}, {name:'oneDrive',...diskitCloud('O')},
+  {name:'googleDrive',...diskitCloud('G')}, {name:'dropbox',...diskitCloud('D')}, {name:'ucDrive',...diskitCloud('U')},
+  {name:'tianyiDrive',...diskitCloud('T')}, {name:'mobileCloud',...diskitCloud('M')}, {name:'thunderDrive',...diskitCloud('X')},
+  {name:'pikPak',...diskitCloud('P')}, {name:'lanzou',...diskitCloud('L')},
+  {name:'s3',...diskitBucket('S3')}, {name:'cloudflareR2',...diskitBucket('R2')}, {name:'aliyunOSS',...diskitBucket('OSS')},
+  {name:'tencentCOS',...diskitBucket('COS')}, {name:'qiniuKodo',...diskitBucket('K')}, {name:'minIO',...diskitBucket('M')}, {name:'backblazeB2',...diskitBucket('B2')},
   {name:'emptyLink',svg(u) {
     const back=rp([[4,3],[11.5,3],[14,6],[27,6],[27,22],[4,22]], [KR,1.4,1.4,KR,KR,KR]), front=rr(4,10,23,12,1.8);
     return `<g filter="${u.sh}"><path d="${back}" fill="${u.loS}"/></g><path d="${back}" ${OL}/><path d="${rr(8,7.5,15,8,CR)}" fill="#fff"/><g filter="${u.hi}"><path d="${front}" fill="${u.upS}"/></g><path d="${front}" ${OL}/><g transform="translate(15.5 16.3) rotate(-35)"><path d="${rr(-6.3,-3,8.5,6,3)}" fill="none" ${DEEPS} stroke-width="2.2"/><path d="${rr(-2.2,-3,8.5,6,3)}" fill="none" ${DEEPS} stroke-width="2.2"/></g>`;

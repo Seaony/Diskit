@@ -1191,10 +1191,10 @@ func tianyiCrossDirectoryRenameFailureRestoresOrReportsLastKnownLocation(rollbac
       try await provider.move(RemotePath("/src/a"), to: RemotePath("/dst/b"))
       Issue.record("恢复失败应明确报告")
     } catch let failure as TianyiMoveRecoveryFailure {
-      #expect(failure.lastConfirmedPath.value.hasPrefix("/dst/.kayoi-move-"))
+      #expect(failure.lastConfirmedPath.value.hasPrefix("/dst/.diskit-move-"))
       #expect(failure.original as? RemoteError == .http(500))
     }
-    #expect(await http.location().hasPrefix("dst/.kayoi-move-"))
+    #expect(await http.location().hasPrefix("dst/.diskit-move-"))
   } else {
     await #expect(throws: RemoteError.http(500)) {
       try await provider.move(RemotePath("/src/a"), to: RemotePath("/dst/b"))

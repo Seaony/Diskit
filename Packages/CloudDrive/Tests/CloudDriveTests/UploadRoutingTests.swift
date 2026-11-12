@@ -37,7 +37,7 @@ private actor UploadRouteProbe: HTTPTransport {
   let config = OAuthConfiguration(
     clientID: "local", clientSecret: "",
     authorizationURL: URL(string: "https://example.invalid/auth")!,
-    tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://local",
+    tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://local",
     scopes: [])
   let session = OAuthSession(
     configuration: config, secretKey: "test", secrets: secrets, transport: probe)

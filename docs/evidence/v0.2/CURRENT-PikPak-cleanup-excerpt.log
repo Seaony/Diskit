@@ -1,4 +1,4 @@
-# 定向证据摘录；原日志/tmp/kayoi-pikpak-cleanup-focused.log；省略编译命令，不代表最新整轮回归。
+# 定向证据摘录；原日志/tmp/diskit-pikpak-cleanup-focused.log；省略编译命令，不代表最新整轮回归。
 [原日志:13] 􀟈  Test failedUploadKeepsPrimaryErrorWhenCleanupFails(asynchronous:) started.
 [原日志:14] 􀟈  Test case passing 1 argument asynchronous → true to failedUploadKeepsPrimaryErrorWhenCleanupFails(asynchronous:) started.
 [原日志:15] 􀟈  Test case passing 1 argument asynchronous → false to failedUploadKeepsPrimaryErrorWhenCleanupFails(asynchronous:) started.

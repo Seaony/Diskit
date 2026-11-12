@@ -13,10 +13,10 @@ struct EditorTextRow: View {
       VStack(alignment: .leading, spacing: Space.xs) {
         TextField(placeholder, text: value).labelsHidden()
           .focused($focused).accessibilityLabel(title)
-          .kayoiField(focused: focused)
+          .diskitField(focused: focused)
           .onChange(of: focused) { was, now in if was && !now { editor.touchedFields.insert(key) } }
         if let error = editor.fieldError(key) {
-          Text(error).font(.caption).foregroundStyle(KayoiTheme.error)
+          Text(error).font(.caption).foregroundStyle(DiskitTheme.error)
         }
       }.frame(maxWidth: .infinity, alignment: .leading)
     }

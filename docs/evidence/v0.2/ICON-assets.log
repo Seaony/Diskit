@@ -6,9 +6,9 @@
 	<dict>
 		<key>output-files</key>
 		<array>
-			<string>/tmp/kayoi-icons-actool/info.plist</string>
-			<string>/tmp/kayoi-icons-actool/output/AppIcon.icns</string>
-			<string>/tmp/kayoi-icons-actool/output/Assets.car</string>
+			<string>/tmp/diskit-icons-actool/info.plist</string>
+			<string>/tmp/diskit-icons-actool/output/AppIcon.icns</string>
+			<string>/tmp/diskit-icons-actool/output/Assets.car</string>
 		</array>
 	</dict>
 </dict>

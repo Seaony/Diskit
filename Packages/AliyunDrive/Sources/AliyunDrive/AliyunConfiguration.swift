@@ -12,7 +12,7 @@ public struct AliyunConfiguration: Codable, Equatable, Sendable {
   }
   func validate() throws {
     guard !clientID.isEmpty, !clientSecret.isEmpty,
-      let redirect = URL(string: redirectURI), redirect.scheme == "kayoi"
+      let redirect = URL(string: redirectURI), redirect.scheme == "diskit"
     else {
       throw AliyunError.missingConfiguration
     }

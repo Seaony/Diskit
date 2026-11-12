@@ -33,14 +33,14 @@ import SwiftUI
         window.title = LF("登录%@", service.name)
         window.isReleasedWhenClosed = false
         window.isOpaque = true
-        window.backgroundColor = NSColor(KayoiTheme.background)
+        window.backgroundColor = NSColor(DiskitTheme.background)
         window.contentMinSize = NSSize(width: 560, height: 520)
         window.contentView = NSHostingView(rootView: content)
         window.delegate = self
         if options.isDemo {
           window.center()
         } else {
-          let name = "KayoiWebLogin." + service.rawValue
+          let name = "DiskitWebLogin." + service.rawValue
           window.setFrameAutosaveName(name)
           if !window.setFrameUsingName(name) { window.center() }
         }

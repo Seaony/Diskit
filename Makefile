@@ -1,29 +1,29 @@
 .PHONY: gen build release test coverage dev-tool format
-export KAYOI_BUILD_CONFIG ?= Config/Validation.xcconfig
+export DISKIT_BUILD_CONFIG ?= Config/Validation.xcconfig
 SIGN_IDENTITY ?= Apple Development: seaony@outlook.com
 SIGN_TIMESTAMP ?= auto
 
 gen:
 	xcodegen generate
-	mkdir -p Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
-	cp Dependencies/Package.resolved Kayoi.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+	mkdir -p Diskit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+	cp Dependencies/Package.resolved Diskit.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # 开发构建由 Xcode 用付费团队自动签名：FSKit 扩展的权限必须写在团队描述文件里，事后重签会丢掉
 build: gen
-	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Debug -derivedDataPath build/DerivedData build -allowProvisioningUpdates -onlyUsePackageVersionsFromResolvedFile
-	codesign --verify --deep --strict --verbose=1 build/DerivedData/Build/Products/Debug/Kayoi.app
+	xcodebuild -project Diskit.xcodeproj -scheme Diskit -configuration Debug -derivedDataPath build/DerivedData build -allowProvisioningUpdates -onlyUsePackageVersionsFromResolvedFile
+	codesign --verify --deep --strict --verbose=1 build/DerivedData/Build/Products/Debug/Diskit.app
 
 release: gen dev-tool
-	xcodebuild -project Kayoi.xcodeproj -scheme Kayoi -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
+	xcodebuild -project Diskit.xcodeproj -scheme Diskit -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
 	# FSKit 扩展还只是验证用的假数据卷，正式扩展做完前不进安装包
-	rm -rf build/DerivedData/Build/Products/Release/Kayoi.app/Contents/Extensions
-	python3 scripts/sign-app.py build/DerivedData/Build/Products/Release/Kayoi.app --identity "$(SIGN_IDENTITY)" --timestamp "$(SIGN_TIMESTAMP)"
-	scripts/validate-release.sh build/DerivedData/Build/Products/Release/Kayoi.app
+	rm -rf build/DerivedData/Build/Products/Release/Diskit.app/Contents/Extensions
+	python3 scripts/sign-app.py build/DerivedData/Build/Products/Release/Diskit.app --identity "$(SIGN_IDENTITY)" --timestamp "$(SIGN_TIMESTAMP)"
+	scripts/validate-release.sh build/DerivedData/Build/Products/Release/Diskit.app
 
 test: gen
 	./scripts/check-strings.sh
 	python3 -m unittest discover -s scripts/tests -p 'test_*.py'
-	xcodebuild -project Kayoi.xcodeproj -scheme KayoiTests -destination 'platform=macOS,arch=arm64' -derivedDataPath build/Tests test CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
+	xcodebuild -project Diskit.xcodeproj -scheme DiskitTests -destination 'platform=macOS,arch=arm64' -derivedDataPath build/Tests test CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
 	swift test --package-path Packages/Core
 	swift test --package-path Packages/ADB
 	swift test --package-path Packages/RicohGR
@@ -42,7 +42,7 @@ dev-tool:
 	swift build --package-path Packages/DevTool -c release --arch arm64 --arch x86_64 --force-resolved-versions
 	mkdir -p build/bin
 	python3 scripts/package-cli.py "$$(swift build --package-path Packages/DevTool -c release --arch arm64 --arch x86_64 --show-bin-path --force-resolved-versions)" build/bin
-	codesign --force --sign "$(SIGN_IDENTITY)" --identifier com.seaony.Kayoi.dev build/bin/kayoi-dev
+	codesign --force --sign "$(SIGN_IDENTITY)" --identifier com.seaony.Diskit.dev build/bin/diskit-dev
 
 format:
 	rg --files App Packages -g '*.swift' -0 | xargs -0 xcrun swift-format format --in-place

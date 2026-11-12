@@ -15,7 +15,7 @@ private let oauthConfiguration = OAuthConfiguration(
   clientSecret: "secret",
   authorizationURL: URL(string: "https://example.com/authorize")!,
   tokenURL: URL(string: "https://example.com/token")!,
-  redirectURI: "kayoi://oauth/test",
+  redirectURI: "diskit://oauth/test",
   scopes: [])
 
 private func session(_ transport: FakeTransport) throws -> OAuthSession {

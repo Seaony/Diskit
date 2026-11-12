@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Kayoi</string>
+	<string>Diskit</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,43 +33,43 @@
 		<dict/>
 		<key>FSPersonalities</key>
 		<dict>
-			<key>KayoiPersonality</key>
+			<key>DiskitPersonality</key>
 			<dict>
 				<key>FSfileObjectsAreCaseSensitive</key>
 				<true/>
 				<key>FSName</key>
-				<string>Kayoi</string>
+				<string>Diskit</string>
 			</dict>
 		</dict>
 		<key>FSRequiresSecurityScopedPathURLResources</key>
 		<false/>
 		<key>FSShortName</key>
-		<string>kayoi</string>
+		<string>diskit</string>
 		<key>FSSupportedSchemes</key>
 		<array>
-			<string>kayoi-adb</string>
-			<string>kayoi-aliyun</string>
-			<string>kayoi-aliyunoss</string>
-			<string>kayoi-b2</string>
-			<string>kayoi-baidu</string>
-			<string>kayoi-camera</string>
-			<string>kayoi-drive115</string>
-			<string>kayoi-drive123</string>
-			<string>kayoi-dropbox</string>
-			<string>kayoi-google</string>
-			<string>kayoi-lanzou</string>
-			<string>kayoi-minio</string>
-			<string>kayoi-mobile</string>
-			<string>kayoi-onedrive</string>
-			<string>kayoi-pikpak</string>
-			<string>kayoi-qiniukodo</string>
-			<string>kayoi-quark</string>
-			<string>kayoi-r2</string>
-			<string>kayoi-s3</string>
-			<string>kayoi-cos</string>
-			<string>kayoi-thunder</string>
-			<string>kayoi-tianyi</string>
-			<string>kayoi-ucdrive</string>
+			<string>diskit-adb</string>
+			<string>diskit-aliyun</string>
+			<string>diskit-oss</string>
+			<string>diskit-b2</string>
+			<string>diskit-baidu</string>
+			<string>diskit-camera</string>
+			<string>diskit-drive115</string>
+			<string>diskit-drive123</string>
+			<string>diskit-dropbox</string>
+			<string>diskit-google</string>
+			<string>diskit-lanzou</string>
+			<string>diskit-minio</string>
+			<string>diskit-mobile</string>
+			<string>diskit-onedrive</string>
+			<string>diskit-pikpak</string>
+			<string>diskit-kodo</string>
+			<string>diskit-quark</string>
+			<string>diskit-r2</string>
+			<string>diskit-s3</string>
+			<string>diskit-cos</string>
+			<string>diskit-thunder</string>
+			<string>diskit-tianyi</string>
+			<string>diskit-ucdrive</string>
 		</array>
 		<key>FSSupportsBlockResources</key>
 		<false/>

@@ -9,13 +9,13 @@ import ServiceManagement
   static func enabled(completion: @escaping FileSystemCompletion<Bool?>) {
     FSClient.shared.fetchInstalledExtensions { identities, error in
       if let error { completion(.failure(error)) }
-      else { completion(.success(identities?.first { $0.bundleIdentifier == "com.seaony.Kayoi.FS" }?.isEnabled)) }
+      else { completion(.success(identities?.first { $0.bundleIdentifier == "com.seaony.Diskit.FS" }?.isEnabled)) }
     }
   }
 
   static func mountClient(_ url: URL, completion: @escaping FileSystemCompletion<URL>) throws {
     guard #available(macOS 27, *) else { throw RemoteError.unsupported }
-    FSClient.shared.mountSingleVolume(resource: FSGenericURLResource(url: url), bundleID: "com.seaony.Kayoi.FS", options: []) { path, error in
+    FSClient.shared.mountSingleVolume(resource: FSGenericURLResource(url: url), bundleID: "com.seaony.Diskit.FS", options: []) { path, error in
       if let error { completion(.failure(error)) }
       else if let path { completion(.success(path)) }
       else { completion(.failure(POSIXError(.EIO))) }
@@ -25,7 +25,7 @@ import ServiceManagement
   static func mountCommand(_ url: URL, point: URL, completion: @escaping FileSystemCompletion<URL>) throws {
     let process = Process()
     process.executableURL = URL(filePath: "/sbin/mount")
-    process.arguments = ["-F", "-t", "kayoi", url.absoluteString, point.path]
+    process.arguments = ["-F", "-t", "diskit", url.absoluteString, point.path]
     process.standardOutput = FileHandle.nullDevice
     process.standardError = FileHandle.nullDevice
     process.terminationHandler = { [process] _ in

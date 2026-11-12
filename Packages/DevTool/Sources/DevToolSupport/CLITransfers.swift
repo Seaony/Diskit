@@ -60,7 +60,7 @@ enum CLITransfers {
     let item = try await provider.stat(remote)
     guard item.path == remote else { throw RemoteError.invalidPath }
     let staging = local.deletingLastPathComponent().appending(
-      path: ".kayoi-download-" + UUID().uuidString)
+      path: ".diskit-download-" + UUID().uuidString)
     try FileManager.default.createDirectory(
       at: staging, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
     defer { try? FileManager.default.removeItem(at: staging) }

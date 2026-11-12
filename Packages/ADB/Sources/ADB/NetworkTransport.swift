@@ -112,7 +112,7 @@ public actor NetworkTransport: ADBTransport {
 // 排列注册、取消和回调，防止取消早到或状态重复时重复恢复。
 private final class ADBNetworkRequest<Value: Sendable>: @unchecked Sendable {
   typealias Completion = @Sendable (Result<Value, Error>) -> Void
-  private let queue = DispatchQueue(label: "com.seaony.Kayoi.network.request")
+  private let queue = DispatchQueue(label: "com.seaony.Diskit.network.request")
   private let register: @Sendable (@escaping Completion) -> Void
   private let cancel: @Sendable () -> Void
   private var continuation: CheckedContinuation<Value, Error>?

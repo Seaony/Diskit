@@ -2,7 +2,7 @@
 退出：0；默认 Config/Validation.xcconfig。
 􁁛 Test run with 16 tests in 0 suites passed after 0.030 seconds.
 ** TEST SUCCEEDED **
-/Users/seaony/code/Kayoi/Packages/Core/Tests/CoreTests/HTTPConcurrencyTests.swift:35:12: warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
+/Users/seaony/code/Diskit/Packages/Core/Tests/CoreTests/HTTPConcurrencyTests.swift:35:12: warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
     |            `- warning: weak variable 'released' was never mutated; consider changing to 'let' constant [#VariableNeverMutated::WeakMutability]
 􁁛  Test run with 62 tests in 0 suites passed after 0.081 seconds.
 􁁛  Test run with 35 tests in 0 suites passed after 0.706 seconds.
@@ -18,5 +18,5 @@
 􁁛  Test run with 28 tests in 0 suites passed after 0.025 seconds.
 2026-11-04 18:53:41.039 appintentsmetadataprocessor[40069:1865660] warning: Metadata extraction skipped, no AppIntents.framework dependency found
 ** BUILD SUCCEEDED **
-build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
+build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement

@@ -3,7 +3,7 @@ import Foundation
 
 public actor QuarkSession {
   public static let loginInvalidatedNotification = Notification.Name(
-    "com.seaony.Kayoi.quarkLoginInvalidated")
+    "com.seaony.Diskit.quarkLoginInvalidated")
   public static let userAgent = QuarkCloudConfiguration.quark.userAgent
   public nonisolated let configuration: QuarkCloudConfiguration
   private let secretKey: String

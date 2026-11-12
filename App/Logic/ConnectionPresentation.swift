@@ -4,7 +4,7 @@ import Foundation
 
 extension AliyunConfiguration {
   var isConfigured: Bool {
-    !clientID.isEmpty && !clientSecret.isEmpty && URL(string: redirectURI)?.scheme == "kayoi"
+    !clientID.isEmpty && !clientSecret.isEmpty && URL(string: redirectURI)?.scheme == "diskit"
   }
 }
 

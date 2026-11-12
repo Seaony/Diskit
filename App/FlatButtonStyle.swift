@@ -18,9 +18,9 @@ struct FlatButtonStyle: ButtonStyle {
       .foregroundStyle(foreground(configuration))
       .background(background(configuration), in: shape)
       // 悬停和按下只在底色上叠一层浅色，不加描边
-      .overlay { shape.fill(KayoiTheme.primaryText.opacity(overlayOpacity(configuration))) }
+      .overlay { shape.fill(DiskitTheme.primaryText.opacity(overlayOpacity(configuration))) }
       .overlay {
-        shape.strokeBorder(focused ? KayoiTheme.focus : .clear, lineWidth: 2)
+        shape.strokeBorder(focused ? DiskitTheme.focus : .clear, lineWidth: 2)
       }
       .contentShape(shape)
       .pointerStyle(isEnabled ? .link : nil)
@@ -31,9 +31,9 @@ struct FlatButtonStyle: ButtonStyle {
   }
 
   private func background(_ configuration: Configuration) -> Color {
-    guard isEnabled else { return KayoiTheme.disabledSurface }
-    guard prominent else { return KayoiTheme.controlFill }
-    return configuration.isPressed ? KayoiTheme.actionPressed : hovering ? KayoiTheme.actionHover : KayoiTheme.accent
+    guard isEnabled else { return DiskitTheme.disabledSurface }
+    guard prominent else { return DiskitTheme.controlFill }
+    return configuration.isPressed ? DiskitTheme.actionPressed : hovering ? DiskitTheme.actionHover : DiskitTheme.accent
   }
 
   private func overlayOpacity(_ configuration: Configuration) -> Double {
@@ -43,8 +43,8 @@ struct FlatButtonStyle: ButtonStyle {
   }
 
   private func foreground(_ configuration: Configuration) -> Color {
-    if !isEnabled { return KayoiTheme.disabledText }
-    if prominent { return KayoiTheme.actionText }
-    return configuration.role == .destructive ? KayoiTheme.error : KayoiTheme.primaryText
+    if !isEnabled { return DiskitTheme.disabledText }
+    if prominent { return DiskitTheme.actionText }
+    return configuration.role == .destructive ? DiskitTheme.error : DiskitTheme.primaryText
   }
 }

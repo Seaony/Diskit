@@ -9,7 +9,7 @@ import Testing
 private let limitConfiguration = OAuthConfiguration(
   clientID: "local", clientSecret: "local",
   authorizationURL: URL(string: "https://example.invalid/auth")!,
-  tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "kayoi://test", scopes: [])
+  tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test", scopes: [])
 
 private actor ProfileConcurrencyProbe: HTTPTransport {
   let gate = BatchGate(expected: 16)

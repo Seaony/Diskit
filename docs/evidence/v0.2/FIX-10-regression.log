@@ -1,4 +1,4 @@
-kayoi-fix10-before.log：修复前退出 1。
+diskit-fix10-before.log：修复前退出 1。
 􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → false, directory → false at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
 􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → false, directory → true at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
 􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → false at ChinaWebDriveTests.swift:678:9: Expectation failed: expected error ".http(403)" of type RemoteError, but ".http(404)" of type RemoteError was thrown instead
@@ -14,7 +14,7 @@ kayoi-fix10-before.log：修复前退出 1。
 􀢄  Test trashFailureNeverFallsBackToPermanentDeletion(mobile:) recorded an issue with 1 argument mobile → true at ChinaWebDriveTests.swift:685:3: Expectation failed: await !http.requests.contains { $0.url?.path.contains("batchDelete") == true }
 􀢄  Test cloudRemovalUsesRecoverableEndpoint(mobile:directory:) recorded an issue with 2 arguments mobile → true, directory → true at ChinaWebDriveTests.swift:640:2: Caught error: .http(404)
 􀢄  Test run with 26 tests in 0 suites failed after 0.010 seconds with 14 issues.
-kayoi-fix10-cleanup-before.log：修复前退出 1。
+diskit-fix10-cleanup-before.log：修复前退出 1。
 􀢄  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() recorded an issue at ChinaWebDriveTests.swift:700:3: Expectation failed: (cleanup.url?.path → "/hcy/file/batchDelete") == "/hcy/recyclebin/batchTrash"
 􀢄  Test mobileCloudUploadFailureTrashesOnlyTheNewFile() recorded an issue at ChinaWebDriveTests.swift:702:3: Expectation failed: await !http.requests.contains { $0.url?.path.contains("batchDelete") == true }
 􀢄  Test run with 1 test in 0 suites failed after 0.008 seconds with 2 issues.

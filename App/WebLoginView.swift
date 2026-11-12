@@ -43,7 +43,7 @@ struct WebLoginView: View {
             }.frame(maxHeight: 160)
             Button(L("重新加载")) { state.reload() }
           }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(KayoiTheme.background)
+            .background(DiskitTheme.background)
         }
       }.frame(maxWidth: .infinity, maxHeight: .infinity).layoutPriority(1)
       Divider()
@@ -52,7 +52,7 @@ struct WebLoginView: View {
         if let error = state.validationError ?? manualError {
           HStack(alignment: .top, spacing: 8) {
             Label(error, systemImage: "exclamationmark.triangle")
-              .font(.caption).foregroundStyle(KayoiTheme.error).lineLimit(3).help(error)
+              .font(.caption).foregroundStyle(DiskitTheme.error).lineLimit(3).help(error)
             Spacer(minLength: 0)
             if state.validationError != nil {
               Button(L("重试")) { state.retryValidation() }.disabled(state.checking)
@@ -72,7 +72,7 @@ struct WebLoginView: View {
           }.padding(.top, 8)
         }
       }.padding(20)
-    }.background(KayoiTheme.background).buttonStyle(FlatButtonStyle())
+    }.background(DiskitTheme.background).buttonStyle(FlatButtonStyle())
       .frame(minWidth: 560, minHeight: 520)
   }
 
@@ -92,7 +92,7 @@ struct WebLoginView: View {
           .accessibilityIdentifier("demo.web-login.fail")
       }
     }.padding(24).frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(KayoiTheme.surface)
+      .background(DiskitTheme.surface)
   }
 
   private var manualInstructions: String {
@@ -128,7 +128,7 @@ struct WebLoginPreview: View {
   private var previewState: WebLoginState {
     let state = WebLoginState(
       service: service,
-      options: RuntimeOptions(environment: ["KAYOI_DEMO": "1", "KAYOI_DEMO_STATE": scenario]),
+      options: RuntimeOptions(environment: ["DISKIT_DEMO": "1", "DISKIT_DEMO_STATE": scenario]),
       validate: { _ in }, finish: { _ in })
     if scenario == "web-validation-error" {
       state.validationError = L("登录信息已失效，请重新登录。")

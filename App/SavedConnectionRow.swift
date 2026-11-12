@@ -75,7 +75,7 @@ struct SavedConnectionRow: View {
         .gridProbe("icon", area: "saved-" + connection.id.uuidString, edge: nil)
       VStack(spacing: 2) { // grid: ok 与列表的标题副标题间距一致
         Text(connection.name).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
-          .foregroundStyle(KayoiTheme.primaryText)
+          .foregroundStyle(DiskitTheme.primaryText)
         Text(PanelCopy.cardCaption(state, kind: connection.kind)).font(.system(size: 9)).lineLimit(1)
           .foregroundStyle(captionColor)
       }
@@ -85,19 +85,19 @@ struct SavedConnectionRow: View {
     .frame(maxWidth: .infinity, minHeight: 88, maxHeight: 88)
     .gridArea("saved-" + connection.id.uuidString, inset: 10)
     .background(fill, in: shape)
-    .overlay { shape.strokeBorder(KayoiTheme.border, lineWidth: 0.5) }
+    .overlay { shape.strokeBorder(DiskitTheme.border, lineWidth: 0.5) }
     // 出错和登录过期的底色盖住了选中色，选中时用描边标出
-    .overlay { if selected && isIssue { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
+    .overlay { if selected && isIssue { shape.strokeBorder(DiskitTheme.focus, lineWidth: 2) } }
     .contentShape(shape)
   }
 
   private var listRow: some View {
     let shape = RoundedRectangle(cornerRadius: Radius.control, style: .continuous)
     return HStack(spacing: 10) { // grid: ok 设计稿图标与文字间距 10
-      PanelStatusIcon(kind: connection.kind, color: connection.color, size: 34, badge: badge, ring: listFill ?? KayoiTheme.surface)
+      PanelStatusIcon(kind: connection.kind, color: connection.color, size: 34, badge: badge, ring: listFill ?? DiskitTheme.surface)
       VStack(alignment: .leading, spacing: 2) { // grid: ok 标题与副标题之间留一点
         Text(connection.name).font(.system(size: 11.5, weight: .medium)).lineLimit(1)
-          .foregroundStyle(KayoiTheme.primaryText)
+          .foregroundStyle(DiskitTheme.primaryText)
         Text(PanelCopy.listCaption(state, kind: connection.kind, detail: errorDetail)).font(.system(size: 9)).lineLimit(1)
           .foregroundStyle(captionColor)
       }
@@ -107,10 +107,10 @@ struct SavedConnectionRow: View {
     .background(listFill ?? .clear, in: shape)
     .overlay(alignment: .top) {
       if showsDivider && listFill == nil {
-        Rectangle().fill(KayoiTheme.border).frame(height: 0.5).padding(.leading, 52).padding(.trailing, Space.sm) // grid: ok 分隔线从文字处开始
+        Rectangle().fill(DiskitTheme.border).frame(height: 0.5).padding(.leading, 52).padding(.trailing, Space.sm) // grid: ok 分隔线从文字处开始
       }
     }
-    .overlay { if selected && isIssue { shape.strokeBorder(KayoiTheme.focus, lineWidth: 2) } }
+    .overlay { if selected && isIssue { shape.strokeBorder(DiskitTheme.focus, lineWidth: 2) } }
     .contentShape(shape)
   }
 
@@ -118,10 +118,10 @@ struct SavedConnectionRow: View {
   @ViewBuilder private var insertionLine: some View {
     if draggedID != nil && dropTargetID == connection.id {
       if layout == .grid {
-        Capsule().fill(KayoiTheme.primaryText.opacity(0.3)).frame(width: 2).padding(.vertical, Space.sm)
+        Capsule().fill(DiskitTheme.primaryText.opacity(0.3)).frame(width: 2).padding(.vertical, Space.sm)
           .offset(x: -Space.xs - 1) // grid: ok 插入线落在两张卡片之间
       } else {
-        Capsule().fill(KayoiTheme.primaryText.opacity(0.3)).frame(height: 2).padding(.horizontal, Space.sm)
+        Capsule().fill(DiskitTheme.primaryText.opacity(0.3)).frame(height: 2).padding(.horizontal, Space.sm)
           .offset(y: -1) // grid: ok 插入线落在两行之间
       }
     }
@@ -134,22 +134,22 @@ struct SavedConnectionRow: View {
 
   // 出错和登录过期的卡片带一点红或橙
   private var fill: Color {
-    if case .failed = state { return hovering ? KayoiTheme.errorHover : KayoiTheme.errorBackground }
-    if state == .needsLogin { return hovering ? KayoiTheme.warningHover : KayoiTheme.warningBackground }
-    if selected { return KayoiTheme.selection }
-    return hovering ? KayoiTheme.hover : KayoiTheme.surface
+    if case .failed = state { return hovering ? DiskitTheme.errorHover : DiskitTheme.errorBackground }
+    if state == .needsLogin { return hovering ? DiskitTheme.warningHover : DiskitTheme.warningBackground }
+    if selected { return DiskitTheme.selection }
+    return hovering ? DiskitTheme.hover : DiskitTheme.surface
   }
 
   private var listFill: Color? {
-    if case .failed = state { return hovering ? KayoiTheme.errorHover : KayoiTheme.errorBackground }
-    if state == .needsLogin { return hovering ? KayoiTheme.warningHover : KayoiTheme.warningBackground }
-    if selected { return KayoiTheme.selection }
-    return hovering ? KayoiTheme.hover : nil
+    if case .failed = state { return hovering ? DiskitTheme.errorHover : DiskitTheme.errorBackground }
+    if state == .needsLogin { return hovering ? DiskitTheme.warningHover : DiskitTheme.warningBackground }
+    if selected { return DiskitTheme.selection }
+    return hovering ? DiskitTheme.hover : nil
   }
 
   private var captionColor: Color {
-    if case .failed = state { return KayoiTheme.error }
-    return state == .needsLogin ? KayoiTheme.warning : KayoiTheme.tertiaryText
+    if case .failed = state { return DiskitTheme.error }
+    return state == .needsLogin ? DiskitTheme.warning : DiskitTheme.tertiaryText
   }
 
   private var isReadOnly: Bool { ProviderAccess.isReadOnly(capabilities) }
@@ -157,12 +157,12 @@ struct SavedConnectionRow: View {
   private var badge: PanelStatusIcon.Badge {
     switch state {
     case .connecting, .ejecting: .spinner
-    case .awaitingAuthorization: .pulse(KayoiTheme.statusAmber)
-    case .mounted: isReadOnly ? .lock : .dot(KayoiTheme.statusGreen)
-    case .tested: isReadOnly ? .lock : .dot(KayoiTheme.statusBlue)
+    case .awaitingAuthorization: .pulse(DiskitTheme.statusAmber)
+    case .mounted: isReadOnly ? .lock : .dot(DiskitTheme.statusGreen)
+    case .tested: isReadOnly ? .lock : .dot(DiskitTheme.statusBlue)
     case .unavailable: .dimmed
-    case .needsLogin: .dot(KayoiTheme.statusAmber)
-    case .failed: .dot(KayoiTheme.statusRed)
+    case .needsLogin: .dot(DiskitTheme.statusAmber)
+    case .failed: .dot(DiskitTheme.statusRed)
     case .disconnected: .none
     }
   }
@@ -239,8 +239,8 @@ struct PanelMenuHeader: View {
   let isIssue: Bool
   var body: some View {
     VStack(alignment: .leading, spacing: 2) { // grid: ok 名称与状态贴近
-      Text(name).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(KayoiTheme.primaryText).lineLimit(1)
-      Text(status).font(.system(size: 11.5)).foregroundStyle(isIssue ? KayoiTheme.error : KayoiTheme.secondaryText)
+      Text(name).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(DiskitTheme.primaryText).lineLimit(1)
+      Text(status).font(.system(size: 11.5)).foregroundStyle(isIssue ? DiskitTheme.error : DiskitTheme.secondaryText)
         .lineLimit(3).fixedSize(horizontal: false, vertical: true)
     }
     .frame(width: 220, alignment: .leading)
@@ -297,7 +297,7 @@ struct PanelStatusIcon: View {
     switch badge {
     case .none: EmptyView()
     case .dimmed:
-      Circle().fill(KayoiTheme.statusGrey).frame(width: badgeSize, height: badgeSize)
+      Circle().fill(DiskitTheme.statusGrey).frame(width: badgeSize, height: badgeSize)
         .padding(1.5).background(ring, in: Circle()) // grid: ok 角标外圈 1.5pt
     case .dot(let color):
       Circle().fill(color).frame(width: badgeSize, height: badgeSize)
@@ -312,7 +312,7 @@ struct PanelStatusIcon: View {
         }
     case .lock:
       Image(systemName: "lock.fill").font(.system(size: badgeSize * 0.55, weight: .bold)).foregroundStyle(.white)
-        .frame(width: badgeSize, height: badgeSize).background(KayoiTheme.statusGrey, in: Circle())
+        .frame(width: badgeSize, height: badgeSize).background(DiskitTheme.statusGrey, in: Circle())
         .padding(1.5).background(ring, in: Circle()) // grid: ok 角标外圈 1.5pt
     case .spinner:
       ProgressView().nativeProgressAppearance().controlSize(.mini).scaleEffect(0.7)

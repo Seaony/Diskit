@@ -8,10 +8,10 @@ enum FileSystemMountError: Error, LocalizedError {
 
   var errorDescription: String? {
     switch self {
-    case .disabled: L("请先在系统设置中启用 Kayoi 文件系统扩展。")
-    case .unavailable: L("此版本无法使用文件系统扩展，请重新构建并签名 Kayoi。")
+    case .disabled: L("请先在系统设置中启用 Diskit 文件系统扩展。")
+    case .unavailable: L("此版本无法使用文件系统扩展，请重新构建并签名 Diskit。")
     case .unsavedConnection: L("请先保存这个位置，再验证挂载。")
-    case .commandFailed(let code): LF("挂载命令失败（退出码 %@），请查看 Kayoi 日志。", String(code))
+    case .commandFailed(let code): LF("挂载命令失败（退出码 %@），请查看 Diskit 日志。", String(code))
     }
   }
 }
@@ -25,12 +25,12 @@ enum FileSystemMountError: Error, LocalizedError {
     var availableBytes: Int64?
 
     func matches(_ connection: Connection) -> Bool {
-      guard type == "kayoi", let url = URL(string: source) else { return false }
+      guard type == "diskit", let url = URL(string: source) else { return false }
       return (try? FileSystemAddress.connection(for: url, in: [connection])) != nil
     }
 
-    var isKayoiVolume: Bool {
-      guard type == "kayoi", let url = URL(string: source),
+    var isDiskitVolume: Bool {
+      guard type == "diskit", let url = URL(string: source),
         let host = url.host, let id = UUID(uuidString: host)
       else { return false }
       let candidates = ConnectionKind.allCases.filter { $0.fileSystemScheme == url.scheme?.lowercased() }
@@ -61,7 +61,7 @@ enum FileSystemMountError: Error, LocalizedError {
   }
   private let location: any StorageLocation
   private let operations: Operations
-  private let logger = Logger(subsystem: "com.seaony.Kayoi", category: "mount")
+  private let logger = Logger(subsystem: "com.seaony.Diskit", category: "mount")
   private var availableCapacity: [CapacityKey: Int64] = [:]
   private var refreshingCapacity = Set<CapacityKey>()
   private struct PendingMount {
@@ -73,7 +73,7 @@ enum FileSystemMountError: Error, LocalizedError {
   private var cacheMaintenance = false
 
   var hasActiveVolumesOrMounts: Bool {
-    !pendingMounts.isEmpty || operations.entries().contains { $0.type == "kayoi" }
+    !pendingMounts.isEmpty || operations.entries().contains { $0.type == "diskit" }
   }
 
   convenience init(location: any StorageLocation = RuntimeStorage.current.location) {
@@ -260,11 +260,11 @@ enum FileSystemMountError: Error, LocalizedError {
   }
 
   func isFileSystemVolume(_ url: URL) -> Bool {
-    operations.entries().contains { $0.type == "kayoi" && $0.path.standardizedFileURL == url.standardizedFileURL }
+    operations.entries().contains { $0.type == "diskit" && $0.path.standardizedFileURL == url.standardizedFileURL }
   }
 
   func mountedVolumes() -> [MountedShare] {
-    operations.entries().filter(\.isKayoiVolume).map(mountedShare)
+    operations.entries().filter(\.isDiskitVolume).map(mountedShare)
   }
 
   func mounted(_ connection: Connection) -> MountedShare? {

@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 
 public enum ADBProviderFactory {
-  private static let logger = Logger(subsystem: "com.seaony.Kayoi", category: "ADBTransport")
+  private static let logger = Logger(subsystem: "com.seaony.Diskit", category: "ADBTransport")
   public static func make(for connection: Connection, identity: ADBIdentity = ADBIdentity()) async throws -> ADBProvider {
     try await make(
       for: connection, devices: { ADBUSB.devices() },

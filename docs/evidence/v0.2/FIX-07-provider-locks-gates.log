@@ -20,5 +20,5 @@
 􁁛  Test run with 24 tests in 0 suites passed after 0.009 seconds.
 2026-11-04 16:37:03.292 appintentsmetadataprocessor[96727:726873] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
 ** BUILD SUCCEEDED **
-build/DerivedData/Build/Products/Release/Kayoi.app: valid on disk
-build/DerivedData/Build/Products/Release/Kayoi.app: satisfies its Designated Requirement
+build/DerivedData/Build/Products/Release/Diskit.app: valid on disk
+build/DerivedData/Build/Products/Release/Diskit.app: satisfies its Designated Requirement

@@ -10,10 +10,10 @@ struct MenuBarStatusIcon: View {
   private var shouldPulse: Bool { status.shouldPulse(reduceMotion: reduceMotion) }
 
   private var label: String {
-    if status.attention > 0 { return LF("Kayoi，%d 个位置需要处理", status.attention) }
-    if status.busy { return L("Kayoi，正在连接位置") }
-    if status.mounted > 0 { return LF("Kayoi，%d 个位置已挂载", status.mounted) }
-    return L("Kayoi，没有挂载的位置")
+    if status.attention > 0 { return LF("Diskit，%d 个位置需要处理", status.attention) }
+    if status.busy { return L("Diskit，正在连接位置") }
+    if status.mounted > 0 { return LF("Diskit，%d 个位置已挂载", status.mounted) }
+    return L("Diskit，没有挂载的位置")
   }
 
   var body: some View {

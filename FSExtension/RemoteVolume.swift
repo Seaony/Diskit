@@ -3,7 +3,7 @@ import FSKit
 import Foundation
 import OSLog
 
-final class KayoiRemoteItem: FSItem, @unchecked Sendable {
+final class DiskitRemoteItem: FSItem, @unchecked Sendable {
   let id: UInt64
   var remote: RemoteItem
   var parentID: UInt64
@@ -37,7 +37,7 @@ final class KayoiRemoteItem: FSItem, @unchecked Sendable {
   }
 }
 
-final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenCloseOperations,
+final class DiskitRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenCloseOperations,
   FSVolume.ReadWriteOperations, FSVolume.XattrOperations, @unchecked Sendable
 {
   private let backend: RemoteVolumeBackend
@@ -45,14 +45,14 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
   private let connectionID: String
   private let space: SpaceInfo
   private let lock = NSLock()
-  private var items: [RemotePath: KayoiRemoteItem] = [:]
+  private var items: [RemotePath: DiskitRemoteItem] = [:]
   private var nextID = FSItem.Identifier.rootDirectory.rawValue + 1
-  private let root: KayoiRemoteItem
+  private let root: DiskitRemoteItem
   private let uid = getuid()
   private let gid = getgid()
-  private let lifecycleLog = Logger(subsystem: "com.seaony.Kayoi.FS", category: "VolumeLifecycle")
-  private let operationLog = Logger(subsystem: "com.seaony.Kayoi.FS", category: "VolumeOperation")
-  private let transferLog = Logger(subsystem: "com.seaony.Kayoi.FS", category: "VolumeTransfer")
+  private let lifecycleLog = Logger(subsystem: "com.seaony.Diskit.FS", category: "VolumeLifecycle")
+  private let operationLog = Logger(subsystem: "com.seaony.Diskit.FS", category: "VolumeOperation")
+  private let transferLog = Logger(subsystem: "com.seaony.Diskit.FS", category: "VolumeTransfer")
 
   init(connection: Connection, backend: RemoteVolumeBackend, space: SpaceInfo) {
     self.backend = backend
@@ -60,7 +60,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
     self.space = space
     connectionID = connection.id.uuidString
     let path = try! RemotePath("/")
-    root = KayoiRemoteItem(
+    root = DiskitRemoteItem(
       id: FSItem.Identifier.rootDirectory.rawValue,
       remote: RemoteItem(path: path, name: "/", isDirectory: true, size: 0,
                          modified: Date(timeIntervalSince1970: 0)),
@@ -78,7 +78,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
   }
 
   var volumeStatistics: FSStatFSResult {
-    let result = FSStatFSResult(fileSystemTypeName: "kayoi")
+    let result = FSStatFSResult(fileSystemTypeName: "diskit")
     result.blockSize = 4096
     result.ioSize = 1 << 20
     result.totalBytes = UInt64(space.total ?? 0)
@@ -206,7 +206,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
         try await self.backend.resize(path, size: Int64(newAttributes.size))
       }
       if newAttributes.isValid(.modifyTime), !self.locked({ node.remote.isDirectory }) {
-        try await self.backend.setModifiedDate(path, date: KayoiRemoteItem.date(newAttributes.modifyTime))
+        try await self.backend.setModifiedDate(path, date: DiskitRemoteItem.date(newAttributes.modifyTime))
       }
       return self.locked {
         self.apply(newAttributes, to: node)
@@ -231,7 +231,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
         try await self.backend.resize(remote.path, size: Int64(newAttributes.size))
       }
       if type == .file, newAttributes.isValid(.modifyTime) {
-        try await self.backend.setModifiedDate(remote.path, date: KayoiRemoteItem.date(newAttributes.modifyTime))
+        try await self.backend.setModifiedDate(remote.path, date: DiskitRemoteItem.date(newAttributes.modifyTime))
       }
       self.locked { self.apply(newAttributes, to: node) }
       return (node, FSFileName(string: remote.path.basename))
@@ -343,7 +343,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
       self.locked {
         node.remote.size = max(node.remote.size, Int64(offset) + Int64(count))
         node.remote.modified = Date()
-        node.modifyTime = KayoiRemoteItem.time(node.remote.modified)
+        node.modifyTime = DiskitRemoteItem.time(node.remote.modified)
       }
       return count
     }) { result in replyHandler((try? result.get()) ?? 0, result.failure) }
@@ -397,36 +397,36 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
     }) { result in replyHandler(try? result.get(), result.failure) }
   }
 
-  private func item(_ item: FSItem) throws -> KayoiRemoteItem {
-    guard let node = item as? KayoiRemoteItem else { throw POSIXError(.EINVAL) }
+  private func item(_ item: FSItem) throws -> DiskitRemoteItem {
+    guard let node = item as? DiskitRemoteItem else { throw POSIXError(.EINVAL) }
     return node
   }
 
-  private func directory(_ item: FSItem) throws -> KayoiRemoteItem {
+  private func directory(_ item: FSItem) throws -> DiskitRemoteItem {
     let node = try self.item(item)
     guard locked({ node.remote.isDirectory }) else { throw POSIXError(.ENOTDIR) }
     return node
   }
 
-  private func file(_ item: FSItem) throws -> KayoiRemoteItem {
+  private func file(_ item: FSItem) throws -> DiskitRemoteItem {
     let node = try self.item(item)
     guard !locked({ node.remote.isDirectory }) else { throw POSIXError(.EISDIR) }
     return node
   }
 
-  private func path(of item: KayoiRemoteItem) -> RemotePath { locked { item.remote.path } }
+  private func path(of item: DiskitRemoteItem) -> RemotePath { locked { item.remote.path } }
 
-  private func node(for remote: RemoteItem, parentID: UInt64) -> KayoiRemoteItem {
+  private func node(for remote: RemoteItem, parentID: UInt64) -> DiskitRemoteItem {
     locked {
       if let existing = items[remote.path] {
         if existing.remote.modified != remote.modified {
-          existing.modifyTime = KayoiRemoteItem.time(remote.modified)
+          existing.modifyTime = DiskitRemoteItem.time(remote.modified)
         }
         existing.remote = remote
         existing.parentID = parentID
         return existing
       }
-      let node = KayoiRemoteItem(id: nextID, remote: remote, parentID: parentID,
+      let node = DiskitRemoteItem(id: nextID, remote: remote, parentID: parentID,
                                 writable: Self.writable(remoteIsDirectory: remote.isDirectory,
                                                         capabilities: backend.capabilities))
       nextID += 1
@@ -441,7 +441,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
       && (capabilities.canDelete || capabilities.canRename || capabilities.canMove))
   }
 
-  private func apply(_ request: FSItem.SetAttributesRequest, to item: KayoiRemoteItem) {
+  private func apply(_ request: FSItem.SetAttributesRequest, to item: DiskitRemoteItem) {
     if request.isValid(.size), !item.remote.isDirectory {
       item.remote.size = Int64(request.size)
       request.consumedAttributes.insert(.size)
@@ -483,7 +483,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
     return request
   }
 
-  private func attributes(_ request: FSItem.GetAttributesRequest, of item: KayoiRemoteItem) -> FSItem.Attributes {
+  private func attributes(_ request: FSItem.GetAttributesRequest, of item: DiskitRemoteItem) -> FSItem.Attributes {
     let result = FSItem.Attributes()
     if request.isAttributeWanted(.type) { result.type = item.remote.isDirectory ? .directory : .file }
     if request.isAttributeWanted(.mode) { result.mode = item.mode }
@@ -512,7 +512,7 @@ final class KayoiRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClose
                               body: @escaping () async throws -> Value,
                               completion: @escaping (Result<Value, Error>) -> Void) {
     let call = VolumeCall(body: body, completion: completion)
-    let base = (item as? KayoiRemoteItem).map { path(of: $0).value } ?? "/"
+    let base = (item as? DiskitRemoteItem).map { path(of: $0).value } ?? "/"
     let path = suffix.isEmpty ? base : (base == "/" ? "" : base) + "/" + suffix
     Task {
       do {

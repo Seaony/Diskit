@@ -72,7 +72,7 @@ private func setup(_ replies: [FileReply]) throws -> (AliyunProvider, FileHTTP) 
   let secrets = FileSecrets()
   let http = FileHTTP(replies)
   let config = AliyunConfiguration(
-    clientID: "id", clientSecret: "secret", redirectURI: "kayoi://oauth")
+    clientID: "id", clientSecret: "secret", redirectURI: "diskit://oauth")
   let authorization = AliyunStoredAuthorization(
     accessToken: "access", refreshToken: "refresh", expiresAt: Date.distantFuture.timeIntervalSince1970,
     configuration: config)
@@ -426,7 +426,7 @@ private func raceProvider(
 ) throws -> AliyunProvider {
   let secrets = MemorySecretStore()
   let configuration = AliyunConfiguration(
-    clientID: "id", clientSecret: "local", redirectURI: "kayoi://oauth")
+    clientID: "id", clientSecret: "local", redirectURI: "diskit://oauth")
   let authorization = AliyunStoredAuthorization(
     accessToken: "access", refreshToken: "refresh", expiresAt: Date.distantFuture.timeIntervalSince1970,
     configuration: configuration)

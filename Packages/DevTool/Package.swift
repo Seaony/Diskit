@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
   name: "DevTool", defaultLocalization: "zh-Hans", platforms: [.macOS("26.0")],
   products: [
-    .executable(name: "kayoi-dev", targets: ["DevTool"]),
+    .executable(name: "diskit-dev", targets: ["DevTool"]),
     .library(name: "DevToolSupport", targets: ["DevToolSupport"]),
   ],
   dependencies: [

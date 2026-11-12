@@ -15,12 +15,12 @@ class PackageCLITests(unittest.TestCase):
             folder.mkdir(parents=True)
             for name in ('Localizable.strings', 'Localizable.stringsdict'):
                 (folder / name).write_text('fixture')
-        (source / 'kayoi-dev').write_bytes(b'local fixture')
+        (source / 'diskit-dev').write_bytes(b'local fixture')
 
     def test_executable_alone_is_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder)
-            (source / 'kayoi-dev').write_bytes(b'local fixture')
+            (source / 'diskit-dev').write_bytes(b'local fixture')
             with self.assertRaises(ValueError):
                 module.verify_resources(source)
 

@@ -3,217 +3,217 @@
     "source": "Packages/Core/.build/debug/codecov/Core.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/CameraCall.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/CameraCall.swift",
         "covered": 104,
         "executable": 109
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/CameraIdentity.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/CameraIdentity.swift",
         "covered": 22,
         "executable": 22
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/ConnectionManager.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/ConnectionManager.swift",
         "covered": 546,
         "executable": 584
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/Connections.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/Connections.swift",
         "covered": 63,
         "executable": 74
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/CredentialRefreshLock.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/CredentialRefreshLock.swift",
         "covered": 53,
         "executable": 57
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/DeadlineClock.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/DeadlineClock.swift",
         "covered": 2,
         "executable": 2
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/DiagnosticHTTPTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/DiagnosticHTTPTransport.swift",
         "covered": 64,
         "executable": 78
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPConcurrencyLimit.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPConcurrencyLimit.swift",
         "covered": 162,
         "executable": 182
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPContentRange.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPContentRange.swift",
         "covered": 10,
         "executable": 10
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPDataStream.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPDataStream.swift",
         "covered": 485,
         "executable": 498
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPDataStreamDelegate.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPDataStreamDelegate.swift",
         "covered": 13,
         "executable": 20
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPProgressDeadline.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPProgressDeadline.swift",
         "covered": 51,
         "executable": 53
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HTTPTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HTTPTransport.swift",
         "covered": 97,
         "executable": 147
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/HumanError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/HumanError.swift",
         "covered": 84,
         "executable": 92
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/Localization.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/Localization.swift",
         "covered": 21,
         "executable": 23
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/MemorySecretStore.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/MemorySecretStore.swift",
         "covered": 20,
         "executable": 20
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/MountCapacityRequest.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/MountCapacityRequest.swift",
         "covered": 93,
         "executable": 100
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/MountRequest.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/MountRequest.swift",
         "covered": 171,
         "executable": 177
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/MountedShare.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/MountedShare.swift",
         "covered": 5,
         "executable": 5
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/NativeMountCall.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/NativeMountCall.swift",
         "covered": 1,
         "executable": 18
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/NativeMountTable.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/NativeMountTable.swift",
         "covered": 31,
         "executable": 38
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/POSIXHTTPTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/POSIXHTTPTransport.swift",
         "covered": 78,
         "executable": 79
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/PackageDiagnostics.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/PackageDiagnostics.swift",
         "covered": 11,
         "executable": 11
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/ProviderCapabilities.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/ProviderCapabilities.swift",
         "covered": 0,
         "executable": 7
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RecoverableSecretStore.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RecoverableSecretStore.swift",
         "covered": 77,
         "executable": 81
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemoteError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemoteError.swift",
         "covered": 42,
         "executable": 43
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemoteFileProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemoteFileProvider.swift",
         "covered": 7,
         "executable": 7
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemoteItem.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemoteItem.swift",
         "covered": 7,
         "executable": 7
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemotePath.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemotePath.swift",
         "covered": 13,
         "executable": 18
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemoteTimeout.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemoteTimeout.swift",
         "covered": 0,
         "executable": 7
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/RemoteTimestamp.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/RemoteTimestamp.swift",
         "covered": 14,
         "executable": 14
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SMBAddress.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SMBAddress.swift",
         "covered": 47,
         "executable": 48
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SMBDiscovery.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SMBDiscovery.swift",
         "covered": 156,
         "executable": 176
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SMBDiscoveryBrowser.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SMBDiscoveryBrowser.swift",
         "covered": 16,
         "executable": 73
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SMBServing.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SMBServing.swift",
         "covered": 0,
         "executable": 3
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SafeDiagnostic.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SafeDiagnostic.swift",
         "covered": 25,
         "executable": 29
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SharedTaskWaiter.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SharedTaskWaiter.swift",
         "covered": 60,
         "executable": 60
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SpaceInfo.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SpaceInfo.swift",
         "covered": 18,
         "executable": 18
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/Storage.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/Storage.swift",
         "covered": 32,
         "executable": 66
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SystemMountAddress.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SystemMountAddress.swift",
         "covered": 75,
         "executable": 82
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/SystemSMBService.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/SystemSMBService.swift",
         "covered": 129,
         "executable": 140
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/Core/UnmountRequest.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/Core/UnmountRequest.swift",
         "covered": 0,
         "executable": 43
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Core/Sources/CoreNative/SMBProcess.c",
+        "path": "/Users/seaony/code/Diskit/Packages/Core/Sources/CoreNative/SMBProcess.c",
         "covered": 84,
         "executable": 103
       }
@@ -225,122 +225,122 @@
     "source": "Packages/ADB/.build/debug/codecov/ADB.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBCertificate.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBCertificate.swift",
         "covered": 63,
         "executable": 64
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBDevice.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBDevice.swift",
         "covered": 54,
         "executable": 58
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBErrno.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBErrno.swift",
         "covered": 92,
         "executable": 92
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBIdentity.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBIdentity.swift",
         "covered": 74,
         "executable": 74
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBMessage.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBMessage.swift",
         "covered": 57,
         "executable": 57
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBOperationDeadline.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBOperationDeadline.swift",
         "covered": 19,
         "executable": 20
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBPairing.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBPairing.swift",
         "covered": 175,
         "executable": 201
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBProvider.swift",
         "covered": 363,
         "executable": 400
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBProviderFactory.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBProviderFactory.swift",
         "covered": 22,
         "executable": 44
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBSession.swift",
         "covered": 216,
         "executable": 238
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBStartTLS.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBStartTLS.swift",
         "covered": 3,
         "executable": 43
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/ADBSync.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/ADBSync.swift",
         "covered": 76,
         "executable": 81
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/NetworkTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/NetworkTransport.swift",
         "covered": 217,
         "executable": 222
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemADBNetworkIO.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemADBNetworkIO.swift",
         "covered": 0,
         "executable": 59
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemUSBCatalog.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemUSBCatalog.swift",
         "covered": 0,
         "executable": 54
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemUSBChannel.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemUSBChannel.swift",
         "covered": 0,
         "executable": 45
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemUSBMonitor.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemUSBMonitor.swift",
         "covered": 0,
         "executable": 82
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemUSBRequest.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemUSBRequest.swift",
         "covered": 0,
         "executable": 55
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/SystemWirelessDiscoveryDriver.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/SystemWirelessDiscoveryDriver.swift",
         "covered": 8,
         "executable": 66
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/USBDescriptors.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/USBDescriptors.swift",
         "covered": 46,
         "executable": 46
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/USBDiscovery.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/USBDiscovery.swift",
         "covered": 47,
         "executable": 48
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/USBIORequest.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/USBIORequest.swift",
         "covered": 89,
         "executable": 91
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/USBTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/USBTransport.swift",
         "covered": 49,
         "executable": 51
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ADB/Sources/ADB/WirelessDiscovery.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ADB/Sources/ADB/WirelessDiscovery.swift",
         "covered": 249,
         "executable": 262
       }
@@ -352,52 +352,52 @@
     "source": "Packages/RicohGR/.build/debug/codecov/RicohGR.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/ICRicohCameraHardware.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/ICRicohCameraHardware.swift",
         "covered": 0,
         "executable": 64
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/ImageCaptureAdapter.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/ImageCaptureAdapter.swift",
         "covered": 121,
         "executable": 125
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/ImageCaptureDeviceAccess.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/ImageCaptureDeviceAccess.swift",
         "covered": 166,
         "executable": 169
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohDeviceAccess.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohDeviceAccess.swift",
         "covered": 3,
         "executable": 3
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohDiscovery.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohDiscovery.swift",
         "covered": 86,
         "executable": 134
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohErrors.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohErrors.swift",
         "covered": 50,
         "executable": 50
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohHardwareSelection.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohHardwareSelection.swift",
         "covered": 9,
         "executable": 10
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohModels.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohModels.swift",
         "covered": 36,
         "executable": 36
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohPTP.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohPTP.swift",
         "covered": 98,
         "executable": 98
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/RicohGR/Sources/RicohGR/RicohProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/RicohGR/Sources/RicohGR/RicohProvider.swift",
         "covered": 176,
         "executable": 199
       }
@@ -409,42 +409,42 @@
     "source": "Packages/AliyunDrive/.build/debug/codecov/AliyunDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunAccount.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunAccount.swift",
         "covered": 8,
         "executable": 8
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunConfiguration.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunConfiguration.swift",
         "covered": 27,
         "executable": 27
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunError.swift",
         "covered": 22,
         "executable": 23
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunFiles.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunFiles.swift",
         "covered": 33,
         "executable": 45
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunProvider.swift",
         "covered": 397,
         "executable": 453
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunSession.swift",
         "covered": 319,
         "executable": 346
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/AliyunStoredAuthorization.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/AliyunStoredAuthorization.swift",
         "covered": 1,
         "executable": 1
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/AliyunDrive/Sources/AliyunDrive/OAuthCallback.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/AliyunDrive/Sources/AliyunDrive/OAuthCallback.swift",
         "covered": 23,
         "executable": 31
       }
@@ -456,42 +456,42 @@
     "source": "Packages/Quark/.build/debug/codecov/Quark.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkAccount.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkAccount.swift",
         "covered": 6,
         "executable": 6
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkCookie.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkCookie.swift",
         "covered": 58,
         "executable": 63
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkError.swift",
         "covered": 11,
         "executable": 12
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkFiles.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkFiles.swift",
         "covered": 135,
         "executable": 137
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkMoveRecoveryError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkMoveRecoveryError.swift",
         "covered": 0,
         "executable": 13
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkProvider.swift",
         "covered": 491,
         "executable": 522
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkSession.swift",
         "covered": 219,
         "executable": 222
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/Quark/Sources/Quark/QuarkWebCookies.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/Quark/Sources/Quark/QuarkWebCookies.swift",
         "covered": 18,
         "executable": 19
       }
@@ -503,27 +503,27 @@
     "source": "Packages/S3Drive/.build/debug/codecov/S3Drive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/S3Drive/Sources/S3Drive/S3CopyCleanupError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/S3Drive/Sources/S3Drive/S3CopyCleanupError.swift",
         "covered": 0,
         "executable": 10
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/S3Drive/Sources/S3Drive/S3PartialDeletionError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/S3Drive/Sources/S3Drive/S3PartialDeletionError.swift",
         "covered": 14,
         "executable": 15
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/S3Drive/Sources/S3Drive/S3Provider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/S3Drive/Sources/S3Drive/S3Provider.swift",
         "covered": 723,
         "executable": 781
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/S3Drive/Sources/S3Drive/S3RetryTransport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/S3Drive/Sources/S3Drive/S3RetryTransport.swift",
         "covered": 36,
         "executable": 38
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/S3Drive/Sources/S3Drive/S3XML.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/S3Drive/Sources/S3Drive/S3XML.swift",
         "covered": 134,
         "executable": 139
       }
@@ -535,72 +535,72 @@
     "source": "Packages/CloudDrive/.build/debug/codecov/CloudDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/BaiduDriveProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/BaiduDriveProvider.swift",
         "covered": 395,
         "executable": 480
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/CloudDriveSupport.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/CloudDriveSupport.swift",
         "covered": 385,
         "executable": 398
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/Drive115Provider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/Drive115Provider.swift",
         "covered": 529,
         "executable": 660
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/Drive123Provider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/Drive123Provider.swift",
         "covered": 320,
         "executable": 386
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/DropboxProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/DropboxProvider.swift",
         "covered": 256,
         "executable": 287
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/GoogleDesktopOAuth.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/GoogleDesktopOAuth.swift",
         "covered": 17,
         "executable": 17
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/GoogleDriveProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/GoogleDriveProvider.swift",
         "covered": 420,
         "executable": 505
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthConfiguration.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthConfiguration.swift",
         "covered": 21,
         "executable": 21
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthDriveError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthDriveError.swift",
         "covered": 4,
         "executable": 13
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthProfile.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthProfile.swift",
         "covered": 5,
         "executable": 5
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthRequestToken.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthRequestToken.swift",
         "covered": 66,
         "executable": 69
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthSession.swift",
         "covered": 402,
         "executable": 437
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OAuthToken.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OAuthToken.swift",
         "covered": 5,
         "executable": 5
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CloudDrive/Sources/CloudDrive/OneDriveProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CloudDrive/Sources/CloudDrive/OneDriveProvider.swift",
         "covered": 237,
         "executable": 286
       }
@@ -612,42 +612,42 @@
     "source": "Packages/CameraUSB/.build/debug/codecov/CameraUSB.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/CameraCatalog.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/CameraCatalog.swift",
         "covered": 75,
         "executable": 75
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/CameraUSBDiscovery.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/CameraUSBDiscovery.swift",
         "covered": 120,
         "executable": 186
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/CameraUSBErrors.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/CameraUSBErrors.swift",
         "covered": 50,
         "executable": 50
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/CameraUSBModels.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/CameraUSBModels.swift",
         "covered": 25,
         "executable": 41
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/CameraUSBProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/CameraUSBProvider.swift",
         "covered": 229,
         "executable": 262
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/ICCCameraHardware.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/ICCCameraHardware.swift",
         "covered": 0,
         "executable": 72
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/ImageCaptureAccess.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/ImageCaptureAccess.swift",
         "covered": 51,
         "executable": 55
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/CameraUSB/Sources/CameraUSB/NativeCameraSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/CameraUSB/Sources/CameraUSB/NativeCameraSession.swift",
         "covered": 153,
         "executable": 155
       }
@@ -659,27 +659,27 @@
     "source": "Packages/PikPakDrive/.build/debug/codecov/PikPakDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/PikPakDrive/Sources/PikPakDrive/PikPakError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/PikPakDrive/Sources/PikPakDrive/PikPakError.swift",
         "covered": 65,
         "executable": 90
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/PikPakDrive/Sources/PikPakDrive/PikPakModels.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/PikPakDrive/Sources/PikPakDrive/PikPakModels.swift",
         "covered": 91,
         "executable": 96
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/PikPakDrive/Sources/PikPakDrive/PikPakProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/PikPakDrive/Sources/PikPakDrive/PikPakProvider.swift",
         "covered": 415,
         "executable": 494
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/PikPakDrive/Sources/PikPakDrive/PikPakSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/PikPakDrive/Sources/PikPakDrive/PikPakSession.swift",
         "covered": 428,
         "executable": 477
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/PikPakDrive/Sources/PikPakDrive/PikPakUpload.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/PikPakDrive/Sources/PikPakDrive/PikPakUpload.swift",
         "covered": 215,
         "executable": 237
       }
@@ -691,47 +691,47 @@
     "source": "Packages/LanzouDrive/.build/debug/codecov/LanzouDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouConfiguration.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouConfiguration.swift",
         "covered": 36,
         "executable": 43
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouDownloadBody.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouDownloadBody.swift",
         "covered": 46,
         "executable": 48
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouError.swift",
         "covered": 66,
         "executable": 67
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouProvider.swift",
         "covered": 245,
         "executable": 272
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouRecords.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouRecords.swift",
         "covered": 73,
         "executable": 101
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouScript.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouScript.swift",
         "covered": 311,
         "executable": 314
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouSession.swift",
         "covered": 565,
         "executable": 622
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouSharePage.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouSharePage.swift",
         "covered": 112,
         "executable": 129
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/LanzouDrive/Sources/LanzouDrive/LanzouValue.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/LanzouDrive/Sources/LanzouDrive/LanzouValue.swift",
         "covered": 169,
         "executable": 198
       }
@@ -743,42 +743,42 @@
     "source": "Packages/TianyiDrive/.build/debug/codecov/TianyiDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiConfiguration.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiConfiguration.swift",
         "covered": 43,
         "executable": 46
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiCrypto.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiCrypto.swift",
         "covered": 74,
         "executable": 78
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiError.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiError.swift",
         "covered": 151,
         "executable": 198
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiModels.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiModels.swift",
         "covered": 75,
         "executable": 84
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiMoveRecoveryFailure.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiMoveRecoveryFailure.swift",
         "covered": 0,
         "executable": 14
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiProvider.swift",
         "covered": 513,
         "executable": 569
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiSession.swift",
         "covered": 558,
         "executable": 593
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/TianyiDrive/Sources/TianyiDrive/TianyiUpload.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/TianyiDrive/Sources/TianyiDrive/TianyiUpload.swift",
         "covered": 72,
         "executable": 82
       }
@@ -790,47 +790,47 @@
     "source": "Packages/ChinaWebDrive/.build/debug/codecov/ChinaWebDrive.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudMoveFailure.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudMoveFailure.swift",
         "covered": 16,
         "executable": 17
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudProvider.swift",
         "covered": 517,
         "executable": 535
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession+Upload.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession+Upload.swift",
         "covered": 9,
         "executable": 9
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/MobileCloudSession.swift",
         "covered": 347,
         "executable": 367
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/Support.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/Support.swift",
         "covered": 202,
         "executable": 203
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiPartFile.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiPartFile.swift",
         "covered": 33,
         "executable": 33
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiProvider.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiProvider.swift",
         "covered": 475,
         "executable": 491
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiSession.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiSession.swift",
         "covered": 193,
         "executable": 195
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiUpload.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/ChinaWebDrive/Sources/ChinaWebDrive/XunleiUpload.swift",
         "covered": 39,
         "executable": 216
       }
@@ -842,37 +842,37 @@
     "source": "Packages/DevTool/.build/debug/codecov/DevTool.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIArguments.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIArguments.swift",
         "covered": 64,
         "executable": 64
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIEnvironment.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIEnvironment.swift",
         "covered": 29,
         "executable": 30
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIOutput.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIOutput.swift",
         "covered": 21,
         "executable": 21
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIProgress.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIProgress.swift",
         "covered": 30,
         "executable": 30
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIProviderFactory.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIProviderFactory.swift",
         "covered": 183,
         "executable": 208
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLIRunner.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLIRunner.swift",
         "covered": 87,
         "executable": 135
       },
       {
-        "path": "/Users/seaony/code/Kayoi/Packages/DevTool/Sources/DevToolSupport/CLITransfers.swift",
+        "path": "/Users/seaony/code/Diskit/Packages/DevTool/Sources/DevToolSupport/CLITransfers.swift",
         "covered": 87,
         "executable": 93
       }
@@ -884,227 +884,227 @@
     "source": "build/Validation/App-expanded-2-coverage.json",
     "files": [
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/HelpGroup.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/HelpGroup.swift",
         "covered": 9,
         "executable": 10
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionEditorModel+WebLogin.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionEditorModel+WebLogin.swift",
         "covered": 130,
         "executable": 132
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/AppSystemServices.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/AppSystemServices.swift",
         "covered": 0,
         "executable": 25
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/AppModelDependencies.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/AppModelDependencies.swift",
         "covered": 0,
         "executable": 1
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/AppOperations.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/AppOperations.swift",
         "covered": 55,
         "executable": 55
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionEditorModel+Permissions.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionEditorModel+Permissions.swift",
         "covered": 9,
         "executable": 33
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/PanelSelection.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/PanelSelection.swift",
         "covered": 5,
         "executable": 6
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/OperationAlertAction.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/OperationAlertAction.swift",
         "covered": 5,
         "executable": 5
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/LogDate.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/LogDate.swift",
         "covered": 8,
         "executable": 8
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/SpaceSummary.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/SpaceSummary.swift",
         "covered": 25,
         "executable": 25
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WindowPlacement.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WindowPlacement.swift",
         "covered": 27,
         "executable": 28
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/UpdateController.swift",
+        "path": "/Users/seaony/code/Diskit/App/UpdateController.swift",
         "covered": 92,
         "executable": 148
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/SettingsLicense.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/SettingsLicense.swift",
         "covered": 22,
         "executable": 22
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/DemoFixtures.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/DemoFixtures.swift",
         "covered": 84,
         "executable": 84
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/CacheMaintenance.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/CacheMaintenance.swift",
         "covered": 70,
         "executable": 73
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/EditorPreparation.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/EditorPreparation.swift",
         "covered": 0,
         "executable": 39
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionEditorModel+Demo.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionEditorModel+Demo.swift",
         "covered": 51,
         "executable": 52
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/HelpParagraph.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/HelpParagraph.swift",
         "covered": 4,
         "executable": 4
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionTypeCatalog.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionTypeCatalog.swift",
         "covered": 121,
         "executable": 124
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/EditorValidation.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/EditorValidation.swift",
         "covered": 59,
         "executable": 68
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebLoginObservationScript.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebLoginObservationScript.swift",
         "covered": 45,
         "executable": 45
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/UpdatePolicy.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/UpdatePolicy.swift",
         "covered": 24,
         "executable": 24
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/HelpCapability.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/HelpCapability.swift",
         "covered": 19,
         "executable": 19
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/RemoteSessionCache.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/RemoteSessionCache.swift",
         "covered": 17,
         "executable": 17
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebLoginCredentialParser.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebLoginCredentialParser.swift",
         "covered": 85,
         "executable": 87
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/PairingDigits.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/PairingDigits.swift",
         "covered": 16,
         "executable": 18
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebLoginCredentials.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebLoginCredentials.swift",
         "covered": 4,
         "executable": 4
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/AppModel.swift",
+        "path": "/Users/seaony/code/Diskit/App/AppModel.swift",
         "covered": 659,
         "executable": 975
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionPresentationUndo.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionPresentationUndo.swift",
         "covered": 35,
         "executable": 36
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/DemoMountService.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/DemoMountService.swift",
         "covered": 32,
         "executable": 35
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/PanelCopy.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/PanelCopy.swift",
         "covered": 30,
         "executable": 30
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/MenuBarStatusSummary.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/MenuBarStatusSummary.swift",
         "covered": 23,
         "executable": 23
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebLoginState.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebLoginState.swift",
         "covered": 112,
         "executable": 115
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebLoginService.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebLoginService.swift",
         "covered": 27,
         "executable": 37
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/Localization.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/Localization.swift",
         "covered": 4,
         "executable": 4
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/HelpQuestion.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/HelpQuestion.swift",
         "covered": 5,
         "executable": 5
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionPresentation.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionPresentation.swift",
         "covered": 63,
         "executable": 69
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/EditorAccountSummary.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/EditorAccountSummary.swift",
         "covered": 0,
         "executable": 15
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/EditorDraftValue.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/EditorDraftValue.swift",
         "covered": 11,
         "executable": 13
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/RuntimeOptions.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/RuntimeOptions.swift",
         "covered": 28,
         "executable": 30
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionEditorModel.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionEditorModel.swift",
         "covered": 823,
         "executable": 877
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/ConnectionRecovery.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/ConnectionRecovery.swift",
         "covered": 74,
         "executable": 74
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/WebDAVPresets.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/WebDAVPresets.swift",
         "covered": 0,
         "executable": 26
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/PanelDiscoveryIdentity.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/PanelDiscoveryIdentity.swift",
         "covered": 27,
         "executable": 34
       },
       {
-        "path": "/Users/seaony/code/Kayoi/App/Logic/HelpGuide.swift",
+        "path": "/Users/seaony/code/Diskit/App/Logic/HelpGuide.swift",
         "covered": 200,
         "executable": 202
       }

@@ -1,3 +1,3 @@
-App/Logic/HelpGuide.swift:149: 缺少键 '对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。'（/Users/seaony/code/Kayoi/App/Localizable.xcstrings）
-/Users/seaony/code/Kayoi/App/Localizable.xcstrings: 未使用的键 '对象存储的删除可能无法恢复，取决于存储桶是否启用版本保留等保护。删除前请先确认备份。'
+App/Logic/HelpGuide.swift:149: 缺少键 '对象存储删除的文件不会进入回收站。未启用存储桶版本保留时，文件会被永久删除；启用后能否恢复取决于服务端保留的版本。删除前请先确认备份。'（/Users/seaony/code/Diskit/App/Localizable.xcstrings）
+/Users/seaony/code/Diskit/App/Localizable.xcstrings: 未使用的键 '对象存储的删除可能无法恢复，取决于存储桶是否启用版本保留等保护。删除前请先确认备份。'
 本地化校验失败：2 项

@@ -5,7 +5,7 @@
  * https://www.apache.org/licenses/LICENSE-2.0
  * Distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND.
  */
-#include "include/KayoiCrypto.h"
+#include "include/DiskitCrypto.h"
 #include <openssl/bn.h>
 #include <openssl/rsa.h>
 
@@ -13,7 +13,7 @@ static void store32(uint8_t *output, uint32_t value) {
     for (int i = 0; i < 4; i++) output[i] = (uint8_t)(value >> (i * 8));
 }
 
-int kayoi_android_public_key(const uint8_t *der, size_t der_size, uint8_t *output, size_t output_size) {
+int diskit_android_public_key(const uint8_t *der, size_t der_size, uint8_t *output, size_t output_size) {
     if (output_size != 524) return 0;
     bssl::UniquePtr<RSA> key(RSA_public_key_from_bytes(der, der_size));
     bssl::UniquePtr<BN_CTX> ctx(BN_CTX_new());

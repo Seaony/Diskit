@@ -22,6 +22,6 @@ Apple 官方说明 macOS 14 起 IP 默认不再享有 ATS 放行，并支持按 
 - 中间发现 Network.IPv4Address 会接受数字地址形式，已补标准点分十进制检查；最终上述回归通过，不隐去该修正。
 - `make gen` 通过，输出 `CURRENT-S3HTTP-gen.log`。
 - `python3 -m unittest discover -s scripts/tests -p test_local_network_policy.py`：读取实际生成 build/Info.plist，验证例外集合、私有范围、公网地址不被覆盖、无全局 ATS 放行；1 个测试通过。输出 `CURRENT-S3HTTP-ATS.log`。
-- App 测试 `objectStorageEditorMatchesBackendLocalHTTPPolicy`（`Tests/KayoiTests/EditorConfigurationTests.swift:156`）已补 S3/MinIO 前端边界，按主任务协调留统一 App 验证，不另起 xcodebuild。
+- App 测试 `objectStorageEditorMatchesBackendLocalHTTPPolicy`（`Tests/DiskitTests/EditorConfigurationTests.swift:156`）已补 S3/MinIO 前端边界，按主任务协调留统一 App 验证，不另起 xcodebuild。
 - 本次 strings 快检暴露同期 HelpGuide 的旧/新删除提示键尚未同步，已交文案负责人集中合并；不是此次新增提示键。原输出 `CURRENT-S3HTTP-strings.log`，不能写为检查通过。
 - `git diff --check` 通过。未连接真实 MinIO、账号或设备，未开启本地服务；ATS 实际运行及真实菜单点击留用户验收，mock 通过不等于真实网络已验证。

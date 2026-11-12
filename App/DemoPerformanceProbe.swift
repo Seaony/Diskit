@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor final class DemoPerformanceProbe {
   private var timeline: PerformanceTimeline
   private let output: URL
-  private let writer = DispatchQueue(label: "com.seaony.Kayoi.demo-performance", qos: .utility)
+  private let writer = DispatchQueue(label: "com.seaony.Diskit.demo-performance", qos: .utility)
 
   init?(options: RuntimeOptions) {
     guard let path = options.performanceOutput else { return nil }

@@ -18,8 +18,8 @@ OPTIMIZATION明确要求编辑器视图/逻辑拆分、一个主要类型一个�
 
 行为证据见FINAL-LOGIC-TEST-INDEX和本次新增定向交接；代码组织理由不是对未测试行为的豁免。
 
-## 非授权kayoi链接
+## 非授权diskit链接
 
-PLAN.md:239指定ASWebAuthenticationSession授权回调，PLAN.md:424明确kayoi://用途为OAuth回调。阶段一没有其它深链业务或FSKit挂载入口；K-05同时使用各提供方支持的回调方式。保留WebAuthorization会话内接收及OAuthCallback严格验证，不新增打开位置、执行文件操作等深链产品能力。
+PLAN.md:239指定ASWebAuthenticationSession授权回调，PLAN.md:424明确diskit://用途为OAuth回调。阶段一没有其它深链业务或FSKit挂载入口；K-05同时使用各提供方支持的回调方式。保留WebAuthorization会话内接收及OAuthCallback严格验证，不新增打开位置、执行文件操作等深链产品能力。
 
-OAuth以外kayoi://链接不受支持，不执行任何外部链接携带的文件/设备操作。它们没有独立业务路由；不把“注册scheme但没有onOpenURL”误写为OAuth授权接不到回调，也不承诺未知链接一定打开指定窗口。真实授权仍按ACCEPTANCE的各平台回调步骤验收。
+OAuth以外diskit://链接不受支持，不执行任何外部链接携带的文件/设备操作。它们没有独立业务路由；不把“注册scheme但没有onOpenURL”误写为OAuth授权接不到回调，也不承诺未知链接一定打开指定窗口。真实授权仍按ACCEPTANCE的各平台回调步骤验收。
