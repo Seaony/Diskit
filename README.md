@@ -1,8 +1,8 @@
 <div align="center">
 
-<a href="https://github.com/Seaony/Kayoi/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Kayoi"></a>
+<a href="https://github.com/Seaony/Diskit/releases/latest"><img src="docs/assets/icon-512.png" width="112" alt="Diskit"></a>
 
-# Kayoi
+# Diskit
 
 ### Every location. One menu bar.
 
@@ -12,42 +12,42 @@ and mount your shares in Finder with one click.
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[Download](https://github.com/Seaony/Kayoi/releases/latest)** &nbsp;·&nbsp; **English** · [简体中文](README.zh-CN.md)
+**[Download](https://github.com/Seaony/Diskit/releases/latest)** &nbsp;·&nbsp; **English** · [简体中文](README.zh-CN.md)
 
 <br>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/product-dark-en.jpg">
-  <img src="docs/assets/product-light-en.jpg" width="900" alt="Kayoi's panel open under its menu bar icon, showing a NAS, a phone, a camera and several cloud drives">
+  <img src="docs/assets/product-light-en.jpg" width="900" alt="Diskit's panel open under its menu bar icon, showing a NAS, a phone, a camera and several cloud drives">
 </picture>
 
 </div>
 
 <br>
 
-## Is Kayoi for you?
+## Is Diskit for you?
 
 Your files live in many places: a NAS at home, a phone on your desk, a camera in your bag, a few cloud drives and a storage bucket. Each one has its own app, its own sign-in and its own way to connect, and you end up looking them up again every time.
 
-Kayoi keeps them all in one panel in the menu bar:
+Diskit keeps them all in one panel in the menu bar:
 
 - **See everything at a glance**: each location is a card with its status and free space. Switch between cards and a compact list.
 - **Mount shares in one click**: SMB, WebDAV and NFS shares mount in Finder and stay there until you eject them.
-- **Connect phones and cameras without extra apps**: Kayoi speaks ADB itself, over USB or wireless debugging, and reads cameras through macOS.
+- **Connect phones and cameras without extra apps**: Diskit speaks ADB itself, over USB or wireless debugging, and reads cameras through macOS.
 - **Keep secrets in the Keychain**: passwords, tokens and cookies never go into a config file.
 
 It's for you if you move files between several devices and services. If everything you use already lives in one cloud drive with its own Mac app, you don't need it.
 
 > [!NOTE]
-> Kayoi is early (0.2). Today only SMB, WebDAV and NFS mount in Finder. Phones, cameras, cloud drives and object storage can be saved and tested in the app; opening their files in Finder is still in progress. Many integrations have not been checked against real accounts and devices yet.
+> Diskit is early (0.2). Today only SMB, WebDAV and NFS mount in Finder. Phones, cameras, cloud drives and object storage can be saved and tested in the app; opening their files in Finder is still in progress. Many integrations have not been checked against real accounts and devices yet.
 
 ## Quick start
 
-**1 · Install.** Download the DMG from the **[latest release](https://github.com/Seaony/Kayoi/releases/latest)**, open it and drag `Kayoi.app` into Applications.
+**1 · Install.** Download the DMG from the **[latest release](https://github.com/Seaony/Diskit/releases/latest)**, open it and drag `Diskit.app` into Applications.
 
-<sub>Builds are universal (Apple silicon and Intel) and need macOS 26 or later. They are not signed with an Apple Developer ID or notarised yet, so the first launch may be blocked; open **System Settings → Privacy & Security** and choose to open Kayoi anyway. Kayoi updates itself from GitHub Releases through Sparkle.</sub>
+<sub>Builds are universal (Apple silicon and Intel) and need macOS 26 or later. They are not signed with an Apple Developer ID or notarised yet, so the first launch may be blocked; open **System Settings → Privacy & Security** and choose to open Diskit anyway. Diskit updates itself from GitHub Releases through Sparkle.</sub>
 
-**2 · Add a location.** Click the Kayoi icon in the menu bar, press **+**, pick a type and fill in what it asks for. Devices and shares Kayoi finds on your network or USB appear first. Press **Test and Save**.
+**2 · Add a location.** Click the Diskit icon in the menu bar, press **+**, pick a type and fill in what it asks for. Devices and shares Diskit finds on your network or USB appear first. Press **Test and Save**.
 
 **3 · Use it.** Click a card for its actions: mount or eject a share, test a phone or drive again, edit, reorder or delete. Mounted shares show up in Finder's sidebar under Locations.
 
@@ -67,15 +67,15 @@ Official cloud drives sign in through each provider's own authorisation page. Ex
 
 ### A panel, not another window
 
-Kayoi lives in the menu bar with no Dock icon. The panel shows every saved location as a card or a row, with a status dot and the space left. Drag to reorder, right-click for actions, and use the keyboard: arrow keys to select, Return for the main action, ⌘N to add, ⌘E to edit. The menu bar icon fills in when something is mounted and flags locations that need attention.
+Diskit lives in the menu bar with no Dock icon. The panel shows every saved location as a card or a row, with a status dot and the space left. Drag to reorder, right-click for actions, and use the keyboard: arrow keys to select, Return for the main action, ⌘N to add, ⌘E to edit. The menu bar icon fills in when something is mounted and flags locations that need attention.
 
 ### Shares in Finder
 
-SMB, WebDAV and NFS shares mount through macOS, so Finder and every other app see them as normal volumes. Kayoi can list the shares on an SMB server, checks your password before saving, and leaves system mounts in place when you quit.
+SMB, WebDAV and NFS shares mount through macOS, so Finder and every other app see them as normal volumes. Diskit can list the shares on an SMB server, checks your password before saving, and leaves system mounts in place when you quit.
 
 ### Phones and cameras
 
-Android phones connect over USB debugging or Android 11+ wireless debugging with a pairing code. Kayoi implements the ADB protocol itself, so there's no `adb` to install and nothing to add to the phone. Ricoh GR IV and other USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
+Android phones connect over USB debugging or Android 11+ wireless debugging with a pairing code. Diskit implements the ADB protocol itself, so there's no `adb` to install and nothing to add to the phone. Ricoh GR IV and other USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
 
 ### Built for macOS
 
@@ -84,8 +84,8 @@ Native SwiftUI and AppKit. Light and dark appearance. English and Simplified Chi
 ## Privacy
 
 - Passwords, tokens and cookies are stored in your login Keychain.
-- Saved locations live in `~/Library/Application Support/Kayoi/connections.json`, without any secrets. Caches stay in `~/Library/Caches/Kayoi/`, and error logs are kept for 7 days.
-- Kayoi has no analytics. Besides looking for phones, cameras and shares on your local network and over USB, it talks only to the devices and services you add, and to Kayoi's GitHub Releases feed for updates.
+- Saved locations live in `~/Library/Application Support/Diskit/connections.json`, without any secrets. Caches stay in `~/Library/Caches/Diskit/`, and error logs are kept for 7 days.
+- Diskit has no analytics. Besides looking for phones, cameras and shares on your local network and over USB, it talks only to the devices and services you add, and to Diskit's GitHub Releases feed for updates.
 
 ## Acknowledgements
 
