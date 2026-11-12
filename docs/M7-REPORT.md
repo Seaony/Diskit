@@ -86,6 +86,12 @@ P2 记录：Finder 弹窗文件名为空，转换日志有 path=N/A，但错误�
 
 临时服务只绑定回环。两个 kayoi-m7- 容器、数据、证书和测试凭据已清理；4 条临时连接及 2 条测试密码已移除，原 connections.json 逐字节恢复一致，2 个临时连接缓存目录已删除。非敏感验收证据保留在 `build/agents/m7-local-final-evidence.json` 和 `build/agents/m7-local-remote-readback.json`。已有容器未被修改；其中既有 mantis 容器期间重启 2 次、仍运行，未扩展排障（不在本次范围）。
 
+## 第 8 小步：验证代码与测试数据清理
+
+已删除 App/FSKitSpike.swift、FSShared/SpikeShared.swift、FSShared/SpikeUSBCheck.swift，去掉主 App 的调用、空初始化和验证参数的迁移豁免。正式 CLI、FSKit 加载与 Provider 工厂保留，docs/SPIKE.md 和发布流程未改；源码及测试无残留引用。
+
+共享钥匙串只删除精确 service=com.seaony.Kayoi.spike 的 2 个测试条目，核对剩余 0；正式 ADB 私钥前后逐字节一致。App Group 的 spike-check.txt 已删并确认不存在，证据为 `build/m7-spike-data-cleanup.json`。临时签名检查工具和测试凭据、配置副本也已清理；用户原配置不变，手机验收目录按约定保留到 Wi-Fi 结束。
+
 ## 本次完整本地门禁
 
 `make build`、深度签名和完整 `make test` 均通过：977 项 Swift 测试、14 项脚本测试及 538 个实际使用本地化键检查通过，含 App 186 项、Core 188 项。日志为 `build/m7-autonomous-final-build.log` 和 `build/m7-autonomous-final-test.log`。本轮不发布、不打标签、不改 appcast；通过的本地检查不替代未测账号或无线真机验收。

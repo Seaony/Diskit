@@ -18,7 +18,7 @@ import SwiftUI
         exit(error is CancellationError ? 130 : 1)
       }
     }
-    if !arguments.contains("--fskit-spike"), !RuntimeOptions.current.isDemo {
+    if !RuntimeOptions.current.isDemo {
       if let error = RuntimeStorage.prepareForApplication() {
         let app = NSApplication.shared
         app.setActivationPolicy(.regular)

@@ -770,6 +770,18 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 
 已有容器未被修改；核对期间既有 mantis 容器重启次数增加 2，仍运行，原因不在本次范围。macOS 26 挂载分支仍未实测，不要求用户为此更换系统。
 
+## M7 第二步，第 8 小步：验证代码与测试数据清理
+
+| 项目 | 状态 | 证据 |
+|---|---|---|
+| 验证入口与共享 Spike 代码 | 通过 | 删除 App/FSKitSpike.swift、FSShared/SpikeShared.swift、FSShared/SpikeUSBCheck.swift，移除 KayoiApp 调用及空初始化、KayoiMain 的验证参数迁移豁免；正式 CLI、FSKit 工厂和 docs/SPIKE.md 保留。源码及测试无残留引用，未改发布流程。 |
+| 共享钥匙串验证条目 | 通过 | 只删除精确 service=com.seaony.Kayoi.spike 的共享通用密码条目，数量 2→0；正式 ADB 私钥删除前后逐字节一致。 |
+| App Group 验证文件 | 通过 | spike-check.txt 已删除并核对不存在；未触碰其他用户文件。 |
+| 构建与回归 | 通过 | 本次完整构建、签名与 977 项 Swift、14 项脚本测试通过；日志见下节。 |
+| 手机验收目录 | 暂保留 | Kayoi M7 验收 a18ba66c 继续用于 Wi-Fi，完成后再删除；不把清理阶段误写成手机目录已删。 |
+
+清理结果为 `build/m7-spike-data-cleanup.json`。使用过的临时签名检查工具、测试凭据及配置副本也已移除；没有改变钥匙串可访问性或签名配置。
+
 ## 本次无需用户参与工作的完整门禁
 
 `make build`、深度签名与 `make test` 均退出 0：977 项 Swift 测试（含 App 186 项、Core 188 项）及 14 项脚本测试通过；538 个实际使用的本地化键检查通过。日志为 `build/m7-autonomous-final-build.log`、`build/m7-autonomous-final-test.log`。未执行发布、打标签或修改 appcast；真实账号及无线验收仍按上表记未测。

@@ -82,10 +82,6 @@ struct KayoiApp: App {
   @NSApplicationDelegateAdaptor(KayoiAppDelegate.self) private var appDelegate
   @Environment(\.openWindow) private var openWindow
 
-  init() {
-    FSKitSpike.runIfRequested()
-  }
-
   var body: some Scene {
     MenuBarExtra {
       PanelView(model: model, closesOnOpen: true)
