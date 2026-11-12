@@ -38,9 +38,7 @@ import ServiceManagement
   }
 
   static func unmount(_ url: URL, completion: @escaping FileSystemCompletion<Void>) {
-    FileManager.default.unmountVolume(at: url, options: []) { error in
-      completion(error.map { .failure($0) } ?? .success(()))
-    }
+    NativeVolumeUnmounter().unmount(url, completion: completion)
   }
 
   static func openSettings() -> Bool {
@@ -70,7 +68,7 @@ enum NativeFileSystemMountTable {
     let source = withUnsafePointer(to: &value.f_mntfromname) { String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self)) }
     let path = withUnsafePointer(to: &value.f_mntonname) { String(cString: UnsafeRawPointer($0).assumingMemoryBound(to: CChar.self)) }
     let available = availableBytes(totalBlocks: value.f_blocks, availableBlocks: value.f_bavail, blockSize: value.f_bsize)
-    return FileSystemMountService.MountEntry(type: type, source: source, path: URL(fileURLWithPath: path), filesystemID: withUnsafeBytes(of: value.f_fsid) { Data($0) }, availableBytes: available)
+    return FileSystemMountService.MountEntry(type: type, source: source, path: URL(filePath: path, directoryHint: .isDirectory), filesystemID: withUnsafeBytes(of: value.f_fsid) { Data($0) }, availableBytes: available)
   }
 
   static func availableBytes(totalBlocks: UInt64, availableBlocks: UInt64, blockSize: UInt32) -> Int64? {

@@ -110,6 +110,16 @@ R2 补测后的 `make build` 与深度签名通过（`build/m7-r2-final-build.lo
 
 新增回归在旧退出行为下实际失败，完成修改后 App 193 项测试通过；完整构建、深度签名与 985 项 Swift、14 项脚本测试、537 键本地化校验通过，日志在 `build/quit-failure/{app-red,app-green,final-build,final-test}.log`。已检查生产面板单位置、多位置及无具体位置的中英浅深色，共 12 张离线截图，见 `build/quit-failure/banner/`；这些是注入状态，未冒充原生故障重现。未中断当前 Debug 或手机卷，真实窗口交互及修复后的拔插留后续验收。
 
+## 断开后推出失败的根因验证与修复
+
+本机临时 MinIO 真实 FSKit 对照复现了同类故障：停止后端、触发实际远端请求失败并确认根 EIO 后，FileManager 约 0.9 毫秒返回 Cocoa 256、底层 POSIX 5，卷仍挂载；同卷普通磁盘仲裁约 492 毫秒成功推出。根属性缓存会掩盖断开，必须先观察根 EIO。此结果证明原 FileManager 路径在该状态下不能完成推出，普通 DA 路径可以；未采集 Foundation 内部栈，“先 stat”仍是机制推断，不能还原原手机现场缺失的底层链。完整对照见验收记录及 `build/quit-failure/disconnect-round2-{fm-unmount,da-unmount}.json`。
+
+新原生卸载实现只对 Cocoa 256 启用普通 DA 兜底，要求前后唯一 Kayoi 挂载项的源、路径和 fsid 完全一致，创建 DA 对象后再次校验，不强制推出。忙状态继续失败，两次错误保留，原生 C 回调在系统完成前持有请求；未改扩展根属性、设备传输或上层取消/超时策略。设备消失只触发一次推出，原先首次失败后空设备列表不再触发，解释了残卷为何持续到退出；本修复由所有 FSKit 推出入口共用，未增加盲目定时重试。
+
+隔离旧行为下新回归实际失败；新回归 6 个函数覆盖 14 个场景。直接编译实际产品源的独立签名探针完成新 UUID 的断线绿测，约 492 毫秒推出成功且挂载表为空；真实忙卷在回调时返回 Cocoa 769 并保留挂载，释放占用后系统随后推出，未将该轮混算为断线绿测。`build/quit-failure/native-red.log`、`build/quit-failure/disconnect-product-{green,busy,source-sha256}.json` 保留证据。
+
+本轮原生推出和文案修改统一完整验证：构建、深度签名及 1004 项 Swift 测试（App 202、Core 199）、14 项脚本测试、537 键校验通过，见 `build/quit-failure/revised-final-{build,test}.log`。三轮临时连接/密码、私有配置副本、容器、数据和服务二进制已清理，原配置逐字节恢复、ADB 私钥未变，见 `build/quit-failure/disconnect-cleanup.json`。既有容器、镜像和系统信任未改；没有退出或重启现有 Debug，最新构建上的手机拔插与真实退出交互仍待回归。
+
 ## 仍需用户参与的项目
 
 Wi-Fi 配对、纯无线验收和网盘登录统一放到不用用户的工作、提交推送及完整构建测试结束后一次汇总。手机目录 `Kayoi M7 验收 a18ba66c` 保留给 Wi-Fi，测完再删。HTTPS 自签成功挂载需先决定测试证书信任；NFS 需已有导出或管理员准备服务端。macOS 26 未实测，GR IV 无相机，本轮不改原行为；正式分发不在本次范围。

@@ -803,3 +803,15 @@ R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；�
 保留旧退出行为、加入新状态接口后的红测实际运行 191 项 App 测试，新增回归出现 9 处断言失败；完成修改后 193 项 App 测试通过。完整 `make build`、深度签名及 `make test` 通过：985 项 Swift 测试、14 项脚本测试、537 个实际使用本地化键。日志为 `build/quit-failure/app-red.log`、`build/quit-failure/app-green.log`、`build/quit-failure/final-{build,test}.log`。
 
 已核对生产面板在单位置、多位置、无具体位置三种失败状态下的中英浅深色，共 12 张离线截图，目录为 `build/quit-failure/banner/`。截图使用注入错误状态，不是原生 256 重现；本轮未退出或重启正在运行的 Debug，也未重复手机拔插。原生故障复现、真实窗口交互及最新构建上的真机拔插仍列在后续验收中。
+
+## 断开后推出失败的隔离复现与修复（2026-11-12）
+
+使用仅绑定 `127.0.0.1:19000` 的临时 MinIO、全新连接 UUID 和真实 FSKit 卷验证，不操作手机或现有 Debug。专用桶只有一个 22 字节文件。停止后端后，先触发实际远端请求失败，再等待根属性确认为 EIO；不能用仍被系统缓存的根属性作为断开证据。健康后端的 FileManager 与磁盘仲裁普通推出均成功。
+
+断开对照中，FileManager 在约 0.9 毫秒返回 `NSCocoaErrorDomain/256 → NSPOSIXErrorDomain/5`，挂载表仍有该卷；同一故障卷直接 `DADiskUnmount`、默认选项 0，在约 492 毫秒成功，挂载项消失。本机实测证明根不可读时原 FileManager 路径不能完成推出，而普通磁盘仲裁可以；没有采集 Foundation 内部调用栈，“先 stat”仍是机制推断。原手机现场未保存的底层错误链没有据此补写成已采到的事实。证据为 `build/quit-failure/disconnect-{healthy-fm-unmount,healthy-da-unmount,round2-fm-unmount,round2-da-unmount}.json`。
+
+`NativeVolumeUnmounter` 现在仅在 FileManager 返回 Cocoa 256，且挂载表中仍是同一 Kayoi 卷时使用普通磁盘仲裁兜底。源、路径、fsid 必须相同，挂载项必须唯一，创建 DA 对象后再次核对；不使用 Force 或 Whole。忙卷、权限错误和其他错误不进入该兜底。两次失败保留原始错误链，C 回调持有原生请求直到完成，继续使用现有上层取消和超时语义。自动设备消失、退出、缓存维护及迟到挂载清理均通过原生入口共用此修复；系统共享仍使用原有 NSWorkspace 路径。
+
+新回归在隔离的旧 FileManager 行为下编译成功后实际失败；候选回归覆盖 6 个函数、14 个场景。实际产品源码被直接纳入独立签名探针，另建 UUID 重做根 EIO 对照，约 492 毫秒成功推出，源文件摘要前后一致；真实忙卷测试返回 Cocoa 769 且回调时卷仍在，释放占用后系统随后完成推出，不把这轮计作断线绿测。证据为 `build/quit-failure/native-red.log`、`build/quit-failure/disconnect-product-{green,busy,source-sha256}.json`。
+
+本轮原生推出与文案两组改动统一运行完整 `make build`、深度签名和 `make test`，均通过：1004 项 Swift 测试（App 202、Core 199）、14 项脚本测试、537 个实际使用本地化键，日志为 `build/quit-failure/revised-final-{build,test}.log`。三轮临时连接、密码与私有配置副本已清理，原配置逐字节恢复、ADB 私钥未变；临时容器、服务数据和二进制已删除，既有镜像、容器和系统信任未改，见 `build/quit-failure/disconnect-cleanup.json`。真实手机拔插仍需在最新正常构建上回归；本轮没有重启 Debug 或重复用户操作。
