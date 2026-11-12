@@ -243,6 +243,39 @@ private func mountEntry(_ connection: Connection, path: String = "/Volumes/Fixtu
   #expect(fixture.unmounted.suffix(2).map(\.lastPathComponent) == ["Fixture", "Other"])
 }
 
+private enum MountCallbackFailure: Error, Equatable {
+  case first, last
+}
+
+@MainActor @Test func unmountAllReportsEachFailedURLAndThrowsTheOriginalFirstError() async throws {
+  let fixture = FileSystemMountFixture()
+  fixture.entries = try ["First", "Success", "Last"].map {
+    try mountEntry(mountConnection(), path: "/Volumes/" + $0)
+  }
+  var attempted: [URL] = []
+  var failures: [(URL, Error)] = []
+  var operations = fixture.operations()
+  operations.unmount = { url, completion in
+    attempted.append(url)
+    switch url.lastPathComponent {
+    case "First": completion(.failure(MountCallbackFailure.first))
+    case "Last": completion(.failure(MountCallbackFailure.last))
+    default: completion(.success(()))
+    }
+  }
+  let service = FileSystemMountService(location: fixture.location, operations: operations)
+
+  await #expect(throws: MountCallbackFailure.first) {
+    try await service.unmountAll { url, error in
+      #expect(attempted.last == url)
+      failures.append((url, error))
+    }
+  }
+  #expect(attempted.map(\.lastPathComponent) == ["First", "Success", "Last"])
+  #expect(failures.map { $0.0.lastPathComponent } == ["First", "Last"])
+  #expect(failures.map { $0.1 as? MountCallbackFailure } == [.first, .last])
+}
+
 @MainActor @Test func fileSystemConnectionTestRequiresSavedConfigurationAndKeepsExistingMount() async throws {
   let fixture = FileSystemMountFixture()
   let connection = mountConnection()

@@ -72,6 +72,7 @@ final class KayoiAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificatio
     Task {
       let canQuit = await model.finishQuitting()
       sender.reply(toApplicationShouldTerminate: canQuit)
+      if !canQuit { self.reopenPanel() }
     }
     return .terminateLater
   }

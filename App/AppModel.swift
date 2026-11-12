@@ -37,6 +37,8 @@ import UserNotifications
   private var providerAccess: [UUID: (connection: Connection, capabilities: ProviderCapabilities)] =
     [:]
   var demoSetupError: String?
+  private(set) var quitFailure: QuitFailure?
+  private var quitWithoutEjecting = false
   var demoEditorStateOverride: DemoEditorState?
   var demoEditorRevision = 0
   var demoAppearanceOverride: String?
@@ -315,11 +317,44 @@ import UserNotifications
   func prepareToQuit() {
     operations.cancelAll()
   }
+
+  func cancelQuitAfterFailure() {
+    guard quitFailure != nil else { return }
+    quitFailure = nil
+    quitWithoutEjecting = false
+  }
+
+  func confirmQuitAfterFailure() -> Bool {
+    guard quitFailure != nil else { return false }
+    quitFailure = nil
+    quitWithoutEjecting = true
+    return true
+  }
+
   @discardableResult func finishQuitting() async -> Bool {
     await operations.finishCancellation()
+    let skipEjection = quitWithoutEjecting
+    quitWithoutEjecting = false
+    quitFailure = nil
+    var failures: [QuitFailure.Location] = []
     do {
-      try await fileSystem?.unmountAll()
-      try await connections.ejectOwnedVolumes()
+      if !skipEjection {
+        try await fileSystem?.unmountAll { [self] url, error in
+          let connection = connections.connections.first {
+            fileSystem?.mounted($0)?.url.standardizedFileURL == url.standardizedFileURL
+          }
+          failures.append(QuitFailure.Location(
+            id: connection?.id.uuidString ?? url.absoluteString,
+            name: connection?.name ?? url.lastPathComponent,
+            reason: QuitFailure.reason(for: error)))
+        }
+        try await connections.ejectOwnedVolumes { [self] connection, error in
+          logger.error("退出时推出失败 id=\(connection.id.uuidString, privacy: .public) \(ErrorDiagnostics.summary(error), privacy: .public)")
+          failures.append(QuitFailure.Location(
+            id: connection.id.uuidString, name: connection.name,
+            reason: QuitFailure.reason(for: error)))
+        }
+      }
       networkMonitor.cancel()
       if !options.isDemo { discovery.stop() }
       recovery.stop()
@@ -327,10 +362,8 @@ import UserNotifications
     } catch {
       operations.resume()
       if started && !options.isDemo { recovery.start() }
-      logger.error("退出前推出失败：\(HumanError.detail(error), privacy: .public)")
-      presentOperationAlert(
-        title: L("无法退出 Kayoi"),
-        message: L("请先关闭正在使用这些位置的文件，然后重试退出。") + "\n" + HumanError.detail(error))
+      logger.error("退出前推出失败：\(ErrorDiagnostics.summary(error), privacy: .public)")
+      quitFailure = QuitFailure(locations: failures, reason: QuitFailure.reason(for: error))
       return false
     }
   }

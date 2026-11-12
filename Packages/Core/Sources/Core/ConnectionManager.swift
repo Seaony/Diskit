@@ -320,7 +320,7 @@ public enum ConnectionState: Equatable, Sendable {
     }
   }
 
-  public func ejectOwnedVolumes() async throws {
+  public func ejectOwnedVolumes(onFailure: ((Connection, Error) -> Void)? = nil) async throws {
     var failure: Error?
     for (id, url) in ownedMounts {
       guard let connection = connections.first(where: { $0.id == id }), connection.kind != .smb
@@ -336,6 +336,7 @@ public enum ConnectionState: Equatable, Sendable {
         ownedMounts.removeValue(forKey: id)
         states[id] = .disconnected
       } catch {
+        onFailure?(connection, error)
         recordDetailedError(error, for: connection)
         if failure == nil { failure = error }
       }

@@ -7019,22 +7019,6 @@
         }
       }
     },
-    "请先关闭正在使用这些位置的文件，然后重试退出。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Close files using these locations, then try quitting again."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请先关闭正在使用这些位置的文件，然后重试退出。"
-          }
-        }
-      }
-    },
     "请先在系统设置中启用 Kayoi 文件系统扩展。": {
       "localizations": {
         "en": {
@@ -7111,6 +7095,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "填写服务器共享出来的文件夹路径，例如 /volume/share。"
+          }
+        }
+      }
+    },
+    "仍然退出": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Anyway"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然退出"
+          }
+        }
+      }
+    },
+    "仍然退出会跳过尚未完成的推出。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitting anyway will skip ejecting any remaining locations."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仍然退出会跳过尚未完成的推出。"
           }
         }
       }

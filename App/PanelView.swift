@@ -60,6 +60,17 @@ struct PanelView: View {
   var body: some View {
     VStack(spacing: 0) {
       header.gridProbe("header", area: "panel", edge: nil)
+      if let failure = model.quitFailure {
+        QuitFailureBanner(
+          failure: failure,
+          onCancel: model.cancelQuitAfterFailure,
+          onConfirm: {
+            if model.confirmQuitAfterFailure() { NSApplication.shared.terminate(nil) }
+          }
+        )
+        .padding(.horizontal, Space.lg)
+        .padding(.bottom, Space.sm)
+      }
       FileSystemExtensionBanner(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
         .padding(.horizontal, Space.lg)
       if PanelCopy.showsEmptyState(savedCount: model.connections.connections.count, hasLoadError: (model.demoSetupError ?? model.connections.loadError) != nil) {

@@ -8,6 +8,8 @@ import Testing
   var parameters: [UUID: [String: String]] = [:]
   var mountedIDs: [UUID] = []
   var unmountedURLs: [URL] = []
+  var unmountAttempts: [URL] = []
+  var unmountFailures: [URL: Error] = [:]
   var unmountFailure: Error?
 
   func seed(_ connection: Connection) -> MountedShare {
@@ -23,6 +25,8 @@ import Testing
     return seed(connection).url
   }
   func unmount(_ url: URL) async throws {
+    unmountAttempts.append(url)
+    if let error = unmountFailures[url] { throw error }
     if let unmountFailure { throw unmountFailure }
     unmountedURLs.append(url)
     volumes = volumes.filter { $0.value.url != url }
@@ -96,6 +100,49 @@ import Testing
   #expect(fixture.service.mounted(webdav) == nil)
   try await manager.ejectOwnedVolumes()
   #expect(fixture.service.unmountedURLs.count == 2)
+}
+
+@Test @MainActor
+func fileSystemQuitReportsEachFailedConnectionAndPreservesTheOriginalError() async throws {
+  let fixture = FileSystemMountFixture()
+  defer { fixture.clean() }
+  let first = Connection(kind: .androidUSB, name: "失败手机")
+  let second = Connection(kind: .webdavHTTPS, name: "失败共享")
+  let success = Connection(kind: .quark, name: "成功位置")
+  let smb = Connection(kind: .smb, name: "保留共享")
+  let preexisting = Connection(kind: .s3, name: "原有位置")
+  let manager = try fixture.manager(connections: [first, second, success, smb, preexisting])
+  _ = fixture.service.seed(preexisting)
+  for connection in [first, second, success, smb] { await manager.connectIfNeeded(connection) }
+  let firstURL = try #require(fixture.service.mounted(first)).url
+  let secondURL = try #require(fixture.service.mounted(second)).url
+  fixture.service.unmountFailures = [firstURL: QuitCallbackFailure.phone,
+                                     secondURL: QuitCallbackFailure.share]
+  var failures: [(Connection, Error)] = []
+
+  do {
+    try await manager.ejectOwnedVolumes { connection, error in
+      #expect(fixture.service.unmountAttempts.last == fixture.service.mounted(connection)?.url)
+      failures.append((connection, error))
+    }
+    Issue.record("存在推出失败时必须抛出原始错误")
+  } catch {
+    let original = try #require(error as? QuitCallbackFailure)
+    let firstFailure = try #require(failures.first?.1 as? QuitCallbackFailure)
+    #expect(original == firstFailure)
+  }
+  #expect(Set(failures.map { $0.0.id }) == [first.id, second.id])
+  #expect(failures.count == 2)
+  #expect(failures.first { $0.0.id == first.id }?.1 as? QuitCallbackFailure == .phone)
+  #expect(failures.first { $0.0.id == second.id }?.1 as? QuitCallbackFailure == .share)
+  #expect(fixture.service.unmountAttempts.count == 3)
+  #expect(fixture.service.mounted(success) == nil)
+  #expect(fixture.service.mounted(smb) != nil)
+  #expect(fixture.service.mounted(preexisting) != nil)
+}
+
+private enum QuitCallbackFailure: Error, Equatable {
+  case phone, share
 }
 
 @Test @MainActor

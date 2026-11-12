@@ -1,5 +1,6 @@
 import AppKit
 import Core
+import CoreTestSupport
 import Foundation
 import Synchronization
 import Testing
@@ -30,7 +31,7 @@ import UserNotifications
       filesystemID: Data(connection.id.uuidString.utf8), availableBytes: 4096)
   }
 
-  func model(connections: [Connection]) throws -> AppModel {
+  func model(connections: [Connection], systemMount: (any SMBServing)? = nil) throws -> AppModel {
     saved = connections
     try ConnectionRepository(location: location).save(connections)
     var operations = FileSystemMountService.Operations()
@@ -73,7 +74,7 @@ import UserNotifications
       notify: { [self] in notifications.append($0) })
     let dependencies = AppModelDependencies(
       location: location, secrets: secrets, preferences: preferences,
-      smb: RoutingMountService(system: DemoMountService(delay: {}), fileSystem: fileSystem),
+      smb: RoutingMountService(system: systemMount ?? DemoMountService(delay: {}), fileSystem: fileSystem),
       httpTransport: EditorLoginHTTP { _ in throw RemoteError.unsupported },
       updates: UpdateController(isDemo: true), system: system, fileSystem: fileSystem)
     let model = AppModel(options: RuntimeOptions(environment: [:]), dependencies: dependencies)
@@ -132,7 +133,13 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   #expect(await model.finishQuitting() == false)
   #expect(!model.operations.isStopping)
   #expect(harness.entries.count == 1)
-  #expect(harness.alerts.last?.title == L("无法退出 Kayoi"))
+  #expect(model.quitFailure?.locations.first?.name == connection.name)
+  #expect(model.quitFailure?.reason.isEmpty == false)
+  #expect(harness.alerts.isEmpty)
+  model.cancelQuitAfterFailure()
+  #expect(model.quitFailure == nil)
+  #expect(!model.operations.isStopping)
+  #expect(!model.confirmQuitAfterFailure())
 
   harness.unmountFailure = nil
   let ejected = model.operations.start(connectionID: connection.id) {
@@ -150,6 +157,162 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   model.prepareToQuit()
   #expect(await model.finishQuitting())
   #expect(harness.entries.isEmpty)
+}
+
+@MainActor @Test func fsAppModelUnknownReadQuitFailurePersistsWithUnderlyingReason() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let connection = Connection(kind: .androidUSB, name: "断线手机", openInFinderAfterMount: false)
+  let model = try harness.model(connections: [connection])
+  await model.toggleConnection(connection)
+  #expect(harness.mounts == 1)
+  #expect(model.connections.mountedCount == 1)
+  let mountedPaths = harness.entries.map(\.path)
+  let mountedState = model.connections.states[connection.id]
+  let underlying = NSError(domain: NSPOSIXErrorDomain, code: Int(POSIXErrorCode.EIO.rawValue),
+                           userInfo: [NSLocalizedDescriptionKey: "设备读写失败"])
+  let failure = NSError(domain: NSCocoaErrorDomain, code: 256,
+                        userInfo: [NSLocalizedDescriptionKey: "无法读取卷根目录",
+                                   NSUnderlyingErrorKey: underlying])
+  harness.unmountFailure = failure
+
+  model.prepareToQuit()
+  #expect(await model.finishQuitting() == false)
+  let pendingFailure = model.quitFailure
+  #expect(pendingFailure != nil)
+  #expect(pendingFailure?.locations.count == 1)
+  #expect(pendingFailure?.locations.first?.id == connection.id.uuidString)
+  #expect(pendingFailure?.locations.first?.name == connection.name)
+  for reason in [pendingFailure?.reason, pendingFailure?.locations.first?.reason] {
+    #expect(reason?.contains(failure.localizedDescription) == true)
+    #expect(reason?.contains(underlying.localizedDescription) == true)
+    #expect(reason?.contains(L("请先关闭正在使用这些位置的文件，然后重试退出。")) != true)
+  }
+  #expect(!harness.alerts.contains {
+    $0.message.contains(L("请先关闭正在使用这些位置的文件，然后重试退出。"))
+  })
+
+  await Task.yield()
+  model.connections.refreshMounts()
+  #expect(model.quitFailure == pendingFailure)
+  #expect(harness.unmounts == 1)
+  #expect(harness.entries.map(\.path) == mountedPaths)
+  #expect(model.connections.states[connection.id] == mountedState)
+  #expect(model.connections.mountedCount == 1)
+}
+
+@MainActor @Test func fsAppModelConfirmedQuitWaitsForCleanupAndSkipsEjectionOnlyOnce() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let connection = fsAppModelConnection(.androidUSB)
+  let model = try harness.model(connections: [connection])
+  #expect(!model.confirmQuitAfterFailure())
+  await model.toggleConnection(connection)
+  let mountedPaths = harness.entries.map(\.path)
+  let mountedState = model.connections.states[connection.id]
+  let writes = harness.location.dataDirectory.appending(path: "FileSystemCache")
+    .appending(path: connection.id.uuidString).appending(path: "Writes")
+  try FileManager.default.createDirectory(at: writes, withIntermediateDirectories: true)
+  let staged = writes.appending(path: "pending.data")
+  let contents = Data("未上传内容".utf8)
+  try contents.write(to: staged)
+  harness.unmountFailure = NSError(domain: NSCocoaErrorDomain, code: 256,
+                                  userInfo: [NSLocalizedDescriptionKey: "无法读取卷根目录"])
+  model.prepareToQuit()
+  #expect(await model.finishQuitting() == false)
+  #expect(harness.unmounts == 1)
+  #expect(model.quitFailure != nil)
+  #expect(model.confirmQuitAfterFailure())
+  #expect(model.quitFailure == nil)
+  #expect(!model.confirmQuitAfterFailure())
+
+  let started = TestEvent()
+  let blocked = TestEvent()
+  let cleaning = TestEvent()
+  var cleanup: CheckedContinuation<Void, Never>?
+  var cleaned = false
+  defer { cleanup?.resume() }
+  let operation = model.operations.start {
+    started.signal()
+    do { try await blocked.wait() } catch {
+      await withCheckedContinuation {
+        cleanup = $0
+        cleaning.signal()
+      }
+      cleaned = true
+    }
+  }
+  try await started.wait()
+  model.prepareToQuit()
+  try await cleaning.wait()
+  let joining = TestEvent()
+  let finished = TestEvent()
+  let quitting = Task { @MainActor in
+    joining.signal()
+    let result = await model.finishQuitting()
+    finished.signal()
+    return result
+  }
+  try await joining.wait()
+  #expect(!finished.isSignaled)
+  #expect(!cleaned)
+  cleanup?.resume()
+  cleanup = nil
+  #expect(await quitting.value)
+  await operation.value
+  #expect(cleaned)
+  #expect(model.operations.isStopping)
+  #expect(harness.unmounts == 1)
+  #expect(harness.entries.map(\.path) == mountedPaths)
+  #expect(model.connections.states[connection.id] == mountedState)
+  #expect(try Data(contentsOf: staged) == contents)
+  #expect(harness.alerts.isEmpty)
+
+  model.prepareToQuit()
+  #expect(await model.finishQuitting() == false)
+  #expect(harness.unmounts == 2)
+  #expect(model.quitFailure != nil)
+  #expect(harness.entries.map(\.path) == mountedPaths)
+  #expect(try Data(contentsOf: staged) == contents)
+}
+
+@MainActor @Test func fsAppModelSystemOwnedQuitFailurePreservesMountedShare() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let calls = Mutex(0)
+  let injectedFailure = Mutex<NSError?>(nil)
+  let systemMount = DemoMountService(delay: {
+    calls.withLock { $0 += 1 }
+    if let failure = injectedFailure.withLock({ $0 }) { throw failure }
+  })
+  let connection = Connection(kind: .nfs, name: "系统共享", openInFinderAfterMount: false)
+  let model = try harness.model(connections: [connection], systemMount: systemMount)
+  await model.toggleConnection(connection)
+  let mounted = try #require(systemMount.mounted(connection))
+  let mountedState = model.connections.states[connection.id]
+  let previousCalls = calls.withLock { $0 }
+  let failure = NSError(domain: NSPOSIXErrorDomain, code: Int(POSIXErrorCode.EIO.rawValue),
+                        userInfo: [NSLocalizedDescriptionKey: "系统卷读取失败"])
+  injectedFailure.withLock { $0 = failure }
+
+  model.prepareToQuit()
+  #expect(await model.finishQuitting() == false)
+  #expect(model.quitFailure?.locations.count == 1)
+  #expect(model.quitFailure?.locations.first?.id == connection.id.uuidString)
+  #expect(model.quitFailure?.locations.first?.name == connection.name)
+  #expect(model.quitFailure?.locations.first?.reason == failure.localizedDescription)
+  #expect(model.quitFailure?.reason == failure.localizedDescription)
+  #expect(calls.withLock { $0 } == previousCalls + 1)
+  #expect(harness.unmounts == 0)
+  #expect(systemMount.mounted(connection) == mounted)
+  #expect(model.connections.states[connection.id] == mountedState)
+  #expect(harness.alerts.isEmpty)
+
+  model.cancelQuitAfterFailure()
+  injectedFailure.withLock { $0 = nil }
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+  #expect(systemMount.mounted(connection) == nil)
 }
 
 @MainActor @Test func fsAppModelDistributedLoginExpiryOnlyMarksSavedCloudAndSurvivesRefresh() async throws {

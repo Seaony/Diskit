@@ -183,11 +183,16 @@ enum FileSystemMountError: Error, LocalizedError {
     }
   }
 
-  func unmountAll() async throws {
+  func unmountAll(onFailure: ((URL, Error) -> Void)? = nil) async throws {
     try await waitForPendingMounts()
     var firstError: Error?
     for volume in mountedVolumes() {
-      do { try await unmount(volume.url) } catch { if firstError == nil { firstError = error } }
+      do {
+        try await unmount(volume.url)
+      } catch {
+        onFailure?(volume.url, error)
+        if firstError == nil { firstError = error }
+      }
     }
     if let firstError { throw firstError }
   }
@@ -321,7 +326,6 @@ enum FileSystemMountError: Error, LocalizedError {
   }
 
   private func log(_ error: Error, operation: String, path: String = "") {
-    let value = error as NSError
-    logger.error("\(operation, privacy: .public) path=\(path, privacy: .public) domain=\(value.domain, privacy: .public) code=\(value.code)")
+    logger.error("\(operation, privacy: .public) path=\(path, privacy: .public) \(ErrorDiagnostics.summary(error), privacy: .public)")
   }
 }

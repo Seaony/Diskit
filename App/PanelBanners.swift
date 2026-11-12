@@ -1,5 +1,52 @@
 import SwiftUI
 
+struct QuitFailureBanner: View {
+  let failure: QuitFailure
+  let onCancel: () -> Void
+  let onConfirm: () -> Void
+
+  var body: some View {
+    HStack(alignment: .top, spacing: Space.sm) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .foregroundStyle(KayoiTheme.error)
+        .frame(width: Space.lg)
+        .accessibilityHidden(true)
+      VStack(alignment: .leading, spacing: Space.sm) {
+        Text(L("无法退出 Kayoi"))
+          .font(.subheadline.weight(.semibold))
+        if failure.locations.isEmpty {
+          Text(failure.reason)
+            .font(.caption)
+            .textSelection(.enabled)
+        } else {
+          ForEach(failure.locations, id: \.id) { location in
+            VStack(alignment: .leading, spacing: Space.xs) {
+              Text(location.name).font(.caption.weight(.semibold))
+              Text(location.reason).font(.caption).textSelection(.enabled)
+            }
+            .accessibilityElement(children: .combine)
+          }
+        }
+        Text(L("仍然退出会跳过尚未完成的推出。"))
+          .font(.caption)
+        HStack(spacing: Space.sm) {
+          Button(L("取消"), action: onCancel)
+          Button(L("仍然退出"), role: .destructive, action: onConfirm)
+        }
+        .buttonStyle(FlatButtonStyle())
+      }
+      .foregroundStyle(KayoiTheme.error)
+      .fixedSize(horizontal: false, vertical: true)
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(Space.md)
+    .background(
+      KayoiTheme.errorBackground,
+      in: RoundedRectangle(cornerRadius: Radius.row, style: .continuous))
+    .accessibilityElement(children: .contain)
+  }
+}
+
 struct PanelDiscoveryBanner: View {
   let message: String
   let permissionDenied: Bool
