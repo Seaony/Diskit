@@ -2,6 +2,8 @@
 export DISKIT_BUILD_CONFIG ?= Config/Validation.xcconfig
 SIGN_IDENTITY ?= Apple Development: seaony@outlook.com
 SIGN_TIMESTAMP ?= auto
+RELEASE_IDENTITY ?= Developer ID Application: SHEN WANG (JJJKGPY7T7)
+RELEASE_APP = build/DerivedData/Build/Products/Release/Diskit.app
 
 gen:
 	xcodegen generate
@@ -13,12 +15,15 @@ build: gen
 	xcodebuild -project Diskit.xcodeproj -scheme Diskit -configuration Debug -derivedDataPath build/DerivedData build -allowProvisioningUpdates -onlyUsePackageVersionsFromResolvedFile
 	codesign --verify --deep --strict --verbose=1 build/DerivedData/Build/Products/Debug/Diskit.app
 
+# 正式包用 Developer ID 签名：FSKit 扩展和共享钥匙串的权限靠 Config/Profiles 里的描述文件授权
+release: SIGN_IDENTITY = $(RELEASE_IDENTITY)
+release: SIGN_TIMESTAMP = required
 release: gen dev-tool
 	xcodebuild -project Diskit.xcodeproj -scheme Diskit -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/DerivedData ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
-	# FSKit 扩展还只是验证用的假数据卷，正式扩展做完前不进安装包
-	rm -rf build/DerivedData/Build/Products/Release/Diskit.app/Contents/Extensions
-	python3 scripts/sign-app.py build/DerivedData/Build/Products/Release/Diskit.app --identity "$(SIGN_IDENTITY)" --timestamp "$(SIGN_TIMESTAMP)"
-	scripts/validate-release.sh build/DerivedData/Build/Products/Release/Diskit.app
+	python3 scripts/sign-app.py $(RELEASE_APP) --identity "$(SIGN_IDENTITY)" --timestamp "$(SIGN_TIMESTAMP)" \
+		--profile .=Config/Profiles/Diskit.provisionprofile:App/Diskit.entitlements \
+		--profile Contents/Extensions/DiskitFS.appex=Config/Profiles/DiskitFS.provisionprofile:FSExtension/DiskitFS.entitlements
+	scripts/validate-release.sh $(RELEASE_APP)
 
 test: gen
 	./scripts/check-strings.sh
