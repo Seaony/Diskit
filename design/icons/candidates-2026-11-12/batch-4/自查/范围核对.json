@@ -1,0 +1,43 @@
+{
+  "unchanged": {
+    "src/engine.js": true,
+    "src/app.js": true,
+    "manifest.json": true,
+    "scripts/static-dom.mjs": true,
+    "scripts/check-native.mjs": true,
+    "scripts/export-native.mjs": true
+  },
+  "deviceSVGsUnchanged": [
+    "androidUSB",
+    "androidWiFi",
+    "smb",
+    "nfs",
+    "webdav",
+    "ricohGR",
+    "cameraUSB"
+  ],
+  "serviceBasesUnchanged": [
+    "aliyunDrive",
+    "quark",
+    "baiduDrive",
+    "drive115",
+    "drive123",
+    "oneDrive",
+    "googleDrive",
+    "dropbox",
+    "ucDrive",
+    "tianyiDrive",
+    "mobileCloud",
+    "thunderDrive",
+    "pikPak",
+    "lanzou",
+    "s3",
+    "cloudflareR2",
+    "aliyunOSS",
+    "tencentCOS",
+    "qiniuKodo",
+    "minIO",
+    "backblazeB2"
+  ],
+  "method": "移除标记后，前后静态SVG逐字节一致；设备SVG完整逐字节一致"
+}

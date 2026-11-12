@@ -37,3 +37,7 @@ Dia 不提供本工具所需的 headless DOM 导出接口，所以本地 `--nati
 静态检查覆盖 24、28、56 像素、七种技能色板、浅黄色强调色与浅深背景。截图和 `checks.json` 位于 `docs/screenshots/v0.2/icons/`。最终 28/40/48/64pt 应用内排版、运行时外观切换、Dock/Finder 显示由统一 Computer Use 验收完成。
 
 `LICENSE` 与复制的工具文件版权声明保留；没有复制技能说明文档。
+
+## 候选稿
+
+`candidates-2026-11-12/` 是这次重画类型图标的五批候选：batch-1 是生图的轻 3D 版，batch-2 是各家换物件造型的版本，这两批都没采用；batch-3 起保留云和桶的底子、把字母换成各家标志，batch-4 放大标志，batch-5 重画了 OneDrive、天翼和蓝奏，是定稿。

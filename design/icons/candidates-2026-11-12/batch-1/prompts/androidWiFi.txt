@@ -1,0 +1,10 @@
+Use case: stylized-concept
+Asset type: macOS app location-type icon candidate.
+Input image: Attached folder-peek.png is ONLY a style reference for thick volume, saturated color energy and soft matte rendering. Learn its style and palette, DO NOT draw a dinosaur or folder, DO NOT reuse its composition or white sticker border.
+Style/medium: original rounded thick playful toy-polymer object, light 3D, simple solid forms, subtle smooth gradients, very weak reflections; no outlines, no white edging.
+Composition/framing: exactly 1024x1024 square, genuinely transparent alpha background, only one centered compact assembly. Entire subject maximum dimension about 80% of canvas (approximately 800 px), complete generous safe margins. Near frontal orthographic slight 3/4 view, top and right side slightly visible.
+Lighting: soft upper-left illumination. Only internal shading and occlusion; no floor shadow and no background shadow.
+Small-scale clarity: two or three large bold structures, recognizable at 32px and 24px; no tiny controls, lines, markings, buttons or fine texture.
+Constraints: no text, letters, digits, logos, watermark, face, dinosaur, folder, generic cloud, pedestal, base plate, border, rounded-square container, scene or opaque background. No glass, mirror metal, photographic realism or strong specular highlights. Preserve genuine transparency.
+Primary request: A chunky upright vivid-blue smartphone with a simple blank deep-blue inset screen. A large vivid turquoise-green Wi-Fi symbol sits just above and to the upper right of the phone: exactly two thick rounded radiating arc segments and one bold round dot, separated clearly. Make the arcs large, physical matte toy shapes, not screen graphics. No USB cable. Keep the whole assembly compact; phone slightly left, wireless fan dominates upper right.
+Color palette: saturated electric blue phone, deeper cobalt screen, vivid turquoise-green wireless waves.

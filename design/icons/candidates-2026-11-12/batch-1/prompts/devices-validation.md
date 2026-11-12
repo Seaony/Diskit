@@ -1,0 +1,11 @@
+# 设备与协议七张验收
+- 共7张最终PNG：androidUSB、androidWiFi、smb、nfs、webdav、ricohGR、cameraUSB。
+- 全部1024×1024、RGBA、alpha范围0–255；按alpha≥32主体边界计算，最大边均819px（79.98%）。数值见devices-validation.json。
+- 已实际查看devices-alpha-check.png：每张都用Pillow alpha_composite叠在浅底#f1f3f5和深底#20232b，查看300px及64/32/24px，未见残底、白边、外框、可见彩色散点或背景阴影。
+- 透明RGBA的直接预览会夸大低alpha边缘颜色，本次按真实alpha合成后的可见效果判断，不手工修改图像alpha或去色。
+- USB手机：青绿手机、蓝屏和金黄短粗USB-C线；采用第二版。Wi-Fi手机：亮蓝手机和大青绿无线波；采用首版，重生的第二版未选用并留在variants。
+- SMB：桌面显示器和鲜黄共享驱动单元。NFS：胖服务器和金黄T形网络分叉。WebDAV：亮蓝小地球、金黄粗经纬和单一青绿传输箭头；三者轮廓不同。
+- GR与通用相机：GR低矮平顶黑机身、蓝镜头和红色顶钮；USB相机为黄/珊瑚色胖单反、紫蓝镜头和青绿USB线。两者形体与颜色都有区别。
+- 最弱项：ricohGR。深底24px下黑色机身轮廓对比偏弱，且简化后主要表达口袋相机，GR专属性弱于带品牌字样的实机；未增加字母或商标来掩盖这一限制。
+- 硬伤结论：实际使用合成效果没有发现必须重生的硬伤。androidUSB和androidWiFi各额外生成一次，均发生在直接RGBA预览问题更正前；其余各一次。没有超过每张最多重生一次。
+- 仅输出桌面候选、提示词、官方调研、来源和验收材料；未修改App、Assets或代码，未提交，未操作GUI/Dia，未触碰Debug进程。

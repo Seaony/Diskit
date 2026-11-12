@@ -1,0 +1,10 @@
+Use case: stylized-concept.
+Create one original 1024 × 1024 transparent-background macOS location-type icon.
+REFERENCE IMAGE: use folder-peek.png ONLY for its cheerful saturated color energy, rounded thick forms, gentle gradients and matte lightweight 3D toy-polymer rendering. Do not reuse its creature, face, silhouette, folder, white border or background.
+COMPOSITION: exactly one coherent small object, centered, maximum subject dimension about 80% of canvas, generous transparent padding. Near-frontal mild orthographic three-quarter view with a little top and right side visible. Soft upper-left lighting. Internal form/occlusion shading only, absolutely no floor shadow.
+MATERIAL: smooth matte toy polymer, plump thick rounded edges, subtle soft gradients, almost no specular highlight. No outlines. Simple bold silhouette, no fine details, readable at 24 px.
+BACKGROUND: genuine transparent alpha, no backdrop, no ground plane, no base, no plate, no enclosing rounded square, no border.
+FORBIDDEN: any letters, digits, words, logo lettering, watermark, dinosaur, folder, cloud, thin wire, metallic/glass reflection, extra floating decorations.
+This is a new original physical-object illustration, not a flat copied brand logo.
+SUBJECT: a compact toy sailboat, bright saturated blue rounded hull, one big full triangular curved royal-blue sail on a thick cyan mast, and one smaller warm-yellow triangular jib. No sail numbers, no insignia, no white lettering. The big blue sail has a soft sweeping belly and curled tip, while the underside of the hull has a single broad turquoise curved wave-like inset, recalling the blue swoosh and ocean-wave motion of the 115 identity without drawing its digit. The yellow sail occupies about one quarter of the object. Boat only, floating in transparent space: no water, no floor, no base, no wave scenery. A simple bold asymmetrical triangular silhouette.
+透明负空间完全干净，无浮点碎屑、彩边和光晕，边缘准确干净，无背景残余。CRITICAL alpha quality: all negative space fully transparent and clean, no isolated color pixels, no colored fringe, no halo, no background residue; use crisp clean antialiased object edges.

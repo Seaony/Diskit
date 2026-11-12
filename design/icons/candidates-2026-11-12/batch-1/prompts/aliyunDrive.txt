@@ -1,0 +1,10 @@
+Use case: stylized-concept.
+Create one original 1024 × 1024 transparent-background macOS location-type icon.
+REFERENCE IMAGE: use folder-peek.png ONLY for its cheerful saturated color energy, rounded thick forms, gentle gradients and matte lightweight 3D toy-polymer rendering. Do not reuse its creature, face, silhouette, folder, white border or background.
+COMPOSITION: exactly one coherent small object, centered, maximum subject dimension about 80% of canvas, generous transparent padding. Near-frontal mild orthographic three-quarter view with a little top and right side visible. Soft upper-left lighting. Internal form/occlusion shading only, absolutely no floor shadow.
+MATERIAL: smooth matte toy polymer, plump thick rounded edges, subtle soft gradients, almost no specular highlight. No outlines. Simple bold silhouette, no fine details, readable at 24 px.
+BACKGROUND: genuine transparent alpha, no backdrop, no ground plane, no base, no plate, no enclosing rounded square, no border.
+FORBIDDEN: any letters, digits, words, logo lettering, watermark, dinosaur, folder, cloud, thin wire, metallic/glass reflection, extra floating decorations.
+This is a new original physical-object illustration, not a flat copied brand logo.
+SUBJECT: a compact playful orbital spinning-top toy. One thick open tilted torus hoop in saturated periwinkle cobalt blue, its right-front end rounded and disconnected by a visible small gap; a plump violet spindle runs diagonally through its center with a small cyan top cap and warm yellow rounded bottom point. The hoop wraps around the spindle like a gyroscope, but use only ONE hoop, no feet and no stand. The outer hoop dominates the silhouette and feels thick and soft. This borrows the blue-violet open circular orbit of the official Aliyun Drive identity without replicating its 2D mark. Keep a large simple hollow center and original toy construction.
+

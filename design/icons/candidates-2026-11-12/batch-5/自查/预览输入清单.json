@@ -1,0 +1,848 @@
+{
+  "generatedAt": "2026-11-12T07:13:09.805Z",
+  "readyFile": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/READY",
+  "inputs": [
+    {
+      "type": "androidUSB",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/androidUSB.svg",
+      "bytes": 3496,
+      "mtime": "2026-11-12T07:12:06.354Z",
+      "sha256": "ffe5b81ff6e2fd4a7ad1974c4f4cc979858bab1ddc5d5fddcfe21c823012f230"
+    },
+    {
+      "type": "androidUSB",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/androidUSB.png",
+      "bytes": 78231,
+      "mtime": "2026-11-12T07:12:36.468Z",
+      "sha256": "17a8813b077fbec20dfc62dbf9adb64191c5f44813e1c31572db30eac1d2a219"
+    },
+    {
+      "type": "androidWiFi",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/androidWiFi.svg",
+      "bytes": 3509,
+      "mtime": "2026-11-12T07:12:06.389Z",
+      "sha256": "9efd45ee3856e0d368e66127abaad430bb1b500d759a3b2fe18474910f462344"
+    },
+    {
+      "type": "androidWiFi",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/androidWiFi.png",
+      "bytes": 77720,
+      "mtime": "2026-11-12T07:12:38.424Z",
+      "sha256": "3b40a43615f3602a5b47f7a4341ee23ff5e0e7124c4848842004c53d4df61fa6"
+    },
+    {
+      "type": "smb",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/smb.svg",
+      "bytes": 3872,
+      "mtime": "2026-11-12T07:12:06.424Z",
+      "sha256": "a4045e96a57efed18f8b26b51f6e94775b99eacc5dcf409e665295274473975d"
+    },
+    {
+      "type": "smb",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/smb.png",
+      "bytes": 63566,
+      "mtime": "2026-11-12T07:12:55.057Z",
+      "sha256": "4cae63986795a7b1ed17efcbb45abfe750985e4b44a00aad1a1ef5d68d514a31"
+    },
+    {
+      "type": "ricohGR",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/ricohGR.svg",
+      "bytes": 3835,
+      "mtime": "2026-11-12T07:12:06.432Z",
+      "sha256": "edaeed6907a0f48c30981c6eea83e20ddbb3e510e8fe22a2dfa3184ebb220ee2"
+    },
+    {
+      "type": "ricohGR",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/ricohGR.png",
+      "bytes": 79627,
+      "mtime": "2026-11-12T07:12:54.284Z",
+      "sha256": "f2500208871674c1cfad93bde7f5154093425686e358968f056fd4f9f47d25f4"
+    },
+    {
+      "type": "cameraUSB",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/cameraUSB.svg",
+      "bytes": 4330,
+      "mtime": "2026-11-12T07:12:06.441Z",
+      "sha256": "0d0831528fd247efa695fc7bd4c7e9f7dd331b81fb533e46b67cf8e83ca3dc81"
+    },
+    {
+      "type": "cameraUSB",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/cameraUSB.png",
+      "bytes": 81775,
+      "mtime": "2026-11-12T07:12:41.943Z",
+      "sha256": "0474974f449a7d67c1d7babc03616188a5d1634758c9d2298dcbaa25aafd1ac9"
+    },
+    {
+      "type": "webdav",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/webdav.svg",
+      "bytes": 3383,
+      "mtime": "2026-11-12T07:12:06.489Z",
+      "sha256": "751fd3ffb21d8a0d3e6776bafa86475c5be343f1efbdaf47b589c65e5dbbbfba"
+    },
+    {
+      "type": "webdav",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/webdav.png",
+      "bytes": 80832,
+      "mtime": "2026-11-12T07:12:57.312Z",
+      "sha256": "8f6072b4df1af9451d08d8134cd5f6844303cd72451fd9d0a2b53f19b876d700"
+    },
+    {
+      "type": "nfs",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/nfs.svg",
+      "bytes": 3265,
+      "mtime": "2026-11-12T07:12:06.491Z",
+      "sha256": "50bdba8d5a33910f4c9e57f5f6df25e40d2bb4f1490219d8659209a49ea07550"
+    },
+    {
+      "type": "nfs",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/nfs.png",
+      "bytes": 67251,
+      "mtime": "2026-11-12T07:12:51.493Z",
+      "sha256": "4d086884b810cc0dfa4ec930272887cab1ba41c66b6cfdf6c815631902f31190"
+    },
+    {
+      "type": "aliyunDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/aliyunDrive.svg",
+      "bytes": 4155,
+      "mtime": "2026-11-12T07:12:06.493Z",
+      "sha256": "b21a02d121f3c83a4377bf469b0a0128271d6da918ca4905e66fdffdbd6dbeaa"
+    },
+    {
+      "type": "aliyunDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/aliyunDrive.png",
+      "bytes": 101729,
+      "mtime": "2026-11-12T07:12:30.222Z",
+      "sha256": "a989e7cae192a4cfc973dd0db53b2916d80181f1c5c191e06350b45e6ff5fdf5"
+    },
+    {
+      "type": "quark",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/quark.svg",
+      "bytes": 4010,
+      "mtime": "2026-11-12T07:12:06.498Z",
+      "sha256": "79f5021bccfb7f280b2923cd74766961b82625bd8aecf1b74cc0c39485c661ab"
+    },
+    {
+      "type": "quark",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/quark.png",
+      "bytes": 95219,
+      "mtime": "2026-11-12T07:12:53.980Z",
+      "sha256": "1f3572488b13458d587fc09b8d3ede9f39743fb70c52744b0bba014c290a275b"
+    },
+    {
+      "type": "baiduDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/baiduDrive.svg",
+      "bytes": 4476,
+      "mtime": "2026-11-12T07:12:06.503Z",
+      "sha256": "aca56a9529cb5b43fedf5bde99613594904f2e543a53c65280317d276e03558c"
+    },
+    {
+      "type": "baiduDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/baiduDrive.png",
+      "bytes": 97525,
+      "mtime": "2026-11-12T07:12:41.027Z",
+      "sha256": "110c3578a1807f091a74a4afec7ff253082abb9cd084b9bc718f1d9ad9e09fdf"
+    },
+    {
+      "type": "drive115",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/drive115.svg",
+      "bytes": 3817,
+      "mtime": "2026-11-12T07:12:06.508Z",
+      "sha256": "82ad507bc46457db301094c580f2faad6127afdf99c578eff9457d7dcb722724"
+    },
+    {
+      "type": "drive115",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/drive115.png",
+      "bytes": 87949,
+      "mtime": "2026-11-12T07:12:46.394Z",
+      "sha256": "e4b885ea4b0edc59cd1f8464e3aceede3c6fca23366a36402b515cd0883cb640"
+    },
+    {
+      "type": "drive123",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/drive123.svg",
+      "bytes": 4139,
+      "mtime": "2026-11-12T07:12:06.512Z",
+      "sha256": "2ebafcf1e28e06f85b58ff63cd4ae533999da5649f021d4458196720672a9191"
+    },
+    {
+      "type": "drive123",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/drive123.png",
+      "bytes": 96321,
+      "mtime": "2026-11-12T07:12:47.532Z",
+      "sha256": "f82730b694ba2cb3ef89a1494aaf7a9cde4d90ccde1e1d79364c717bedf5ed43"
+    },
+    {
+      "type": "oneDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/oneDrive.svg",
+      "bytes": 3521,
+      "mtime": "2026-11-12T07:12:06.516Z",
+      "sha256": "6521eaec56e01ce2b4bb3756a84a2790a4c81964695326b613d7a43390d48a40"
+    },
+    {
+      "type": "oneDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/oneDrive.png",
+      "bytes": 85300,
+      "mtime": "2026-11-12T07:12:52.248Z",
+      "sha256": "7dd487eaf565c49014b857450f8b4f5e3fb3b7ec0613d06128f86c53ae0299d6"
+    },
+    {
+      "type": "googleDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/googleDrive.svg",
+      "bytes": 3632,
+      "mtime": "2026-11-12T07:12:06.519Z",
+      "sha256": "bcc86e763189bd8cded9fbcd8e6ac059e26ade673efef89517af3787bb2e470c"
+    },
+    {
+      "type": "googleDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/googleDrive.png",
+      "bytes": 99846,
+      "mtime": "2026-11-12T07:12:49.001Z",
+      "sha256": "089fc4f7c4cbbe10314e584bc8886de179c6bc40a97cd9115b0d14aa1cb7cd3c"
+    },
+    {
+      "type": "dropbox",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/dropbox.svg",
+      "bytes": 3561,
+      "mtime": "2026-11-12T07:12:06.521Z",
+      "sha256": "b45cc5e2b6728fb0cf85b5c8f0013088678b54a1d8a62b15259361a7a03a4855"
+    },
+    {
+      "type": "dropbox",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/dropbox.png",
+      "bytes": 94545,
+      "mtime": "2026-11-12T07:12:48.545Z",
+      "sha256": "75448a4b0458fb8bdd57f2cfe48491f56b400f821b6aff0499aa592e92b7efe4"
+    },
+    {
+      "type": "ucDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/ucDrive.svg",
+      "bytes": 4244,
+      "mtime": "2026-11-12T07:12:06.523Z",
+      "sha256": "3e909fb6e98a32a922a897c9b4eadc6ae1c09675324fd437874ba4da54e48bfc"
+    },
+    {
+      "type": "ucDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/ucDrive.png",
+      "bytes": 99528,
+      "mtime": "2026-11-12T07:12:57.031Z",
+      "sha256": "2927ea9f290f6720c571f62da492ea01b7d886c8c93cb4cd96b8e96a58ac56a9"
+    },
+    {
+      "type": "tianyiDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/tianyiDrive.svg",
+      "bytes": 3623,
+      "mtime": "2026-11-12T07:12:06.524Z",
+      "sha256": "4987f5ff8d9d391a8772122e01f3dc6ad2102cb9ef2962f24ddcd1dd083468d3"
+    },
+    {
+      "type": "tianyiDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/tianyiDrive.png",
+      "bytes": 92428,
+      "mtime": "2026-11-12T07:12:56.653Z",
+      "sha256": "addcee639c3349f329a7a0a6e60a1813156659f8f6aff6828b33386504368358"
+    },
+    {
+      "type": "mobileCloud",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/mobileCloud.svg",
+      "bytes": 3939,
+      "mtime": "2026-11-12T07:12:06.526Z",
+      "sha256": "037e5239d439e69d756b1e3cd3f333bf823bccf2a02262447ed554a61b8915c2"
+    },
+    {
+      "type": "mobileCloud",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/mobileCloud.png",
+      "bytes": 99127,
+      "mtime": "2026-11-12T07:12:51.025Z",
+      "sha256": "e0ac9d4a1cb9e04ba4a132172b2f835e91e4c17dcdba46d31d542a27768c1b4b"
+    },
+    {
+      "type": "thunderDrive",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/thunderDrive.svg",
+      "bytes": 3598,
+      "mtime": "2026-11-12T07:12:06.531Z",
+      "sha256": "87bc84cf07837bf4214ddcdee3ae4c70506d4a8742cc9a936f95762e031a6eba"
+    },
+    {
+      "type": "thunderDrive",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/thunderDrive.png",
+      "bytes": 89996,
+      "mtime": "2026-11-12T07:12:56.190Z",
+      "sha256": "e7f5553fb204cc7badf40094efa742d7d8df550df3d8e811fa382b089b622c62"
+    },
+    {
+      "type": "pikPak",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/pikPak.svg",
+      "bytes": 3889,
+      "mtime": "2026-11-12T07:12:06.535Z",
+      "sha256": "4e79a6d7bf5b29c06f2130f7d7a3e3518d075b6255558d1fa2d6b585f9d315bf"
+    },
+    {
+      "type": "pikPak",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/pikPak.png",
+      "bytes": 90536,
+      "mtime": "2026-11-12T07:12:52.915Z",
+      "sha256": "5a58a8d31e61213495915e38d9fcceeeb9e8d02cdad8a77963d7ef7cc161aed6"
+    },
+    {
+      "type": "lanzou",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/lanzou.svg",
+      "bytes": 3535,
+      "mtime": "2026-11-12T07:12:06.537Z",
+      "sha256": "31e781070b8f8be5fc1e47c4e9243f6d4c7975e4b4d8a151aaa319baa96a80e8"
+    },
+    {
+      "type": "lanzou",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/lanzou.png",
+      "bytes": 92267,
+      "mtime": "2026-11-12T07:12:49.633Z",
+      "sha256": "b50a4469b3c237c3dfdf75b3ff83dfb6fdc785084343d1c7fb6478968aca59a6"
+    },
+    {
+      "type": "s3",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/s3.svg",
+      "bytes": 3535,
+      "mtime": "2026-11-12T07:12:06.538Z",
+      "sha256": "3e4a7a3a824cacf6d5e5f36bd0cdccb2959572a00c2f63f9da78b2ffd646b75c"
+    },
+    {
+      "type": "s3",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/s3.png",
+      "bytes": 104183,
+      "mtime": "2026-11-12T07:12:54.732Z",
+      "sha256": "2ea41da8c33cd50cb62b65cd8c124a669a20e3761adfc04bbee27968cc4a6f74"
+    },
+    {
+      "type": "cloudflareR2",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/cloudflareR2.svg",
+      "bytes": 4655,
+      "mtime": "2026-11-12T07:12:06.541Z",
+      "sha256": "fecc09e1bf1cc2aa1c4601a535b7c8ba844fa96113b400e0fbab426c40ca7fac"
+    },
+    {
+      "type": "cloudflareR2",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/cloudflareR2.png",
+      "bytes": 93431,
+      "mtime": "2026-11-12T07:12:44.683Z",
+      "sha256": "8cc1f080e19ca9b710e299a855d2256a4ebd30df100401cbc44a9e90ddf55ef9"
+    },
+    {
+      "type": "aliyunOSS",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/aliyunOSS.svg",
+      "bytes": 3902,
+      "mtime": "2026-11-12T07:12:06.546Z",
+      "sha256": "8dda338a15483ac0fda74621c5de630c67b840763b0873506f12943ef5aca7f5"
+    },
+    {
+      "type": "aliyunOSS",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/aliyunOSS.png",
+      "bytes": 93971,
+      "mtime": "2026-11-12T07:12:33.472Z",
+      "sha256": "358c757e51ca505e4183e70dccf052412760edacf6e486111436416d627ba597"
+    },
+    {
+      "type": "tencentCOS",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/tencentCOS.svg",
+      "bytes": 3932,
+      "mtime": "2026-11-12T07:12:06.547Z",
+      "sha256": "28e5d40e17724ffb6ca65d2949510a4a38b235e93203f4a06ba66547634d11cb"
+    },
+    {
+      "type": "tencentCOS",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/tencentCOS.png",
+      "bytes": 99992,
+      "mtime": "2026-11-12T07:12:55.610Z",
+      "sha256": "d1ace2c5cc35a65732534069bad3acb789216e5f3c8abb9379b83559ae90065c"
+    },
+    {
+      "type": "qiniuKodo",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/qiniuKodo.svg",
+      "bytes": 3574,
+      "mtime": "2026-11-12T07:12:06.565Z",
+      "sha256": "8b9f740971a319644f6754e5d525e91fcaccd2edecc402227e78e8d3582c0aed"
+    },
+    {
+      "type": "qiniuKodo",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/qiniuKodo.png",
+      "bytes": 95124,
+      "mtime": "2026-11-12T07:12:53.475Z",
+      "sha256": "ffd56605ccff28af91eeb7c9e2f6fbd22faf5cde926998bf816090d521c1dd02"
+    },
+    {
+      "type": "minIO",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/minIO.svg",
+      "bytes": 3600,
+      "mtime": "2026-11-12T07:12:06.566Z",
+      "sha256": "e2a5b8806b39b67074ad2e54543953e388b507de4e250ffc455e641b1d174969"
+    },
+    {
+      "type": "minIO",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/minIO.png",
+      "bytes": 94249,
+      "mtime": "2026-11-12T07:12:50.391Z",
+      "sha256": "1fba50383e0c583e95c30d68c40cb8125c8291405fa414ea52c60f68075c6d30"
+    },
+    {
+      "type": "backblazeB2",
+      "ext": "svg",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/backblazeB2.svg",
+      "bytes": 4951,
+      "mtime": "2026-11-12T07:12:06.726Z",
+      "sha256": "8a346fd5fb7e84fa99070683e56c98b4655bf1858073a87d8d227789e12b0c22"
+    },
+    {
+      "type": "backblazeB2",
+      "ext": "png",
+      "file": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/backblazeB2.png",
+      "bytes": 101134,
+      "mtime": "2026-11-12T07:12:39.982Z",
+      "sha256": "ab6feacdac0bc9651fe8c007221a6ee99e418022588428ff33465424a6af7b73"
+    }
+  ],
+  "displayedTitles": [
+    {
+      "type": "androidUSB",
+      "title": "Android 手机",
+      "displayed": "Android 手机"
+    },
+    {
+      "type": "androidWiFi",
+      "title": "Android 手机（无线）",
+      "displayed": "Android 手机…"
+    },
+    {
+      "type": "smb",
+      "title": "SMB 共享",
+      "displayed": "SMB 共享"
+    },
+    {
+      "type": "ricohGR",
+      "title": "理光 GR IV",
+      "displayed": "理光 GR IV"
+    },
+    {
+      "type": "cameraUSB",
+      "title": "相机（USB）",
+      "displayed": "相机（USB）"
+    },
+    {
+      "type": "webdav",
+      "title": "WebDAV",
+      "displayed": "WebDAV"
+    },
+    {
+      "type": "nfs",
+      "title": "NFS",
+      "displayed": "NFS"
+    },
+    {
+      "type": "aliyunDrive",
+      "title": "阿里云盘",
+      "displayed": "阿里云盘"
+    },
+    {
+      "type": "quark",
+      "title": "夸克网盘",
+      "displayed": "夸克网盘"
+    },
+    {
+      "type": "baiduDrive",
+      "title": "百度网盘",
+      "displayed": "百度网盘"
+    },
+    {
+      "type": "drive115",
+      "title": "115 网盘",
+      "displayed": "115 网盘"
+    },
+    {
+      "type": "drive123",
+      "title": "123 云盘",
+      "displayed": "123 云盘"
+    },
+    {
+      "type": "oneDrive",
+      "title": "OneDrive",
+      "displayed": "OneDrive"
+    },
+    {
+      "type": "googleDrive",
+      "title": "Google Drive",
+      "displayed": "Google Drive"
+    },
+    {
+      "type": "dropbox",
+      "title": "Dropbox",
+      "displayed": "Dropbox"
+    },
+    {
+      "type": "ucDrive",
+      "title": "UC 网盘",
+      "displayed": "UC 网盘"
+    },
+    {
+      "type": "tianyiDrive",
+      "title": "天翼云盘",
+      "displayed": "天翼云盘"
+    },
+    {
+      "type": "mobileCloud",
+      "title": "移动云盘",
+      "displayed": "移动云盘"
+    },
+    {
+      "type": "thunderDrive",
+      "title": "迅雷云盘",
+      "displayed": "迅雷云盘"
+    },
+    {
+      "type": "pikPak",
+      "title": "PikPak",
+      "displayed": "PikPak"
+    },
+    {
+      "type": "lanzou",
+      "title": "蓝奏云",
+      "displayed": "蓝奏云"
+    },
+    {
+      "type": "s3",
+      "title": "Amazon S3",
+      "displayed": "Amazon S3"
+    },
+    {
+      "type": "cloudflareR2",
+      "title": "Cloudflare R2",
+      "displayed": "Cloudflare R2"
+    },
+    {
+      "type": "aliyunOSS",
+      "title": "阿里云 OSS",
+      "displayed": "阿里云 OSS"
+    },
+    {
+      "type": "tencentCOS",
+      "title": "腾讯云 COS",
+      "displayed": "腾讯云 COS"
+    },
+    {
+      "type": "qiniuKodo",
+      "title": "七牛 Kodo",
+      "displayed": "七牛 Kodo"
+    },
+    {
+      "type": "minIO",
+      "title": "MinIO",
+      "displayed": "MinIO"
+    },
+    {
+      "type": "backblazeB2",
+      "title": "Backblaze B2",
+      "displayed": "Backblaze B2"
+    }
+  ],
+  "outputs": [
+    "对比图.png",
+    "面板预览-浅色.png",
+    "面板预览-深色.png",
+    "面板预览.png"
+  ],
+  "layout": {
+    "disclaimer": "静态排布预览，非真实窗口截图。为检查全部28项，将滚动内容展开；实际窗口滚动区最高468pt。",
+    "repoSources": [
+      "App/PanelView.swift",
+      "App/SavedConnectionRow.swift",
+      "App/Space.swift",
+      "App/Radius.swift",
+      "App/Logic/PanelCopy.swift",
+      "App/Logic/ConnectionPresentation.swift"
+    ],
+    "oldSvgDirectory": "/Users/seaony/Desktop/Diskit-类型图标/第4批/自查/新图标28",
+    "newDirectory": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28",
+    "readyFile": "/Users/seaony/Desktop/Diskit-类型图标/第5批/自查/新图标28/READY",
+    "panel": {
+      "widthPt": 380,
+      "columns": 3,
+      "horizontalInsetPt": 16,
+      "gapPt": 8,
+      "cardWidthPt": 110.66666666666667,
+      "cardHeightPt": 88,
+      "cornerRadiusPt": 12,
+      "borderPt": 0.5,
+      "cardHorizontalPaddingPt": 10,
+      "iconPt": 34,
+      "iconToTextPt": 8,
+      "titlePt": 11.5,
+      "titleWeight": "medium",
+      "captionPt": 9,
+      "titleCaptionGapPt": 2,
+      "titleLineLimit": 1,
+      "state": "disconnected",
+      "caption": "未连接",
+      "badge": "none",
+      "previewScale": 2,
+      "previewHeaderPt": 68,
+      "previewBottomPt": 16,
+      "rows": 10,
+      "textLineBoxesPt": {
+        "title": 14,
+        "caption": 11
+      },
+      "approximation": "标准圆角矩形近似continuous圆角；字体通过系统SF及苹方渲染，非SwiftUI真实窗口。"
+    },
+    "comparison": {
+      "rows": 1,
+      "columns": 3,
+      "serviceCount": 3,
+      "iconPixels": [
+        64,
+        32,
+        24
+      ],
+      "variants": [
+        "第4批/浅色",
+        "第5批/浅色",
+        "第4批/深色",
+        "第5批/深色"
+      ]
+    },
+    "palettes": {
+      "light": {
+        "Background": "#f4f4f3",
+        "Surface": "#ededeb",
+        "Border": "#dadad8",
+        "PrimaryText": "#1d1d1f",
+        "TertiaryText": "#a0a0a5"
+      },
+      "dark": {
+        "Background": "#1f1f21",
+        "Surface": "#272729",
+        "Border": "#37373a",
+        "PrimaryText": "#f2f2f4",
+        "TertiaryText": "#6e6e73"
+      }
+    },
+    "items": [
+      {
+        "type": "androidUSB",
+        "title": "Android 手机",
+        "comparisonTitle": "Android 手机",
+        "changed": false
+      },
+      {
+        "type": "androidWiFi",
+        "title": "Android 手机（无线）",
+        "comparisonTitle": "Android 手机（无线）",
+        "changed": false
+      },
+      {
+        "type": "smb",
+        "title": "SMB 共享",
+        "comparisonTitle": "SMB 共享",
+        "changed": false
+      },
+      {
+        "type": "ricohGR",
+        "title": "理光 GR IV",
+        "comparisonTitle": "理光 GR IV",
+        "changed": false
+      },
+      {
+        "type": "cameraUSB",
+        "title": "相机（USB）",
+        "comparisonTitle": "相机（USB）",
+        "changed": false
+      },
+      {
+        "type": "webdav",
+        "title": "WebDAV",
+        "comparisonTitle": "WebDAV",
+        "changed": false
+      },
+      {
+        "type": "nfs",
+        "title": "NFS",
+        "comparisonTitle": "NFS",
+        "changed": false
+      },
+      {
+        "type": "aliyunDrive",
+        "title": "阿里云盘",
+        "comparisonTitle": "阿里云盘",
+        "changed": false
+      },
+      {
+        "type": "quark",
+        "title": "夸克网盘",
+        "comparisonTitle": "夸克网盘",
+        "changed": false
+      },
+      {
+        "type": "baiduDrive",
+        "title": "百度网盘",
+        "comparisonTitle": "百度网盘",
+        "changed": false
+      },
+      {
+        "type": "drive115",
+        "title": "115 网盘",
+        "comparisonTitle": "115 网盘",
+        "changed": false
+      },
+      {
+        "type": "drive123",
+        "title": "123 云盘",
+        "comparisonTitle": "123 云盘",
+        "changed": false
+      },
+      {
+        "type": "oneDrive",
+        "title": "OneDrive",
+        "comparisonTitle": "OneDrive（微软网盘）",
+        "changed": true
+      },
+      {
+        "type": "googleDrive",
+        "title": "Google Drive",
+        "comparisonTitle": "Google Drive（谷歌云端硬盘）",
+        "changed": false
+      },
+      {
+        "type": "dropbox",
+        "title": "Dropbox",
+        "comparisonTitle": "Dropbox 网盘",
+        "changed": false
+      },
+      {
+        "type": "ucDrive",
+        "title": "UC 网盘",
+        "comparisonTitle": "UC 网盘",
+        "changed": false
+      },
+      {
+        "type": "tianyiDrive",
+        "title": "天翼云盘",
+        "comparisonTitle": "天翼云盘",
+        "changed": true
+      },
+      {
+        "type": "mobileCloud",
+        "title": "移动云盘",
+        "comparisonTitle": "移动云盘",
+        "changed": false
+      },
+      {
+        "type": "thunderDrive",
+        "title": "迅雷云盘",
+        "comparisonTitle": "迅雷云盘",
+        "changed": false
+      },
+      {
+        "type": "pikPak",
+        "title": "PikPak",
+        "comparisonTitle": "PikPak 网盘",
+        "changed": false
+      },
+      {
+        "type": "lanzou",
+        "title": "蓝奏云",
+        "comparisonTitle": "蓝奏云",
+        "changed": true
+      },
+      {
+        "type": "s3",
+        "title": "Amazon S3",
+        "comparisonTitle": "Amazon S3（亚马逊对象存储）",
+        "changed": false
+      },
+      {
+        "type": "cloudflareR2",
+        "title": "Cloudflare R2",
+        "comparisonTitle": "Cloudflare R2 对象存储",
+        "changed": false
+      },
+      {
+        "type": "aliyunOSS",
+        "title": "阿里云 OSS",
+        "comparisonTitle": "阿里云 OSS",
+        "changed": false
+      },
+      {
+        "type": "tencentCOS",
+        "title": "腾讯云 COS",
+        "comparisonTitle": "腾讯云 COS",
+        "changed": false
+      },
+      {
+        "type": "qiniuKodo",
+        "title": "七牛 Kodo",
+        "comparisonTitle": "七牛 Kodo",
+        "changed": false
+      },
+      {
+        "type": "minIO",
+        "title": "MinIO",
+        "comparisonTitle": "MinIO 对象存储",
+        "changed": false
+      },
+      {
+        "type": "backblazeB2",
+        "title": "Backblaze B2",
+        "comparisonTitle": "Backblaze B2 对象存储",
+        "changed": false
+      }
+    ]
+  }
+}

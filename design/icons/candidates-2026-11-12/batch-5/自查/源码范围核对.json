@@ -1,0 +1,12 @@
+{
+  "onlyEntriesChanged": [
+    "oneDrive",
+    "tianyiDrive",
+    "lanzou"
+  ],
+  "allOtherSourceBytesUnchanged": true,
+  "scale": 0.8,
+  "centerY": 14,
+  "beforeSHA256": "a608b04d51a8b7dca2b34b9dbeb057639c0587f39f8837988cdfee018fdf4ef8",
+  "afterSHA256": "2a5092d0e5e2270433d3970fe5d7968d08364ff955c8bd3908c2b01b396eb08d"
+}

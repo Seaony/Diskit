@@ -1,0 +1,25 @@
+{
+  "mode": "native-static-engine",
+  "types": 29,
+  "references": [
+    "文件夹",
+    "邮件",
+    "下载"
+  ],
+  "checkedSizes": [
+    24,
+    28,
+    56
+  ],
+  "palettes": [
+    "彩色",
+    "蓝灰",
+    "青瓷",
+    "薄荷",
+    "薰衣草",
+    "杏色",
+    "黑色"
+  ],
+  "lightAccent": "#F59E0B",
+  "errors": []
+}

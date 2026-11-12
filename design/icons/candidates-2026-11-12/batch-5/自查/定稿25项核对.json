@@ -1,0 +1,36 @@
+{
+  "unchangedCount": 25,
+  "unchangedSVGAndPNG": [
+    "aliyunDrive",
+    "aliyunOSS",
+    "androidUSB",
+    "androidWiFi",
+    "backblazeB2",
+    "baiduDrive",
+    "cameraUSB",
+    "cloudflareR2",
+    "drive115",
+    "drive123",
+    "dropbox",
+    "googleDrive",
+    "minIO",
+    "mobileCloud",
+    "nfs",
+    "pikPak",
+    "qiniuKodo",
+    "quark",
+    "ricohGR",
+    "s3",
+    "smb",
+    "tencentCOS",
+    "thunderDrive",
+    "ucDrive",
+    "webdav"
+  ],
+  "changed": [
+    "lanzou",
+    "oneDrive",
+    "tianyiDrive"
+  ],
+  "method": "相对第4批，完整SVG与PNG均逐字节一致"
+}

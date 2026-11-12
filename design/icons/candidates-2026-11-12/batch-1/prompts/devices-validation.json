@@ -1,0 +1,149 @@
+[
+  {
+    "type": "androidUSB",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 730742,
+    "bbox_alpha32": [
+      223,
+      102,
+      801,
+      921
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "androidWiFi",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 742991,
+    "bbox_alpha32": [
+      155,
+      102,
+      868,
+      921
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "smb",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 589049,
+    "bbox_alpha32": [
+      102,
+      178,
+      921,
+      845
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "nfs",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 579781,
+    "bbox_alpha32": [
+      160,
+      102,
+      864,
+      921
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "webdav",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 572746,
+    "bbox_alpha32": [
+      113,
+      102,
+      911,
+      921
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "ricohGR",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 620995,
+    "bbox_alpha32": [
+      102,
+      233,
+      921,
+      790
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  },
+  {
+    "type": "cameraUSB",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "fully_transparent_pixels": 650255,
+    "bbox_alpha32": [
+      102,
+      146,
+      921,
+      877
+    ],
+    "subject_max_side": 819,
+    "subject_ratio": 0.7998
+  }
+]

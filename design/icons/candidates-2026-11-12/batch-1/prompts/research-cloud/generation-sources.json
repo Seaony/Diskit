@@ -1,0 +1,39 @@
+{
+  "oneDrive": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-c42afc45-b4d9-470b-9302-4a06663766a9.png",
+    "regeneration_count": 1,
+    "reason": "首版直览有蓝光晕，重生一次去除。采用重生版。",
+    "last_generation_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-c42afc45-b4d9-470b-9302-4a06663766a9.png",
+    "regeneration_prompt": "prompts/oneDrive-v2.txt"
+  },
+  "googleDrive": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-bf140c3c-95c2-4a12-b7b7-eca512c5ce01.png",
+    "regeneration_count": 1,
+    "reason": "首版直览彩点曾误判为残边，清边一次；真实alpha合成后首版已干净，采用首版。",
+    "last_generation_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-db1d3771-3bea-4c9d-9e86-b2e3ae50a088.png",
+    "regeneration_prompt": "prompts/googleDrive-v2.txt"
+  },
+  "dropbox": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-c6704938-9da4-4d8b-a51b-68d2c71c8301.png",
+    "regeneration_count": 0
+  },
+  "mobileCloud": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-014b65b2-5481-44b6-8ef7-b89ba0f07521.png",
+    "regeneration_count": 1,
+    "reason": "首版近似汉字云，重生一次改实体卷带器；最终小尺寸干净，较大深底预览可见很淡的背景雾，已保留作候选并标注。",
+    "last_generation_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-014b65b2-5481-44b6-8ef7-b89ba0f07521.png",
+    "regeneration_prompt": "prompts/mobileCloud-v2.txt"
+  },
+  "thunderDrive": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-3335fee4-b2a6-4e4f-956d-79003bd2e78b.png",
+    "regeneration_count": 0
+  },
+  "pikPak": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-ab71379d-4a2b-482b-a3e5-1ad33cf85e95.png",
+    "regeneration_count": 0
+  },
+  "lanzou": {
+    "selected_source": "/Users/seaony/.codex/generated_images/01a1ce58-a18e-7d63-9e25-e3a7ce0bf353/exec-eb9c01c8-cf01-43c3-8623-86df840e3f8f.png",
+    "regeneration_count": 0
+  }
+}

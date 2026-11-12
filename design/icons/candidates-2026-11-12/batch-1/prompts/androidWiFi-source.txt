@@ -1,0 +1,3 @@
+/Users/seaony/.codex/generated_images/01a1ce58-10a8-74b0-a8fb-dad133e1c65d/exec-19117bfc-ec63-44e1-8555-3443fdc4bfb2.png
+来源：内置 image_gen；transparent_background=true；参考图：prompts/folder-peek.png
+仅执行1024画布和80%安全边尺寸整理，保留原始文件。

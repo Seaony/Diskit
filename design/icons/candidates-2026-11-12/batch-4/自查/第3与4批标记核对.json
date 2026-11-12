@@ -1,0 +1,30 @@
+{
+  "zoomBefore": 0.56,
+  "zoomAfter": 0.8,
+  "linearGrowthPercent": 42.86,
+  "redrawn": [
+    "lanzou",
+    "minIO",
+    "oneDrive",
+    "tencentCOS",
+    "tianyiDrive"
+  ],
+  "other16PathsUnchanged": [
+    "aliyunDrive",
+    "aliyunOSS",
+    "backblazeB2",
+    "baiduDrive",
+    "cloudflareR2",
+    "drive115",
+    "drive123",
+    "dropbox",
+    "googleDrive",
+    "mobileCloud",
+    "pikPak",
+    "qiniuKodo",
+    "quark",
+    "s3",
+    "thunderDrive",
+    "ucDrive"
+  ]
+}

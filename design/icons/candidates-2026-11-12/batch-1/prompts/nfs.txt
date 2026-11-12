@@ -1,0 +1,11 @@
+Use case: stylized-concept
+Asset type: macOS app location-type icon candidate.
+Input image: Attached folder-peek.png is ONLY a style reference for thick volume, saturated color energy and soft matte rendering. Learn its style and palette, DO NOT draw a dinosaur or folder, DO NOT reuse its composition or white sticker border.
+Style/medium: original rounded thick playful toy-polymer object, light 3D, simple solid forms, subtle smooth gradients, very weak reflections; no outlines, no white edging.
+Composition/framing: exactly 1024x1024 square, genuinely transparent alpha background, only one centered compact assembly. Entire subject maximum dimension about 80% of canvas (approximately 800 px), complete generous safe margins. Near frontal orthographic slight 3/4 view, top and right side slightly visible.
+Lighting: soft upper-left illumination. Only internal shading and occlusion; no floor shadow and no background shadow.
+Small-scale clarity: two or three large bold structures, recognizable at 32px and 24px; no tiny controls, lines, markings, buttons or fine texture.
+Constraints: no text, letters, digits, logos, watermark, face, dinosaur, folder, generic cloud, pedestal, base plate, border, rounded-square container, scene or opaque background. No glass, mirror metal, photographic realism or strong specular highlights. Preserve genuine transparency.
+Primary request: One short chunky vivid turquoise-green server cabinet with exactly two broad stacked rounded drive bays visible on its front. A single coarse golden-yellow network branching pipe emerges from its lower front and splits into a clear two-ended T-shaped network branch in front. Branch endpoints are thick simple rounded plugs, not tiny nodes. Make it a compact physical cabinet plus branch; recognizable thick silhouette.
+Color palette: vivid turquoise-green cabinet, darker teal bays, saturated golden-yellow network branch. No cloud, no files, no monitor, no labels.
+Transparency quality: Every transparent negative-space pixel must be completely clean alpha zero. Perfectly clean cutout contours. No floating colored dots, debris, fragments, speckles, colored fringes, glowing outlines or halos anywhere around the subject or inside cable gaps.

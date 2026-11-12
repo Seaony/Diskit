@@ -1,0 +1,10 @@
+Use case: stylized-concept.
+Create one original 1024 × 1024 transparent-background macOS location-type icon.
+REFERENCE IMAGE: use folder-peek.png ONLY for its cheerful saturated color energy, rounded thick forms, gentle gradients and matte lightweight 3D toy-polymer rendering. Do not reuse its creature, face, silhouette, folder, white border or background.
+COMPOSITION: exactly one coherent small object, centered, maximum subject dimension about 80% of canvas, generous transparent padding. Near-frontal mild orthographic three-quarter view with a little top and right side visible. Soft upper-left lighting. Internal form/occlusion shading only, absolutely no floor shadow.
+MATERIAL: smooth matte toy polymer, plump thick rounded edges, subtle soft gradients, almost no specular highlight. No outlines. Simple bold silhouette, no fine details, readable at 24 px.
+BACKGROUND: genuine transparent alpha, no backdrop, no ground plane, no base, no plate, no enclosing rounded square, no border.
+FORBIDDEN: any letters, digits, words, logo lettering, watermark, dinosaur, folder, cloud, thin wire, metallic/glass reflection, extra floating decorations.
+This is a new original physical-object illustration, not a flat copied brand logo.
+SUBJECT: a compact three-step stack of plump interlocking storage toy blocks, the left block lowest in vivid cyan, middle block taller in saturated blue, right block tallest in royal cobalt. Each block is a solid rounded cube-like rectangular prism with a single broad warm-yellow tab inset on its front (tabs have different positions but no letters, no numbers, no screen and no buttons). The THREE ascending blocks make one stepped skyline silhouette, representing the simple geometric 123 identity without displaying or shaping any digits. Main blue is dominant, cyan and yellow are fresh supporting colors. Show only three large blocks touching each other, no extra pieces, no container, no pedestal.
+透明负空间完全干净，无浮点碎屑、彩边和光晕，边缘准确干净，无背景残余。CRITICAL alpha quality: all negative space fully transparent and clean, no isolated color pixels, no colored fringe, no halo, no background residue; use crisp clean antialiased object edges.

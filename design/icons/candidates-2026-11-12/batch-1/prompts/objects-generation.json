@@ -1,0 +1,44 @@
+[
+  {
+    "type": "s3",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-429e4304-85a4-438d-b944-ae259fcbaef0.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/s3.png",
+    "regenerations": 0
+  },
+  {
+    "type": "cloudflareR2",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-eba47e1d-5639-472a-b4e3-af6ca63e1397.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/cloudflareR2.png",
+    "regenerations": 0
+  },
+  {
+    "type": "aliyunOSS",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-8e97f2a1-0549-43a2-b2d1-9ee39fc2cda0.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/aliyunOSS.png",
+    "regenerations": 0
+  },
+  {
+    "type": "tencentCOS",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-b7923ea0-0e98-470c-b9fb-ac294470d247.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/tencentCOS.png",
+    "regenerations": 0
+  },
+  {
+    "type": "qiniuKodo",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-2bd4d791-3f24-4c75-ad73-fe9982749bfa.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/qiniuKodo.png",
+    "regenerations": 0
+  },
+  {
+    "type": "minIO",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-ffc27431-3a6a-4e49-a3ca-334811e7b05f.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/minIO.png",
+    "regenerations": 0
+  },
+  {
+    "type": "backblazeB2",
+    "original": "/Users/seaony/.codex/generated_images/01a1ce58-e75b-7e93-be11-618672f74c4f/exec-779409e3-0c64-4d81-9e67-e53e735ec348.png",
+    "final": "/Users/seaony/Desktop/Kayoi-类型图标/第1批/backblazeB2.png",
+    "regenerations": 0
+  }
+]
