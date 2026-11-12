@@ -6490,36 +6490,36 @@
         }
       }
     },
-    "主题": {
+    "外观": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Theme"
+            "value": "Appearance"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "主题"
+            "value": "外观"
           }
         }
       }
     },
-    "界面语言": {
+    "语言": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "App Language"
+            "value": "Language"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "界面语言"
+            "value": "语言"
           }
         }
       }

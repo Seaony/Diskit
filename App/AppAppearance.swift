@@ -16,9 +16,9 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 
   var symbol: String {
     switch self {
-    case .system: "circle.lefthalf.filled"
-    case .light: "sun.max"
-    case .dark: "moon"
+    case .system: "display"
+    case .light: "sun.max.fill"
+    case .dark: "moon.fill"
     }
   }
 

@@ -6,6 +6,8 @@ struct ChoiceButtons<Value: Hashable>: View {
   @Binding var selection: Value
   let title: (Value) -> String
   let symbol: (Value) -> String
+  // 只显示图标时，文字改作悬停提示和读屏名称
+  var iconOnly = false
   @Namespace private var selectionSpace
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -13,7 +15,8 @@ struct ChoiceButtons<Value: Hashable>: View {
     HStack(spacing: 2) { // grid: ok 段与段之间留 2
       ForEach(options, id: \.self) { option in
         ChoiceSegment(
-          title: title(option), symbol: symbol(option), selected: option == selection, space: selectionSpace
+          title: title(option), symbol: symbol(option), iconOnly: iconOnly, selected: option == selection,
+          space: selectionSpace
         ) {
           withAnimation(Motion.change(reduceMotion: reduceMotion)) { selection = option }
         }
@@ -27,6 +30,7 @@ struct ChoiceButtons<Value: Hashable>: View {
 private struct ChoiceSegment: View {
   let title: String
   let symbol: String
+  let iconOnly: Bool
   let selected: Bool
   let space: Namespace.ID
   let action: () -> Void
@@ -38,7 +42,7 @@ private struct ChoiceSegment: View {
       // 图标和文字靠近一些，系统 Label 的间距在这里显得松
       HStack(spacing: 6) { // grid: ok 图标与文字间距 6
         Image(systemName: symbol).accessibilityHidden(true)
-        Text(title)
+        if !iconOnly { Text(title) }
       }
         .font(.system(size: 12.5, weight: .medium))
         .foregroundStyle(selected ? DiskitTheme.actionText : DiskitTheme.primaryText)
@@ -55,6 +59,23 @@ private struct ChoiceSegment: View {
     }
     .buttonStyle(.plain).pointerStyle(.link)
     .onHover { hovering = $0 }
+    .help(Text(verbatim: iconOnly ? title : ""))
+    .accessibilityLabel(Text(verbatim: title))
     .accessibilityAddTraits(selected ? .isSelected : [])
+  }
+}
+
+extension View {
+  // 设置里的下拉菜单：不要底色，文字用正文颜色，窗口激活时也不染成强调色
+  func menuPicker() -> some View {
+    labelsHidden()
+      .pickerStyle(.menu)
+      .buttonStyle(.borderless)
+      .tint(DiskitTheme.primaryText)
+      .foregroundStyle(DiskitTheme.primaryText)
+      .fixedSize()
+      // 无边框菜单自带右侧留白，抵掉后箭头和同列其他控件右边对齐
+      .padding(.trailing, -6) // grid: ok 抵消系统菜单右侧留白
+      .pointerStyle(.link)
   }
 }
