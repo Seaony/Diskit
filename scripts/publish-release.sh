@@ -92,16 +92,9 @@ notarize() {
   echo "公证通过：$(basename "$1")"
 }
 
-# 先公证 App 并把票据装订进去，之后的压缩包和 DMG 都用装订过的 App
-ditto -c -k --sequesterRsrc --keepParent "$app" "$work/notarize.zip"
-notarize "$work/notarize.zip"
-xcrun stapler staple "$app"
-xcrun stapler validate "$app"
-spctl --assess --type execute --verbose=2 "$app"
-
+# 只公证一次：苹果会连 DMG 里的 App 一起认证，之后 DMG 和 App 都能装订票据
 zip_name="Diskit-$version.zip"
 dmg_name="Diskit-$version.dmg"
-ditto -c -k --sequesterRsrc --keepParent "$app" "$output/$zip_name"
 ditto "$app" "$work/dmg/Diskit.app"
 ln -s /Applications "$work/dmg/Applications"
 hdiutil create -quiet -volname Diskit -srcfolder "$work/dmg" -ov -format UDZO "$output/$dmg_name"
@@ -109,6 +102,11 @@ codesign --sign "$identity" --timestamp "$output/$dmg_name"
 notarize "$output/$dmg_name"
 xcrun stapler staple "$output/$dmg_name"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$output/$dmg_name"
+# 更新用的压缩包取装订过的 App
+xcrun stapler staple "$app"
+xcrun stapler validate "$app"
+spctl --assess --type execute --verbose=2 "$app"
+ditto -c -k --sequesterRsrc --keepParent "$app" "$output/$zip_name"
 
 # 更新说明：有手写的 docs/release-notes/v版本号.md 就用它；否则列上个版本以来的提交；第一次发布写固定说明
 notes="$work/notes.md"

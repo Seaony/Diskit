@@ -20,7 +20,7 @@ Sparkle 固定为 2.10.1。`Dependencies/Package.resolved` 是生成工程的锁
 
 源码仓库 `Seaony/Diskit-Source` 保持私有，安装包和更新源发布到公开仓库 `Seaony/Diskit`；私有仓库的发布文件需要登录才能下载，别人和 Sparkle 都拿不到。公开仓库原名 `Seaony/Diskit-Releases`，0.2.0 里写的就是这个旧地址，靠 GitHub 改名后的自动跳转继续收到更新；以后不能再新建叫 `Diskit-Releases` 的仓库，否则跳转失效。
 
-在干净、已推送的 master 上执行 `scripts/publish-release.sh 0.3.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥、签名证书、公证凭据和版本是否已发布；新版本大于当前版本时改写 `project.yml` 的版本号并把构建号加 1；运行 `make test` 与 `make release`；公证 App 并装订票据；生成 DMG（签名、公证、装订）、ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送源码标签，在发布仓库创建 Release 并上传三个文件。任何一步失败即停止，未提交的版本号改动会还原。
+在干净、已推送的 master 上执行 `scripts/publish-release.sh 0.3.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥、签名证书、公证凭据和版本是否已发布；新版本大于当前版本时改写 `project.yml` 的版本号并把构建号加 1；运行 `make test` 与 `make release`；生成 DMG 并签名、公证、装订，再给 App 装订票据后打 ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送源码标签，在发布仓库创建 Release 并上传三个文件。任何一步失败即停止，未提交的版本号改动会还原。
 
 更新说明默认列出上个版本以来的提交；想写给用户看的说明时，先提交 `docs/release-notes/v版本号.md`（每行一条“- 说明”），脚本会改用这份。
 
@@ -32,7 +32,7 @@ Sparkle 签名账户默认 `com.seaony.Moni`，可通过 `SPARKLE_ACCOUNT` 指�
 
 ## Developer ID 与公证
 
-公证凭据存在登录钥匙串里，名字默认 `notary`（可用 `NOTARY_PROFILE` 指定），用 `xcrun notarytool store-credentials notary` 建一次，App Store Connect API 密钥或 App 专用密码都可以；凭据不写进仓库和命令参数。发布脚本先把 App 压成 ZIP 提交公证、等结果，通过后装订进 App，再用装订过的 App 打 ZIP 和 DMG；DMG 另外签名、公证、装订。公证没通过时脚本打印苹果返回的日志并停止。
+公证凭据存在登录钥匙串里，名字默认 `notary`（可用 `NOTARY_PROFILE` 指定），用 `xcrun notarytool store-credentials notary` 建一次，App Store Connect API 密钥或 App 专用密码都可以；凭据不写进仓库和命令参数。每次发布只提交一次公证：DMG 签名后提交，苹果连里面的 App 一起认证；通过后 DMG 和 App 各自装订票据，更新用的 ZIP 用装订过的 App 打包。公证没通过时脚本打印苹果返回的日志并停止。
 
 ## UPD-07 本地更新演练的约束
 
