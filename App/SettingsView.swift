@@ -97,11 +97,11 @@ struct SettingsView: View {
           }
           .help(L("在系统设置中允许 Kayoi 开机自动启动"))
         }
-      } footer: {
-        Text(L("退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"))
       }
       KayoiFormSection {
         FileSystemExtensionSettings(state: model.fileSystemState, openSettings: model.openFileSystemSettings)
+      } footer: {
+        Text(L("退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"))
       }
       KayoiFormSection(title: L("外观与语言")) {
         KayoiSideRow {
@@ -244,11 +244,10 @@ struct SettingsView: View {
           if let fingerprintError { inlineError(fingerprintError) }
         }
       } footer: {
-        Text(L("连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。"))
-      }
-      KayoiFormSection(title: L("设备连接")) {
-        Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
-          .font(.callout).fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: Space.sm) {
+          Text(L("连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。"))
+          Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))
+        }
       }
     }
   }

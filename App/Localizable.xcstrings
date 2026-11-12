@@ -4961,22 +4961,6 @@
         }
       }
     },
-    "设备连接": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Device Connection"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设备连接"
-          }
-        }
-      }
-    },
     "设置 · ⌘,": {
       "localizations": {
         "en": {
