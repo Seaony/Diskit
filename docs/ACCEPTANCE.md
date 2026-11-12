@@ -705,7 +705,7 @@ Kayoi.app: satisfies its Designated Requirement
 
 | 项目 | 状态 | 现象与证据 |
 |---|---|---|
-| 本次属性缓存与分段计时的构建、测试 | 通过（相关检查） | 最新 `make build` 和深度签名校验通过，18 项相关测试、Core 全部 187 项及 App 全部 186 项测试通过；构建日志为 `build/m7-step5-cache-only-profile-build.log`。7 项新增测试覆盖已打开文件的设备/网盘属性有效期、关闭与断线清缓存及改名跟随、属性过期刷新整文件缓存、写入/截断/修改时间及时反映、上传前重新查询同名冲突、取消下载后等待清理并释放额度、下载长度不符后清理及重试。未将这些相关检查当成本次完整 `make test` 通过。 |
+| 属性缓存阶段的构建、测试 | 通过（相关检查） | 该阶段 `make build` 和深度签名校验通过，18 项相关测试、Core 全部 187 项及 App 全部 186 项测试通过；构建日志为 `build/m7-step5-cache-only-profile-build.log`。7 项新增测试覆盖已打开文件的设备/网盘属性有效期、关闭与断线清缓存及改名跟随、属性过期刷新整文件缓存、写入/截断/修改时间及时反映、上传前重新查询同名冲突、取消下载后等待清理并释放额度、下载长度不符后清理及重试。未将这些相关检查当成本次完整 `make test` 通过。 |
 | 正常 Debug 启动与 USB 挂载 | 通过 | 23:31:45.308 正常 Debug 启动，PID 9033；45.528 开始 USB 挂载，扩展 45.924 开始 load、45.966 ready，App 45.977 记录挂载成功。从发起到成功约 449 毫秒，扩展 load 至 ready 约 42 毫秒。真实卷为 `/Volumes/Xiaomi 17`，挂载来源为 `kayoi-adb://ca35992a-2d56-4b3c-9ba4-b3426adf511d`。 |
 | 挂载卷只读根目录 | 通过 | 已从真实 USB 卷读取根目录。 |
 | Finder 浏览与 Quick Look 预览 | 通过 | Finder 已实际浏览 `DCIM/Camera`；Quick Look 已实际显示 7,874,792 字节 JPG 和 16,959,419 字节 MP4 的画面，不记录私人文件名。 |
@@ -716,15 +716,60 @@ Kayoi.app: satisfies its Designated Requirement
 | 正常退出清理 | 通过 | 正常退出后 App 进程结束，本次 USB 卷已卸载，原有 `DeviceFS` 卷仍保留。 |
 | USB 1 GiB 文件拷出内容 | 通过 | 1,073,741,824 字节测试文件经 CLI 三次拷出和已完成的 Finder 冷读拷出，SHA-256 均一致。 |
 | USB 大文件吞吐 | 未通过 | 攒写版 Finder 一次冷读为 169.12 MB/s；后续 CLI 三轮中位数为 308.33 MB/s，两组来自不同轮次。未达到既定 70% 目标，按用户最新要求停止性能工作，本轮不再优化。 |
-| 拔插、重新连接与 Wi-Fi | 未测 | 尚未执行拔线、重新插入、无线挂载或 USB 与无线切换验收。 |
+| USB 拷贝中拔线、自动推出和重挂 | 通过（用户手工操作及日志核对） | 用户拷出 Download 中 6 个 APK 时拔线，Finder 显示 -36；09:35:13 扩展返回 EIO，Finder 日志明确将 POSIX 5 转换为 -36。首次推出因卷忙（Cocoa 769）失败，09:35:24 卷卸载，09:35:46.829 自动重挂成功；App PID 28987 全程存活。下载临时文件、写入暂存均为 0，38 个已完成读缓存保留。 |
+| 安卓 Wi-Fi | 未测 | 需要用户配对及纯无线环境，已列入最后一次汇总清单；手机验收目录继续保留。 |
 | 手机验收目录清理 | 未完成 | 专用目录 `Kayoi M7 验收 a18ba66c` 尚未删除，包含本轮验收文件和 1 GiB 测试文件；第 5 小步仍在进行中。 |
 
 独立下载任务、读缓冲复用和边下边读均未改善吞吐，已撤回；负收益候选完整补丁留在 `build/m7-step5-progressive-rejected-20261112-091730/`，当前性能源代码恢复为 `58a0a65`。
 
-已保留属性缓存、1 MiB 合并写入和分段日志；对应 Core 188 项、App 186 项检查已通过。当前 OSStatus 日志改动的 `make build`、深度签名和 16 项存储、迁移及钥匙串相关测试通过，日志为 `build/m7-step5-head-control-build.log`、`build/m7-step5-storage-status-tests.log`；本次没有把这些检查写成完整 `make test` 通过。
+已保留属性缓存、1 MiB 合并写入和分段日志；对应 Core 188 项、App 186 项检查已通过。当前 OSStatus 日志改动的 `make build`、深度签名和 16 项存储、迁移及钥匙串相关测试通过，日志为 `build/m7-step5-head-control-build.log`、`build/m7-step5-storage-status-tests.log`；该日志小步只运行相关检查，完整门禁见本次末节。
 
 锁屏期间启动曾报告共享钥匙串不可用，原日志只有包装错误 code=1；现对 `KeychainError` 记录实际 OSStatus，其他错误继续记录 domain/code。解锁后正常挂载恢复，签名、描述文件和钥匙串可访问性未改；新的真实状态码仍待现场日志验证。
 
 P2 记录：适配器 `getAttributes` 共见 5 次 EINVAL，未观察到功能影响，原因未判定。
 
-后续顺序为真实拔线、重新连接，再测 Wi-Fi；速度问题留待以后处理，验收结束后删除专用手机目录。
+P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，但错误链仍有实际文件名；原因未判定，本轮不改。
+
+速度问题留待以后处理；无线验收需要用户，统一留到最后，之后删除专用手机目录。
+
+## M7 第二步，第 6、7 小步：本机服务及账号边界
+
+本机临时服务仅绑定 127.0.0.1。HTTP WebDAV 通过实际系统挂载；S3 和 MinIO 两种连接通过真实 FSKit 挂载。均完成目录浏览、含中文/空格/emoji 的小文件拷入拷出，正常卸载后由独立服务端读取核对 SHA-256，未经过卷缓存。
+
+| 类型 | 状态 | 实测结果或未测原因 |
+|---|---|---|
+| HTTP WebDAV | 通过 | 系统挂载、浏览和 42 字节文件往返一致；独立 HTTP 与服务端文件回读一致。 |
+| HTTPS WebDAV（自签证书） | 挂载未通过 | 原生无界面挂载返回系统码 19；测试 CA 未安装信任。服务端可用，默认 TLS 验证拒绝自签证书，指定测试 CA 的独立检查通过。未更改系统信任，未验证原生挂载后的读写。 |
+| 通用 S3（本机 MinIO） | 通过 | 真实 FSKit 挂载、浏览、34 字节文件往返与独立签名 GET 校验一致。 |
+| MinIO | 通过 | 真实 FSKit 挂载、浏览、37 字节文件往返与独立签名 GET 校验一致。 |
+| 阿里云盘 | 未测 | 无已登录账号；本机开放平台 Client ID、Client Secret 未配置。 |
+| 夸克 | 未测 | 无已登录账号。 |
+| 百度网盘 | 未测 | 无已登录账号；Client ID、Client Secret、App ID 未配置。 |
+| 115 | 未测 | 无已登录账号；Client ID、Client Secret 未配置。 |
+| 123 云盘 | 未测 | 无已登录账号；Client ID、Client Secret 未配置。 |
+| OneDrive | 未测 | 无已登录账号；Client ID 未配置。 |
+| Google Drive | 未测 | 无已登录账号；桌面客户端 ID 未配置。 |
+| Dropbox | 未测 | 无已登录账号；Client ID 未配置。 |
+| UC | 未测 | 无已登录账号。 |
+| 天翼 | 未测 | 无已登录账号，个人云与家庭云均未实测。 |
+| 移动云盘 | 未测 | 无已登录账号。 |
+| 迅雷 | 未测 | 无已登录账号。 |
+| PikPak | 未测 | 无已登录账号。 |
+| 蓝奏 | 未测 | 无账号或测试分享链接；当前只读。 |
+| AWS S3 | 未测 | 无真实测试桶和凭据；本机兼容服务结果不代表 AWS 实测。 |
+| Cloudflare R2 | 未测 | 无测试桶和凭据。 |
+| 阿里 OSS | 未测 | 无测试桶和凭据。 |
+| 腾讯 COS | 未测 | 无测试桶和凭据。 |
+| 七牛 Kodo | 未测 | 无测试桶和凭据。 |
+| Backblaze B2 | 未测 | 无测试桶和凭据。 |
+| SMB | 未测 | 无已配置共享和测试账号，本轮未改系统文件共享。 |
+| NFS | 未测 | 无已有测试导出；本机没有 /etc/exports，启动和配置服务端需要管理员授权，未执行。 |
+| 通用 USB 相机、GR IV | 未测 | 无测试硬件；GR 按约定保留原行为。 |
+
+本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 kayoi-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
+
+已有容器未被修改；核对期间既有 mantis 容器重启次数增加 2，仍运行，原因不在本次范围。macOS 26 挂载分支仍未实测，不要求用户为此更换系统。
+
+## 本次无需用户参与工作的完整门禁
+
+`make build`、深度签名与 `make test` 均退出 0：977 项 Swift 测试（含 App 186 项、Core 188 项）及 14 项脚本测试通过；538 个实际使用的本地化键检查通过。日志为 `build/m7-autonomous-final-build.log`、`build/m7-autonomous-final-test.log`。未执行发布、打标签或修改 appcast；真实账号及无线验收仍按上表记未测。

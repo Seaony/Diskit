@@ -70,14 +70,28 @@ USB 拷出速度未通过。M2 没有原始真机吞吐数据，本轮以同机�
 
 已保留已打开文件的属性缓存、1 MiB 合并写入和分段计时。设备与网盘属性有效期分别为 5 秒、30 秒；严格 stat 和写回冲突检查继续查询远端。对应 Core 188 项、App 186 项测试已通过，相关缓存、取消、尺寸及尾块回归为 19 项。
 
-锁屏期间 03:18 的启动曾报告共享钥匙串不可用，原日志只打印包装错误 code=1；现补充 `KeychainError.status` 的实际 OSStatus，其他错误保持 domain/code。解锁后正常挂载恢复，签名、描述文件和钥匙串可访问性均未改；本次原始失败的具体状态码尚未由现场日志证实。当前构建和深度签名、16 项存储、迁移及钥匙串相关测试通过，日志为 `build/m7-step5-head-control-build.log`、`build/m7-step5-storage-status-tests.log`；本步尚未运行完整 `make test`。
+锁屏期间 03:18 的启动曾报告共享钥匙串不可用，原日志只打印包装错误 code=1；现补充 `KeychainError.status` 的实际 OSStatus，其他错误保持 domain/code。解锁后正常挂载恢复，签名、描述文件和钥匙串可访问性均未改；本次原始失败的具体状态码尚未由现场日志证实。当前构建和深度签名、16 项存储、迁移及钥匙串相关测试通过，日志为 `build/m7-step5-head-control-build.log`、`build/m7-step5-storage-status-tests.log`。本次完整门禁结果见下文。
 
 待决定事项：共享钥匙串是否由仅解锁时可用改成首次解锁后持续可用；本轮只记录，保持现有行为。
 
-两个主进程诊断缓存目录已删除，共 2 GiB；手机验收目录仍保留。接下来先做真实拔线和重连，再做 Wi-Fi，最后清理专用测试目录。P2 记录：适配器 `getAttributes` 共见 5 次 EINVAL，未观察到功能影响，原因未判定。
+USB 拔线验收通过。用户手工拷出 Download 中 6 个 APK 时拔线，Finder 报 -36；09:35:13 的实际日志证明扩展 EIO 被 Finder 转为 -36。App 首次推出因卷忙（Cocoa 769）失败，09:35:24 卷卸载，09:35:46.829 自动重挂成功；App PID 28987 全程存活。后续一次推出和重挂的触发来源未确认，不额外算作一次拔插。Read 的下载临时文件和 Writes 暂存均为 0，38 个已完成缓存文件保留；本轮为只读拷出，手机验收目录仍留待 Wi-Fi 使用。证据为 `build/m7-unplug-passive-{state.ndjson,live.ndjson}`。
 
-## 后续小步
+P2 记录：Finder 弹窗文件名为空，转换日志有 path=N/A，但错误链仍保留实际文件名，原因未判定，本轮不改。适配器 `getAttributes` 另见 5 次 EINVAL，未观察到功能影响。两个主进程诊断缓存目录已删除，共 2 GiB。
 
-第 5 至 8 小步尚未完成。USB 速度记为未通过，本轮不再处理；仍需验证真实拔插、Wi-Fi 和测试目录清理；macOS 26 未实测，GR IV 无相机，本轮保持原行为。其余账号相关验收和验证入口清理按后续小步记录。
+## 第 6、7 小步：本机服务与未测账号
+
+本机 HTTP WebDAV 经现有系统挂载代码、S3 与 MinIO 经真实 FSKit 分别完成挂载、浏览和小文件拷入拷出；42、34、37 字节文件的独立服务端 SHA-256 与卷内一致，原始服务无非预期系统元数据。HTTPS 自签服务已就绪，但原生无界面挂载返回系统码 19；测试 CA 未信任，未更改系统信任，成功挂载和读写未验证。NFS 无测试导出，本机自建服务需要管理员权限，未执行。逐个类型的结果见验收记录，未用本机 MinIO 代表真实云服务通过。
+
+阿里、夸克、百度、115、123、OneDrive、Google Drive、Dropbox、UC、天翼、移动、迅雷、PikPak、蓝奏均无已登录账号，已分别记未测。本机真实凭据配置中的阿里、百度、115、123、OneDrive、Google、Dropbox Client ID 均为空；前四家的 Client Secret 和百度 App ID 也未配置，需要先配置再登录。AWS S3、R2、OSS、COS、Kodo、B2 无测试桶和凭据，SMB 无已配置共享，均未实测。
+
+临时服务只绑定回环。两个 kayoi-m7- 容器、数据、证书和测试凭据已清理；4 条临时连接及 2 条测试密码已移除，原 connections.json 逐字节恢复一致，2 个临时连接缓存目录已删除。非敏感验收证据保留在 `build/agents/m7-local-final-evidence.json` 和 `build/agents/m7-local-remote-readback.json`。已有容器未被修改；其中既有 mantis 容器期间重启 2 次、仍运行，未扩展排障（不在本次范围）。
+
+## 本次完整本地门禁
+
+`make build`、深度签名和完整 `make test` 均通过：977 项 Swift 测试、14 项脚本测试及 538 个实际使用本地化键检查通过，含 App 186 项、Core 188 项。日志为 `build/m7-autonomous-final-build.log` 和 `build/m7-autonomous-final-test.log`。本轮不发布、不打标签、不改 appcast；通过的本地检查不替代未测账号或无线真机验收。
+
+## 仍需用户参与的项目
+
+Wi-Fi 配对、纯无线验收和网盘登录统一放到不用用户的工作、提交推送及完整构建测试结束后一次汇总。手机目录 `Kayoi M7 验收 a18ba66c` 保留给 Wi-Fi，测完再删。HTTPS 自签成功挂载需先决定测试证书信任；NFS 需已有导出或管理员准备服务端。macOS 26 未实测，GR IV 无相机，本轮不改原行为；正式分发不在本次范围。
 
 已讨论的写回规则：ADB、阿里沿用原替换方式；其他具备写、删、改名能力的 Provider 由 FSKit 先上传临时文件、核对大小，再删旧、改名。失败返回 close/fsync 并保留可恢复数据。各服务替换行为的额外验证按 P2 记录，暂不扩大测试矩阵。
