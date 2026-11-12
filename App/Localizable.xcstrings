@@ -85,18 +85,18 @@
         }
       }
     },
-    "ADB 密钥指纹": {
+    "密钥指纹": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ADB key fingerprint"
+            "value": "Key Fingerprint"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "ADB 密钥指纹"
+            "value": "密钥指纹"
           }
         }
       }
@@ -349,18 +349,18 @@
         }
       }
     },
-    "MD5 指纹用于核对手机上的 USB 调试授权提示；请确认两边一致后再允许。": {
+    "连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use the MD5 fingerprint to check the USB debugging authorization prompt on your phone. Confirm that both fingerprints match before allowing access."
+            "value": "When connecting your phone, check that this fingerprint matches the authorization prompt on your phone before allowing the connection."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MD5 指纹用于核对手机上的 USB 调试授权提示；请确认两边一致后再允许。"
+            "value": "连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。"
           }
         }
       }
@@ -398,18 +398,18 @@
         }
       }
     },
-    "MinIO 等自建服务通常需要路径形式；其他服务请按提供商设置选择": {
+    "开启后，存储桶名称会放在网址中的服务器地址后面。MinIO 等自建服务通常需要开启；其他服务请按提供商说明选择。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Self-hosted services such as MinIO usually require path-style access. For other services, follow your provider’s settings."
+            "value": "When on, the bucket name appears after the server address in the URL. Usually needed for MinIO and other self-hosted services; follow your provider’s instructions."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "MinIO 等自建服务通常需要路径形式；其他服务请按提供商设置选择"
+            "value": "开启后，存储桶名称会放在网址中的服务器地址后面。MinIO 等自建服务通常需要开启；其他服务请按提供商说明选择。"
           }
         }
       }
@@ -911,18 +911,18 @@
         }
       }
     },
-    "使用非官方接口，可能随时失效": {
+    "这种连接方式未经服务商官方支持，可能随时失效。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uses unofficial APIs that may stop working at any time"
+            "value": "This connection method isn’t officially supported by the provider and may stop working at any time."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用非官方接口，可能随时失效"
+            "value": "这种连接方式未经服务商官方支持，可能随时失效。"
           }
         }
       }
@@ -2291,22 +2291,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "尚未检查"
-          }
-        }
-      }
-    },
-    "尚未计算": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not calculated"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "尚未计算"
           }
         }
       }
@@ -3890,22 +3874,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "清空缓存"
-          }
-        }
-      }
-    },
-    "清空缓存…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Clear Cache…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "清空缓存…"
           }
         }
       }
@@ -5844,22 +5812,6 @@
         }
       }
     },
-    "重新生成密钥…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Regenerate Key…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重新生成密钥…"
-          }
-        }
-      }
-    },
     "重新生成调试密钥？": {
       "extractionState": "manual",
       "localizations": {
@@ -6843,34 +6795,34 @@
         }
       }
     },
-    "会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。": {
+    "会先推出正在使用缓存的位置，再删除下载副本。手机和网盘上的原文件、还没上传完的内容都不受影响。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locations using the cache will be ejected before downloaded copies are removed. Metadata, pending uploads, and remote files will be kept."
+            "value": "Locations using the cache will be ejected before downloaded copies are deleted. Original files on your phone and cloud drives, and anything not yet uploaded, will be kept."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。"
+            "value": "会先推出正在使用缓存的位置，再删除下载副本。手机和网盘上的原文件、还没上传完的内容都不受影响。"
           }
         }
       }
     },
-    "会先推出这个位置。保存的登录信息会删除，远端文件不受影响。": {
+    "会先推出这个位置，再删除保存的登录信息。原文件不受影响。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This location will be ejected first. Saved sign-in details will be deleted. Remote files will be kept."
+            "value": "This location will be ejected before its saved sign-in information is deleted. Your original files won’t be affected."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "会先推出这个位置。保存的登录信息会删除，远端文件不受影响。"
+            "value": "会先推出这个位置，再删除保存的登录信息。原文件不受影响。"
           }
         }
       }
@@ -6987,18 +6939,18 @@
         }
       }
     },
-    "无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。": {
+    "从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Files without range reads are downloaded locally. Clearing removes downloaded copies. System-mounted shares do not use this cache."
+            "value": "When opening files from a phone, camera, or some cloud drives, Kayoi first downloads a copy to this Mac. The space shown here is used by those copies. Clearing the cache leaves the originals untouched. SMB shares do not use this space."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。"
+            "value": "从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"
           }
         }
       }
@@ -7143,6 +7095,38 @@
           "stringUnit": {
             "state": "translated",
             "value": "退出 Kayoi 会推出本次挂载的位置，SMB 共享保留。"
+          }
+        }
+      }
+    },
+    "正在清空缓存…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clearing cache…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在清空缓存…"
+          }
+        }
+      }
+    },
+    "填写服务器共享出来的文件夹路径，例如 /volume/share。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter the path of the folder shared by the server, such as /volume/share."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填写服务器共享出来的文件夹路径，例如 /volume/share。"
           }
         }
       }

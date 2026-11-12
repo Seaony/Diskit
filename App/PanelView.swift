@@ -462,7 +462,7 @@ struct PanelView: View {
   private var deleteExplanation: String {
     guard let deleteTarget else { return "" }
     if deleteTarget.kind.usesMount {
-      return L("会先推出这个位置。保存的登录信息会删除，远端文件不受影响。")
+      return L("会先推出这个位置，再删除保存的登录信息。原文件不受影响。")
     }
     if deleteTarget.kind.isCloud {
       return L("会删除 Kayoi 保存的登录信息，网盘里的文件不受影响。")

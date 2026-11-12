@@ -6,6 +6,7 @@ struct NFSConnectionForm: View {
   var body: some View {
     EditorTextRow(editor: editor, key: "host", title: L("服务器地址"), placeholder: "192.168.1.10")
     EditorTextRow(editor: editor, key: "path", title: L("导出路径"), placeholder: "/volume/share")
+      .help(L("填写服务器共享出来的文件夹路径，例如 /volume/share。"))
   }
 }
 

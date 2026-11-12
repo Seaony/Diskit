@@ -159,26 +159,36 @@ struct SettingsView: View {
     SettingsForm {
       KayoiFormSection(title: L("本机缓存")) {
         KayoiSideRow(L("当前占用")) {
-          if checkingCache {
-            ProgressView().nativeProgressAppearance().controlSize(.mini).accessibilityLabel(L("正在计算缓存大小…"))
-          } else if let cacheBytes {
-            Text(ByteCountFormatter.string(fromByteCount: cacheBytes, countStyle: .file))
-              .monospacedDigit()
-          } else {
-            Text(L("尚未计算")).foregroundStyle(KayoiTheme.secondaryText)
+          HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+            if checkingCache || clearingCache {
+              ProgressView().nativeProgressAppearance().controlSize(.mini)
+                .accessibilityLabel(clearingCache ? L("正在清空缓存…") : L("正在计算缓存大小…"))
+            } else if let cacheBytes {
+              Text(ByteCountFormatter.string(fromByteCount: cacheBytes, countStyle: .file))
+                .monospacedDigit().lineLimit(1)
+            } else {
+              Text(verbatim: "—").foregroundStyle(KayoiTheme.secondaryText)
+            }
+            Button(L("清空缓存")) { confirmClear = true }
+              .disabled(cannotClearCache || confirmClear)
+              .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
           }
         }
         if let cacheError {
-          inlineError(cacheError)
-          Button(L("重试")) { Task { await refreshCache() } }
+          HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+            inlineError(cacheError).frame(maxWidth: .infinity, alignment: .leading)
+            Button(L("重试")) { Task { await refreshCache() } }
+              .disabled(checkingCache || clearingCache)
+          }
         }
         if confirmClear {
           VStack(alignment: .leading, spacing: Space.sm) {
             Text(L("清空本机缓存？"))
               .font(.body.weight(.semibold))
-            Text(L("会先推出使用缓存的位置，再删除下载副本。元数据、未上传内容和远端文件都会保留。"))
+            Text(L("会先推出正在使用缓存的位置，再删除下载副本。手机和网盘上的原文件、还没上传完的内容都不受影响。"))
               .font(.caption).foregroundStyle(KayoiTheme.secondaryText)
-            HStack {
+              .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Space.sm) {
               Button(L("取消")) { confirmClear = false }
               Button(L("清空缓存"), role: .destructive) {
                 confirmClear = false
@@ -189,20 +199,18 @@ struct SettingsView: View {
                   await refreshCache()
                 }
               }
+              .disabled(cannotClearCache)
             }
-          }
-        } else {
-          HStack {
-            Button(L("清空缓存…")) { confirmClear = true }
-              .disabled(clearingCache || checkingCache || cacheBytes == nil || cacheBytes == 0)
-              .help(cacheBytes == 0 ? L("没有可清理的本机缓存") : L("清理 Kayoi 留下的本机缓存"))
-            if clearingCache { ProgressView().nativeProgressAppearance().controlSize(.mini) }
           }
         }
       } footer: {
-        Text(L("无法按范围读取的文件会下载到本机。清理只删除下载副本，系统挂载的共享不使用此缓存。"))
+        Text(L("从手机、相机或部分网盘打开文件时，Kayoi 会先把文件下载到这台 Mac，这里显示的就是这些副本。清空不影响原文件；SMB 共享不占用这里的空间。"))
       }
     }
+  }
+
+  private var cannotClearCache: Bool {
+    clearingCache || checkingCache || (cacheBytes ?? 0) <= 0
   }
 
   private var androidPage: some View {
@@ -216,23 +224,27 @@ struct SettingsView: View {
             ProgressView().nativeProgressAppearance().controlSize(.small).accessibilityLabel(L("正在读取密钥指纹…"))
           }
         } else {
-          KayoiSideRow(L("ADB 密钥指纹")) {
-            Text(fingerprint)
-              .font(.body.monospaced()).monospacedDigit()
-              .textSelection(.enabled)
-              .fixedSize(horizontal: false, vertical: true)
+          VStack(alignment: .leading, spacing: Space.sm) {
+            Text(L("密钥指纹")).font(.body)
+            HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+              Text(fingerprint)
+                .font(.callout.monospaced()).monospacedDigit()
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+              Button(copiedFingerprint ? L("已复制") : L("复制指纹"), action: copyFingerprint)
+                .disabled(regeneratingKey)
+            }
           }
-          HStack {
-            Button(copiedFingerprint ? L("已复制") : L("复制指纹"), action: copyFingerprint)
-              .disabled(regeneratingKey)
-            Button(L("重新生成密钥…")) { confirmKey = true }
+          HStack(spacing: Space.sm) {
+            Button(L("重新生成密钥")) { confirmKey = true }
               .disabled(regeneratingKey)
             if regeneratingKey { ProgressView().nativeProgressAppearance().controlSize(.mini) }
           }
           if let fingerprintError { inlineError(fingerprintError) }
         }
       } footer: {
-        Text(L("MD5 指纹用于核对手机上的 USB 调试授权提示；请确认两边一致后再允许。"))
+        Text(L("连接手机时，请将这个指纹与手机上的授权提示核对一致，再允许连接。"))
       }
       KayoiFormSection(title: L("设备连接")) {
         Text(L("如果提示设备被占用，请退出其它手机调试工具，再重试；必要时重新启动 Kayoi。"))

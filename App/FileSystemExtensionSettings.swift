@@ -5,8 +5,8 @@ struct FileSystemExtensionSettings: View {
   let openSettings: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: Space.sm) {
-      KayoiSideRow(L("文件系统扩展")) {
+    KayoiSideRow(L("文件系统扩展")) {
+      HStack(spacing: Space.md) {
         HStack(spacing: Space.sm) {
           if state == .checking {
             ProgressView().nativeProgressAppearance().controlSize(.mini)
@@ -18,15 +18,16 @@ struct FileSystemExtensionSettings: View {
             .multilineTextAlignment(.trailing)
         }
         .accessibilityElement(children: .combine)
+        Button(L("打开系统设置"), action: openSettings)
+          .buttonStyle(FlatButtonStyle())
+          .fixedSize()
+          .overlay {
+            // 和现有 FlatButtonStyle 的轮廓保持一致。
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+              .strokeBorder(KayoiTheme.border, lineWidth: 0.5)
+              .allowsHitTesting(false)
+          }
       }
-      Button(L("打开系统设置"), action: openSettings)
-        .buttonStyle(FlatButtonStyle())
-        .overlay {
-          // 和现有 FlatButtonStyle 的轮廓保持一致。
-          RoundedRectangle(cornerRadius: 7, style: .continuous)
-            .strokeBorder(KayoiTheme.border, lineWidth: 0.5)
-            .allowsHitTesting(false)
-        }
     }
     .accessibilityElement(children: .contain)
   }

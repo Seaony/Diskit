@@ -7,7 +7,7 @@ struct CloudConnectionForm: View {
   private var ready: Bool { editor.draft.params["accountReady"] == "true" }
   var body: some View {
     if editor.draft.kind.isExperimental {
-      Label(L("使用非官方接口，可能随时失效"), systemImage: "exclamationmark.triangle")
+      Label(L("这种连接方式未经服务商官方支持，可能随时失效。"), systemImage: "exclamationmark.triangle")
         .font(.callout).foregroundStyle(KayoiTheme.warning)
     }
     if editor.draft.kind == .lanzou {
@@ -63,7 +63,10 @@ struct CloudConnectionForm: View {
         HStack {
           Text(L("登录后即可测试连接并保存位置。")).font(.callout).foregroundStyle(KayoiTheme.secondaryText)
           Spacer()
-          Button(LF("登录%@…", editor.draft.kind.title)) {
+          Button(
+            editor.draft.kind == .pikPak
+              ? LF("登录%@", editor.draft.kind.title) : LF("登录%@…", editor.draft.kind.title)
+          ) {
             editor.login()
           }
           .buttonStyle(FlatButtonStyle(prominent: true)).disabled(editor.busy)

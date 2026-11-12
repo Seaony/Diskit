@@ -25,32 +25,32 @@ struct SMBConnectionForm: View {
         .onChange(of: editor.draft.params["username"]) { editor.shares = [] }
       EditorPasswordRow(editor: editor, title: L("密码"))
     }
-    if editor.shares.isEmpty {
-      EditorTextRow(editor: editor, key: "share", title: L("共享名"), placeholder: L("共享文件夹名称"))
-    } else {
-      Picker(
-        L("共享名"),
-        selection: Binding(
-          get: { ShareChoice.value(editor.draft.params["share"] ?? "") },
-          set: { value in
-            switch value {
-            case .value(let name): editor.draft.params["share"] = name
-            case .manual: editor.shares = []
-            }
-          })
-      ) {
-        Text(L("选择共享")).tag(ShareChoice.value(""))
-        if let share = editor.draft.params["share"], !share.isEmpty, !editor.shares.contains(share)
-        {
-          Text(LF("手动填写的共享：%@", share)).tag(ShareChoice.value(share))
+    HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+      if editor.shares.isEmpty {
+        EditorTextRow(editor: editor, key: "share", title: L("共享名"), placeholder: L("共享文件夹名称"))
+      } else {
+        Picker(
+          L("共享名"),
+          selection: Binding(
+            get: { ShareChoice.value(editor.draft.params["share"] ?? "") },
+            set: { value in
+              switch value {
+              case .value(let name): editor.draft.params["share"] = name
+              case .manual: editor.shares = []
+              }
+            })
+        ) {
+          Text(L("选择共享")).tag(ShareChoice.value(""))
+          if let share = editor.draft.params["share"], !share.isEmpty, !editor.shares.contains(share) {
+            Text(LF("手动填写的共享：%@", share)).tag(ShareChoice.value(share))
+          }
+          ForEach(editor.shares, id: \.self) { Text($0).tag(ShareChoice.value($0)) }
+          Text(L("手动输入…")).tag(ShareChoice.manual)
         }
-        ForEach(editor.shares, id: \.self) { Text($0).tag(ShareChoice.value($0)) }
-        Text(L("手动输入…")).tag(ShareChoice.manual)
-      }.formRow(L("共享名"))
-    }
-    HStack {
-      Spacer()
+        .formRow(L("共享名"))
+      }
       Button(L("列出共享")) { editor.listShares() }.disabled(!canList)
+        .fixedSize()
         .help(canList ? L("读取主机上的共享文件夹") : L("请先填写主机地址，并选择访客或填写用户名"))
     }
   }

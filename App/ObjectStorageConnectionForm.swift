@@ -16,7 +16,7 @@ struct ObjectStorageConnectionForm: View {
         get: { editor.draft.params["pathStyle"] == "true" },
         set: { editor.draft.params["pathStyle"] = $0 ? "true" : "false" })
     )
-    .help(L("MinIO 等自建服务通常需要路径形式；其他服务请按提供商设置选择"))
+    .help(L("开启后，存储桶名称会放在网址中的服务器地址后面。MinIO 等自建服务通常需要开启；其他服务请按提供商说明选择。"))
   }
 }
 
