@@ -757,7 +757,7 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | PikPak | 未测 | 无已登录账号。 |
 | 蓝奏 | 未测 | 无账号或测试分享链接；当前只读。 |
 | AWS S3 | 未测 | 无真实测试桶和凭据；本机兼容服务结果不代表 AWS 实测。 |
-| Cloudflare R2 | 未测 | 无测试桶和凭据。 |
+| Cloudflare R2 | 通过 | 专用桶 `kayoi-m7-test` 经真实 `kayoi-r2` 卷挂载、浏览；38 字节文件拷入后卸载重挂，拷出 SHA-256 一致；删除对象后再次挂载核对根目录 0 项。 |
 | 阿里 OSS | 未测 | 无测试桶和凭据。 |
 | 腾讯 COS | 未测 | 无测试桶和凭据。 |
 | 七牛 Kodo | 未测 | 无测试桶和凭据。 |
@@ -767,6 +767,12 @@ P2 记录：Finder 的 -36 弹窗文件名为空，转换日志有 path=N/A，�
 | 通用 USB 相机、GR IV | 未测 | 无测试硬件；GR 按约定保留原行为。 |
 
 本机原始服务未出现 .DS_Store、AppleDouble 或其他覆盖层系统元数据。两个 kayoi-m7- 容器、服务数据、证书和测试凭据已删除；4 条临时连接和 2 条测试密码已清理，原配置逐字节恢复，2 个临时连接缓存目录已删除。非敏感证据为 `build/agents/m7-local-final-evidence.json`、`build/agents/m7-local-remote-readback.json`、`build/m7-{webdav-http,s3,minio}-acceptance.json` 与 `build/m7-local-final-cleanup.json`。
+
+2026-11-12 补测 R2：使用仅限专用桶的对象读写凭据，显式配置 `region=auto`、`pathStyle=false`。初始目录为空，拷入名称含中文、空格和 emoji 的单个文件；卸载重挂后拷出 38 字节，SHA-256 为 `88559766157261bac65975a657f9d719b4661e9a8fd3d705e71bbb5de9c30acd`。对象删除后再次挂载，根目录仍为 0 项，随后正常卸载。全部对象操作通过正式 FSKit 卷完成，校验基于卸载重挂后的卷内读回。
+
+R2 临时连接、共享钥匙串条目及 1 个扩展缓存目录已清理；删除密码后读回为 nil，原连接配置逐字节一致。临时输入、配置副本和签名检查工具已删除。测试准备方确认专用桶已从桶列表消失、测试令牌已在控制台删除，既有令牌未改；本机另行核对原凭据目录已不存在。正在运行的 Debug PID 55901 未重启，原 USB 卷保持挂载。证据为 `build/m7-r2-acceptance.json`；本次没有修改产品代码。
+
+本次 `make build` 与深度签名校验通过，日志为 `build/m7-r2-final-build.log`。本次仅改文档，产品代码与 `b17f8ac` 一致，完整测试复用该提交的 978 项 Swift、14 项脚本及 538 键本地化校验结果，日志为 `build/menubar-icon/final-test.log`。
 
 已有容器未被修改；核对期间既有 mantis 容器重启次数增加 2，仍运行，原因不在本次范围。macOS 26 挂载分支仍未实测，不要求用户为此更换系统。
 

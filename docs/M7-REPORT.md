@@ -82,7 +82,11 @@ P2 记录：Finder 弹窗文件名为空，转换日志有 path=N/A，但错误�
 
 本机 HTTP WebDAV 经现有系统挂载代码、S3 与 MinIO 经真实 FSKit 分别完成挂载、浏览和小文件拷入拷出；42、34、37 字节文件的独立服务端 SHA-256 与卷内一致，原始服务无非预期系统元数据。HTTPS 自签服务已就绪，但原生无界面挂载返回系统码 19；测试 CA 未信任，未更改系统信任，成功挂载和读写未验证。NFS 无测试导出，本机自建服务需要管理员权限，未执行。逐个类型的结果见验收记录，未用本机 MinIO 代表真实云服务通过。
 
-阿里、夸克、百度、115、123、OneDrive、Google Drive、Dropbox、UC、天翼、移动、迅雷、PikPak、蓝奏均无已登录账号，已分别记未测。本机真实凭据配置中的阿里、百度、115、123、OneDrive、Google、Dropbox Client ID 均为空；前四家的 Client Secret 和百度 App ID 也未配置，需要先配置再登录。AWS S3、R2、OSS、COS、Kodo、B2 无测试桶和凭据，SMB 无已配置共享，均未实测。
+阿里、夸克、百度、115、123、OneDrive、Google Drive、Dropbox、UC、天翼、移动、迅雷、PikPak、蓝奏均无已登录账号，已分别记未测。本机真实凭据配置中的阿里、百度、115、123、OneDrive、Google、Dropbox Client ID 均为空；前四家的 Client Secret 和百度 App ID 也未配置，需要先配置再登录。AWS S3、OSS、COS、Kodo、B2 无测试桶和凭据，SMB 无已配置共享，均未实测。
+
+2026-11-12 使用专用桶 `kayoi-m7-test` 补测真实 R2，通过 `cloudflareR2` 连接完成 FSKit 挂载、浏览及单个 38 字节文件往返；名称含中文、空格和 emoji。卸载重挂后拷出 SHA-256 与本地源一致，为 `88559766157261bac65975a657f9d719b4661e9a8fd3d705e71bbb5de9c30acd`。删除对象后再次挂载，根目录 0 项，正常卸载；全部对象操作均走正式卷。临时连接、共享密码（删除后读回 nil）、扩展缓存和本地敏感副本、签名工具已清，原配置逐字节一致，证据为 `build/m7-r2-acceptance.json`。测试准备方确认桶和测试令牌已删除、既有令牌未改，本机另行核对原凭据目录已不存在。Debug PID 55901 及原 USB 卷未被中断；本次未改产品代码，不代表其他真实对象存储已通过。
+
+R2 补测后的 `make build` 与深度签名通过（`build/m7-r2-final-build.log`）；本次仅更新文档，完整测试复用相同产品代码 `b17f8ac` 的 978 项 Swift 和 14 项脚本结果（`build/menubar-icon/final-test.log`）。
 
 临时服务只绑定回环。两个 kayoi-m7- 容器、数据、证书和测试凭据已清理；4 条临时连接及 2 条测试密码已移除，原 connections.json 逐字节恢复一致，2 个临时连接缓存目录已删除。非敏感验收证据保留在 `build/agents/m7-local-final-evidence.json` 和 `build/agents/m7-local-remote-readback.json`。已有容器未被修改；其中既有 mantis 容器期间重启 2 次、仍运行，未扩展排障（不在本次范围）。
 
