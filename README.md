@@ -39,17 +39,17 @@ Diskit keeps them all in one panel in the menu bar:
 It's for you if you move files between several devices and services. If everything you use already lives in one cloud drive with its own Mac app, you don't need it.
 
 > [!NOTE]
-> Diskit is early (0.2). Today only SMB, WebDAV and NFS mount in Finder. Phones, cameras, cloud drives and object storage can be saved and tested in the app; opening their files in Finder is still in progress. Many integrations have not been checked against real accounts and devices yet.
+> Diskit is early. SMB, WebDAV and NFS mount through macOS; phones, USB cameras, cloud drives and object storage mount in Finder through Diskit's own file system extension, which you turn on once in System Settings when the panel asks. Many integrations have not been checked against real accounts and devices yet.
 
 ## Quick start
 
 **1 · Install.** Download the DMG from the **[latest release](https://github.com/Seaony/Diskit/releases/latest)**, open it and drag `Diskit.app` into Applications.
 
-<sub>Builds are universal (Apple silicon and Intel) and need macOS 26 or later. They are not signed with an Apple Developer ID or notarised yet, so the first launch may be blocked; open **System Settings → Privacy & Security** and choose to open Diskit anyway. Diskit updates itself from GitHub Releases through Sparkle.</sub>
+<sub>Builds are universal (Apple silicon and Intel) and need macOS 26 or later. Diskit updates itself from GitHub Releases through Sparkle.</sub>
 
 **2 · Add a location.** Click the Diskit icon in the menu bar, press **+**, pick a type and fill in what it asks for. Devices and shares Diskit finds on your network or USB appear first. Press **Test and Save**.
 
-**3 · Use it.** Click a card for its actions: mount or eject a share, test a phone or drive again, edit, reorder or delete. Mounted shares show up in Finder's sidebar under Locations.
+**3 · Use it.** Click a card for its actions: mount or eject, test again, edit, reorder or delete. Mounted locations show up in Finder's sidebar under Locations.
 
 ## Supported locations
 
