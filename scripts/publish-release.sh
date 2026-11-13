@@ -92,6 +92,16 @@ notarize() {
   echo "公证通过：$(basename "$1")"
 }
 
+# 刚公证通过时苹果那边的票据可能还没同步，装订失败就隔 30 秒重试
+staple() {
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    xcrun stapler staple "$1" && return 0
+    [[ "$attempt" == 5 ]] || { echo "装订失败，30 秒后重试（$attempt/5）" >&2; sleep 30; }
+  done
+  fail "装订票据失败：$(basename "$1")"
+}
+
 # 只公证一次：苹果会连 DMG 里的 App 一起认证，之后 DMG 和 App 都能装订票据
 zip_name="Diskit-$version.zip"
 dmg_name="Diskit-$version.dmg"
@@ -100,10 +110,10 @@ ln -s /Applications "$work/dmg/Applications"
 hdiutil create -quiet -volname Diskit -srcfolder "$work/dmg" -ov -format UDZO "$output/$dmg_name"
 codesign --sign "$identity" --timestamp "$output/$dmg_name"
 notarize "$output/$dmg_name"
-xcrun stapler staple "$output/$dmg_name"
+staple "$output/$dmg_name"
 spctl --assess --type open --context context:primary-signature --verbose=2 "$output/$dmg_name"
 # 更新用的压缩包取装订过的 App
-xcrun stapler staple "$app"
+staple "$app"
 xcrun stapler validate "$app"
 spctl --assess --type execute --verbose=2 "$app"
 ditto -c -k --sequesterRsrc --keepParent "$app" "$output/$zip_name"
