@@ -452,3 +452,9 @@ private func quarkAPI(_ path: String = "/file/sort") -> URLRequest {
   #expect(try await session.authorized(quarkAPI()).status == 500)
   #expect(try secrets.string(key) == goodQuarkCookie)
 }
+
+// 夸克对浏览器标识限制大文件下载，接口和下载要用客户端标识；登录页仍按浏览器打开
+@Test func quarkRequestsUseClientUserAgentButLoginUsesBrowser() {
+  #expect(QuarkCloudConfiguration.quark.userAgent.contains("quark-cloud-drive/"))
+  #expect(!QuarkCloudConfiguration.quark.loginUserAgent.contains("quark-cloud-drive/"))
+}

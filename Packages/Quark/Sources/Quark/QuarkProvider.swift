@@ -8,6 +8,9 @@ public actor QuarkProvider: RemoteFileProvider {
   private let session: QuarkSession
   private var connected = false
   private var paths: [String: QuarkFile] = [:]
+  // 每个目录最近一次完整列出的时间，决定 stat 能不能直接用缓存
+  private var listedAt: [String: Date] = [:]
+  static let listingTTL: TimeInterval = 30
   private var cacheRevision: UInt64 = 0
   private var listings: [String: UUID] = [:]
   private var downloadLinks: [String: (url: URL, size: Int64, updatedAt: Int64)] = [:]
@@ -21,6 +24,7 @@ public actor QuarkProvider: RemoteFileProvider {
     let revision = cacheRevision
     connected = false
     paths.removeAll()
+    listedAt.removeAll()
     downloadLinks.removeAll()
     _ = try await session.account()
     guard revision == cacheRevision else { throw RemoteError.posix(EAGAIN) }
@@ -30,6 +34,7 @@ public actor QuarkProvider: RemoteFileProvider {
     cacheRevision &+= 1
     connected = false
     paths.removeAll()
+    listedAt.removeAll()
     downloadLinks.removeAll()
   }
   public func spaceInfo() async throws -> SpaceInfo {
@@ -50,7 +55,13 @@ public actor QuarkProvider: RemoteFileProvider {
       return RemoteItem(
         path: path, name: "/", isDirectory: true, size: 0, modified: Date(timeIntervalSince1970: 0))
     }
+    // 上级目录 30 秒内列过就直接用记下的条目，不必每次整个重新列；过期了重新列，拿到别处改过的文件
     let parent = parent(of: path)
+    if let file = paths[path.value], let listed = listedAt[parent.value],
+      Date().timeIntervalSince(listed) < Self.listingTTL
+    {
+      return try file.item(at: path)
+    }
     let folder = try await resolve(parent)
     guard !folder.file else { throw RemoteError.posix(ENOTDIR) }
     let matches = try await children(parent, fid: folder.fid).filter { $0.name == basename(path) }
@@ -394,6 +405,7 @@ public actor QuarkProvider: RemoteFileProvider {
       downloadLinks.removeValue(forKey: file.fid)
     }
     clearCached(path)
+    listedAt[path.value] = Date()
     let grouped = Dictionary(grouping: output, by: \.name)
     for file in output {
       let child = try path.appending(file.name)
@@ -410,6 +422,9 @@ public actor QuarkProvider: RemoteFileProvider {
   private func clearCached(_ path: RemotePath) {
     let prefix = path.value == "/" ? "/" : path.value + "/"
     for key in Array(paths.keys) where key.hasPrefix(prefix) { paths.removeValue(forKey: key) }
+    for key in Array(listedAt.keys) where key == path.value || key.hasPrefix(prefix) {
+      listedAt.removeValue(forKey: key)
+    }
   }
   private func parent(of path: RemotePath) -> RemotePath {
     path.parent

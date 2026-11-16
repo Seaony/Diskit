@@ -65,6 +65,9 @@ private actor VolumeProvider: RemoteFileProvider {
   var writeFails = false
   var moveFails = false
   var disconnected = false
+  var offline = false
+  var loginExpired = false
+  var connects = 0
   var rejectsExisting: Bool
   var slowListing = false
   var listing: [RemoteItem]?
@@ -85,14 +88,26 @@ private actor VolumeProvider: RemoteFileProvider {
   func resetEvents() { events = [] }
   func failWrites(_ enabled: Bool) { writeFails = enabled }
   func failMoves(_ enabled: Bool) { moveFails = enabled }
-  func loseConnection() { disconnected = true }
+  // 网络断开：请求失败，重连也失败，直到网络恢复
+  func loseConnection() {
+    disconnected = true
+    offline = true
+  }
+  func restoreNetwork() { offline = false }
+  func expireLogin() { loginExpired = true }
+  func connectCount() -> Int { connects }
   func delayListing() { slowListing = true }
   func setListing(_ items: [RemoteItem]) { listing = items }
   func holdNextRead(_ control: VolumeReadControl) { nextReadControl = control }
   func replaceNextRead(with data: Data) { nextReadContents = data }
   func splitReads(into bytes: Int) { readChunkSize = bytes }
   func maximumLists() -> Int { peakLists }
-  func connect() async throws { disconnected = false }
+  func connect() async throws {
+    connects += 1
+    if offline { throw URLError(.notConnectedToInternet) }
+    if loginExpired { throw RemoteError.unauthorized }
+    disconnected = false
+  }
   func disconnect() async { disconnected = true }
   func spaceInfo() async throws -> SpaceInfo { SpaceInfo(total: 1000, used: 100) }
 
@@ -710,4 +725,63 @@ private struct VolumeFixture {
   #expect(await fixture.provider.recorded().filter { $0 == "read:/file:all" }.count == 1)
   try await fixture.backend.close(path)
   await fixture.backend.disconnect()
+}
+
+private final class TestClock: @unchecked Sendable {
+  private let lock = NSLock()
+  private var value = Date(timeIntervalSince1970: 1_000)
+  func now() -> Date { lock.withLock { value } }
+  func advance(_ seconds: TimeInterval) { lock.withLock { value += seconds } }
+}
+
+@Test func remoteVolumeReconnectsAfterNetworkDropWithoutHammering() async throws {
+  let clock = TestClock()
+  let fixture = VolumeFixture(kind: .quark, now: { clock.now() })
+  defer { fixture.clean() }
+  try await fixture.provider.put("/file", data: "abcd")
+  _ = try await fixture.backend.connect()
+  await fixture.provider.loseConnection()
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
+  // 网络还没恢复：试一次重连，失败后 5 秒内不再试
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
+  await fixture.provider.restoreNetwork()
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
+  #expect(await fixture.provider.connectCount() == 2)
+  clock.advance(5)
+  #expect(try await fixture.backend.list(fixture.path("/")).map(\.name) == ["file"])
+  #expect(await fixture.provider.connectCount() == 3)
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeDoesNotReconnectAfterUnmount() async throws {
+  let fixture = VolumeFixture(kind: .quark)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  await fixture.backend.disconnect()
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
+  #expect(await fixture.provider.connectCount() == 1)
+}
+
+@Test func remoteVolumeReconnectReportsExpiredLogin() async throws {
+  let fixture = VolumeFixture(kind: .quark)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  await fixture.provider.loseConnection()
+  await #expect(throws: RemoteError.notConnected) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
+  await fixture.provider.restoreNetwork()
+  await fixture.provider.expireLogin()
+  // 登录失效要原样报出来，App 才能提示重新登录
+  await #expect(throws: RemoteError.unauthorized) {
+    _ = try await fixture.backend.list(fixture.path("/"))
+  }
 }

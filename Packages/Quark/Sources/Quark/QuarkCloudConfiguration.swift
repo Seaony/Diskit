@@ -9,7 +9,10 @@ public struct QuarkCloudConfiguration: Sendable, Equatable {
   public let accountURL: URL
   public let apiBase: String
   public let clientParameter: String
+  // 接口和下载用客户端标识：夸克对浏览器标识限制大文件下载（返回 23018）
   public let userAgent: String
+  // 网页登录窗口用的标识，登录页按浏览器显示
+  public let loginUserAgent: String
 
   public static let quark = QuarkCloudConfiguration(
     service: .quark, cookieDomain: "quark.cn",
@@ -18,6 +21,8 @@ public struct QuarkCloudConfiguration: Sendable, Equatable {
     accountURL: URL(string: "https://pan.quark.cn/account/info")!,
     apiBase: "https://drive.quark.cn/1/clouddrive", clientParameter: "ucpro",
     userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch",
+    loginUserAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
   )
 
@@ -28,6 +33,8 @@ public struct QuarkCloudConfiguration: Sendable, Equatable {
     accountURL: URL(string: "https://drive.uc.cn/account/info")!,
     apiBase: "https://pc-api.uc.cn/1/clouddrive", clientParameter: "UCBrowser",
     userAgent:
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch",
+    loginUserAgent:
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) uc-cloud-drive/2.5.20 Chrome/100.0.4896.160 Electron/18.3.5.4-b478491100 Safari/537.36 Channel/pckk_other_ch"
   )
 }

@@ -248,7 +248,7 @@ private func auth() -> Reply {
 @Test func quarkMkdirRenameAndTrashInvalidatePaths() async throws {
   let (provider, http) = try setup([
     list([]), Reply("/file"), list([file("f", "x")]), list([file("f", "x")]), Reply("/file/rename"),
-    list([file("f", "y")]), list([file("f", "y")]), Reply("/file/delete"),
+    list([file("f", "y")]), Reply("/file/delete"),
   ])
   try await provider.connect()
   try await provider.makeDirectory(RemotePath("/dir"))
@@ -426,7 +426,6 @@ func quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers: Bool) as
     Reply("/file/download", data: [["download_url": "https://download.quark.cn/signed"]]),
     Reply(
       "/signed", status: 206, bytes: Data([1, 2]), headers: ["Content-Range": "bytes 0-1/100"]),
-    list([file("f", "x", size: 100)]),
     Reply(
       "/signed", status: 206, bytes: Data([3, 4]), headers: ["Content-Range": "bytes 2-3/100"]),
   ])
@@ -440,6 +439,8 @@ func quarkRetriesInconsistentEmptyPageOnceWithoutDroppingRows(recovers: Bool) as
   }
   #expect(output == Data([1, 2, 3, 4]))
   #expect(await http.files().filter { $0.url?.path.hasSuffix("/file/download") == true }.count == 1)
+  // 第二次读直接用列目录时记下的信息，不再重新列目录
+  #expect(await http.files().filter { $0.url?.path.hasSuffix("/file/sort") == true }.count == 1)
 }
 
 @Test func quarkFailedMoveAndRecoveryPreserveBothErrors() async throws {

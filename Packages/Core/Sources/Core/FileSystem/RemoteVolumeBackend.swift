@@ -34,6 +34,9 @@ public actor RemoteVolumeBackend {
   let now: @Sendable () -> Date
   let logger = Logger(subsystem: "com.seaony.Diskit.FS", category: "remote-volume")
   var connected = false
+  // 挂载时连上过、还没卸载：中途断开后由下一次操作自动重连
+  var reconnects = false
+  var lastReconnect: Date?
   var directories: [RemotePath: DirectoryEntry] = [:]
   var staged: [RemotePath: StagedFile] = [:]
   var wholeFiles: [RemotePath: CachedFile] = [:]
@@ -91,6 +94,7 @@ public actor RemoteVolumeBackend {
     defer { release() }
     do {
       try Task.checkCancellation()
+      try await reconnectIfNeeded()
       logger.debug(
         "连接 \(self.connectionID.uuidString, privacy: .public) 开始 \(operation, privacy: .public) \(path?.value ?? "/", privacy: .private)"
       )
@@ -114,6 +118,28 @@ public actor RemoteVolumeBackend {
         throw RemoteError.notConnected
       }
       throw error
+    }
+  }
+
+  // 网络抖一下、请求超时都会断开；不重连的话整个卷要推出重挂才能再用。
+  // 重连失败后 5 秒内不再试，免得 Finder 连续访问时反复请求。
+  // 网络类失败只记下来，本次操作照常报“已断开”；登录失效等其他错误原样交给 Finder 和 App
+  private func reconnectIfNeeded() async throws {
+    guard !connected, reconnects else { return }
+    if let lastReconnect, now().timeIntervalSince(lastReconnect) < 5 { return }
+    lastReconnect = now()
+    do {
+      try await provider.connect()
+      connected = true
+      logger.info("连接 \(self.connectionID.uuidString, privacy: .public) 已自动重连")
+    } catch {
+      // 连接本身可能卡到超时才失败，从失败时刻重新计时
+      lastReconnect = now()
+      let value = error as NSError
+      logger.error(
+        "连接 \(self.connectionID.uuidString, privacy: .public) 自动重连失败：\(value.domain, privacy: .public) code=\(value.code)")
+      await provider.disconnect()
+      if !Self.isDisconnect(error) { throw error }
     }
   }
 
@@ -155,10 +181,12 @@ public actor RemoteVolumeBackend {
           space = SpaceInfo(total: nil, used: nil)
         }
         backend.connected = true
+        backend.reconnects = true
         backend.logger.info("连接 \(backend.connectionID.uuidString, privacy: .public) 已连接")
         return space
       } catch {
         backend.connected = false
+        backend.reconnects = false
         backend.openedPaths.removeAll()
         backend.attributesByPath.removeAll()
         await backend.provider.disconnect()
@@ -171,6 +199,7 @@ public actor RemoteVolumeBackend {
     await acquire()
     defer { release() }
     connected = false
+    reconnects = false
     directories.removeAll()
     openedPaths.removeAll()
     attributesByPath.removeAll()

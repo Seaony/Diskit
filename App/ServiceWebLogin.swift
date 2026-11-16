@@ -17,8 +17,8 @@ struct ServiceWebLogin: NSViewRepresentable {
         source: WebLoginObservationScript.source(service: state.service),
         injectionTime: .atDocumentStart, forMainFrameOnly: true))
     let view = WKWebView(frame: .zero, configuration: configuration)
-    if state.service == .quark { view.customUserAgent = QuarkCloudConfiguration.quark.userAgent }
-    if state.service == .uc { view.customUserAgent = QuarkCloudConfiguration.uc.userAgent }
+    if state.service == .quark { view.customUserAgent = QuarkCloudConfiguration.quark.loginUserAgent }
+    if state.service == .uc { view.customUserAgent = QuarkCloudConfiguration.uc.loginUserAgent }
     view.navigationDelegate = context.coordinator
     view.uiDelegate = context.coordinator
     context.coordinator.attach(view)
