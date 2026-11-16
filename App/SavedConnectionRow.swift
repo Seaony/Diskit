@@ -172,17 +172,28 @@ struct SavedConnectionRow: View {
   private var statusLine: String { isReadOnly ? L("只读") + " · " + fullStatus : fullStatus }
   private var hoverText: String { connection.name + "\n" + statusLine }
 
-  // 点按或右键弹出的操作菜单：顶部是名称和状态
+  // 菜单顶部只放卡片上看不全的话：出错原因、要在手机上做的操作；名称和其他状态卡片上已经写了
+  private var menuNote: String? {
+    switch state {
+    case .failed: fullStatus
+    case .awaitingAuthorization: PanelCopy.subtitle(state, kind: connection.kind)
+    default: nil
+    }
+  }
+
+  // 点按或右键弹出的操作菜单
   private func makeMenu() -> NSMenu {
     let menu = NSMenu()
     menu.autoenablesItems = false
-    // 顶部名称和状态用自绘视图，避免被系统画成灰色的禁用项
-    let header = NSMenuItem()
-    let headerView = NSHostingView(rootView: PanelMenuHeader(name: connection.name, status: statusLine, isIssue: isIssue))
-    headerView.frame.size = headerView.fittingSize
-    header.view = headerView
-    menu.addItem(header)
-    menu.addItem(.separator())
+    if let menuNote {
+      // 用自绘视图，避免被系统画成灰色的禁用项
+      let header = NSMenuItem()
+      let headerView = NSHostingView(rootView: PanelMenuHeader(status: menuNote, isIssue: isIssue))
+      headerView.frame.size = headerView.fittingSize
+      header.view = headerView
+      menu.addItem(header)
+      menu.addItem(.separator())
+    }
     for (index, group) in menuGroups.enumerated() {
       if index > 0 { menu.addItem(.separator()) }
       for entry in group {
@@ -234,16 +245,12 @@ struct SavedConnectionRow: View {
 }
 
 struct PanelMenuHeader: View {
-  let name: String
   let status: String
   let isIssue: Bool
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) { // grid: ok 名称与状态贴近
-      Text(name).font(.system(size: 12.5, weight: .semibold)).foregroundStyle(DiskitTheme.primaryText).lineLimit(1)
-      Text(status).font(.system(size: 11.5)).foregroundStyle(isIssue ? DiskitTheme.error : DiskitTheme.secondaryText)
-        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
-    }
-    .frame(width: 220, alignment: .leading)
+    Text(status).font(.system(size: 11.5)).foregroundStyle(isIssue ? DiskitTheme.error : DiskitTheme.secondaryText)
+      .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+      .frame(width: 220, alignment: .leading)
     .padding(.horizontal, 14).padding(.top, Space.xs).padding(.bottom, Space.sm) // grid: ok 与菜单项文字对齐
   }
 }
