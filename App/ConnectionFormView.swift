@@ -75,6 +75,12 @@ struct ConnectionFormView: View {
             Toggle(L("插上后自动连接"), isOn: $editor.draft.autoMount)
           }
         }
+        // 非官方接口只是提醒，放在表单最下面，不占连接区
+        if editor.draft.kind.isExperimental {
+          Text(L("这种连接方式未经服务商官方支持，可能随时失效。"))
+            .font(.caption).foregroundStyle(DiskitTheme.secondaryText)
+            .padding(.horizontal, Space.xs) // grid: ok 和分组标题左对齐
+        }
       }
       .padding(.horizontal, 28).padding(.top, Space.md).padding(.bottom, Space.lg) // grid: ok 和标题区左右 28 对齐
     }

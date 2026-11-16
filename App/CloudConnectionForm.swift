@@ -6,10 +6,6 @@ struct CloudConnectionForm: View {
   @State private var alternatives = false
   private var ready: Bool { editor.draft.params["accountReady"] == "true" }
   var body: some View {
-    if editor.draft.kind.isExperimental {
-      Label(L("这种连接方式未经服务商官方支持，可能随时失效。"), systemImage: "exclamationmark.triangle")
-        .font(.callout).foregroundStyle(DiskitTheme.warning)
-    }
     if editor.draft.kind == .lanzou {
       Picker(L("访问方式"), selection: editor.parameter("authMode")) {
         Text(L("登录账号")).tag("account")
