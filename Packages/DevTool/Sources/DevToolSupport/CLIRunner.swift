@@ -34,6 +34,13 @@ public enum CLIRunner {
     let values = try CLIEnvironment.load(ProcessInfo.processInfo.environment)
     let provider = try await CLIProviderFactory.make(
       connection, values: values, secrets: storage.secrets)
+    if options.finderReads {
+      try await CLITransfers.finderRead(
+        provider, kind: connection.kind, path: RemotePath(options.operands[0]), range: options.range,
+        output: { try FileHandle.standardOutput.write(contentsOf: $0) },
+        report: { try? FileHandle.standardError.write(contentsOf: Data(($0 + "\n").utf8)) })
+      return
+    }
     try await execute(
       options, provider: provider,
       text: { print($0) }, bytes: { try FileHandle.standardOutput.write(contentsOf: $0) },

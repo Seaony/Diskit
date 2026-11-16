@@ -195,6 +195,7 @@ extension RemoteVolumeBackend {
     try await perform("close", path: path) { backend in
       backend.openedPaths.remove(path)
       backend.attributesByPath.removeValue(forKey: path)
+      backend.dropReadAhead(path)
       try await backend.flushUnlocked(path)
       if backend.staged[path]?.retainedForRecovery == false { backend.discardStage(path) }
       backend.wholeFiles.removeValue(forKey: path)

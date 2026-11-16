@@ -9,6 +9,11 @@ public actor QuarkSession {
   private let secretKey: String
   private let secrets: any SecretStore
   private let transport: any HTTPTransport
+  // 下载文件内容用的几条独立连接：同一个 URLSession 里的并行请求会被 HTTP/2 合到一条连接上，
+  // 速度和单条一样；分开的会话各自建连接，预读并行下载才真能叠加速度
+  static let downloadConnections = 6
+  private let downloads: [any HTTPTransport]
+  private var nextDownload = 0
   private var didNotifyInvalidation = false
   public init(
     secretKey: String, secrets: any SecretStore = RuntimeStorage.current.secrets,
@@ -18,9 +23,17 @@ public actor QuarkSession {
     self.secretKey = secretKey
     self.secrets = secrets
     self.configuration = configuration
-    self.transport = DiagnosticHTTPTransport(
+    let shared = DiagnosticHTTPTransport(
       transport ?? URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain),
       category: .quark)
+    self.transport = shared
+    downloads =
+      transport != nil
+      ? [shared]
+      : (0..<Self.downloadConnections).map { _ in
+        DiagnosticHTTPTransport(
+          URLSessionHTTPTransport(cookieDomain: configuration.cookieDomain), category: .quark)
+      }
   }
   public func hasCookie() throws -> Bool { try storedCookie()?.valid == true }
 
@@ -71,7 +84,9 @@ public actor QuarkSession {
   }
   public func authorizedStream(_ original: URLRequest) async throws -> HTTPStreamResponse {
     let cookie = try requireCookie()
-    let stream = try await transport.stream(
+    let channel = Self.isAPI(original) ? transport : downloads[nextDownload % downloads.count]
+    if !Self.isAPI(original) { nextDownload &+= 1 }
+    let stream = try await channel.stream(
       Self.prepare(original, cookie: cookie, configuration: configuration))
     guard Self.trusted(original.url, domain: configuration.cookieDomain) else { return stream }
     guard

@@ -49,6 +49,9 @@ public actor RemoteVolumeBackend {
   var openedPaths: Set<RemotePath> = []
   var attributesByPath: [RemotePath: AttributeEntry] = [:]
   var hiddenUploads: Set<RemotePath> = []
+  var readAheads: [RemotePath: ReadAhead] = [:]
+  var readAheadSegmentBytes: Int64 = 8 * 1024 * 1024
+  var readAheadAfterBytes: Int64 = 1024 * 1024
   var reportedPendingUploads: [String]?
   // 接管过上次留下的记录后才更新清单，连不上时不能把上次的清单清掉
   var journalsAdopted = false
@@ -126,6 +129,7 @@ public actor RemoteVolumeBackend {
         connected = false
         openedPaths.removeAll()
         attributesByPath.removeAll()
+        dropAllReadAheads()
         await provider.disconnect()
         throw RemoteError.notConnected
       }
@@ -208,6 +212,7 @@ public actor RemoteVolumeBackend {
         backend.reconnects = false
         backend.openedPaths.removeAll()
         backend.attributesByPath.removeAll()
+        backend.dropAllReadAheads()
         await backend.provider.disconnect()
         throw error
       }
@@ -223,6 +228,7 @@ public actor RemoteVolumeBackend {
     directories.removeAll()
     openedPaths.removeAll()
     attributesByPath.removeAll()
+    dropAllReadAheads()
     await provider.disconnect()
     logger.info(
       "连接 \(self.connectionID.uuidString, privacy: .public) 已断开，保留写入暂存文件 \(self.staged.count)")
@@ -365,6 +371,9 @@ public actor RemoteVolumeBackend {
         let item = try await backend.openedItem(path)
         guard !item.isDirectory else { throw RemoteError.posix(EISDIR) }
         guard offset < item.size else { return Data() }
+        if let data = try await backend.readAhead(path, item: item, offset: offset, length: length) {
+          return data
+        }
         let stream: AsyncThrowingStream<Data, Error>
         do {
           stream = try await backend.provider.read(
@@ -379,6 +388,8 @@ public actor RemoteVolumeBackend {
           result.append(chunk.prefix(length - result.count))
           if result.count == length { break }
         }
+        backend.noteRead(
+          path, item: item, start: offset, end: offset + Int64(result.count))
         return result
       }
       return try await backend.readWholeFile(path, offset: offset, length: length)
@@ -538,6 +549,9 @@ public actor RemoteVolumeBackend {
   }
 
   func invalidate(_ paths: [RemotePath]) async {
+    for key in Array(readAheads.keys) where paths.contains(where: { Self.contains($0, key) }) {
+      dropReadAhead(key)
+    }
     for path in paths {
       directories.removeValue(forKey: path.parent)
       for key in Array(attributesByPath.keys) where key == path.parent || Self.contains(path, key) {

@@ -8,6 +8,8 @@ struct CLIArguments: Sendable {
   let showHidden: Bool
   let recursive: Bool
   let range: Range<Int64>?
+  // 像 Finder 一样经过挂载卷的读取逻辑、每次读 1 MiB，用来测复制速度
+  let finderReads: Bool
 
   init(_ arguments: [String]) throws {
     if arguments.isEmpty || arguments == ["--help"] || arguments == ["-h"] {
@@ -17,6 +19,7 @@ struct CLIArguments: Sendable {
       showHidden = false
       recursive = false
       range = nil
+      finderReads = false
       return
     }
     let command = arguments[0]
@@ -24,6 +27,7 @@ struct CLIArguments: Sendable {
     var all = false
     var recursive = false
     var range: Range<Int64>?
+    var finderReads = false
     var options = true
     var index = 1
     while index < arguments.count {
@@ -34,6 +38,8 @@ struct CLIArguments: Sendable {
         all = true
       } else if options, command == "rm", argument == "-r" {
         recursive = true
+      } else if options, command == "cat", argument == "--finder" {
+        finderReads = true
       } else if options, command == "cat", argument == "--range" {
         guard range == nil, index + 1 < arguments.count else { throw RemoteError.invalidPath }
         index += 1
@@ -70,5 +76,6 @@ struct CLIArguments: Sendable {
     showHidden = all
     self.recursive = recursive
     self.range = range
+    self.finderReads = finderReads
   }
 }

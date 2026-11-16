@@ -5,8 +5,10 @@ import UniformTypeIdentifiers
 public actor QuarkProvider: RemoteFileProvider {
   // 重名文件分到的编号在本次连接里保持不变
   private let duplicateNames = DuplicateNameMemory()
+  // 实测单条下载连接 7～8 MB/s；6 条并行约 28 MB/s，8 条也不再更快
   public nonisolated let capabilities = ProviderCapabilities(
-    canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
+    canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true,
+    readAheadConnections: QuarkSession.downloadConnections)
   private let session: QuarkSession
   private var connected = false
   private var paths: [String: QuarkFile] = [:]
@@ -74,9 +76,13 @@ public actor QuarkProvider: RemoteFileProvider {
   public func read(_ path: RemotePath, range: Range<Int64>?) async throws -> AsyncThrowingStream<
     Data, Error
   > {
-    let metadata = try await stat(path)
-    guard !metadata.isDirectory else { throw RemoteError.posix(EISDIR) }
+    // 分段读取直接用打开文件时列目录记下的条目，不再每段都查：预读时几段同时下载，
+    // 各自重新列同一个目录会互相顶掉（EAGAIN）。文件中途被改了，下面核对返回范围时会发现。
+    // 整个文件下载照旧先查一次，拿到最新的条目
+    if range == nil { _ = try await stat(path) }
     let file = try await resolve(path)
+    let metadata = try file.item(at: path)
+    guard !metadata.isDirectory else { throw RemoteError.posix(EISDIR) }
     let requested: Range<Int64>?
     if let range {
       guard range.lowerBound >= 0, range.lowerBound <= metadata.size else {

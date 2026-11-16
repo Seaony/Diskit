@@ -11,6 +11,40 @@ import S3Drive
 import TianyiDrive
 
 enum CLITransfers {
+  // 经过挂载卷的读取逻辑、每次读 1 MiB（和 Finder 复制时一样），最后报告用时和速度
+  static func finderRead(
+    _ provider: any RemoteFileProvider, kind: ConnectionKind, path: RemotePath,
+    range: Range<Int64>?, output: (Data) throws -> Void, report: (String) -> Void
+  ) async throws {
+    let cache = FileManager.default.temporaryDirectory.appending(path: "diskit-dev-" + UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: cache) }
+    let backend = RemoteVolumeBackend(
+      provider: provider, connectionID: UUID(), kind: kind, cacheRoot: cache, replacesExisting: true)
+    _ = try await backend.connect()
+    let started = ContinuousClock.now
+    try await backend.open(path, writable: false)
+    let size = try await backend.attributes(path).size
+    var offset = range?.lowerBound ?? 0
+    let end = min(size, range?.upperBound ?? size)
+    var firstByte: Duration?
+    while offset < end {
+      let data = try await backend.read(path, offset: offset, length: Int(min(1 << 20, end - offset)))
+      guard !data.isEmpty else { break }
+      if firstByte == nil { firstByte = ContinuousClock.now - started }
+      try output(data)
+      offset += Int64(data.count)
+    }
+    try await backend.close(path)
+    await backend.disconnect()
+    let elapsed = (ContinuousClock.now - started).components
+    let seconds = Double(elapsed.seconds) + Double(elapsed.attoseconds) / 1e18
+    let bytes = offset - (range?.lowerBound ?? 0)
+    report(
+      String(
+        format: "%lld 字节，首块 %@，共 %.1f 秒，%.1f MB/s", bytes,
+        firstByte.map { "\($0)" } ?? "-", seconds, Double(bytes) / 1_048_576 / max(seconds, 0.001)))
+  }
+
   static func upload(
     _ provider: any RemoteFileProvider, local: URL, remote: RemotePath,
     report: @escaping @Sendable (Int64, Int64?) -> Void

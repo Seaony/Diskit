@@ -116,6 +116,7 @@ private actor VolumeProvider: RemoteFileProvider {
     changeAfterStat = (try RemotePath(path), Data(data.utf8))
   }
   func corruptNextUpload() { corruptsNextUpload = true }
+  func touch(_ path: String, at date: Date) throws { modifiedDates[try RemotePath(path)] = date }
   func failNextMoves(_ count: Int) { moveFailuresLeft = count }
   func actualPath(_ path: RemotePath) -> RemotePath {
     guard caseInsensitive, files[path] == nil, !folders.contains(path) else { return path }
@@ -1165,4 +1166,137 @@ private final class TestClock: @unchecked Sendable {
   #expect(connection.uploadTarget == target)
   connection.params["userID"] = "2"
   #expect(connection.uploadTarget != target)
+}
+
+private func readAheadFixture(connections: Int) async throws -> (VolumeFixture, RemotePath) {
+  var capabilities = volumeFullAccess
+  capabilities.readAheadConnections = connections
+  let fixture = VolumeFixture(capabilities: capabilities, kind: .quark)
+  try await fixture.provider.put("/file", data: "abcdefghijklmnopqrst")
+  _ = try await fixture.backend.connect()
+  await fixture.backend.setReadAhead(segment: 4, after: 2)
+  let path = try fixture.path("/file")
+  try await fixture.backend.open(path, writable: false)
+  await fixture.provider.resetEvents()
+  return (fixture, path)
+}
+
+@Test func remoteVolumeSequentialReadsDownloadLaterSegmentsInParallelOnce() async throws {
+  let (fixture, path) = try await readAheadFixture(connections: 2)
+  defer { fixture.clean() }
+  var content = Data()
+  for offset in stride(from: 0, to: 20, by: 2) {
+    content += try await fixture.backend.read(path, offset: Int64(offset), length: 2)
+  }
+  #expect(content == Data("abcdefghijklmnopqrst".utf8))
+  let reads = await fixture.provider.recorded().filter { $0.hasPrefix("read:") }
+  // 第一次单独请求，认出顺序读之后每段只下一次
+  #expect(reads.first == "read:/file:0-2")
+  #expect(
+    Set(reads.dropFirst())
+      == ["read:/file:0-4", "read:/file:4-8", "read:/file:8-12", "read:/file:12-16", "read:/file:16-20"])
+  #expect(reads.count == 6)
+  try await fixture.backend.close(path)
+  #expect(await fixture.backend.readAheads.isEmpty)
+}
+
+@Test func remoteVolumeJumpingAroundStopsReadAheadAndReadsOnlyTheRequestedRange() async throws {
+  let (fixture, path) = try await readAheadFixture(connections: 2)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.read(path, offset: 0, length: 2)
+  _ = try await fixture.backend.read(path, offset: 2, length: 2)
+  await fixture.provider.resetEvents()
+  #expect(try await fixture.backend.read(path, offset: 13, length: 3) == Data("nop".utf8))
+  #expect(await fixture.provider.recorded().filter { $0.hasPrefix("read:") } == ["read:/file:13-16"])
+  #expect(await fixture.backend.readAheads[path]?.segments.isEmpty == true)
+}
+
+@Test func remoteVolumeSmallSequentialReadsDoNotStartReadAheadUntilTheRunIsLongEnough() async throws {
+  let (fixture, path) = try await readAheadFixture(connections: 1)
+  defer { fixture.clean() }
+  // 只读开头几个字节（生成缩略图那样）不预读，连续读满 2 字节后才开始
+  for offset in 0..<2 {
+    _ = try await fixture.backend.read(path, offset: Int64(offset), length: 1)
+  }
+  #expect(
+    await fixture.provider.recorded().filter { $0.hasPrefix("read:") }
+      == ["read:/file:0-1", "read:/file:1-2"])
+  #expect(try await fixture.backend.read(path, offset: 2, length: 1) == Data("c".utf8))
+  let reads = await fixture.provider.recorded()
+  #expect(reads.contains("read:/file:0-4") && !reads.contains("read:/file:2-3"))
+}
+
+@Test func remoteVolumeFailedReadAheadFallsBackToSingleReadsForThatFile() async throws {
+  let (fixture, path) = try await readAheadFixture(connections: 1)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.read(path, offset: 0, length: 2)
+  // 预读的那一段被截断：这次改为单独请求，之后这个文件不再预读
+  await fixture.provider.replaceNextRead(with: Data("x".utf8))
+  let text = Array("abcdefghijklmnopqrst".utf8)
+  for offset in stride(from: 2, to: 12, by: 2) {
+    #expect(
+      try await fixture.backend.read(path, offset: Int64(offset), length: 2)
+        == Data(text[offset..<offset + 2]))
+  }
+  #expect(await fixture.backend.readAheads[path]?.disabled == true)
+  #expect(await fixture.provider.recorded().last == "read:/file:10-12")
+}
+
+@Test func remoteVolumeReadAheadIsDroppedWhenTheFileChangesOrTheVolumeDisconnects() async throws {
+  let (fixture, path) = try await readAheadFixture(connections: 2)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.read(path, offset: 0, length: 2)
+  _ = try await fixture.backend.read(path, offset: 2, length: 2)
+  #expect(await fixture.backend.readAheads[path]?.segments.isEmpty == false)
+  await fixture.backend.invalidate([path])
+  #expect(await fixture.backend.readAheads[path] == nil)
+  _ = try await fixture.backend.read(path, offset: 4, length: 2)
+  _ = try await fixture.backend.read(path, offset: 6, length: 2)
+  #expect(await fixture.backend.readAheads[path]?.segments.isEmpty == false)
+  await fixture.backend.disconnect()
+  #expect(await fixture.backend.readAheads.isEmpty)
+}
+
+@Test func remoteVolumeReadAheadServesOneBusyFileAtATime() async throws {
+  let clock = TestClock()
+  var capabilities = volumeFullAccess
+  capabilities.readAheadConnections = 1
+  let fixture = VolumeFixture(capabilities: capabilities, kind: .quark, now: { clock.now() })
+  defer { fixture.clean() }
+  let paths = try ["/a", "/b"].map { try fixture.path($0) }
+  for path in paths { try await fixture.provider.put(path.value, data: "abcdefgh") }
+  _ = try await fixture.backend.connect()
+  for path in paths {
+    try await fixture.backend.open(path, writable: false)
+    _ = try await fixture.backend.read(path, offset: 0, length: 2)
+  }
+  #expect(Array(await fixture.backend.readAheads.keys) == [paths[0]])
+  // 前一个文件闲了一阵，第二个文件才能用上预读
+  clock.advance(10)
+  _ = try await fixture.backend.read(paths[1], offset: 2, length: 2)
+  #expect(Array(await fixture.backend.readAheads.keys) == [paths[1]])
+  // 前一个文件关掉后，下一个文件马上就能预读
+  try await fixture.backend.close(paths[1])
+  _ = try await fixture.backend.read(paths[0], offset: 2, length: 2)
+  #expect(Array(await fixture.backend.readAheads.keys) == [paths[0]])
+}
+
+@Test func remoteVolumeReadAheadIsDiscardedWhenTheFileChangesWithTheSameSize() async throws {
+  let clock = TestClock()
+  var capabilities = volumeFullAccess
+  capabilities.readAheadConnections = 2
+  let fixture = VolumeFixture(capabilities: capabilities, kind: .quark, now: { clock.now() })
+  defer { fixture.clean() }
+  try await fixture.provider.put("/file", data: "abcdefghijklmnopqrst")
+  _ = try await fixture.backend.connect()
+  await fixture.backend.setReadAhead(segment: 4, after: 2)
+  let path = try fixture.path("/file")
+  try await fixture.backend.open(path, writable: false)
+  _ = try await fixture.backend.read(path, offset: 0, length: 2)
+  #expect(try await fixture.backend.read(path, offset: 2, length: 2) == Data("cd".utf8))
+  // 网盘上换成了同样大小的新内容；属性过期重新查到新的修改时间后，不能再给提前下好的旧内容
+  try await fixture.provider.put("/file", data: "ABCDEFGHIJKLMNOPQRST")
+  try await fixture.provider.touch("/file", at: Date(timeIntervalSince1970: 200))
+  clock.advance(30)
+  #expect(try await fixture.backend.read(path, offset: 4, length: 2) == Data("EF".utf8))
 }
