@@ -85,6 +85,7 @@ import TianyiDrive
     }
     draft = model.editing ?? Connection()
     chosen = model.editing != nil
+    accountSpace = model.editing.flatMap { EditorAccountSummary.knownSpace(model.connections.states[$0.id]) }
     pairingID = model.pairingSelection ?? ""
     if let connection = model.editing,
       connection.kind == .smb || connection.kind == .webdav || connection.kind == .webdavHTTPS

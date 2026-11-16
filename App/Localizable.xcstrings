@@ -2164,22 +2164,6 @@
         }
       }
     },
-    "容量暂不可用": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Storage information unavailable"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "容量暂不可用"
-          }
-        }
-      }
-    },
     "密码": {
       "extractionState": "manual",
       "localizations": {

@@ -133,3 +133,27 @@ import Testing
   editor.chooseDiscovered(Connection(kind: .smb, name: "书房 NAS", params: ["host": "b.local"]), pairing: nil)
   #expect(!editor.guestLogin)
 }
+
+@MainActor @Test func editingSavedLocationShowsCapacityAlreadyOnCard() {
+  let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
+  model.start()
+  let mounted = model.connections.connections.first { $0.kind == .smb }!
+  model.editing = mounted
+  let editor = ConnectionEditorModel(model: model)
+  editor.load()
+  #expect(editor.accountSpace?.available == 120_000_000_000)
+
+  let offline = model.connections.connections.first { $0.kind == .ricohGR }!
+  model.editing = offline
+  let offlineEditor = ConnectionEditorModel(model: model)
+  offlineEditor.load()
+  #expect(offlineEditor.accountSpace == nil)
+}
+
+@Test func accountSummaryHidesUnknownCapacity() {
+  #expect(EditorAccountSummary.text(SpaceInfo(total: nil, used: nil)) == nil)
+  #expect(EditorAccountSummary.text(SpaceInfo(total: nil, used: nil, available: 1_000)) != nil)
+  #expect(EditorAccountSummary.knownSpace(.tested(SpaceInfo(total: 10, used: 4)))?.used == 4)
+  #expect(EditorAccountSummary.knownSpace(.mounted(MountedShare(url: URL(filePath: "/tmp/x")))) == nil)
+  #expect(EditorAccountSummary.knownSpace(.disconnected) == nil)
+}

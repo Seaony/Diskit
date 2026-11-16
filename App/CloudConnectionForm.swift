@@ -38,11 +38,8 @@ struct CloudConnectionForm: View {
           ).accessibilityHidden(true)
           VStack(alignment: .leading, spacing: Space.xs) {
             Text(editor.draft.params["nickname"] ?? L("已登录")).font(.headline)
-            if let space = editor.accountSpace {
-              Text(EditorAccountSummary.text(space)).font(.caption).foregroundStyle(
-                DiskitTheme.secondaryText)
-            } else {
-              Text(L("容量暂不可用")).font(.caption).foregroundStyle(DiskitTheme.secondaryText)
+            if let space = editor.accountSpace, let summary = EditorAccountSummary.text(space) {
+              Text(summary).font(.caption).foregroundStyle(DiskitTheme.secondaryText)
             }
           }
           Spacer()
