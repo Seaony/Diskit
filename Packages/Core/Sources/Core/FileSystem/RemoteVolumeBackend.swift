@@ -16,6 +16,7 @@ public actor RemoteVolumeBackend {
     var dirty: Bool
     var existedRemotely: Bool
     var retainedForRecovery = false
+    var journal: WriteJournal.State?
   }
   struct CachedFile {
     let url: URL
@@ -30,40 +31,46 @@ public actor RemoteVolumeBackend {
   let cacheRoot: URL
   let cacheLimit: Int64
   let replacesExisting: Bool
+  let uploadTarget: String
   let directoryTTL: TimeInterval
+  let pendingUploadsFile: URL?
   let now: @Sendable () -> Date
   let logger = Logger(subsystem: "com.seaony.Diskit.FS", category: "remote-volume")
   var connected = false
   // 挂载时连上过、还没卸载：中途断开后由下一次操作自动重连
   var reconnects = false
   var lastReconnect: Date?
+  // 最近一次自动重连失败的原因（如登录失效）；真正要连远端时才报出来，
+  // 让关闭文件等操作先把本地该记的记好
+  var reconnectFailure: Error?
   var directories: [RemotePath: DirectoryEntry] = [:]
   var staged: [RemotePath: StagedFile] = [:]
   var wholeFiles: [RemotePath: CachedFile] = [:]
   var openedPaths: Set<RemotePath> = []
   var attributesByPath: [RemotePath: AttributeEntry] = [:]
   var hiddenUploads: Set<RemotePath> = []
+  var reportedPendingUploads: [String]?
+  // 接管过上次留下的记录后才更新清单，连不上时不能把上次的清单清掉
+  var journalsAdopted = false
   private var running = false
   private var waiters: [CheckedContinuation<Void, Never>] = []
 
+  // pendingUploadsFile：没传上去的文件清单写到这里给 App 看，见 PendingUploads
   public init(
     provider: any RemoteFileProvider, connectionID: UUID, kind: ConnectionKind,
-    cacheRoot: URL, replacesExisting: Bool, cacheLimit: Int64 = 5 * 1024 * 1024 * 1024
+    cacheRoot: URL, replacesExisting: Bool, cacheLimit: Int64 = 5 * 1024 * 1024 * 1024,
+    pendingUploadsFile: URL? = nil, uploadTarget: String = ""
   ) {
-    self.provider = provider
-    overlay = LocalMetadataOverlay(cacheRoot: cacheRoot, connectionID: connectionID)
-    self.connectionID = connectionID
-    self.cacheRoot = cacheRoot
-    self.replacesExisting = replacesExisting
-    self.cacheLimit = cacheLimit
-    directoryTTL = Self.ttl(kind)
-    now = { Date() }
+    self.init(
+      provider: provider, connectionID: connectionID, kind: kind, cacheRoot: cacheRoot,
+      replacesExisting: replacesExisting, cacheLimit: cacheLimit,
+      pendingUploadsFile: pendingUploadsFile, uploadTarget: uploadTarget, now: { Date() })
   }
 
   init(
     provider: any RemoteFileProvider, connectionID: UUID, kind: ConnectionKind,
     cacheRoot: URL, replacesExisting: Bool, cacheLimit: Int64 = 5 * 1024 * 1024 * 1024,
-    now: @escaping @Sendable () -> Date
+    pendingUploadsFile: URL? = nil, uploadTarget: String = "", now: @escaping @Sendable () -> Date
   ) {
     self.provider = provider
     overlay = LocalMetadataOverlay(cacheRoot: cacheRoot, connectionID: connectionID)
@@ -71,6 +78,8 @@ public actor RemoteVolumeBackend {
     self.cacheRoot = cacheRoot
     self.replacesExisting = replacesExisting
     self.cacheLimit = cacheLimit
+    self.pendingUploadsFile = pendingUploadsFile
+    self.uploadTarget = uploadTarget
     directoryTTL = Self.ttl(kind)
     self.now = now
   }
@@ -91,10 +100,13 @@ public actor RemoteVolumeBackend {
     _ body: (isolated RemoteVolumeBackend) async throws -> Value
   ) async throws -> Value {
     await acquire()
-    defer { release() }
+    defer {
+      reportPendingUploads()
+      release()
+    }
     do {
       try Task.checkCancellation()
-      try await reconnectIfNeeded()
+      await reconnectIfNeeded()
       logger.debug(
         "连接 \(self.connectionID.uuidString, privacy: .public) 开始 \(operation, privacy: .public) \(path?.value ?? "/", privacy: .private)"
       )
@@ -123,23 +135,24 @@ public actor RemoteVolumeBackend {
 
   // 网络抖一下、请求超时都会断开；不重连的话整个卷要推出重挂才能再用。
   // 重连失败后 5 秒内不再试，免得 Finder 连续访问时反复请求。
-  // 网络类失败只记下来，本次操作照常报“已断开”；登录失效等其他错误原样交给 Finder 和 App
-  private func reconnectIfNeeded() async throws {
+  private func reconnectIfNeeded() async {
     guard !connected, reconnects else { return }
     if let lastReconnect, now().timeIntervalSince(lastReconnect) < 5 { return }
     lastReconnect = now()
     do {
       try await provider.connect()
       connected = true
+      reconnectFailure = nil
       logger.info("连接 \(self.connectionID.uuidString, privacy: .public) 已自动重连")
     } catch {
       // 连接本身可能卡到超时才失败，从失败时刻重新计时
       lastReconnect = now()
+      // 网络类失败照常报“已断开”；登录失效等其他原因原样交给 Finder 和 App
+      reconnectFailure = Self.isDisconnect(error) ? nil : error
       let value = error as NSError
       logger.error(
         "连接 \(self.connectionID.uuidString, privacy: .public) 自动重连失败：\(value.domain, privacy: .public) code=\(value.code)")
       await provider.disconnect()
-      if !Self.isDisconnect(error) { throw error }
     }
   }
 
@@ -155,6 +168,10 @@ public actor RemoteVolumeBackend {
     if waiters.isEmpty { running = false } else { waiters.removeFirst().resume() }
   }
 
+  // 远端文件在读的过程中变了大小（手机正在录像、网盘正在同步）。这不是断线，
+  // 调用方清掉这个文件的缓存，让 Finder 重试时拿到新大小
+  static let sizeChanged = RemoteError.posix(EAGAIN)
+
   static func isDisconnect(_ error: Error) -> Bool {
     if NetworkFailure.isTransportError(error) { return true }
     if let error = error as? RemoteError, error == .notConnected || error == .protocolError {
@@ -169,7 +186,7 @@ public actor RemoteVolumeBackend {
   }
 
   func requireConnection() throws {
-    guard connected else { throw RemoteError.notConnected }
+    guard connected else { throw reconnectFailure ?? RemoteError.notConnected }
   }
 
   public func connect() async throws -> SpaceInfo {
@@ -182,7 +199,9 @@ public actor RemoteVolumeBackend {
         }
         backend.connected = true
         backend.reconnects = true
+        backend.reconnectFailure = nil
         backend.logger.info("连接 \(backend.connectionID.uuidString, privacy: .public) 已连接")
+        backend.adoptJournaledWrites()
         return space
       } catch {
         backend.connected = false
@@ -200,6 +219,7 @@ public actor RemoteVolumeBackend {
     defer { release() }
     connected = false
     reconnects = false
+    reconnectFailure = nil
     directories.removeAll()
     openedPaths.removeAll()
     attributesByPath.removeAll()
@@ -244,13 +264,16 @@ public actor RemoteVolumeBackend {
       if LocalMetadataOverlay.handles(path) { return try backend.overlay.stat(path) }
       try backend.requireConnection()
       if let stage = backend.staged[path] { return stage.item }
-      if backend.openedPaths.contains(path), let entry = backend.attributesByPath[path],
-        entry.expires > backend.now()
-      {
-        return entry.item
-      }
-      return try await backend.statUnlocked(path)
+      return try await backend.openedItem(path)
     }
+  }
+
+  // 打开着的文件在有效期内直接用记下的属性；Finder 每读 1 MiB 都会问一次大小，不能每次都请求远端
+  func openedItem(_ path: RemotePath) async throws -> RemoteItem {
+    if openedPaths.contains(path), let entry = attributesByPath[path], entry.expires > now() {
+      return entry.item
+    }
+    return try await statUnlocked(path)
   }
 
   func statUnlocked(_ path: RemotePath) async throws -> RemoteItem {
@@ -287,6 +310,7 @@ public actor RemoteVolumeBackend {
         path: path, name: path.basename, isDirectory: false, size: 0, modified: backend.now())
       let file = try backend.temporaryWriteFile()
       backend.staged[path] = StagedFile(url: file, item: item, dirty: true, existedRemotely: false)
+      try backend.recordJournal(path, .writing)
       await backend.invalidate([path])
       return item
     }
@@ -338,11 +362,17 @@ public actor RemoteVolumeBackend {
         return try backend.readLocal(stage.url, offset: offset, length: length)
       }
       if backend.capabilities.supportsRangeRead {
-        let item = try await backend.statUnlocked(path)
+        let item = try await backend.openedItem(path)
         guard !item.isDirectory else { throw RemoteError.posix(EISDIR) }
         guard offset < item.size else { return Data() }
-        let stream = try await backend.provider.read(
-          path, range: offset..<min(item.size, offset + Int64(length)))
+        let stream: AsyncThrowingStream<Data, Error>
+        do {
+          stream = try await backend.provider.read(
+            path, range: offset..<min(item.size, offset + Int64(length)))
+        } catch RemoteError.unsupported {
+          // 个别设备读不了指定范围（如很旧的安卓手机），退回整个文件下载
+          return try await backend.readWholeFile(path, offset: offset, length: length)
+        }
         var result = Data()
         for try await chunk in stream {
           try Task.checkCancellation()
@@ -416,13 +446,14 @@ public actor RemoteVolumeBackend {
         writeCalls = $4
       }
       downloadedBytes = size
-      guard size == cached.item.size else { throw RemoteError.protocolError }
+      guard size == cached.item.size else { throw Self.sizeChanged }
       let installStarted = ContinuousClock.now
       try await RemoteReadCache.shared.install(
         temporary, as: cached.url, root: cacheRoot, limit: cacheLimit, reservation: reservation)
       installSeconds = Self.seconds(since: installStarted)
     } catch {
       await RemoteReadCache.shared.cancel(root: cacheRoot, id: reservation)
+      if (error as? RemoteError) == Self.sizeChanged { await invalidate([path]) }
       throw error
     }
     let firstReadStarted = ContinuousClock.now
@@ -484,9 +515,7 @@ public actor RemoteVolumeBackend {
     }
     for try await chunk in stream {
       try Task.checkCancellation()
-      if let maximumSize, Int64(chunk.count) > maximumSize - size {
-        throw RemoteError.protocolError
-      }
+      if let maximumSize, Int64(chunk.count) > maximumSize - size { throw Self.sizeChanged }
       size += Int64(chunk.count)
       if chunk.count >= writeSize {
         try flushPending()

@@ -46,9 +46,10 @@ private func baiduFields(_ request: URLRequest) -> [String: String] {
     })
 }
 
-private func baiduAuditProvider(_ http: any HTTPTransport, root: String = "/apps/Diskit") throws
-  -> BaiduDriveProvider
-{
+private func baiduAuditProvider(
+  _ http: any HTTPTransport, root: String = "/apps/Diskit",
+  now: @escaping @Sendable () -> Date = { Date() }
+) throws -> BaiduDriveProvider {
   let secrets = MemorySecretStore()
   try secrets.write(
     JSONEncoder().encode(
@@ -62,7 +63,7 @@ private func baiduAuditProvider(_ http: any HTTPTransport, root: String = "/apps
       scopes: []), secretKey: "local", secrets: secrets, transport: http)
   return BaiduDriveProvider(
     configuration: BaiduDriveConfiguration(rootPath: root, appID: "local"), session: session,
-    transport: http)
+    transport: http, now: now)
 }
 
 private func baiduItem(path: String, id: Int = 42) -> [String: Any] {
@@ -72,8 +73,9 @@ private func baiduItem(path: String, id: Int = 42) -> [String: Any] {
   ]
 }
 
-@Test func baiduStatUsesParentListAndDoesNotReuseStaleIdentity() async throws {
+@Test func baiduStatReusesParentListBrieflyThenRefreshes() async throws {
   let id = Mutex(42)
+  let clock = Mutex(Date(timeIntervalSince1970: 0))
   let http = BaiduAuditHTTP { request in
     guard request.url?.host == "pan.baidu.com" else { return HTTPResponse(status: 404) }
     if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
@@ -91,9 +93,12 @@ private func baiduItem(path: String, id: Int = 42) -> [String: Any] {
       "errno": 0, "list": [baiduItem(path: "/apps/Diskit/a+b/file", id: current)],
     ])
   }
-  let provider = try baiduAuditProvider(http)
+  let provider = try baiduAuditProvider(http, now: { clock.withLock { $0 } })
   try await provider.connect()
   #expect(try await provider.stat(RemotePath("/a+b/file")).size == 3)
+  #expect(try await provider.stat(RemotePath("/a+b/file")).size == 3)
+  #expect(id.withLock { $0 } == 43)
+  clock.withLock { $0 += BaiduDriveProvider.listingLifetime }
   #expect(try await provider.stat(RemotePath("/a+b/file")).size == 3)
   #expect(id.withLock { $0 } == 44)
   #expect(await http.requests.count == 3)
@@ -195,7 +200,9 @@ func baiduUploadUsesOfficialWireContractAndValidatesParts(mode: Int) async throw
       guard request.url?.host == "pan.baidu.com" else { return HTTPResponse(status: 404) }
       if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
       #expect(request.httpMethod == "GET")
-      return try baiduJSON(["errno": code])
+      return HTTPResponse(
+        status: 200, headers: ["Retry-After": "0"],
+        body: try JSONSerialization.data(withJSONObject: ["errno": code]))
     }
     let provider = try baiduAuditProvider(http)
     try await provider.connect()
@@ -204,8 +211,95 @@ func baiduUploadUsesOfficialWireContractAndValidatesParts(mode: Int) async throw
     ) {
       try await provider.makeDirectory(RemotePath("/new"))
     }
-    #expect(await http.requests.count == 2)
+    // 31034 是限流，按退避重试满 3 次
+    #expect(await http.requests.count == (code == 31034 ? 4 : 2))
   }
+}
+
+@Test func baiduRateLimitedListingRetriesThenSucceeds() async throws {
+  let calls = Mutex(0)
+  let http = BaiduAuditHTTP { request in
+    if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
+    let first = calls.withLock {
+      $0 += 1
+      return $0 == 1
+    }
+    guard !first else {
+      return HTTPResponse(
+        status: 200, headers: ["Retry-After": "0"],
+        body: try JSONSerialization.data(withJSONObject: ["errno": 31034]))
+    }
+    return try baiduJSON(["errno": 0, "list": [baiduItem(path: "/apps/Diskit/file")]])
+  }
+  let provider = try baiduAuditProvider(http)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).map(\.path.value) == ["/file"])
+  #expect(calls.withLock { $0 } == 2)
+}
+
+@Test func baiduReadsReuseListingAndDownloadLinkAndRefreshExpiredLink() async throws {
+  let filemetas = Mutex(0)
+  let downloads = Mutex(0)
+  let clock = Mutex(Date(timeIntervalSince1970: 0))
+  let http = BaiduAuditHTTP { request in
+    if request.url?.host == "d.pcs.baidu.com" {
+      let count = downloads.withLock {
+        $0 += 1
+        return $0
+      }
+      // 第 3 次下载模拟地址过期
+      if count == 3 { return HTTPResponse(status: 403) }
+      #expect(request.url?.path == "/download\(filemetas.withLock { $0 })")
+      return HTTPResponse(status: 206, body: Data([1]))
+    }
+    if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
+    let query = baiduQuery(request)
+    if query["method"] == "list" {
+      return try baiduJSON(["errno": 0, "list": [baiduItem(path: "/apps/Diskit/file")]])
+    }
+    let count = filemetas.withLock {
+      $0 += 1
+      return $0
+    }
+    var item = baiduItem(path: "/apps/Diskit/file")
+    item["dlink"] = "https://d.pcs.baidu.com/download\(count)"
+    return try baiduJSON(["errno": 0, "list": [item]])
+  }
+  let provider = try baiduAuditProvider(http, now: { clock.withLock { $0 } })
+  try await provider.connect()
+  for _ in 0..<2 {
+    _ = try await provider.stat(RemotePath("/file"))
+    _ = try await provider.read(RemotePath("/file"), range: 0..<1)
+  }
+  #expect(filemetas.withLock { $0 } == 1)
+  _ = try await provider.read(RemotePath("/file"), range: 0..<1)
+  #expect(filemetas.withLock { $0 } == 2)
+  #expect(downloads.withLock { $0 } == 4)
+  let lists = await http.requests.filter { baiduQuery($0)["method"] == "list" }.count
+  #expect(lists == 1)
+  clock.withLock { $0 += BaiduDriveProvider.downloadLinkLifetime }
+  _ = try await provider.read(RemotePath("/file"), range: 0..<1)
+  #expect(filemetas.withLock { $0 } == 3)
+}
+
+@Test func baiduMutationDropsCachedListing() async throws {
+  let lists = Mutex(0)
+  let http = BaiduAuditHTTP { request in
+    if request.url?.path == "/rest/2.0/xpan/nas" { return try baiduJSON(["errno": 0]) }
+    let query = baiduQuery(request)
+    if query["method"] == "list" {
+      lists.withLock { $0 += 1 }
+      return try baiduJSON(["errno": 0, "list": [baiduItem(path: "/apps/Diskit/file")]])
+    }
+    return try baiduJSON(["errno": 0, "info": [["errno": 0]]])
+  }
+  let provider = try baiduAuditProvider(http)
+  try await provider.connect()
+  _ = try await provider.stat(RemotePath("/file"))
+  try await provider.remove(RemotePath("/file"), recursive: false)
+  #expect(lists.withLock { $0 } == 1)
+  _ = try await provider.stat(RemotePath("/file"))
+  #expect(lists.withLock { $0 } == 2)
 }
 
 @Test func baiduMalformedListingCannotAuthorizeCreatingAnExistingPath() async throws {

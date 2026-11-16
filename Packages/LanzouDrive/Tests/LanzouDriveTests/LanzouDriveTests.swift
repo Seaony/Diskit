@@ -299,7 +299,7 @@ private func shareDownloadReply(_ request: URLRequest) -> FakeReply? {
     transport: unsupportedHTTP)
   try await unsupported.connect()
   _ = try await unsupported.list(RemotePath("/"))
-  await #expect(throws: LanzouError.rangeUnsupported) {
+  await #expect(throws: RemoteError.unsupported) {
     try await unsupported.read(RemotePath("/文件.bin"), range: 0..<1)
   }
   #expect(
@@ -652,4 +652,53 @@ func lanzouMetadataRequiresAnAuthoritativeLength(scenario: String) async throws 
   await first.disconnect()
   #expect(try await second.list(RemotePath("/")).count == 4)
   await #expect(throws: RemoteError.notConnected) { _ = try await first.list(RemotePath("/")) }
+}
+
+@Test func lanzouDuplicateNamesGetFinderStyleNamesAndMapBackToTheirFiles() async throws {
+  let listings = LanzouListingCounter()
+  let http = FakeHTTP { request in
+    if request.url?.path == "/mydisk.php" {
+      return FakeReply(text: #"<script>uid='user'; var vei='vei';</script>"#)
+    }
+    let fields = form(request)
+    switch (fields["task"], fields["pg"]) {
+    case ("47", _): return FakeReply(data: json(["zt": 1, "text": [Any]()]))
+    case ("5", "1"):
+      var files: [[String: Any]] = [
+        ["id": "file-2", "name_all": "a.txt", "size": 2048, "time": "2026-11-02"],
+        ["id": "file-1", "name_all": "a.txt", "size": 1024, "time": "2026-11-02"],
+      ]
+      // 第二次列目录换个顺序，编号仍应一致
+      if listings.next() > 1 { files.reverse() }
+      return FakeReply(data: json(["zt": 1, "text": files]))
+    case ("5", _): return FakeReply(data: json(["zt": 1, "text": [Any]()]))
+    case ("22", _): return FakeReply(data: json(["zt": 0, "info": "测试不下载"]))
+    default: return FakeReply(status: 500)
+    }
+  }
+  let provider = LanzouProvider(
+    configuration: try configuration(.accountCookie("phpdisk_info=fake")), transport: http)
+  try await provider.connect()
+  for _ in 0..<2 {
+    let items = try await provider.list(RemotePath("/"))
+    let sizes = Dictionary(uniqueKeysWithValues: items.map { ($0.path.value, $0.size) })
+    #expect(sizes == ["/a.txt": 1024, "/a (2).txt": 2048])
+    #expect(items.allSatisfy { $0.path.basename == $0.name })
+  }
+  #expect(try await provider.stat(RemotePath("/a (2).txt")).size == 2048)
+  _ = try? await provider.read(RemotePath("/a (2).txt"), range: 0..<10)
+  let lookup = await http.requests().last { form($0)["task"] == "22" }
+  #expect(lookup.map(form)?["file_id"] == "file-2")
+}
+
+private final class LanzouListingCounter: @unchecked Sendable {
+  private let lock = NSLock()
+  private var count = 0
+
+  func next() -> Int {
+    lock.withLock {
+      count += 1
+      return count
+    }
+  }
 }

@@ -24,7 +24,10 @@ import Foundation
 
   func networkChanged(available: Bool) {
     guard !stopped else { return }
+    // 监视器启动后第一次回调只是报告当前网络，不算变化；启动时已经恢复过一次
+    let firstReport = online == nil
     online = available
+    if firstReport && available { return }
     refresh()
     if available {
       requestRecovery()

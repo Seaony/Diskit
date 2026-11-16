@@ -130,3 +130,16 @@ private func dropboxProvider(_ transport: DropboxRequestTransport) throws -> Dro
     #expect(object["path"] as? String == path.value)
   }
 }
+
+@Test func dropboxCaseOnlyRenameIsNotAConflict() async throws {
+  // 目标查得到（不分大小写时就是源文件自己），也要能改
+  let transport = DropboxRequestTransport(missing: false)
+  let provider = try dropboxProvider(transport)
+  try await provider.connect()
+  try await provider.move(RemotePath("/docs/readme.md"), to: RemotePath("/docs/README.md"))
+  let requests = await transport.requests
+  #expect(!requests.contains { $0.url?.path == "/2/files/get_metadata" })
+  let body = try JSONSerialization.jsonObject(with: requests.last!.httpBody!) as! [String: Any]
+  #expect(body["from_path"] as? String == "/docs/readme.md")
+  #expect(body["to_path"] as? String == "/docs/README.md")
+}

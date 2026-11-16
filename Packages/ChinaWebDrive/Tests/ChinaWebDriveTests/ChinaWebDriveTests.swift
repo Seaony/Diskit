@@ -546,20 +546,15 @@ private func xunleiSession(_ http: any HTTPTransport) -> XunleiSession {
   #expect(RemoteError.http(409).errno == EEXIST)
 }
 
-@Test func xunleiBusinessErrorsMapToPOSIX() async {
-  let http = ScriptHTTP([
-    response(#"{"error":"exists"}"#),
-    response(#"{"error":"file_space_not_enough"}"#),
-    response(#"{"error":"not_found"}"#),
-  ])
+@Test(arguments: [
+  ("exists", EEXIST), ("file_already_exist", EEXIST), ("file_duplicated_name", EEXIST),
+  ("file_space_not_enough", ENOSPC), ("not_found", ENOENT), ("file_not_exist", ENOENT),
+  ("parent_not_exist", ENOENT),
+])
+func xunleiBusinessErrorsMapToPOSIX(reason: String, code: Int32) async {
+  let http = ScriptHTTP([response("{\"error\":\"\(reason)\"}")])
   let session = xunleiSession(http)
-  await #expect(throws: RemoteError.posix(EEXIST)) {
-    _ = try await session.request(method: "GET", path: "about")
-  }
-  await #expect(throws: RemoteError.posix(ENOSPC)) {
-    _ = try await session.request(method: "GET", path: "about")
-  }
-  await #expect(throws: RemoteError.posix(ENOENT)) {
+  await #expect(throws: RemoteError.posix(code)) {
     _ = try await session.request(method: "GET", path: "about")
   }
 }
@@ -759,4 +754,76 @@ func trashFailureNeverFallsBackToPermanentDeletion(mobile: Bool) async throws {
     try await provider.connect()
     #expect(try await provider.spaceInfo() == expected)
   }
+}
+
+@Test func mobileCloudDuplicateNamesGetFinderStyleNamesAndHitTheRightFile() async throws {
+  let file = try temporaryFile(Data("x".utf8))
+  defer { try? FileManager.default.removeItem(at: file) }
+  let list = response(
+    #"{"success":true,"code":"0000","data":{"items":[{"fileId":"f2","name":"a.txt","size":9,"type":"file"},{"fileId":"f1","name":"a.txt","size":3,"type":"file"}],"nextPageCursor":null}}"#
+  )
+  let relisted = response(
+    #"{"success":true,"code":"0000","data":{"items":[{"fileId":"f1","name":"a.txt","size":3,"type":"file"},{"fileId":"f2","name":"a.txt","size":9,"type":"file"}],"nextPageCursor":null}}"#
+  )
+  let download = response(
+    #"{"success":true,"code":"0000","data":{"url":"https://cdn.example.com/second"}}"#)
+  let stream = HTTPResponse(
+    status: 206, headers: ["Content-Range": "bytes 0-1/9"], body: Data([1, 2]))
+  let trashed = response(#"{"success":true,"code":"0000","data":{}}"#)
+  let http = ScriptHTTP([mobileRoute, list, download, relisted, trashed], streams: [stream])
+  let provider = MobileCloudProvider(session: mobileSession(http))
+  try await provider.connect()
+  let items = try await provider.list(try RemotePath("/"))
+  #expect(Set(items.map(\.name)) == ["a.txt", "a (2).txt"])
+  #expect(try await provider.stat(try RemotePath("/a (2).txt")).size == 9)
+  _ = try await provider.read(try RemotePath("/a (2).txt"), range: 0..<2)
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.write(try RemotePath("/a (2).txt"), from: file)
+  }
+  // 上传前重新列了目录，顺序变了对应关系也不变
+  try await provider.remove(try RemotePath("/a (2).txt"), recursive: false)
+  let requests = await http.requests
+  let link = try #require(requests.first { $0.url?.path.hasSuffix("file/getDownloadUrl") == true })
+  #expect(try requestBody(link)["fileId"] as? String == "f2")
+  #expect(try requestBody(try #require(requests.last))["fileIds"] as? [String] == ["f2"])
+}
+
+@Test func mobileCloudDuplicateMovedOutKeepsItsShownName() async throws {
+  let root = response(
+    #"{"success":true,"code":"0000","data":{"items":[{"fileId":"f1","name":"a.txt","size":3,"type":"file"},{"fileId":"f2","name":"a.txt","size":3,"type":"file"},{"fileId":"d","name":"dir","type":"folder"}],"nextPageCursor":null}}"#
+  )
+  let empty = response(
+    #"{"success":true,"code":"0000","data":{"items":[],"nextPageCursor":null}}"#)
+  let ok = response(#"{"success":true,"code":"0000","data":{}}"#)
+  let http = ScriptHTTP([mobileRoute, root, empty, ok, ok, ok])
+  let provider = MobileCloudProvider(session: mobileSession(http))
+  try await provider.connect()
+  try await provider.move(try RemotePath("/a (2).txt"), to: try RemotePath("/dir/a (2).txt"))
+  let mutations = await http.requests.suffix(3)
+  #expect(mutations.map { $0.url!.lastPathComponent } == ["update", "batchMove", "update"])
+  #expect(try mutations.allSatisfy { try requestBody($0)["fileId"] as? String ?? "f2" == "f2" })
+  #expect(try requestBody(mutations[mutations.startIndex + 1])["fileIds"] as? [String] == ["f2"])
+  #expect(try requestBody(try #require(mutations.last))["name"] as? String == "a (2).txt")
+}
+
+@Test func xunleiDuplicateNamesGetFinderStyleNamesAndHitTheRightFile() async throws {
+  let list = response(
+    #"{"files":[{"id":"f2","name":"a.txt","kind":"drive#file","size":9},{"id":"f1","name":"a.txt","kind":"drive#file","size":3}],"next_page_token":""}"#
+  )
+  let detail = response(
+    #"{"id":"f2","name":"a.txt","kind":"drive#file","size":9,"web_content_link":"https://cdn.example.com/second"}"#
+  )
+  let stream = HTTPResponse(
+    status: 206, headers: ["Content-Range": "bytes 0-1/9"], body: Data([1, 2]))
+  let http = ScriptHTTP([xunleiAbout, list, detail, response("{}")], streams: [stream])
+  let provider = XunleiProvider(session: xunleiSession(http))
+  try await provider.connect()
+  let items = try await provider.list(try RemotePath("/"))
+  #expect(Set(items.map(\.name)) == ["a.txt", "a (2).txt"])
+  #expect(try await provider.stat(try RemotePath("/a (2).txt")).size == 9)
+  _ = try await provider.read(try RemotePath("/a (2).txt"), range: 0..<2)
+  try await provider.remove(try RemotePath("/a (2).txt"), recursive: false)
+  let paths = await http.requests.map { $0.url!.path }
+  #expect(paths.contains("/drive/v1/files/f2"))
+  #expect(paths.last == "/drive/v1/files/f2/trash")
 }

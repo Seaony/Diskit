@@ -151,7 +151,7 @@ public actor AliyunSession {
       let personal = root["personal_space_info"] as? [String: Any],
       let total = personal["total_size"] as? NSNumber,
       let used = personal["used_size"] as? NSNumber,
-      total.int64Value >= 0, used.int64Value >= 0, used.int64Value <= total.int64Value
+      total.int64Value >= 0, used.int64Value >= 0
     else {
       throw AliyunError.invalidResponse
     }

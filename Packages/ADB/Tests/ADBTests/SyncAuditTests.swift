@@ -142,3 +142,25 @@ private actor RecordingUploadTransport: ADBTransport {
   let output = String(decoding: await transport.output, as: UTF8.self)
   #expect(output.contains("stat -c %s -- '/sdcard/large'"))
 }
+
+// v1 的 RECV 按 DATA 块一直发到 DONE，没有总大小限制；大小用 stat -c %s 补回 32 位以上
+@Test func adbLegacyDownloadAllowsFilesAboveFourGiB() async throws {
+  var stat = Data("STAT".utf8)
+  for value in [UInt32(0o100644), UInt32(truncatingIfNeeded: 5_000_000_000 as UInt64), 1] { stat.appendLE(value) }
+  var frames = Data("DATA".utf8); frames.appendLE(3); frames.append(Data("abc".utf8))
+  frames.append(Data("DONE".utf8)); frames.appendLE(0)
+  let transport = AuditTransport([auditHello("shell_v2")]
+    + auditService(1, auditShell(3, Data([0])))
+    + [.init(.okay, 2, 2), .init(.okay, 2, 2), .init(.write, 2, 2, payload: stat), .init(.close, 2, 2)]
+    + auditService(3, auditShell(1, Data("5000000000\n".utf8)) + auditShell(3, Data([0])))
+    + [.init(.okay, 4, 4), .init(.okay, 4, 4), .init(.write, 4, 4, payload: frames), .init(.close, 4, 4)])
+  let provider = auditProvider(transport)
+  let totals = Mutex<[Int64]>([])
+  await provider.onProgress { _, total in totals.withLock { $0.append(total) } }
+  try await provider.connect()
+  var received = Data()
+  for try await chunk in try await provider.read(RemotePath("/large"), range: nil) { received.append(chunk) }
+  #expect(received == Data("abc".utf8))
+  #expect(totals.withLock { $0 } == [5_000_000_000])
+  #expect(String(decoding: await transport.output, as: UTF8.self).contains("RECV"))
+}

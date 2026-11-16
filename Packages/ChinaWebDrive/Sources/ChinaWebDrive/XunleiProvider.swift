@@ -11,6 +11,8 @@ private struct XunleiFile: Decodable, Sendable {
   let modifiedTime: FlexibleString?
   let webContentLink: URL?
   let medias: [Media]?
+  // 同目录重名时由列目录分配的「名称 (2)」
+  var assignedName: String?
 
   struct Media: Decodable, Sendable {
     let link: Link?
@@ -27,6 +29,8 @@ private struct XunleiFile: Decodable, Sendable {
   }
 
   var isDirectory: Bool { kind == "drive#folder" }
+  // Finder 里显示的名字
+  var displayName: String { assignedName ?? name }
 
   func item(at path: RemotePath) throws -> RemoteItem {
     guard ChinaWebSupport.isValidRemoteName(name), !id.isEmpty else {
@@ -35,7 +39,7 @@ private struct XunleiFile: Decodable, Sendable {
     let value = size?.value ?? 0
     guard value >= 0 else { throw XunleiError.invalidResponse }
     return RemoteItem(
-      path: path, name: name, isDirectory: isDirectory, size: isDirectory ? 0 : value,
+      path: path, name: displayName, isDirectory: isDirectory, size: isDirectory ? 0 : value,
       modified: ChinaWebSupport.parseDate(modifiedTime?.value))
   }
 }
@@ -97,6 +101,8 @@ private struct XunleiUploadResponse: Decodable {
 }
 
 public actor XunleiProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
 
@@ -109,6 +115,10 @@ public actor XunleiProvider: RemoteFileProvider {
   private var connected = false
   private var cacheGeneration: UInt64 = 0
   private var nodes: [String: XunleiFile] = [:]
+  // 下载地址按文件 id 缓存，文件大小或修改时间变了就不用
+  private var downloadLinks:
+    [String: (url: URL, size: Int64?, modified: String?, fetchedAt: Date)] = [:]
+  static let downloadLinkTTL: TimeInterval = 5 * 60
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(session: XunleiSession, rootFolderID: String = "") {
@@ -145,6 +155,7 @@ public actor XunleiProvider: RemoteFileProvider {
     cacheGeneration &+= 1
     let generation = cacheGeneration
     nodes.removeAll()
+    downloadLinks.removeAll()
     try await session.connect()
     guard cacheGeneration == generation else { throw CancellationError() }
     connected = true
@@ -154,6 +165,7 @@ public actor XunleiProvider: RemoteFileProvider {
     connected = false
     cacheGeneration &+= 1
     nodes.removeAll()
+    downloadLinks.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -173,7 +185,7 @@ public actor XunleiProvider: RemoteFileProvider {
     let folder = try await resolve(path)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     return try await children(path, parentID: folder.id).map {
-      try $0.item(at: path.appending($0.name))
+      try $0.item(at: path.appending($0.displayName))
     }
   }
 
@@ -201,23 +213,39 @@ public actor XunleiProvider: RemoteFileProvider {
     if metadata.size == 0 || requested?.isEmpty == true {
       return AsyncThrowingStream { $0.finish() }
     }
-    let detailed = try await detail(node.id)
-    guard let url = downloadURL(detailed) else { throw XunleiError.invalidResponse }
     for attempt in 0..<2 {
+      let url = try await downloadURL(for: node)
       let stream = try await session.download(url, range: requested)
       if [401, 403].contains(stream.response.status), attempt == 0 {
-        let refreshedDetail = try await detail(node.id)
-        guard let replacement = downloadURL(refreshedDetail) else {
-          throw XunleiError.invalidResponse
-        }
-        let retried = try await session.download(replacement, range: requested)
-        try validate(stream: retried, requested: requested, size: metadata.size)
-        return retried.body
+        downloadLinks.removeValue(forKey: node.id)
+        continue
       }
       try validate(stream: stream, requested: requested, size: metadata.size)
       return stream.body
     }
     throw RemoteError.posix(EACCES)
+  }
+
+  private func downloadURL(for node: XunleiFile) async throws -> URL {
+    let now = Date()
+    if let cached = downloadLinks[node.id], cached.size == node.size?.value,
+      cached.modified == node.modifiedTime?.value,
+      now.timeIntervalSince(cached.fetchedAt) < Self.downloadLinkTTL
+    {
+      return cached.url
+    }
+    let generation = cacheGeneration
+    guard let url = downloadURL(try await detail(node.id)) else {
+      throw XunleiError.invalidResponse
+    }
+    // 请求期间目录有改动就不缓存，免得记住改动前的地址
+    if generation == cacheGeneration {
+      downloadLinks = downloadLinks.filter {
+        now.timeIntervalSince($0.value.fetchedAt) < Self.downloadLinkTTL
+      }
+      downloadLinks[node.id] = (url, node.size?.value, node.modifiedTime?.value, now)
+    }
+    return url
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
@@ -228,7 +256,7 @@ public actor XunleiProvider: RemoteFileProvider {
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     let name = ChinaWebSupport.basename(path)
     let existing = try await children(destination, parentID: folder.id)
-    guard !existing.contains(where: { $0.name == name }) else {
+    guard !existing.contains(where: { $0.displayName == name }) else {
       throw RemoteError.posix(EEXIST)
     }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
@@ -300,7 +328,7 @@ public actor XunleiProvider: RemoteFileProvider {
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     let name = ChinaWebSupport.basename(path)
     let existing = try await children(destination, parentID: folder.id)
-    guard !existing.contains(where: { $0.name == name }) else {
+    guard !existing.contains(where: { $0.displayName == name }) else {
       throw RemoteError.posix(EEXIST)
     }
     defer { invalidate(destination) }
@@ -333,7 +361,7 @@ public actor XunleiProvider: RemoteFileProvider {
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     let conflicts = try await children(destination, parentID: folder.id).filter {
-      $0.name == ChinaWebSupport.basename(to) && $0.id != file.id
+      $0.displayName == ChinaWebSupport.basename(to) && $0.id != file.id
     }
     guard conflicts.isEmpty else { throw RemoteError.posix(EEXIST) }
     defer {
@@ -385,11 +413,11 @@ public actor XunleiProvider: RemoteFileProvider {
         currentPath = nextPath
         continue
       }
-      let matches = try await children(currentPath, parentID: current.id).filter {
-        $0.name == component
-      }
-      guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-      guard let match = matches.first else { throw RemoteError.posix(ENOENT) }
+      guard
+        let match = try await children(currentPath, parentID: current.id).first(where: {
+          $0.displayName == component
+        })
+      else { throw RemoteError.posix(ENOENT) }
       current = match
       currentPath = nextPath
     }
@@ -427,12 +455,14 @@ public actor XunleiProvider: RemoteFileProvider {
         throw XunleiError.invalidResponse
       }
     } while !pageToken.isEmpty
-    let grouped = Dictionary(grouping: output, by: \.name)
+    let names = duplicateNames.assign(
+      output.map { .init(id: $0.id, name: $0.name, isDirectory: $0.isDirectory) }, in: path.value)
     var updated: [String: XunleiFile] = [:]
-    for item in output {
-      let child = try path.appending(item.name)
-      _ = try item.item(at: child)
-      if grouped[item.name]?.count == 1 { updated[child.value] = item }
+    for index in output.indices {
+      output[index].assignedName = names[output[index].id]
+      let child = try path.appending(output[index].displayName)
+      _ = try output[index].item(at: child)
+      updated[child.value] = output[index]
     }
     if connected, cacheGeneration == generation {
       invalidate(path)

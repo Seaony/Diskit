@@ -115,3 +115,29 @@ import Testing
   operations.cancelAll()
   await operations.finishCancellation()
 }
+
+// 启动时网络监视器的第一次回调不能再触发一轮恢复，否则自动挂载失败会通知两次
+@MainActor @Test func firstNetworkReportOnlyRecordsThePath() async throws {
+  let operations = AppOperations()
+  let started = [TestEvent(), TestEvent()]
+  var attempts = 0
+  var refreshes = 0
+  let recovery = ConnectionRecovery(operations: operations, refresh: { refreshes += 1 }) {
+    attempts += 1
+    started[attempts - 1].signal()
+  }
+  recovery.start()
+  recovery.networkChanged(available: true)
+  try await started[0].wait()
+  for _ in 0..<10 { await Task.yield() }
+  #expect(attempts == 1)
+  #expect(refreshes == 0)
+  recovery.networkChanged(available: false)
+  recovery.networkChanged(available: true)
+  try await started[1].wait()
+  #expect(attempts == 2)
+  #expect(refreshes == 2)
+  recovery.stop()
+  operations.cancelAll()
+  await operations.finishCancellation()
+}

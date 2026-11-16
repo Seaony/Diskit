@@ -213,3 +213,33 @@ func xunleiBusinessFailurePreservesActionableError(reason: String) async throws 
   }
   #expect(await rejectedHTTP.requests.count == 1)
 }
+
+@Test func xunleiDownloadLinkIsReusedUntilRejectedOrFileChanges() async throws {
+  func detail(_ link: String) -> HTTPResponse {
+    coverageReply(
+      "{\"id\":\"movie\",\"name\":\"movie\",\"kind\":\"drive#file\",\"size\":4,\"web_content_link\":\"https://cdn.example.invalid/\(link)\"}"
+    )
+  }
+  let ok = HTTPResponse(status: 206, headers: ["Content-Range": "bytes 0-1/4"])
+  let http = XunleiCoverageHTTP(
+    [
+      coverageReply("{}"),
+      coverageReply(
+        #"{"files":[{"id":"movie","name":"movie","kind":"drive#file","size":4,"modified_time":"1"}]}"#
+      ),
+      detail("a"), detail("b"),
+      coverageReply(
+        #"{"files":[{"id":"movie","name":"movie","kind":"drive#file","size":4,"modified_time":"2"}]}"#
+      ),
+      detail("c"),
+    ], streams: [ok, ok, HTTPResponse(status: 403), ok, ok])
+  let provider = XunleiProvider(session: coverageSession(http))
+  try await provider.connect()
+  for _ in 0..<3 { _ = try await provider.read(RemotePath("/movie"), range: 0..<2) }
+  _ = try await provider.list(RemotePath("/"))
+  _ = try await provider.read(RemotePath("/movie"), range: 0..<2)
+  #expect(
+    await http.streamRequests.compactMap { $0.url?.lastPathComponent } == [
+      "a", "a", "a", "b", "c",
+    ])
+}

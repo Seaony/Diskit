@@ -988,3 +988,65 @@ func failedUploadKeepsPrimaryErrorWhenCleanupFails(asynchronous: Bool) async thr
   }
   #expect(await transport.requests.contains { $0.httpMethod == "DELETE" && $0.url?.host == "mypikpak.com" })
 }
+
+@Test func gcidBlockSizeMatchesOpenListFloatDivision() {
+  let mib: Int64 = 1024 * 1024
+  #expect(PikPakDigest.gcidBlockSize(1) == 256 * 1024)
+  #expect(PikPakDigest.gcidBlockSize(128 * mib) == 256 * 1024)
+  #expect(PikPakDigest.gcidBlockSize(128 * mib + 1) == 512 * 1024)
+  #expect(PikPakDigest.gcidBlockSize(256 * mib) == 512 * 1024)
+  #expect(PikPakDigest.gcidBlockSize(256 * mib + 1) == mib)
+  #expect(PikPakDigest.gcidBlockSize(512 * mib + 1) == 2 * mib)
+  #expect(PikPakDigest.gcidBlockSize(10 * 1024 * mib) == 2 * mib)
+}
+
+@Test func pikPakDuplicateNamesGetFinderStyleNamesAndHitTheRightFile() async throws {
+  let trashed = Mutex<[String]>([])
+  let renamed = Mutex<[String]>([])
+  let moved = Mutex<[String]>([])
+  let transport = FakePikPakHTTP { request in
+    let path = request.url?.path ?? ""
+    if path == "/drive/v1/files", request.httpMethod == "GET" {
+      let parent = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?
+        .first { $0.name == "parent_id" }?.value
+      let entries =
+        parent == "dir"
+        ? []
+        : [
+          pikPakFile("f2", "a.txt", size: 9), pikPakFile("f1", "a.txt"),
+          pikPakFile("dir", "dir", folder: true),
+        ]
+      return json(["files": entries, "next_page_token": ""])
+    }
+    let body = try? JSONSerialization.jsonObject(with: request.httpBody ?? Data()) as? [String: Any]
+    if path == "/drive/v1/files:batchTrash" {
+      trashed.withLock { $0 += body?["ids"] as? [String] ?? [] }
+      return json([:])
+    }
+    if path == "/drive/v1/files:batchMove" {
+      moved.withLock { $0 += body?["ids"] as? [String] ?? [] }
+      return json([:])
+    }
+    if path == "/drive/v1/files/f2", request.httpMethod == "PATCH" {
+      renamed.withLock { $0.append(body?["name"] as? String ?? "") }
+      return json(pikPakFile("f2", body?["name"] as? String ?? ""))
+    }
+    return try stub(request)
+  }
+  let (session, _) = try session(transport: transport)
+  let provider = PikPakProvider(session: session)
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(items.map(\.name) == ["a (2).txt", "a.txt", "dir"])
+  #expect(try await provider.stat(RemotePath("/a (2).txt")).size == 9)
+  try await withFile(Data("x".utf8)) { url in
+    await #expect(throws: RemoteError.posix(EEXIST)) {
+      try await provider.write(RemotePath("/a (2).txt"), from: url)
+    }
+  }
+  try await provider.move(RemotePath("/a (2).txt"), to: RemotePath("/dir/a (2).txt"))
+  #expect(moved.withLock { $0 } == ["f2"])
+  #expect(renamed.withLock { $0 } == ["a (2).txt"])
+  try await provider.remove(RemotePath("/a (2).txt"), recursive: false)
+  #expect(trashed.withLock { $0 } == ["f2"])
+}

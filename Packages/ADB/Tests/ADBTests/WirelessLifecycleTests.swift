@@ -152,3 +152,15 @@ private actor DiscoveryGate {
   #expect(driver.stops == 1)
   await gate.open()
 }
+
+@Test @MainActor func wirelessDiscoveryErrorClearsWhenBrowsingRecovers() throws {
+  let driver = DiscoveryDriverFake()
+  let discovery = WirelessDiscovery(driver: driver)
+  discovery.start()
+  driver.failures[.connect]?(.posix(.ENETDOWN))
+  #expect(discovery.error != nil)
+  // 网络回来后浏览器又报来列表，提示应该消失
+  driver.snapshots[.connect]?([])
+  #expect(discovery.error == nil)
+  #expect(discovery.issue == nil)
+}

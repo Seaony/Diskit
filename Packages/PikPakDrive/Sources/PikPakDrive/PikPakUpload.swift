@@ -34,10 +34,7 @@ enum PikPakDigest {
     }
     let handle = try FileHandle(forReadingFrom: url)
     defer { try? handle.close() }
-    var blockSize: Int64 = 256 * 1024
-    while size / max(blockSize, 1) > 512, blockSize < 2 * 1024 * 1024 {
-      blockSize *= 2
-    }
+    let blockSize = gcidBlockSize(size)
     var outer = Insecure.SHA1()
     var remaining = size
     repeat {
@@ -53,6 +50,15 @@ enum PikPakDigest {
       remaining -= length
     } while remaining > 0
     return outer.finalize().map { String(format: "%02x", $0) }.joined().uppercased()
+  }
+
+  // 和 OpenList 的 gcid.go 一致用浮点除法：128 MiB 多 1 字节就要换成更大的块，整数除法会少算一档
+  static func gcidBlockSize(_ size: Int64) -> Int64 {
+    var blockSize: Int64 = 256 * 1024
+    while Double(size) / Double(blockSize) > 512, blockSize < 2 * 1024 * 1024 {
+      blockSize *= 2
+    }
+    return blockSize
   }
 }
 

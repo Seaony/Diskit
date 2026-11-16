@@ -58,38 +58,41 @@ extension FocusedValues {
         .disabled(panel?.canDelete != true)
     }
     CommandGroup(replacing: .undoRedo) {
-      SharedUndoCommands(manager: model.undoManager)
+      SharedUndoCommands(manager: model.undoManager, panelActive: panel != nil)
     }
     // 没有帮助页面，清掉系统默认的帮助菜单项
     CommandGroup(replacing: .help) {}
   }
 }
 
+// 面板是当前窗口时撤销面板上的排序、改名；其他窗口（编辑、搜索、网页登录）里的输入框用它们自己的撤销
 private struct SharedUndoCommands: View {
   let manager: UndoManager
+  let panelActive: Bool
   @State private var revision = 0
+
+  // 其他窗口：输入框的撤销记录在当前窗口响应链的 undoManager 里
+  private var responderManager: UndoManager? { NSApp.keyWindow?.firstResponder?.undoManager }
 
   var body: some View {
     let _ = revision
+    let target = panelActive ? manager : responderManager
     Group {
-      Button(manager.undoMenuItemTitle) { manager.undo() }
-        .keyboardShortcut("z", modifiers: .command)
-        .disabled(!manager.canUndo)
-      Button(manager.redoMenuItemTitle) { manager.redo() }
-        .keyboardShortcut("z", modifiers: [.command, .shift])
-        .disabled(!manager.canRedo)
+      Button(target?.undoMenuItemTitle ?? manager.undoMenuTitle(forUndoActionName: "")) {
+        if panelActive { manager.undo() } else { NSApp.sendAction(Selector(("undo:")), to: nil, from: nil) }
+      }
+      .keyboardShortcut("z", modifiers: .command)
+      .disabled(target?.canUndo != true)
+      Button(target?.redoMenuItemTitle ?? manager.redoMenuTitle(forUndoActionName: "")) {
+        if panelActive { manager.redo() } else { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) }
+      }
+      .keyboardShortcut("z", modifiers: [.command, .shift])
+      .disabled(target?.canRedo != true)
     }
-    .onReceive(
-      NotificationCenter.default.publisher(
-        for: .NSUndoManagerDidCloseUndoGroup, object: manager)
-    ) { _ in revision += 1 }
-    .onReceive(
-      NotificationCenter.default.publisher(
-        for: .NSUndoManagerDidUndoChange, object: manager)
-    ) { _ in revision += 1 }
-    .onReceive(
-      NotificationCenter.default.publisher(
-        for: .NSUndoManagerDidRedoChange, object: manager)
-    ) { _ in revision += 1 }
+    // 任何窗口的撤销记录变了、换了当前窗口都刷新菜单项的标题和可用状态
+    .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidCloseUndoGroup)) { _ in revision += 1 }
+    .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { _ in revision += 1 }
+    .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidRedoChange)) { _ in revision += 1 }
+    .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in revision += 1 }
   }
 }

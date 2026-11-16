@@ -67,6 +67,7 @@ private actor VolumeProvider: RemoteFileProvider {
   var disconnected = false
   var offline = false
   var loginExpired = false
+  var rangeUnsupported = false
   var connects = 0
   var rejectsExisting: Bool
   var slowListing = false
@@ -76,6 +77,10 @@ private actor VolumeProvider: RemoteFileProvider {
   var readChunkSize: Int?
   var activeLists = 0
   var peakLists = 0
+  var caseInsensitive = false
+  var changeAfterStat: (RemotePath, Data)?
+  var corruptsNextUpload = false
+  var moveFailuresLeft = 0
 
   init(capabilities: ProviderCapabilities = volumeFullAccess, rejectsExisting: Bool = false) {
     self.capabilities = capabilities
@@ -95,6 +100,8 @@ private actor VolumeProvider: RemoteFileProvider {
   }
   func restoreNetwork() { offline = false }
   func expireLogin() { loginExpired = true }
+  func restoreLogin() { loginExpired = false }
+  func refuseRanges() { rangeUnsupported = true }
   func connectCount() -> Int { connects }
   func delayListing() { slowListing = true }
   func setListing(_ items: [RemoteItem]) { listing = items }
@@ -102,6 +109,20 @@ private actor VolumeProvider: RemoteFileProvider {
   func replaceNextRead(with data: Data) { nextReadContents = data }
   func splitReads(into bytes: Int) { readChunkSize = bytes }
   func maximumLists() -> Int { peakLists }
+  // 像 OneDrive、Dropbox 那样不分大小写，返回远端实际的名字
+  func ignoreCase() { caseInsensitive = true }
+  // 下一次查这个文件之后它就变了（手机还在录、网盘在同步）
+  func change(_ path: String, afterNextStatTo data: String) throws {
+    changeAfterStat = (try RemotePath(path), Data(data.utf8))
+  }
+  func corruptNextUpload() { corruptsNextUpload = true }
+  func failNextMoves(_ count: Int) { moveFailuresLeft = count }
+  func actualPath(_ path: RemotePath) -> RemotePath {
+    guard caseInsensitive, files[path] == nil, !folders.contains(path) else { return path }
+    return (Array(files.keys) + Array(folders)).first {
+      $0.value.caseInsensitiveCompare(path.value) == .orderedSame
+    } ?? path
+  }
   func connect() async throws {
     connects += 1
     if offline { throw URLError(.notConnectedToInternet) }
@@ -112,6 +133,7 @@ private actor VolumeProvider: RemoteFileProvider {
   func spaceInfo() async throws -> SpaceInfo { SpaceInfo(total: 1000, used: 100) }
 
   func item(_ path: RemotePath) throws -> RemoteItem {
+    let path = actualPath(path)
     if let data = files[path] {
       return RemoteItem(
         path: path, name: path.basename, isDirectory: false, size: Int64(data.count),
@@ -141,13 +163,19 @@ private actor VolumeProvider: RemoteFileProvider {
   func stat(_ path: RemotePath) async throws -> RemoteItem {
     try checkConnection()
     events.append("stat:\(path)")
-    return try item(path)
+    let found = try item(path)
+    if let (changed, data) = changeAfterStat, changed == path {
+      changeAfterStat = nil
+      files[path] = data
+    }
+    return found
   }
   func read(_ path: RemotePath, range: Range<Int64>?) async throws -> AsyncThrowingStream<
     Data, Error
   > {
     try checkConnection()
     events.append("read:\(path):\(range.map { "\($0.lowerBound)-\($0.upperBound)" } ?? "all")")
+    if range != nil, rangeUnsupported { throw RemoteError.unsupported }
     guard var data = files[path] else { throw RemoteError.posix(ENOENT) }
     if let control = nextReadControl {
       nextReadControl = nil
@@ -183,6 +211,10 @@ private actor VolumeProvider: RemoteFileProvider {
     if writeFails { throw RemoteError.posix(ENOSPC) }
     if rejectsExisting, files[path] != nil { throw RemoteError.posix(EEXIST) }
     files[path] = try Data(contentsOf: localFile)
+    if corruptsNextUpload {
+      corruptsNextUpload = false
+      files[path] = files[path]?.prefix(1)
+    }
     modifiedDates[path] = try localFile.resourceValues(forKeys: [.contentModificationDateKey])
       .contentModificationDate
   }
@@ -207,7 +239,12 @@ private actor VolumeProvider: RemoteFileProvider {
     try checkConnection()
     events.append("move:\(from):\(to)")
     if moveFails { throw RemoteError.posix(EACCES) }
-    guard files[to] == nil, !folders.contains(to) else { throw RemoteError.posix(EEXIST) }
+    if moveFailuresLeft > 0 {
+      moveFailuresLeft -= 1
+      throw RemoteError.posix(EACCES)
+    }
+    guard actualPath(to) == from || (files[actualPath(to)] == nil && !folders.contains(actualPath(to)))
+    else { throw RemoteError.posix(EEXIST) }
     if let data = files.removeValue(forKey: from) {
       files[to] = data
     } else if folders.remove(from) != nil {
@@ -220,24 +257,44 @@ private actor VolumeProvider: RemoteFileProvider {
 
 private struct VolumeFixture {
   let root: URL
+  let connectionID = UUID()
   let provider: VolumeProvider
   let backend: RemoteVolumeBackend
+  private let make: @Sendable (String) -> RemoteVolumeBackend
 
   init(
     capabilities: ProviderCapabilities = volumeFullAccess, replacesExisting: Bool = true,
     root: URL? = nil, cacheLimit: Int64 = 5 * 1024 * 1024 * 1024,
     kind: ConnectionKind = .androidUSB, now: @escaping @Sendable () -> Date = { Date() }
   ) {
-    self.root =
+    let root =
       root
       ?? FileManager.default.temporaryDirectory.appending(path: "RemoteVolume-" + UUID().uuidString)
-    provider = VolumeProvider(capabilities: capabilities, rejectsExisting: !replacesExisting)
-    backend = RemoteVolumeBackend(
-      provider: provider, connectionID: UUID(), kind: kind, cacheRoot: self.root,
-      replacesExisting: replacesExisting, cacheLimit: cacheLimit, now: now)
+    let provider = VolumeProvider(capabilities: capabilities, rejectsExisting: !replacesExisting)
+    let connectionID = connectionID
+    let pending = PendingUploads.file(
+      dataDirectory: root.appending(path: "Group"), connectionID: connectionID)
+    make = { target in
+      RemoteVolumeBackend(
+        provider: provider, connectionID: connectionID, kind: kind, cacheRoot: root,
+        replacesExisting: replacesExisting, cacheLimit: cacheLimit, pendingUploadsFile: pending,
+        uploadTarget: target, now: now)
+    }
+    self.root = root
+    self.provider = provider
+    backend = make("account-a")
   }
   func clean() { try? FileManager.default.removeItem(at: root) }
   func path(_ value: String) throws -> RemotePath { try RemotePath(value) }
+  // 同一连接重新挂载：新的 backend，沿用本地目录和远端
+  func remount(target: String = "account-a") -> RemoteVolumeBackend { make(target) }
+  var pendingUploads: [String] {
+    PendingUploads.paths(dataDirectory: root.appending(path: "Group"), connectionID: connectionID)
+  }
+  var writes: [String] {
+    let directory = root.appending(path: connectionID.uuidString).appending(path: "Writes")
+    return ((try? FileManager.default.contentsOfDirectory(atPath: directory.path)) ?? []).sorted()
+  }
 }
 
 @Test func remoteVolumeDuplicateProviderPathsReturnConflictWithoutChoosingAnItem() async throws {
@@ -424,15 +481,41 @@ private struct VolumeFixture {
   try await fixture.backend.open(path, writable: true)
   _ = try await fixture.backend.write(path, offset: 0, data: Data("new".utf8))
   await fixture.provider.failMoves(true)
+  await fixture.provider.resetEvents()
   await #expect(throws: RemoteError.posix(EACCES)) { try await fixture.backend.close(path) }
   let retained = try #require(await fixture.backend.pendingWriteFiles[path])
   #expect(try Data(contentsOf: retained) == Data("new".utf8))
-  let temporary = try #require(await fixture.backend.recoveryPaths.first)
+  // 原文件已删、改名重试也失败：远端暂存不再隐藏，新内容在 Finder 里看得到
+  let events = await fixture.provider.recorded()
+  let moves = events.filter { $0.hasPrefix("move:") }
+  #expect(moves.count == 2)
+  let temporary = try fixture.path(String(moves[0].dropFirst("move:".count).prefix { $0 != ":" }))
+  #expect(await fixture.backend.recoveryPaths.isEmpty)
   #expect(try await fixture.provider.content(temporary.value) == Data("new".utf8))
-  #expect(try await fixture.backend.list(fixture.path("/")).map(\.name) == ["file"])
+  #expect(
+    Set(try await fixture.backend.list(fixture.path("/")).map(\.name))
+      == ["file", temporary.basename])
+  #expect(fixture.pendingUploads == ["/file"])
   await fixture.provider.failMoves(false)
   try await fixture.backend.close(path)
   #expect(try await fixture.provider.content("/file") == Data("new".utf8))
+  #expect(fixture.pendingUploads.isEmpty)
+}
+
+@Test func remoteVolumeReplacementRetriesTheRenameOnceAfterDeletingTheOriginal() async throws {
+  let fixture = VolumeFixture(replacesExisting: false)
+  defer { fixture.clean() }
+  try await fixture.provider.put("/file", data: "old")
+  _ = try await fixture.backend.connect()
+  let path = try fixture.path("/file")
+  try await fixture.backend.open(path, writable: true)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("new".utf8))
+  await fixture.provider.failNextMoves(1)
+  try await fixture.backend.close(path)
+  #expect(try await fixture.provider.content("/file") == Data("new".utf8))
+  #expect(try await fixture.backend.list(fixture.path("/")).map(\.name) == ["file"])
+  #expect(await fixture.backend.recoveryPaths.isEmpty)
+  #expect(fixture.writes.isEmpty)
 }
 
 @Test func remoteVolumeRenameReplacementKeepsOriginalUntilNewSourceWasUploaded() async throws {
@@ -682,7 +765,7 @@ private struct VolumeFixture {
   await fixture.backend.disconnect()
 }
 
-@Test func remoteVolumeWrongDownloadSizeKeepsDisconnectErrorAndClearsPartialCacheForRetry() async throws {
+@Test func remoteVolumeWrongDownloadSizeIsRetryableAndClearsPartialCache() async throws {
   for received in [Data("ab".utf8), Data("abcdef".utf8)] {
     var capabilities = volumeFullAccess
     capabilities.supportsRangeRead = false
@@ -692,15 +775,76 @@ private struct VolumeFixture {
     try await fixture.provider.put("/file", data: "abcd")
     _ = try await fixture.backend.connect()
     await fixture.provider.replaceNextRead(with: received)
-    await #expect(throws: RemoteError.notConnected) {
+    // 大小对不上不算断线，Finder 重试就能读到
+    await #expect(throws: RemoteError.posix(EAGAIN)) {
       _ = try await fixture.backend.read(path, offset: 0, length: 4)
     }
     let directory = RemoteReadCache.directory(root: fixture.root, connectionID: await fixture.backend.connectionID)
     #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).isEmpty)
-    _ = try await fixture.backend.connect()
     #expect(try await fixture.backend.read(path, offset: 0, length: 4) == Data("abcd".utf8))
+    #expect(await fixture.provider.connectCount() == 1)
     await fixture.backend.disconnect()
   }
+}
+
+@Test func remoteVolumeFileGrowingDuringDownloadDropsCachedSizeForTheNextRead() async throws {
+  var capabilities = volumeFullAccess
+  capabilities.supportsRangeRead = false
+  let fixture = VolumeFixture(capabilities: capabilities, kind: .aliyunDrive)
+  defer { fixture.clean() }
+  let path = try fixture.path("/video.mp4")
+  try await fixture.provider.put("/video.mp4", data: "abcd")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: false)
+  await fixture.provider.replaceNextRead(with: Data("abcdef".utf8))
+  await #expect(throws: RemoteError.posix(EAGAIN)) {
+    _ = try await fixture.backend.read(path, offset: 0, length: 6)
+  }
+  try await fixture.provider.put("/video.mp4", data: "abcdef")
+  #expect(try await fixture.backend.attributes(path).size == 6)
+  #expect(try await fixture.backend.read(path, offset: 0, length: 6) == Data("abcdef".utf8))
+  #expect(await fixture.provider.connectCount() == 1)
+  try await fixture.backend.close(path)
+}
+
+@Test func remoteVolumeSizeChangesWhileStagingOrMovingAreRetryableNotDisconnects() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "abcd")
+  _ = try await fixture.backend.connect()
+  await fixture.provider.replaceNextRead(with: Data("ab".utf8))
+  await #expect(throws: RemoteError.posix(EAGAIN)) {
+    try await fixture.backend.open(path, writable: true)
+  }
+  #expect(await fixture.backend.pendingWriteFiles.isEmpty)
+  #expect(fixture.writes.isEmpty)
+
+  try await fixture.provider.change("/file", afterNextStatTo: "abcdefgh")
+  await #expect(throws: RemoteError.posix(EAGAIN)) {
+    try await fixture.backend.move(path, to: fixture.path("/moved"))
+  }
+  #expect(try await fixture.provider.content("/file") == Data("abcdefgh".utf8))
+  try await fixture.backend.move(path, to: fixture.path("/moved"))
+  #expect(try await fixture.provider.content("/moved") == Data("abcdefgh".utf8))
+  #expect(await fixture.provider.connectCount() == 1)
+}
+
+@Test func remoteVolumeUploadWithWrongSizeKeepsOriginalAndConnection() async throws {
+  let fixture = VolumeFixture(replacesExisting: false)
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "old")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: true)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("newer".utf8))
+  await fixture.provider.corruptNextUpload()
+  await #expect(throws: RemoteError.posix(EIO)) { try await fixture.backend.close(path) }
+  #expect(try await fixture.provider.content("/file") == Data("old".utf8))
+  #expect(await fixture.backend.pendingWriteFiles[path] != nil)
+  try await fixture.backend.close(path)
+  #expect(try await fixture.provider.content("/file") == Data("newer".utf8))
+  #expect(await fixture.provider.connectCount() == 1)
 }
 
 @Test func remoteVolumeChunkedDownloadPreservesMegabyteBoundariesAndTheFinalTail() async throws {
@@ -784,4 +928,241 @@ private final class TestClock: @unchecked Sendable {
   await #expect(throws: RemoteError.unauthorized) {
     _ = try await fixture.backend.list(fixture.path("/"))
   }
+}
+
+@Test func remoteVolumeOpenedFileReadsReuseOpenAttributesUntilTheyExpire() async throws {
+  let clock = TestClock()
+  let fixture = VolumeFixture(kind: .aliyunDrive, now: { clock.now() })
+  defer { fixture.clean() }
+  let path = try fixture.path("/file")
+  try await fixture.provider.put("/file", data: "abcdefgh")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.open(path, writable: false)
+  for offset in 0..<8 {
+    #expect(try await fixture.backend.read(path, offset: Int64(offset), length: 1).count == 1)
+  }
+  #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 1)
+  try await fixture.provider.put("/file", data: "abcdefghij")
+  clock.advance(30)
+  #expect(try await fixture.backend.read(path, offset: 8, length: 2) == Data("ij".utf8))
+  #expect(await fixture.provider.recorded().filter { $0 == "stat:/file" }.count == 2)
+  try await fixture.backend.close(path)
+}
+
+@Test func remoteVolumeLookupMatchesDecomposedNamesFromFinder() throws {
+  let names = ["caf\u{E9}", "\u{304C}\u{3063}\u{3053}\u{3046}", "\u{D55C}\u{AE00}", "plain"]
+  let items = try names.map {
+    RemoteItem(
+      path: try RemotePath("/" + $0), name: $0, isDirectory: false, size: 0, modified: .distantPast)
+  }
+  for name in names {
+    let decomposed = name.decomposedStringWithCanonicalMapping
+    let found = RemoteVolumeBackend.entries(named: Data(decomposed.utf8), in: items)
+    #expect(found.map(\.name) == [name])
+  }
+  // 远端同时有两种写法时按字节取那一个
+  let both = items + [
+    RemoteItem(
+      path: try RemotePath("/cafe\u{301}"), name: "cafe\u{301}", isDirectory: false, size: 1,
+      modified: .distantPast)
+  ]
+  #expect(
+    RemoteVolumeBackend.entries(named: Data("cafe\u{301}".utf8), in: both).map(\.size) == [1])
+  #expect(RemoteVolumeBackend.entries(named: Data("CAF\u{C9}".utf8), in: items).isEmpty)
+}
+
+@Test func remoteVolumeCaseOnlyRenameOnCaseInsensitiveServiceIsNotAConflict() async throws {
+  let fixture = VolumeFixture(kind: .oneDrive)
+  defer { fixture.clean() }
+  await fixture.provider.ignoreCase()
+  try await fixture.provider.put("/photo.JPG", data: "image")
+  try await fixture.provider.put("/other.txt", data: "text")
+  _ = try await fixture.backend.connect()
+  try await fixture.backend.move(fixture.path("/photo.JPG"), to: fixture.path("/photo.jpg"))
+  #expect(try await fixture.provider.content("/photo.jpg") == Data("image".utf8))
+  #expect(try await fixture.provider.content("/photo.JPG") == nil)
+  #expect(!(await fixture.provider.recorded().contains { $0.hasPrefix("remove:") }))
+  // 换成别的文件占着这个名字，仍然算重名
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await fixture.backend.move(fixture.path("/other.txt"), to: fixture.path("/PHOTO.jpg"))
+  }
+}
+
+@Test func remoteVolumeFailedUploadSurvivesUnmountAndUploadsOnNextMount() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  let path = try fixture.path("/new.txt")
+  _ = try await fixture.backend.createFile(path)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("hello".utf8))
+  await fixture.provider.failWrites(true)
+  await #expect(throws: RemoteError.posix(ENOSPC)) { try await fixture.backend.close(path) }
+  #expect(fixture.pendingUploads == ["/new.txt"])
+  // 卸载时还是传不上去
+  await #expect(throws: RemoteError.posix(ENOSPC)) { try await fixture.backend.flushAll() }
+  await fixture.backend.disconnect()
+  #expect(fixture.writes.count == 2)
+
+  // 挂载时连不上：清单不能被清掉
+  await fixture.provider.loseConnection()
+  let offline = fixture.remount()
+  await #expect(throws: RemoteError.notConnected) { _ = try await offline.connect() }
+  #expect(fixture.pendingUploads == ["/new.txt"])
+  await fixture.provider.restoreNetwork()
+
+  // 下次挂载仍然失败：内容和记录都留着
+  let second = fixture.remount()
+  _ = try await second.connect()
+  #expect(try await second.list(fixture.path("/")).map(\.name) == ["new.txt"])
+  await second.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/new.txt") == nil)
+  #expect(fixture.writes.count == 2)
+  #expect(fixture.pendingUploads == ["/new.txt"])
+  await second.disconnect()
+
+  // 再挂载、网络正常：传上去后清掉本地内容和清单
+  await fixture.provider.failWrites(false)
+  let third = fixture.remount()
+  _ = try await third.connect()
+  #expect(try await third.read(path, offset: 0, length: 5) == Data("hello".utf8))
+  await third.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/new.txt") == Data("hello".utf8))
+  #expect(fixture.writes.isEmpty)
+  #expect(fixture.pendingUploads.isEmpty)
+  #expect(await third.pendingWriteFiles.isEmpty)
+  await third.disconnect()
+}
+
+@Test func remoteVolumeRecoveredUploadKeepsConflictRulesAndSkipsOpenFiles() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  let fresh = try fixture.path("/fresh")
+  let opened = try fixture.path("/opened")
+  for path in [fresh, opened] {
+    _ = try await fixture.backend.createFile(path)
+    _ = try await fixture.backend.write(path, offset: 0, data: Data("ours".utf8))
+  }
+  await fixture.provider.failWrites(true)
+  await #expect(throws: RemoteError.posix(ENOSPC)) { try await fixture.backend.flushAll() }
+  await fixture.backend.disconnect()
+  await fixture.provider.failWrites(false)
+  try await fixture.provider.put("/fresh", data: "created elsewhere meanwhile")
+
+  let second = fixture.remount()
+  _ = try await second.connect()
+  try await second.open(opened, writable: false)
+  await second.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/fresh") == Data("created elsewhere meanwhile".utf8))
+  #expect(try await fixture.provider.content("/opened") == nil)
+  #expect(fixture.pendingUploads == ["/fresh", "/opened"])
+  try await second.close(opened)
+  #expect(try await fixture.provider.content("/opened") == Data("ours".utf8))
+  #expect(fixture.pendingUploads == ["/fresh"])
+  await second.disconnect()
+}
+
+@Test func remoteVolumeHalfWrittenContentIsNotUploadedAfterACrash() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  let copying = try fixture.path("/copying")
+  let edited = try fixture.path("/edited")
+  _ = try await fixture.backend.createFile(copying)
+  _ = try await fixture.backend.write(copying, offset: 0, data: Data("par".utf8))
+  // 上传失败后又开始改，改到一半崩溃
+  _ = try await fixture.backend.createFile(edited)
+  _ = try await fixture.backend.write(edited, offset: 0, data: Data("v1".utf8))
+  await fixture.provider.failWrites(true)
+  await #expect(throws: RemoteError.posix(ENOSPC)) { try await fixture.backend.flush(edited) }
+  _ = try await fixture.backend.write(edited, offset: 2, data: Data("-half".utf8))
+  await fixture.provider.failWrites(false)
+  #expect(fixture.pendingUploads.isEmpty)
+
+  // 扩展进程没了：旧 backend 不再参与
+  await fixture.provider.resetEvents()
+  let second = fixture.remount()
+  _ = try await second.connect()
+  await second.uploadPendingWrites()
+  #expect(try await second.list(fixture.path("/")).isEmpty)
+  #expect(!(await fixture.provider.recorded().contains { $0.hasPrefix("upload:") }))
+  #expect(try await fixture.provider.content("/copying") == nil)
+  #expect(try await fixture.provider.content("/edited") == nil)
+  #expect(fixture.writes.isEmpty)
+  await second.disconnect()
+}
+
+@Test func remoteVolumeFallsBackToWholeFileWhenDeviceRefusesRanges() async throws {
+  let fixture = VolumeFixture()
+  defer { fixture.clean() }
+  try await fixture.provider.put("/file", data: "abcdef")
+  await fixture.provider.refuseRanges()
+  _ = try await fixture.backend.connect()
+  #expect(try await fixture.backend.read(fixture.path("/file"), offset: 2, length: 3) == Data("cde".utf8))
+  #expect(await fixture.provider.recorded().contains("read:/file:all"))
+  await fixture.backend.disconnect()
+}
+
+@Test func remoteVolumeClosedFileStaysUploadableWhenReconnectFindsExpiredLogin() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  let path = try fixture.path("/new.txt")
+  _ = try await fixture.backend.createFile(path)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("hello".utf8))
+  // 写完后断网，关闭时重连发现登录已失效
+  await fixture.provider.loseConnection()
+  await #expect(throws: RemoteError.notConnected) { _ = try await fixture.backend.list(fixture.path("/")) }
+  await fixture.provider.restoreNetwork()
+  await fixture.provider.expireLogin()
+  await #expect(throws: RemoteError.unauthorized) { try await fixture.backend.close(path) }
+  await fixture.backend.disconnect()
+
+  // 重新登录后挂载：内容已记成写完，会接着传，不会被当成写到一半丢掉
+  await fixture.provider.restoreLogin()
+  let next = fixture.remount()
+  _ = try await next.connect()
+  await next.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/new.txt") == Data("hello".utf8))
+  await next.disconnect()
+}
+
+@Test func remoteVolumePendingWritesNeverGoToAnotherAccount() async throws {
+  let fixture = VolumeFixture(kind: .aliyunDrive)
+  defer { fixture.clean() }
+  _ = try await fixture.backend.connect()
+  let path = try fixture.path("/new.txt")
+  _ = try await fixture.backend.createFile(path)
+  _ = try await fixture.backend.write(path, offset: 0, data: Data("hello".utf8))
+  await fixture.provider.failWrites(true)
+  await #expect(throws: RemoteError.posix(ENOSPC)) { try await fixture.backend.close(path) }
+  await fixture.backend.disconnect()
+  await fixture.provider.failWrites(false)
+
+  // 位置改成了别的账号：不传过去，本地内容留着
+  let other = fixture.remount(target: "account-b")
+  _ = try await other.connect()
+  await other.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/new.txt") == nil)
+  #expect(fixture.writes.count == 2)
+  await other.disconnect()
+
+  // 换回原来的账号后照常补传
+  let original = fixture.remount()
+  _ = try await original.connect()
+  await original.uploadPendingWrites()
+  #expect(try await fixture.provider.content("/new.txt") == Data("hello".utf8))
+  await original.disconnect()
+}
+
+@Test func uploadTargetIgnoresCosmeticParameters() {
+  var connection = Connection(kind: .quark, name: "夸克")
+  connection.params = ["userID": "1", "nickname": "a"]
+  let target = connection.uploadTarget
+  connection.params["nickname"] = "b"
+  connection.params["avatarURL"] = "https://x"
+  connection.name = "改名"
+  #expect(connection.uploadTarget == target)
+  connection.params["userID"] = "2"
+  #expect(connection.uploadTarget != target)
 }

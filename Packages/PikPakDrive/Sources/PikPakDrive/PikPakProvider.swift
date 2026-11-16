@@ -2,6 +2,8 @@ import Core
 import Foundation
 
 public actor PikPakProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
 
@@ -68,7 +70,7 @@ public actor PikPakProvider: RemoteFileProvider {
     let folder = try await resolve(path)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     return try await children(path, folderID: folder.id).map {
-      try $0.item(at: path.appending($0.name))
+      try $0.item(at: path.appending($0.displayName))
     }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
   }
 
@@ -152,8 +154,10 @@ public actor PikPakProvider: RemoteFileProvider {
     let folder = try await resolve(destination)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     let name = basename(path)
-    let existing = try await children(destination, folderID: folder.id).filter { $0.name == name }
-    guard existing.isEmpty else { throw RemoteError.posix(EEXIST) }
+    let existing = try await children(destination, folderID: folder.id)
+    guard !existing.contains(where: { $0.displayName == name }) else {
+      throw RemoteError.posix(EEXIST)
+    }
     defer { invalidate(destination) }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0 else {
@@ -226,11 +230,10 @@ public actor PikPakProvider: RemoteFileProvider {
     let destination = parent(of: path)
     let parentFile = try await resolve(destination)
     guard parentFile.isDirectory else { throw RemoteError.posix(ENOTDIR) }
-    let matches = try await children(destination, folderID: parentFile.id).filter {
-      $0.name == basename(path)
+    let existing = try await children(destination, folderID: parentFile.id)
+    guard !existing.contains(where: { $0.displayName == basename(path) }) else {
+      throw RemoteError.posix(EEXIST)
     }
-    guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-    guard matches.isEmpty else { throw RemoteError.posix(EEXIST) }
     defer { invalidate(destination) }
     struct CreateFolder: Encodable {
       let kind = "drive#folder"
@@ -274,7 +277,7 @@ public actor PikPakProvider: RemoteFileProvider {
     let destinationChildren = try await children(destinationParent, folderID: destination.id)
     guard
       !destinationChildren.contains(where: {
-        $0.name == basename(to) && $0.id != file.id
+        $0.displayName == basename(to) && $0.id != file.id
       })
     else { throw RemoteError.posix(EEXIST) }
 
@@ -294,7 +297,8 @@ public actor PikPakProvider: RemoteFileProvider {
             BatchMove(ids: [file.id], to: .init(parentID: requestParent(destination.id)))))
         try await waitTask(mutation.taskID)
       }
-      if basename(from) != basename(to) {
+      // 和网盘上的真实名字比：重名文件移走后要改成 Finder 里看到的名字
+      if file.name != basename(to) {
         struct RenameRequest: Encodable { let name: String }
         let _: PikPakFile = try await rpc(
           method: "PATCH", path: "/drive/v1/files/" + detailedID(file.id),
@@ -340,9 +344,11 @@ public actor PikPakProvider: RemoteFileProvider {
         current = next
         continue
       }
-      let matches = try await children(current, folderID: folder.id).filter { $0.name == name }
-      guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-      guard let match = matches.first else { throw RemoteError.posix(ENOENT) }
+      guard
+        let match = try await children(current, folderID: folder.id).first(where: {
+          $0.displayName == name
+        })
+      else { throw RemoteError.posix(ENOENT) }
       folder = match
       current = next
     }
@@ -387,11 +393,13 @@ public actor PikPakProvider: RemoteFileProvider {
       throw RemoteError.posix(EAGAIN)
     }
     clearCachedChildren(path)
-    let grouped = Dictionary(grouping: files, by: \.name)
-    for file in files {
-      let child = try path.appending(file.name)
-      _ = try file.item(at: child)
-      if grouped[file.name]?.count == 1 { paths[child.value] = file }
+    let names = duplicateNames.assign(
+      files.map { .init(id: $0.id, name: $0.name, isDirectory: $0.isDirectory) }, in: path.value)
+    for index in files.indices {
+      files[index].displayName = names[files[index].id] ?? files[index].name
+      let child = try path.appending(files[index].displayName)
+      _ = try files[index].item(at: child)
+      paths[child.value] = files[index]
     }
     return files
   }

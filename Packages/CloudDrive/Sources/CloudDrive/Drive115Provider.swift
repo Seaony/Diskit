@@ -3,6 +3,8 @@ import CryptoKit
 import Foundation
 
 public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: OAuthSession
@@ -10,19 +12,34 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   private let multipartThreshold: Int64
   private let partSize: Int64
   private var connected = false
+  // 路径用 Finder 里显示的名字（同名文件编了号），对应到 115 的文件 ID
   private var ids: [String: String] = ["/": "0"]
-  private var ambiguousPaths: Set<String> = []
+  private var files: [String: Drive115File] = [:]
+  private var downloads: [String: Drive115Download] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
+  private let now: @Sendable () -> Date
+  // 115 不告诉下载地址什么时候过期，短时间内复用，过期或被拒再重新要
+  static let downloadLinkLifetime: TimeInterval = 300
 
   public init(
     session: OAuthSession, transport: any HTTPTransport = URLSessionHTTPTransport(),
     multipartThreshold: Int64 = 4 * 1024 * 1024 * 1024,
     partSize: Int64 = 64 * 1024 * 1024
   ) {
+    self.init(
+      session: session, transport: transport, multipartThreshold: multipartThreshold,
+      partSize: partSize, now: { Date() })
+  }
+
+  init(
+    session: OAuthSession, transport: any HTTPTransport, multipartThreshold: Int64,
+    partSize: Int64, now: @escaping @Sendable () -> Date
+  ) {
     self.session = session
     self.transport = session.limited(transport)
     self.multipartThreshold = multipartThreshold
     self.partSize = partSize
+    self.now = now
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
@@ -37,7 +54,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
   public func disconnect() async {
     connected = false
     ids = ["/": "0"]
-    ambiguousPaths.removeAll()
+    files.removeAll()
+    downloads.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -56,9 +74,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     try ensureConnected()
     let parent = try await resolve(path)
     var offset = 0
-    var result: [RemoteItem] = []
-    var resolved: [String: String] = [:]
-    var ambiguous: Set<String> = []
+    var entries: [Drive115ListEntry] = []
     while true {
       let response = try await api(
         "GET", "/open/ufile/files",
@@ -73,30 +89,35 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
           URLQueryItem(name: "custom_order", value: "2"),
         ])
       let page = try decode(Drive115ListEnvelope.self, from: response)
-      let entries = page.data ?? []
-      for entry in entries where entry.aid == nil || entry.aid == "1" {
-        let item = try entry.item(parent: path)
-        result.append(item)
-        if let previous = resolved[item.path.value], previous != entry.fid {
-          ambiguous.insert(item.path.value)
-        }
-        resolved[item.path.value] = entry.fid
-      }
+      let pageEntries = page.data ?? []
+      entries += pageEntries.filter { $0.aid == nil || $0.aid == "1" }
       if let total = page.count {
-        guard total >= 0, offset + entries.count <= total else { throw RemoteError.protocolError }
-        if offset + entries.count == total { break }
-        guard !entries.isEmpty else { throw RemoteError.protocolError }
-      } else if entries.count < 1_150 {
+        guard total >= 0, offset + pageEntries.count <= total else {
+          throw RemoteError.protocolError
+        }
+        if offset + pageEntries.count == total { break }
+        guard !pageEntries.isEmpty else { throw RemoteError.protocolError }
+      } else if pageEntries.count < 1_150 {
         break
       }
-      offset += entries.count
+      offset += pageEntries.count
     }
-    let prefix = path.value == "/" ? "/" : path.value + "/"
-    ids = ids.filter { !$0.key.hasPrefix(prefix) }
-    ambiguousPaths = ambiguousPaths.filter { !$0.hasPrefix(prefix) }
+    let names = duplicateNames.assign(
+      entries.map { DuplicateNames.Entry(id: $0.fid, name: $0.fn, isDirectory: $0.fc == "0") }, in: path.value)
+    forget(under: path)
+    var result: [RemoteItem] = []
+    var resolved: [String: String] = [:]
+    for entry in entries {
+      guard let name = names[entry.fid] else { throw RemoteError.protocolError }
+      let item = try entry.item(at: path.appending(name))
+      result.append(item)
+      resolved[item.path.value] = entry.fid
+      files[entry.fid] = Drive115File(
+        name: entry.fn, pickCode: entry.pc ?? files[entry.fid]?.pickCode, size: item.size,
+        modified: item.modified)
+    }
     ids[path.value] = parent
-    for (name, id) in resolved where !ambiguous.contains(name) { ids[name] = id }
-    ambiguousPaths.formUnion(ambiguous)
+    ids.merge(resolved) { $1 }
     return result
   }
 
@@ -108,7 +129,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         modified: Date(timeIntervalSince1970: 0))
     }
     let info = try await getInfo(path)
-    return try info.item(path: path)
+    return info.item(path: path)
   }
 
   public func read(
@@ -119,9 +140,42 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       throw RemoteError.posix(EINVAL)
     }
     if range?.isEmpty == true { return CloudDriveSupport.emptyStream() }
-    let info = try await getInfo(path)
-    guard let pickCode = info.pickCode, !pickCode.isEmpty else {
+    let id = try await resolve(path)
+    var file = files[id]
+    if file?.pickCode?.isEmpty != false {
+      _ = try await getInfo(path)
+      file = files[id]
+    }
+    guard let file, let pickCode = file.pickCode, !pickCode.isEmpty else {
       throw RemoteError.protocolError
+    }
+    for attempt in 0..<2 {
+      let url = try await downloadURL(id: id, file: file, pickCode: pickCode)
+      var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
+      if let range {
+        request.setValue(
+          "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
+          forHTTPHeaderField: "Range")
+      }
+      let stream = try await CloudDriveSupport.streamWithRetry(transport, request)
+      // 下载地址过期会被拒，换一个新地址再试一次
+      if [401, 403].contains(stream.response.status), attempt == 0 {
+        downloads.removeValue(forKey: id)
+        continue
+      }
+      if let error = CloudDriveSupport.mapHTTP(stream.response) { throw error }
+      if range != nil, stream.response.status != 206 { throw RemoteError.protocolError }
+      return stream.body
+    }
+    throw RemoteError.posix(EACCES)
+  }
+
+  private func downloadURL(id: String, file: Drive115File, pickCode: String) async throws -> URL {
+    let current = now()
+    if let cached = downloads[id], cached.size == file.size, cached.modified == file.modified,
+      current.timeIntervalSince(cached.fetched) < Self.downloadLinkLifetime
+    {
+      return cached.url
     }
     var form = MultipartFormData()
     form.addText("pick_code", pickCode)
@@ -139,16 +193,12 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     guard let rawURL, let url = URL(string: rawURL) else {
       throw RemoteError.protocolError
     }
-    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
-    if let range {
-      request.setValue(
-        "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
-        forHTTPHeaderField: "Range")
+    downloads = downloads.filter {
+      current.timeIntervalSince($0.value.fetched) < Self.downloadLinkLifetime
     }
-    let stream = try await CloudDriveSupport.streamWithRetry(transport, request)
-    if let error = CloudDriveSupport.mapHTTP(stream.response) { throw error }
-    if range != nil, stream.response.status != 206 { throw RemoteError.protocolError }
-    return stream.body
+    downloads[id] = Drive115Download(
+      url: url, size: file.size, modified: file.modified, fetched: current)
+    return url
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
@@ -241,6 +291,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     try await ensureMissing(to)
     let sourceID = try await resolve(from)
     let targetID = try await resolve(CloudDriveSupport.parent(to))
+    // 同名文件在 Finder 里显示的是编号后的名字，要按网盘上的真实名字判断是否需要改名
+    let currentName = files[sourceID]?.name ?? CloudDriveSupport.basename(from)
     var form = MultipartFormData()
     form.addText("file_ids", sourceID)
     form.addText("to_cid", targetID)
@@ -252,7 +304,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
             headers: ["Authorization": "Bearer \(try await session.accessToken())"]))
         _ = try decode(Drive115EmptyEnvelope.self, from: moved)
       }
-      if CloudDriveSupport.basename(from) != CloudDriveSupport.basename(to) {
+      if currentName != CloudDriveSupport.basename(to) {
         var rename = MultipartFormData()
         rename.addText("file_id", sourceID)
         rename.addText("file_name", CloudDriveSupport.basename(to))
@@ -270,6 +322,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     invalidate(from: from)
     invalidate(from: CloudDriveSupport.parent(to))
     ids[to.value] = sourceID
+    files[sourceID]?.name = CloudDriveSupport.basename(to)
   }
 
   private func userInfo() async throws -> Drive115UserData {
@@ -407,25 +460,29 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     }
   }
 
+  // 按文件 ID 查，路径里可能是同名文件编号后的显示名
   private func getInfo(_ path: RemotePath) async throws -> Drive115ItemInfo {
-    let expectedID = try await resolve(path)
-    var form = MultipartFormData()
-    form.addText("path", path.value)
-    let response = try await sendAPI(
-      CloudDriveSupport.multipartRequest(
-        try baseURL("/open/folder/get_info"), form: form,
-        headers: ["Authorization": "Bearer \(try await session.accessToken())"]))
+    let id = try await resolve(path)
+    let response = try await api(
+      "GET", "/open/folder/get_info", query: [URLQueryItem(name: "file_id", value: id)])
     let envelope = try decode(Drive115InfoEnvelope.self, from: response)
     guard let value = envelope.data else { throw RemoteError.posix(ENOENT) }
-    guard value.fileID == expectedID else { throw RemoteError.posix(EEXIST) }
+    guard value.fileID == id else { throw RemoteError.protocolError }
+    // 在别处被改了名，旧路径已经不对了
+    if let known = files[id]?.name, known != value.fileName {
+      invalidate(from: CloudDriveSupport.parent(path))
+      throw RemoteError.posix(ENOENT)
+    }
+    let item = value.item(path: path)
+    files[id] = Drive115File(
+      name: value.fileName, pickCode: value.pickCode ?? files[id]?.pickCode, size: item.size,
+      modified: item.modified)
     return value
   }
 
   private func resolve(_ path: RemotePath) async throws -> String {
-    if ambiguousPaths.contains(path.value) { throw RemoteError.posix(EEXIST) }
     if let value = ids[path.value] { return value }
     _ = try await list(CloudDriveSupport.parent(path))
-    if ambiguousPaths.contains(path.value) { throw RemoteError.posix(EEXIST) }
     guard let value = ids[path.value] else { throw RemoteError.posix(ENOENT) }
     return value
   }
@@ -503,11 +560,17 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     try CloudDriveSupport.url("https://proapi.115.com" + path)
   }
 
-  private func invalidate(from path: RemotePath) {
+  // 清掉目录下所有路径的缓存，文件信息跟着路径一起清
+  private func forget(under path: RemotePath) {
     let prefix = path.value == "/" ? "/" : path.value + "/"
-    ids = ids.filter { $0.key != path.value && !$0.key.hasPrefix(prefix) }
+    for (key, id) in ids where key.hasPrefix(prefix) { files[id] = nil }
+    ids = ids.filter { !$0.key.hasPrefix(prefix) }
+  }
+
+  private func invalidate(from path: RemotePath) {
+    forget(under: path)
+    if let id = ids.removeValue(forKey: path.value) { files[id] = nil }
     ids["/"] = "0"
-    ambiguousPaths = ambiguousPaths.filter { $0 != path.value && !$0.hasPrefix(prefix) }
   }
 
   private func fileHashes(_ url: URL) throws -> (sha1: String, preID: String) {
@@ -637,11 +700,26 @@ private struct Drive115ListEntry: Decodable {
   let upt: Int64?
   let uet: Int64?
   let fs: Int64?
-  func item(parent: RemotePath) throws -> RemoteItem {
+  let pc: String?
+  func item(at path: RemotePath) -> RemoteItem {
     RemoteItem(
-      path: try parent.appending(fn), name: fn, isDirectory: fc == "0", size: fs ?? 0,
+      path: path, name: path.basename, isDirectory: fc == "0", size: fs ?? 0,
       modified: Date(timeIntervalSince1970: TimeInterval(uet ?? upt ?? 0)))
   }
+}
+
+private struct Drive115File {
+  var name: String
+  let pickCode: String?
+  let size: Int64
+  let modified: Date
+}
+
+private struct Drive115Download {
+  let url: URL
+  let size: Int64
+  let modified: Date
+  let fetched: Date
 }
 
 private struct Drive115InfoEnvelope: Decodable, Drive115Stateful {
@@ -667,9 +745,9 @@ private struct Drive115ItemInfo: Decodable {
     case utime
     case pickCode = "pick_code"
   }
-  func item(path: RemotePath) throws -> RemoteItem {
+  func item(path: RemotePath) -> RemoteItem {
     RemoteItem(
-      path: path, name: fileName, isDirectory: category == "0", size: sizeByte ?? 0,
+      path: path, name: path.basename, isDirectory: category == "0", size: sizeByte ?? 0,
       modified: CloudDriveSupport.parseDate(utime))
   }
 }

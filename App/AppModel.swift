@@ -28,6 +28,9 @@ import UserNotifications
   let fileSystem: FileSystemMountService?
   var fileSystemState: FileSystemExtensionState = .checking
   @ObservationIgnored private var fileSystemStatePolling: Task<Void, Never>?
+  // 正在显示扩展状态的面板、设置窗口；刚去系统设置启用扩展的截止时间
+  @ObservationIgnored private var fileSystemStateViewers: Set<UUID> = []
+  @ObservationIgnored private var fileSystemSettingsDeadline: ContinuousClock.Instant?
   private var refreshingFileSystemState = false
   private var extensionBlockedConnections: Set<UUID> = []
   private let dependencies: AppModelDependencies?
@@ -103,9 +106,12 @@ import UserNotifications
     }
     if options.demoLoadError { demoSetupError = L("文件无法读取，请检查访问权限") }
     connections.removed = { [weak self] id in
-      self?.sessionCache.remove(id)
-      self?.providerAccess.removeValue(forKey: id)
-      self?.extensionBlockedConnections.remove(id)
+      guard let self else { return }
+      sessionCache.remove(id)
+      providerAccess.removeValue(forKey: id)
+      extensionBlockedConnections.remove(id)
+      updateFileSystemStatePolling()
+      removeFileSystemCache(id)
     }
   }
 
@@ -159,12 +165,15 @@ import UserNotifications
     recover: { [weak self] in
       guard let self else { return }
       discovery.restart()
+      restartWirelessDiscoveryIfFailed()
       await connections.refreshMountSpace()
-      await connections.autoMount()
+      await autoMount()
     })
   private var started = false
   private var observers: [NSObjectProtocol] = []
   private var observesFileSystemLogin = false
+  // 每个位置上次看到的“没传上去的文件”数，变多了才提醒
+  private var pendingUploadCounts: [UUID: Int] = [:]
   private let logger = Logger(subsystem: "com.seaony.Diskit", category: "connections")
   func start() {
     guard !started else { return }
@@ -294,6 +303,20 @@ import UserNotifications
   func observeFileSystemLoginEvents() {
     guard !observesFileSystemLogin else { return }
     observesFileSystemLogin = true
+    // 启动时先记下已有的数目，只对之后新出现的上传失败发通知
+    for connection in connections.connections where connection.kind.fileSystemScheme != nil {
+      pendingUploadCounts[connection.id] =
+        PendingUploads.paths(dataDirectory: location.dataDirectory, connectionID: connection.id).count
+    }
+    observers.append(
+      DistributedNotificationCenter.default().addObserver(
+        forName: PendingUploads.notification, object: nil, queue: .main
+      ) { [weak self] notification in
+        guard let text = notification.object as? String, let id = UUID(uuidString: text) else {
+          return
+        }
+        Task { @MainActor in self?.pendingUploadsChanged(id) }
+      })
     observers.append(
       DistributedNotificationCenter.default().addObserver(
         forName: FileSystemLoginEvent.notification, object: nil, queue: .main
@@ -309,6 +332,32 @@ import UserNotifications
           self.loginExpired(id)
         }
       })
+  }
+
+  // 自动挂载逐个进行，每个位置单独登记，卡片上的“取消”只停下这一个，其余照常继续
+  func autoMount() async {
+    connections.refreshMounts()
+    let candidates = connections.connections.filter { $0.kind.usesMount && $0.autoMount }.map(\.id)
+    for id in candidates {
+      guard !Task.isCancelled, !operations.isStopping else { return }
+      guard let connection = connections.connections.first(where: { $0.id == id }),
+        connection.kind.usesMount, connection.autoMount
+      else { continue }
+      let task = operations.start(connectionID: id) { [weak self] in
+        await self?.connections.connectIfNeeded(connection)
+      }
+      await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+    }
+  }
+
+  // 无线调试发现出错后不会自己恢复：醒来、网络恢复时重开一次。
+  // 列表里还有可连接的手机时不重开：重开会先清空列表，正在用的无线手机会被当成断开推出
+  private func restartWirelessDiscoveryIfFailed() {
+    guard wirelessDiscovery.error != nil,
+      !wirelessDiscovery.devices.contains(where: { $0.type == .connect })
+    else { return }
+    wirelessDiscovery.stop()
+    wirelessDiscovery.start()
   }
 
   private func networkPathChanged(_ path: NWPath) {
@@ -387,8 +436,24 @@ import UserNotifications
     if previous == .disabled, state == .enabled { retryExtensionBlockedMounts() }
   }
 
-  private func updateFileSystemStatePolling() {
+  // 面板或设置窗口显示时调用：看得到扩展状态时才需要轮询
+  func setFileSystemStateVisible(_ visible: Bool, viewer: UUID) {
+    if visible { fileSystemStateViewers.insert(viewer) } else { fileSystemStateViewers.remove(viewer) }
+    updateFileSystemStatePolling()
+  }
+
+  // 扩展没启用时，只在用户看得到状态、有位置卡在扩展上、或刚去系统设置时轮询；
+  // 其他时候靠切回 Diskit 时的刷新，不在后台一直查
+  private var needsFileSystemStatePolling: Bool {
     guard fileSystem != nil, fileSystemState == .disabled, !operations.isStopping else {
+      return false
+    }
+    if !fileSystemStateViewers.isEmpty || !extensionBlockedConnections.isEmpty { return true }
+    return fileSystemSettingsDeadline.map { ContinuousClock.now < $0 } ?? false
+  }
+
+  private func updateFileSystemStatePolling() {
+    guard needsFileSystemStatePolling else {
       stopFileSystemStatePolling()
       return
     }
@@ -397,8 +462,11 @@ import UserNotifications
     fileSystemStatePolling = Task { [weak self] in
       while !Task.isCancelled {
         do { try await wait() } catch { return }
-        guard !Task.isCancelled, let self, fileSystemState == .disabled,
-          !operations.isStopping else { return }
+        guard !Task.isCancelled, let self else { return }
+        guard needsFileSystemStatePolling else {
+          fileSystemStatePolling = nil
+          return
+        }
         await refreshFileSystemState()
       }
     }
@@ -412,6 +480,7 @@ import UserNotifications
   private func retryExtensionBlockedMounts() {
     let blocked = extensionBlockedConnections
     extensionBlockedConnections.removeAll()
+    updateFileSystemStatePolling()
     let devices = Set(connections.availableAutoMountDevices.map(\.id))
     for connection in connections.connections where connection.kind.fileSystemScheme != nil {
       switch connections.states[connection.id] {
@@ -436,6 +505,8 @@ import UserNotifications
       presentOperationAlert(title: L("无法打开系统设置"), message: L("请打开系统设置，在登录项与扩展中启用 Diskit。"))
       return
     }
+    fileSystemSettingsDeadline = .now + .seconds(120)
+    updateFileSystemStatePolling()
   }
 
   func toggleConnection(_ connection: Connection) async {
@@ -469,8 +540,8 @@ import UserNotifications
       if case .disabled? = error as? FileSystemMountError {
         extensionBlockedConnections.insert(connection.id)
         fileSystemState = .disabled
-        updateFileSystemStatePolling()
       }
+      updateFileSystemStatePolling()
     }
     connections.loginExpired = { [weak self] connection in self?.loginExpired(connection.id) }
     connections.unexpectedDisconnect = { [weak self] connection in
@@ -537,6 +608,54 @@ import UserNotifications
   }
   func discardUnsavedSessions(for connection: Connection) {
     guard !connections.connections.contains(where: { $0.id == connection.id }) else { return }
+    sessionCache.remove(connection.id)
+    providerAccess.removeValue(forKey: connection.id)
+  }
+
+  // 登录时直接写进钥匙串的会话凭据，和 ConnectionManager.remove 删除的那几项一致
+  static func sessionSecretKeys(for connection: Connection) -> [String] {
+    let id = connection.id.uuidString
+    switch connection.kind {
+    case .aliyunDrive: return [id + ".oauth"]
+    case .quark, .ucDrive: return [id + ".cookie"]
+    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .pikPak,
+      .tianyiDrive:
+      return ["\(id).oauth.\(connection.kind.rawValue)"]
+    default: return []
+    }
+  }
+
+  // 新位置登录过却没保存：内存里的会话和钥匙串里的登录信息一起删掉
+  func discardUnsavedSecrets(for connection: Connection) {
+    guard !connections.connections.contains(where: { $0.id == connection.id }) else { return }
+    discardUnsavedSessions(for: connection)
+    let store = RecoverableSecretStore(base: secrets)
+    for key in [connection.passwordKey] + Self.sessionSecretKeys(for: connection) {
+      do { try store.delete(key) } catch {
+        logger.error("无法删除未保存位置的登录信息 \(ErrorDiagnostics.summary(error), privacy: .public)")
+      }
+    }
+  }
+
+  // 已保存的位置换账号前记下原来的登录信息（没有的记为 nil）
+  func sessionSecrets(for connection: Connection) throws -> [String: Data?] {
+    let store = RecoverableSecretStore(base: secrets)
+    var values: [String: Data?] = [:]
+    for key in Self.sessionSecretKeys(for: connection) { values.updateValue(try store.read(key), forKey: key) }
+    return values
+  }
+
+  // 换了账号又没保存：把原来的登录信息写回去，丢掉按新账号建的会话
+  func restoreSessionSecrets(_ values: [String: Data?], for connection: Connection) {
+    guard connections.connections.contains(where: { $0.id == connection.id }) else { return }
+    let store = RecoverableSecretStore(base: secrets)
+    for (key, value) in values {
+      do {
+        if let value { try store.write(value, for: key) } else { try store.delete(key) }
+      } catch {
+        logger.error("无法恢复原来的登录信息 \(ErrorDiagnostics.summary(error), privacy: .public)")
+      }
+    }
     sessionCache.remove(connection.id)
     providerAccess.removeValue(forKey: connection.id)
   }
@@ -844,6 +963,33 @@ import UserNotifications
     return previous + extensionSize
   }
 
+  // 删除位置后清掉扩展为它留的下载缓存和本地元数据；Writes 里是还没传上去的内容，留着
+  // 扩展把写好的文件传不上去时（断网、空间满等），提醒用户内容还在本机、下次挂载会重试
+  func pendingUploadsChanged(_ id: UUID) {
+    let count = PendingUploads.paths(dataDirectory: location.dataDirectory, connectionID: id).count
+    let previous = pendingUploadCounts[id] ?? 0
+    pendingUploadCounts[id] = count
+    guard count > previous,
+      let connection = connections.connections.first(where: { $0.id == id })
+    else { return }
+    logger.error("有文件没传上去 id=\(id.uuidString, privacy: .public) count=\(count)")
+    sendNotification(
+      .uploadFailure, title: LF("“%@”有文件没传上去", connection.name),
+      body: LF("%d 个文件还没传上去，下次挂载时会自动重试。", count),
+      identifier: "pending-uploads-" + id.uuidString)
+  }
+
+  private func removeFileSystemCache(_ id: UUID) {
+    pendingUploadCounts.removeValue(forKey: id)
+    try? FileManager.default.removeItem(
+      at: PendingUploads.file(dataDirectory: location.dataDirectory, connectionID: id))
+    Task {
+      do { try await fileSystemCache.remove(connectionID: id) } catch {
+        logger.error("无法删除位置缓存 id=\(id.uuidString, privacy: .public) \(ErrorDiagnostics.summary(error), privacy: .public)")
+      }
+    }
+  }
+
   func enforceCacheLimit() async {
     let savedLimit = preferences.object(forKey: "cacheLimitGB") as? Int ?? 5
     let limit = Int64((1...50).contains(savedLimit) ? savedLimit : 5) * 1_024 * 1_024 * 1_024
@@ -927,12 +1073,15 @@ import UserNotifications
     case loginExpired
     case disconnect
     case deviceFound
+    // 关系到文件会不会丢，设置里不提供开关，一直提醒
+    case uploadFailure
     var preferenceKey: String {
       switch self {
       case .mountFailure: "notifications.mountFailure"
       case .loginExpired: "notifications.loginExpired"
       case .disconnect: "notifications.disconnect"
       case .deviceFound: "notifications.deviceFound"
+      case .uploadFailure: "notifications.uploadFailure"
       }
     }
   }

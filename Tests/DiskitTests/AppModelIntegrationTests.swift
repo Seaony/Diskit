@@ -347,3 +347,34 @@ private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
   #expect(model.declinedDevices.contains(DevicePrompt.key(phone)))
   #expect(harness.model().declinedDevices.contains(DevicePrompt.key(phone)))
 }
+
+@MainActor @Test func pendingUploadsNotifyOnlyWhenMoreFilesFail() async throws {
+  let harness = ModelHarness()
+  harness.status = .authorized
+  let connection = Connection(kind: .quark, name: "夸克网盘")
+  try ConnectionRepository(location: harness.location).save([connection])
+  let model = harness.model()
+  let file = PendingUploads.file(dataDirectory: harness.location.dataDirectory, connectionID: connection.id)
+  func publish(_ paths: [String]) throws {
+    try FileManager.default.createDirectory(
+      at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try JSONEncoder().encode(paths).write(to: file)
+  }
+  try publish(["/a.txt"])
+  model.pendingUploadsChanged(connection.id)
+  try await harness.notified.wait()
+  #expect(harness.notifications.count == 1)
+  #expect(harness.notifications[0].content.title.contains("夸克网盘"))
+  // 数目没变或变少都不再提醒
+  model.pendingUploadsChanged(connection.id)
+  try publish([])
+  model.pendingUploadsChanged(connection.id)
+  for _ in 0..<20 { await Task.yield() }
+  #expect(harness.notifications.count == 1)
+  try publish(["/a.txt", "/b.txt"])
+  model.pendingUploadsChanged(connection.id)
+  try await harness.notified.wait()
+  #expect(harness.notifications.count == 2)
+  try? FileManager.default.removeItem(
+    at: harness.location.dataDirectory.deletingLastPathComponent())
+}

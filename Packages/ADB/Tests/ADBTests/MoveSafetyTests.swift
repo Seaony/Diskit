@@ -63,17 +63,21 @@ actor LocalADBTransport: ADBTransport {
         commands.append(command)
         events.append("shell:" + command)
         let result =
-          command.hasPrefix("for p in /storage/") ? (Data(), Int32(0)) : try execute(command)
+          command.hasPrefix("for p in /storage/") ? (Data(), Data(), Int32(0)) : try execute(command)
         let local = message.arg0
         input.append(ADBMessage(.okay, 1, local).encoded())
-        var output = Data([2])
-        output.appendLE(UInt32(result.0.count))
-        output.append(result.0)
+        var output = Data()
+        for (id, bytes) in [(UInt8(1), result.0), (2, result.1)] where !bytes.isEmpty {
+          output.append(id)
+          output.appendLE(UInt32(bytes.count))
+          output.append(bytes)
+        }
         output.append(3)
         output.appendLE(1)
-        output.append(UInt8(truncatingIfNeeded: result.1))
+        output.append(UInt8(truncatingIfNeeded: result.2))
         input.append(
-          ADBMessage(.write, 1, local, payload: prefix == "shell:" ? result.0 : output).encoded())
+          ADBMessage(.write, 1, local, payload: prefix == "shell:" ? result.0 + result.1 : output)
+            .encoded())
         input.append(ADBMessage(.close, 1, local).encoded())
       } else if message.command == .write, syncServices.contains(message.arg0) {
         try receiveSync(message)
@@ -125,7 +129,7 @@ actor LocalADBTransport: ADBTransport {
     }
   }
 
-  private func execute(_ command: String) throws -> (Data, Int32) {
+  private func execute(_ command: String) throws -> (Data, Data, Int32) {
     let target = try ADBShell.quote(directory.appending(path: "target").path)
     let creation = createTargetDuringMove ? "printf 'late' > \(target)" : ":"
     // 用本地临时目录模拟 mv 的跳过语义，不执行设备路径或发现命令。
@@ -150,13 +154,15 @@ actor LocalADBTransport: ADBTransport {
     process.arguments = [
       "-c", shim + "\n" + command.replacingOccurrences(of: "/sdcard", with: directory.path),
     ]
-    let pipe = Pipe()
-    process.standardOutput = pipe
-    process.standardError = pipe
+    let output = Pipe()
+    let error = Pipe()
+    process.standardOutput = output
+    process.standardError = error
     try process.run()
-    let output = pipe.fileHandleForReading.readDataToEndOfFile()
+    let stdout = output.fileHandleForReading.readDataToEndOfFile()
+    let stderr = error.fileHandleForReading.readDataToEndOfFile()
     process.waitUntilExit()
-    return (output, process.terminationStatus)
+    return (stdout, stderr, process.terminationStatus)
   }
 
   func close() async {}

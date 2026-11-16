@@ -3,6 +3,8 @@ import CryptoKit
 import Foundation
 
 public actor TianyiProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
 
@@ -12,6 +14,7 @@ public actor TianyiProvider: RemoteFileProvider {
   private var connected = false
   private var paths: [String: TianyiNode] = [:]
   private var cacheRevision: UInt64 = 0
+  private var downloadLinks: [String: DownloadLink] = [:]
   private var progress: (@Sendable (Int64, Int64) -> Void)?
 
   public init(
@@ -31,12 +34,14 @@ public actor TianyiProvider: RemoteFileProvider {
     try await session.connect()
     connected = true
     paths.removeAll()
+    downloadLinks.removeAll()
     cacheRevision &+= 1
   }
 
   public func disconnect() async {
     connected = false
     paths.removeAll()
+    downloadLinks.removeAll()
     cacheRevision &+= 1
   }
 
@@ -50,7 +55,7 @@ public actor TianyiProvider: RemoteFileProvider {
     let folder = try await resolve(path)
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     return try await children(path, folderID: folder.id).map {
-      try $0.item(at: path.appending($0.name))
+      try $0.item(at: path.appending($0.displayName))
     }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
   }
 
@@ -83,27 +88,11 @@ public actor TianyiProvider: RemoteFileProvider {
       requested = nil
     }
     let file = try await resolve(path)
-    let response = try await session.api(
-      path: scope.isFamily
-        ? "/family/file/getFileDownloadUrl.action" : "/file/getFileDownloadUrl.action",
-      method: "GET", query: try downloadQuery(fileID: file.id))
-    guard let object = TianyiJSON.object(from: response.body),
-      let raw = object["fileDownloadUrl"] as? String,
-      var components = URLComponents(
-        string: raw.replacingOccurrences(of: "&amp;", with: "&"))
-    else { throw TianyiError.invalidResponse }
-    if components.scheme?.lowercased() == "http" { components.scheme = "https" }
-    guard components.scheme == "https", let url = components.url else {
-      throw TianyiError.invalidResponse
+    var (stream, cached) = try await downloadStream(file, range: requested, refresh: false)
+    // 缓存的下载地址可能已过期，换一个新地址再试一次
+    if cached, Self.expiredLinkStatuses.contains(stream.response.status) {
+      (stream, _) = try await downloadStream(file, range: requested, refresh: true)
     }
-    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
-    request.httpMethod = "GET"
-    if let requested {
-      request.setValue(
-        "bytes=\(requested.lowerBound)-\(requested.upperBound - 1)",
-        forHTTPHeaderField: "Range")
-    }
-    let stream = try await session.stream(request)
     if let requested {
       guard stream.response.status == 206,
         Self.validContentRange(
@@ -117,6 +106,58 @@ public actor TianyiProvider: RemoteFileProvider {
     return stream.body
   }
 
+  // 同一文件连续读取时沿用下载地址，不用每读一段都请求一次
+  private struct DownloadLink {
+    let url: URL
+    let size: Int64
+    let modified: Date
+    let expiresAt: Date
+  }
+
+  private static let downloadLinkLifetime: TimeInterval = 5 * 60
+  private static let expiredLinkStatuses: Set<Int> = [401, 403, 404, 410]
+
+  private func downloadStream(
+    _ file: TianyiNode, range: Range<Int64>?, refresh: Bool
+  ) async throws -> (HTTPStreamResponse, cached: Bool) {
+    let (url, cached) = try await downloadURL(file, refresh: refresh)
+    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
+    request.httpMethod = "GET"
+    if let range {
+      request.setValue(
+        "bytes=\(range.lowerBound)-\(range.upperBound - 1)", forHTTPHeaderField: "Range")
+    }
+    return (try await session.stream(request), cached)
+  }
+
+  private func downloadURL(
+    _ file: TianyiNode, refresh: Bool
+  ) async throws -> (URL, cached: Bool) {
+    if !refresh, let link = downloadLinks[file.id], link.size == file.size,
+      link.modified == file.modified, link.expiresAt > Date()
+    {
+      return (link.url, true)
+    }
+    downloadLinks.removeValue(forKey: file.id)
+    let response = try await session.api(
+      path: scope.isFamily
+        ? "/family/file/getFileDownloadUrl.action" : "/file/getFileDownloadUrl.action",
+      method: "GET", query: try downloadQuery(fileID: file.id))
+    guard let object = TianyiJSON.object(from: response.body),
+      let raw = object["fileDownloadUrl"] as? String,
+      var components = URLComponents(
+        string: raw.replacingOccurrences(of: "&amp;", with: "&"))
+    else { throw TianyiError.invalidResponse }
+    if components.scheme?.lowercased() == "http" { components.scheme = "https" }
+    guard components.scheme == "https", let url = components.url else {
+      throw TianyiError.invalidResponse
+    }
+    downloadLinks[file.id] = DownloadLink(
+      url: url, size: file.size, modified: file.modified,
+      expiresAt: Date().addingTimeInterval(Self.downloadLinkLifetime))
+    return (url, false)
+  }
+
   public func write(_ path: RemotePath, from localFile: URL) async throws {
     let progress = self.progress
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
@@ -125,7 +166,8 @@ public actor TianyiProvider: RemoteFileProvider {
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     defer { invalidate(destination) }
     let name = basename(path)
-    guard try await children(destination, folderID: folder.id).allSatisfy({ $0.name != name })
+    guard
+      try await children(destination, folderID: folder.id).allSatisfy({ $0.displayName != name })
     else { throw RemoteError.posix(EEXIST) }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0 else {
@@ -187,7 +229,8 @@ public actor TianyiProvider: RemoteFileProvider {
     guard folder.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     defer { invalidate(destination) }
     let name = basename(path)
-    guard try await children(destination, folderID: folder.id).allSatisfy({ $0.name != name })
+    guard
+      try await children(destination, folderID: folder.id).allSatisfy({ $0.displayName != name })
     else { throw RemoteError.posix(EEXIST) }
     let pathValue =
       scope.isFamily ? "/family/file/createFolder.action" : "/file/createFolder.action"
@@ -233,7 +276,7 @@ public actor TianyiProvider: RemoteFileProvider {
     guard destination.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     guard
       try await children(destinationParent, folderID: destination.id).allSatisfy({
-        $0.name != basename(to) || $0.id == node.id
+        $0.displayName != basename(to) || $0.id == node.id
       })
     else { throw RemoteError.posix(EEXIST) }
     defer {
@@ -244,7 +287,7 @@ public actor TianyiProvider: RemoteFileProvider {
       try await rename(node, to: basename(to))
       return
     }
-    if basename(from) == basename(to) {
+    if node.name == basename(to) {
       try await batchTask(
         path: "/batch/createBatchTask.action", type: "MOVE", targetFolderID: destination.id,
         node: node)
@@ -272,7 +315,7 @@ public actor TianyiProvider: RemoteFileProvider {
           path: "/batch/createBatchTask.action", type: "MOVE", targetFolderID: source.id,
           node: temporary)
         confirmedPath = try sourceParent.appending(temporaryName)
-        try await rename(temporary, to: basename(from))
+        try await rename(temporary, to: node.name)
       } catch {
         throw TianyiMoveRecoveryFailure(
           lastConfirmedPath: confirmedPath, original: original, recovery: error)
@@ -325,9 +368,11 @@ public actor TianyiProvider: RemoteFileProvider {
         current = next
         continue
       }
-      let matches = try await children(current, folderID: node.id).filter { $0.name == name }
-      guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-      guard let match = matches.first else { throw RemoteError.posix(ENOENT) }
+      guard
+        let match = try await children(current, folderID: node.id).first(where: {
+          $0.displayName == name
+        })
+      else { throw RemoteError.posix(ENOENT) }
       node = match
       current = next
     }
@@ -390,13 +435,19 @@ public actor TianyiProvider: RemoteFileProvider {
       pageNumber += 1
     }
     guard pageNumber <= 10_000 else { throw TianyiError.invalidResponse }
+    // 文件和文件夹的 id 各自编号，拼上类型才唯一
+    let displayNames = duplicateNames.assign(
+      nodes.map {
+        .init(id: "\($0.isDirectory):\($0.id)", name: $0.name, isDirectory: $0.isDirectory)
+      }, in: path.value)
+    for index in nodes.indices {
+      let node = nodes[index]
+      nodes[index].displayName = displayNames["\(node.isDirectory):\(node.id)"] ?? node.name
+    }
     guard connected, revision == cacheRevision else { return nodes }
     invalidate(path)
-    let grouped = Dictionary(grouping: nodes, by: \.name)
     for node in nodes {
-      let child = try path.appending(node.name)
-      _ = node.item(at: child)
-      if grouped[node.name]?.count == 1 { paths[child.value] = node }
+      paths[try path.appending(node.displayName).value] = node
     }
     published = true
     return nodes

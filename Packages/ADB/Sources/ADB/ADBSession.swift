@@ -14,6 +14,7 @@ public actor ADBSession {
   private var buffered = Data()
   private var transportFailed = false
   private var serviceDeadline: ADBOperationDeadline?
+  static let authorizationTimeout: TimeInterval = 60
   public init(
     transport: any ADBTransport, identity: ADBIdentity = ADBIdentity(),
     initialConnectSent: Bool = false
@@ -92,7 +93,7 @@ public actor ADBSession {
   }
   public func connect() async throws {
     guard !transportFailed else { throw RemoteError.notConnected }
-    let deadline = ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
+    var deadline = ADBOperationDeadline(timeout: RemoteTimeout.deviceRequest, now: now)
     if !initialConnectSent {
       try await send(
         ADBMessage(
@@ -128,6 +129,8 @@ public actor ADBSession {
           try await send(
             ADBMessage(.auth, 3, payload: identity.publicKeyLine()), deadline: deadline)
           sentPublicKey = true
+          // 手机此时弹出「允许 USB 调试」，给用户留够点按的时间
+          deadline = ADBOperationDeadline(timeout: Self.authorizationTimeout, now: now)
         } else {
           throw RemoteError.unauthorized
         }

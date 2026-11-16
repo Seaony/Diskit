@@ -25,7 +25,8 @@ struct AliyunFile: Decodable, Sendable {
       throw RemoteError.protocolError
     }
     return RemoteItem(
-      path: path, name: name, isDirectory: isDirectory, size: size ?? 0, modified: modified)
+      path: path, name: path.basename, isDirectory: isDirectory, size: size ?? 0,
+      modified: modified)
   }
 }
 

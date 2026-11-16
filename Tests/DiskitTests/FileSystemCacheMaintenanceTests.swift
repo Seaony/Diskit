@@ -101,3 +101,33 @@ import Testing
   }
   await #expect(throws: (any Error).self) { try await maintenance.size() }
 }
+
+// 删除位置时清掉它的下载缓存和本地元数据，没上传的写入和别的位置都不动
+@Test func removingLocationCacheKeepsPendingWritesAndOtherLocations() async throws {
+  let root = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: root) }
+  let id = UUID()
+  let connection = root.appending(path: id.uuidString)
+  let other = root.appending(path: UUID().uuidString).appending(path: "Read")
+  for name in ["Read", "Overlay/Files", "Writes"] {
+    try FileManager.default.createDirectory(at: connection.appending(path: name), withIntermediateDirectories: true)
+  }
+  try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+  try Data("cached".utf8).write(to: connection.appending(path: "Read/file.data"))
+  try Data("{}".utf8).write(to: connection.appending(path: "Overlay/Xattrs.json"))
+  try Data("pending".utf8).write(to: connection.appending(path: "Writes/upload.data"))
+  try Data("other".utf8).write(to: other.appending(path: "file.data"))
+
+  let maintenance = FileSystemCacheMaintenance(root: root)
+  try await maintenance.remove(connectionID: id)
+  #expect(!FileManager.default.fileExists(atPath: connection.appending(path: "Read").path))
+  #expect(!FileManager.default.fileExists(atPath: connection.appending(path: "Overlay").path))
+  #expect(try Data(contentsOf: connection.appending(path: "Writes/upload.data")) == Data("pending".utf8))
+  #expect(try Data(contentsOf: other.appending(path: "file.data")) == Data("other".utf8))
+
+  try FileManager.default.removeItem(at: connection.appending(path: "Writes"))
+  try FileManager.default.createDirectory(at: connection.appending(path: "Read"), withIntermediateDirectories: true)
+  try await maintenance.remove(connectionID: id)
+  #expect(!FileManager.default.fileExists(atPath: connection.path))
+  try await maintenance.remove(connectionID: UUID())
+}

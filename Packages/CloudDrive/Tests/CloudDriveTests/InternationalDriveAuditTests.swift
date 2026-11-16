@@ -36,10 +36,10 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
   ["id": id, "name": name, "mimeType": "text/plain", "size": "1"]
 }
 
-@Test func googleListingPreservesEveryUnusualNameWithStableIdentity() async throws {
+@Test func googleListingGivesUnusualAndDuplicateNamesFinderPaths() async throws {
   let files = [
     auditGoogleFile("one", "same"), auditGoogleFile("two", "same"), auditGoogleFile("slash", "a/b"),
-    auditGoogleFile("reserved", "~diskit~b25l"), auditGoogleFile("ordinary", "normal"),
+    auditGoogleFile("dot", ".."), auditGoogleFile("ordinary", "normal"),
   ]
   let http = InternationalAuditHTTP { request in
     guard request.url?.host == "www.googleapis.com" else { return HTTPResponse(status: 404) }
@@ -55,9 +55,8 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
   let items = try await provider.list(RemotePath("/"))
-  #expect(items.map(\.name) == files.map { $0["name"]! })
-  #expect(Set(items.map(\.path)).count == files.count)
-  #expect(items.last?.path.value == "/normal")
+  #expect(items.map(\.path.value) == ["/same", "/same (2)", "/a:b", "/_..", "/normal"])
+  #expect(items.map(\.name) == ["same", "same (2)", "a:b", "_..", "normal"])
   for item in items {
     let stat = try await provider.stat(item.path)
     #expect(stat.path == item.path)
@@ -65,36 +64,13 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
   }
   try await provider.remove(items[1].path, recursive: false)
   #expect(await http.requests.last?.url?.path == "/drive/v3/files/two")
+  // 缓存清空后重新列目录，得到同样的对应关系
   let cold = GoogleDriveProvider(session: try auditSession(http))
   try await cold.connect()
-  #expect(try await cold.stat(items[2].path).name == "a/b")
-}
-
-@Test func googleIdentityPathCannotEscapeItsListedParent() async throws {
-  let http = InternationalAuditHTTP { request in
-    if request.url?.path == "/drive/v3/about" { return try auditJSON(["user": [:]]) }
-    guard request.url?.path == "/drive/v3/files" else {
-      Issue.record("虚拟身份不应直接请求未列出的文件")
-      return HTTPResponse(status: 404)
-    }
-    let q =
-      URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
-        $0.name == "q"
-      }?.value ?? ""
-    if q.contains("name = 'folder'") {
-      return try auditJSON([
-        "files": [
-          ["id": "folder-id", "name": "folder", "mimeType": "application/vnd.google-apps.folder"]
-        ]
-      ])
-    }
-    return try auditJSON(["files": []])
-  }
-  let provider = GoogleDriveProvider(session: try auditSession(http))
-  try await provider.connect()
-  await #expect(throws: RemoteError.posix(ENOENT)) {
-    _ = try await provider.stat(RemotePath("/folder/~diskit~b3V0c2lkZQ"))
-  }
+  _ = try await cold.stat(RemotePath("/same (2)"))
+  #expect(await http.requests.last?.url?.path == "/drive/v3/files/two")
+  _ = try await cold.stat(RemotePath("/a:b"))
+  #expect(await http.requests.last?.url?.path == "/drive/v3/files/slash")
 }
 
 @Test func googleSameFolderRenameOmitsParentMutationAndEncodesPlus() async throws {
@@ -104,18 +80,20 @@ private func auditGoogleFile(_ id: String, _ name: String) -> [String: String] {
     guard request.url?.path == "/drive/v3/files" else { return HTTPResponse(status: 404) }
     let components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!
     let q = components.queryItems?.first { $0.name == "q" }?.value ?? ""
-    if q.contains("a+b") {
+    if q.contains("name = ") {
+      #expect(q.contains("c+d"))
       #expect(components.percentEncodedQuery?.contains("%2B") == true)
       #expect(components.percentEncodedQuery?.contains("+") == false)
-      return try auditJSON(["files": [auditGoogleFile("source", "a+b")]])
+      return try auditJSON(["files": []])
     }
-    return try auditJSON(["files": []])
+    return try auditJSON(["files": [auditGoogleFile("source", "a+b")]])
   }
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
-  try await provider.move(RemotePath("/a+b"), to: RemotePath("/new"))
+  try await provider.move(RemotePath("/a+b"), to: RemotePath("/c+d"))
   let request = try #require(await http.requests.last)
   #expect(request.httpMethod == "PATCH")
+  #expect(request.url?.path == "/drive/v3/files/source")
   let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
   #expect(!query.contains { ["addParents", "removeParents"].contains($0.name) })
 }
@@ -254,7 +232,7 @@ func oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination: String) as
   #expect(await http.requests.filter { $0.url?.host == "upload.example.invalid" }.count == 9)
 }
 
-@Test func googleMovingIdentityPathKeepsOriginalRemoteName() async throws {
+@Test func googleMovingReplacedNameKeepsOriginalRemoteName() async throws {
   let source = auditGoogleFile("slash", "a/b")
   let folder = [
     "id": "destination", "name": "Folder", "mimeType": "application/vnd.google-apps.folder",
@@ -268,8 +246,8 @@ func oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination: String) as
         URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
           $0.name == "q"
         }?.value ?? ""
-      if query.contains("name = 'a/b'") {
-        #expect(query.contains("'destination' in parents"))
+      if query.contains("'destination' in parents") {
+        if query.contains("name = ") { #expect(query.contains("name = 'a/b'")) }
         return try auditJSON(["files": []])
       }
       return try auditJSON(["files": [source, folder]])
@@ -279,7 +257,7 @@ func oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination: String) as
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
   let items = try await provider.list(RemotePath("/"))
-  let from = try #require(items.first { $0.name == "a/b" }).path
+  let from = try #require(items.first { $0.name == "a:b" }).path
   try await provider.move(from, to: RemotePath("/Folder" + from.value))
   let request = try #require(await http.requests.last)
   let body = try #require(
@@ -290,19 +268,57 @@ func oneDriveMoveUsesParentIDAndRenameAvoidsParentChange(destination: String) as
   #expect(query.first { $0.name == "removeParents" }?.value == "root")
 }
 
-@Test func googleIdentityPathRemainsUsableWhenDuplicateDisappears() async throws {
-  let file = auditGoogleFile("one", "same")
+@Test func googleMovingDuplicateRenamesToItsFinderName() async throws {
+  let files = [auditGoogleFile("1", "a.txt"), auditGoogleFile("2", "a.txt")]
   let http = InternationalAuditHTTP { request in
-    switch request.url?.path {
-    case "/drive/v3/about": return try auditJSON(["user": [:]])
-    case "/drive/v3/files": return try auditJSON(["files": [file]])
-    case "/drive/v3/files/one": return try auditJSON(file)
-    default: return HTTPResponse(status: 404)
+    if request.url?.path == "/drive/v3/about" { return try auditJSON(["user": [:]]) }
+    if request.httpMethod == "PATCH" { return HTTPResponse(status: 200) }
+    if request.url?.path == "/drive/v3/files" {
+      let query =
+        URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
+          $0.name == "q"
+        }?.value ?? ""
+      if query.contains("name = ") { return try auditJSON(["files": []]) }
+      return try auditJSON(["files": files])
     }
+    return HTTPResponse(status: 404)
   }
   let provider = GoogleDriveProvider(session: try auditSession(http))
   try await provider.connect()
-  let oldIdentityPath = try RemotePath("/~diskit~b25l")
-  #expect(try await provider.stat(oldIdentityPath).path == oldIdentityPath)
-  #expect(try await provider.list(RemotePath("/")).first?.path.value == "/same")
+  // 写入和编号名同名的新文件按已存在处理
+  let local = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  defer { try? FileManager.default.removeItem(at: local) }
+  try Data([1]).write(to: local)
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.write(RemotePath("/a (2).txt"), from: local)
+  }
+  try await provider.move(RemotePath("/a (2).txt"), to: RemotePath("/b.txt"))
+  let request = try #require(await http.requests.last)
+  #expect(request.url?.path == "/drive/v3/files/2")
+  let body = try #require(
+    JSONSerialization.jsonObject(with: request.httpBody!) as? [String: String])
+  #expect(body["name"] == "b.txt")
+}
+
+@Test func oneDriveCaseOnlyRenameIsNotAConflict() async throws {
+  let http = InternationalAuditHTTP { request in
+    if request.url?.path == "/v1.0/me/drive/root" { return HTTPResponse(status: 200) }
+    // OneDrive 不分大小写，查 README.md 会查到 readme.md 自己
+    if request.httpMethod == "GET" {
+      return try auditJSON(["id": "same", "name": "readme.md", "size": 1])
+    }
+    return try auditJSON(["id": "same", "name": "README.md", "size": 1])
+  }
+  let provider = OneDriveProvider(session: try auditSession(http), transport: http)
+  try await provider.connect()
+  try await provider.move(RemotePath("/readme.md"), to: RemotePath("/README.md"))
+  let request = try #require(await http.requests.last)
+  #expect(request.httpMethod == "PATCH")
+  let body = try #require(JSONSerialization.jsonObject(with: request.httpBody!) as? [String: Any])
+  #expect(body["name"] as? String == "README.md")
+  #expect(body["parentReference"] == nil)
+  // 真正的重名仍然拒绝
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.move(RemotePath("/a.md"), to: RemotePath("/README.md"))
+  }
 }

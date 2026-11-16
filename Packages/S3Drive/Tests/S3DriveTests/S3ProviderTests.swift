@@ -518,3 +518,57 @@ func sigV4MatchesAllOfficialSingleChunkExamples(example: Int) async throws {
   #expect(requests.map(\.httpMethod) == ["HEAD", "PUT", "HEAD"])
   #expect(requests[1].value(forHTTPHeaderField: "If-None-Match") == "*")
 }
+
+@Test func removingPrefixOnlyDirectoryAfterItsChildrenSucceeds() async throws {
+  let transport = FakeTransport([
+    HTTPResponse(status: 404),
+    listXML([]),
+  ])
+  let s3 = provider(transport)
+  try await s3.connect()
+  try await s3.remove(try RemotePath("/tree"), recursive: false)
+  #expect(!transport.requests.withLock { $0 }.contains { $0.httpMethod == "DELETE" })
+}
+
+@Test func objectAndPrefixWithSameNameGetSeparatePathsThatMapBack() async throws {
+  let transport = FakeTransport(
+    [
+      listXML([("docs/notes.txt", 5)], prefixes: ["docs/notes.txt/"]),
+      HTTPResponse(status: 200, headers: ["Content-Length": "5"]),
+      listXML([("docs/notes.txt/x", 1)]),
+      listXML([]),
+      HTTPResponse(status: 200, headers: ["Content-Length": "5"]),
+      HTTPResponse(status: 204),
+    ],
+    streams: [stream(200)])
+  let s3 = provider(transport)
+  try await s3.connect()
+  let items = try await s3.list(try RemotePath("/docs"))
+  let byPath = Dictionary(uniqueKeysWithValues: items.map { ($0.path.value, $0) })
+  #expect(byPath["/docs/notes.txt"]?.isDirectory == true)
+  #expect(byPath["/docs/notes (2).txt"]?.isDirectory == false)
+  #expect(byPath["/docs/notes (2).txt"]?.name == "notes (2).txt")
+
+  let file = try await s3.stat(try RemotePath("/docs/notes (2).txt"))
+  #expect(!file.isDirectory && file.size == 5)
+  // 目录路径不能被同名文件抢走
+  #expect(try await s3.stat(try RemotePath("/docs/notes.txt")).isDirectory)
+  _ = try await s3.read(try RemotePath("/docs/notes (2).txt"), range: nil)
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await s3.makeDirectory(try RemotePath("/docs/notes (2).txt"))
+  }
+  // 目录的子项已删完，删目录不能顺手删掉同名文件
+  try await s3.remove(try RemotePath("/docs/notes.txt"), recursive: false)
+  try await s3.remove(try RemotePath("/docs/notes (2).txt"), recursive: false)
+
+  let requests = transport.requests.withLock { $0 }
+  let calls = requests.map { "\($0.httpMethod ?? "") \(encodedPath($0) ?? "")" }
+  #expect(
+    calls == [
+      "GET /photos", "HEAD /photos/docs/notes.txt", "GET /photos", "GET /photos/docs/notes.txt",
+      "GET /photos", "HEAD /photos/docs/notes.txt", "DELETE /photos/docs/notes.txt",
+    ])
+  let directoryLookup = URLComponents(url: requests[2].url!, resolvingAgainstBaseURL: false)
+  #expect(
+    directoryLookup?.queryItems?.first { $0.name == "prefix" }?.value == "docs/notes.txt/")
+}

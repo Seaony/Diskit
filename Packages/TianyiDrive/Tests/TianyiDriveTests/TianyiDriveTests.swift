@@ -936,7 +936,7 @@ func tianyiSeparateSessionsShareRestoration(separateSessions: Bool) async throws
     case "/login/complete": return HTTPResponse(status: 200, url: finalURL)
     case "/getSessionForPC.action": return sessionJSON(accessToken: "unverified")
     case "/portal/getUserSizeInfo.action":
-      return json(["cloudCapacityInfo": ["totalSize": 2, "usedSize": 3]])
+      return json(["cloudCapacityInfo": ["totalSize": 2, "usedSize": -1]])
     default: throw RemoteError.protocolError
     }
   }
@@ -1259,4 +1259,179 @@ func tianyiTenConcurrentRejectionsShareRestoration(separateSessions: Bool) async
     try await group.waitForAll()
   }
   #expect(restored.withLock { $0 } == 1)
+}
+
+@Test func tianyiOverQuotaAccountStillConnects() async throws {
+  let http = FakeHTTP { _ in
+    json(["cloudCapacityInfo": ["totalSize": 1_000, "usedSize": 1_500]])
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  let space = try await provider.spaceInfo()
+  #expect(space.total == 1_000)
+  #expect(space.used == 1_500)
+}
+
+@Test(arguments: ["captcha_test.png", "验证码截图.png", "风控记录.txt", "invalidsessionkey.txt"])
+func tianyiFileNamesDoNotLookLikeChallengeOrExpiredSession(name: String) async throws {
+  let http = FakeHTTP { request in
+    switch request.url?.path {
+    case "/portal/getUserSizeInfo.action": return capacity()
+    case "/file/listFiles.action":
+      return json([
+        "res_code": 0, "res_message": "成功",
+        "fileListAO": ["count": 1, "folderList": [], "fileList": [node("f", name)]],
+      ])
+    default: throw RemoteError.protocolError
+    }
+  }
+  let (session, secrets) = try session(http)
+  let saved = try secrets.read("tianyi.test")
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/")).map(\.name) == [name])
+  #expect(try secrets.read("tianyi.test") == saved)
+  #expect(!(await http.requests).contains { $0.url?.path == "/getSessionForPC.action" })
+}
+
+@Test func tianyiChallengeInServiceFieldsOrNonJSONPageIsStillDetected() async throws {
+  for response in [
+    json(["res_code": 1, "res_message": "请输入验证码"]),
+    HTTPResponse(status: 403, body: Data("<html>captcha required</html>".utf8)),
+  ] {
+    let http = FakeHTTP { _ in response }
+    let (session, _) = try session(http)
+    await #expect(throws: TianyiError.service("需要在天翼云盘网页完成验证")) {
+      _ = try await session.account()
+    }
+  }
+  #expect(
+    TianyiHTTP.isAuthenticationFailure(json(["res_code": "InvalidSessionKey"], status: 400)))
+  #expect(
+    !TianyiHTTP.isAuthenticationFailure(
+      json(["res_code": 0, "fileListAO": ["fileList": [node("f", "invalidsessionkey")]]])))
+}
+
+private actor DownloadLinkServer {
+  var linkRequests = 0
+  var rejectNextDownload = false
+  var size: Int64 = 100
+
+  func nextLink() -> Int {
+    linkRequests += 1
+    return linkRequests
+  }
+
+  func takeRejection() -> Bool {
+    defer { rejectNextDownload = false }
+    return rejectNextDownload
+  }
+
+  func rejectNext() { rejectNextDownload = true }
+  func resize(_ value: Int64) { size = value }
+}
+
+@Test func tianyiReusesDownloadURLAndRefreshesItOnceWhenExpired() async throws {
+  let server = DownloadLinkServer()
+  let http = FakeHTTP(
+    reply: { request in
+      switch request.url?.path {
+      case "/portal/getUserSizeInfo.action": return capacity()
+      case "/file/listFiles.action":
+        return listPage(folders: [], files: [node("f", "movie.bin", size: await server.size)])
+      case "/file/getFileDownloadUrl.action":
+        let number = await server.nextLink()
+        return json(["fileDownloadUrl": "https://download.189.cn/file?sig=\(number)"])
+      default: throw RemoteError.protocolError
+      }
+    },
+    streamReply: { request in
+      if await server.takeRejection() {
+        return HTTPStreamResponse(
+          response: HTTPResponse(status: 403), body: AsyncThrowingStream { $0.finish() })
+      }
+      let range = request.value(forHTTPHeaderField: "Range") ?? ""
+      let bounds = range.dropFirst(6).split(separator: "-").compactMap { Int64($0) }
+      let size = await server.size
+      return HTTPStreamResponse(
+        response: HTTPResponse(
+          status: 206, headers: ["Content-Range": "bytes \(bounds[0])-\(bounds[1])/\(size)"]),
+        body: AsyncThrowingStream {
+          $0.yield(Data(repeating: 1, count: Int(bounds[1] - bounds[0] + 1)))
+          $0.finish()
+        })
+    })
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session)
+  try await provider.connect()
+  let path = try RemotePath("/movie.bin")
+  func read(_ range: Range<Int64>) async throws -> Int {
+    var count = 0
+    for try await chunk in try await provider.read(path, range: range) { count += chunk.count }
+    return count
+  }
+  #expect(try await read(0..<10) == 10)
+  #expect(try await read(10..<20) == 10)
+  #expect(await server.linkRequests == 1)
+
+  await server.rejectNext()
+  #expect(try await read(20..<30) == 10)
+  #expect(await server.linkRequests == 2)
+  let downloads = await http.requests.filter { $0.url?.host == "download.189.cn" }
+  #expect(downloads.suffix(2).map { $0.url?.query } == ["sig=1", "sig=2"])
+
+  // 文件大小变了说明内容换了，旧地址不再沿用
+  await server.resize(200)
+  _ = try await provider.list(RemotePath("/"))
+  #expect(try await read(0..<10) == 10)
+  #expect(await server.linkRequests == 3)
+}
+
+@Test func tianyiDuplicateNamesGetFinderStyleNamesAndMapBackToTheirIDs() async throws {
+  let http = FakeHTTP { request in
+    let path = request.url?.path ?? ""
+    switch path {
+    case "/portal/getUserSizeInfo.action": return capacity()
+    case "/file/listFiles.action":
+      guard request.url?.query?.contains("pageNum=1&") == true else {
+        return listPage(folders: [], files: [])
+      }
+      return listPage(
+        folders: [],
+        files: [node("f2", "a.txt", size: 20), node("f1", "a.txt", size: 10)])
+    case "/batch/createBatchTask.action": return json(["taskId": "task"])
+    case "/batch/checkBatchTask.action": return json(["taskStatus": 4])
+    case "/file/renameFile.action": return json(["res_code": 0])
+    default: throw RemoteError.protocolError
+    }
+  }
+  let (session, _) = try session(http)
+  let provider = TianyiProvider(session: session, taskPollInterval: .zero)
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(Set(items.map(\.path.value)) == ["/a.txt", "/a (2).txt"])
+  #expect(items.allSatisfy { $0.path.basename == $0.name })
+  #expect(try await provider.stat(RemotePath("/a (2).txt")).size == 20)
+  #expect(try await provider.stat(RemotePath("/a.txt")).size == 10)
+
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.makeDirectory(RemotePath("/a (2).txt"))
+  }
+
+  try await provider.move(RemotePath("/a (2).txt"), to: RemotePath("/b.txt"))
+  let rename = try #require(
+    await http.requests.last { $0.url?.path == "/file/renameFile.action" })
+  let query = URLComponents(url: rename.url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+  #expect(query.first { $0.name == "fileId" }?.value == "f2")
+  #expect(query.first { $0.name == "destFileName" }?.value == "b.txt")
+
+  try await provider.remove(RemotePath("/a (2).txt"), recursive: false)
+  let delete = try #require(
+    await http.requests.last { $0.url?.path == "/batch/createBatchTask.action" })
+  let infos = try #require(form(delete)["taskInfos"]?.data(using: .utf8))
+  let task = try #require(
+    (try JSONSerialization.jsonObject(with: infos) as? [[String: Any]])?.first)
+  #expect(task["fileId"] as? String == "f2")
+  #expect(task["fileName"] as? String == "a.txt")
 }

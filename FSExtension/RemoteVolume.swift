@@ -142,7 +142,7 @@ final class DiskitRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClos
       let parent = try self.directory(directory)
       let path = self.path(of: parent)
       let entries = try await self.backend.list(path)
-      let matches = entries.filter { FSFileName(string: $0.path.basename).data == name.data }
+      let matches = RemoteVolumeBackend.entries(named: name.data, in: entries)
       guard matches.count <= 1 else { throw POSIXError(.EEXIST) }
       guard let found = matches.first else { throw POSIXError(.ENOENT) }
       let node = self.node(for: found, parentID: parent.id)

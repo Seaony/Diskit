@@ -317,7 +317,7 @@ enum CloudDriveSupport {
     let codes = responseIntegerValues(response)
     return markers.contains { text.contains($0) }
       || [429, 5_113, 40_140_117].contains(codes.code ?? -1)
-      || codes.errno == 42_905
+      || [31_034, 42_905].contains(codes.errno ?? 0)
   }
 
   private static func isStorageFull(_ response: HTTPResponse, text: String) -> Bool {

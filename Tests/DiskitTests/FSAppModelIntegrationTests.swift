@@ -431,6 +431,7 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   defer { harness.clean() }
   let clock = FSStatePollClock()
   let model = try harness.model(connections: [], pollWait: { try await clock.wait() })
+  model.setFileSystemStateVisible(true, viewer: UUID())
   await model.refreshFileSystemState()
   #expect(model.fileSystemState == .enabled)
   #expect(clock.calls == 0)
@@ -536,6 +537,7 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   defer { harness.clean() }
   let clock = FSStatePollClock()
   let model = try harness.model(connections: [], pollWait: { try await clock.wait() })
+  model.setFileSystemStateVisible(true, viewer: UUID())
   harness.enabled = false
   await model.refreshFileSystemState()
   try await fsAppModelWait { clock.waiting.count == 1 }
@@ -557,6 +559,7 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   let clock = FSStatePollClock()
   let connection = fsAppModelConnection()
   let model = try harness.model(connections: [connection], pollWait: { try await clock.wait() })
+  model.setFileSystemStateVisible(true, viewer: UUID())
   await model.connections.connectIfNeeded(connection)
   harness.enabled = false
   await model.refreshFileSystemState()
@@ -572,4 +575,66 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   harness.unmountFailure = nil
   model.prepareToQuit()
   #expect(await model.finishQuitting())
+}
+
+// 扩展没启用但没人看、也没有位置卡住时不在后台一直查；面板打开、去系统设置或有位置卡住时才查
+@MainActor @Test func fsAppModelPollsDisabledExtensionOnlyWhileItMatters() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let connection = fsAppModelConnection()
+  let model = try harness.model(connections: [connection], pollWait: { try await clock.wait() })
+  harness.enabled = false
+  await model.refreshFileSystemState()
+  #expect(model.fileSystemState == .disabled)
+  for _ in 0..<10 { await Task.yield() }
+  #expect(clock.calls == 0)
+
+  let panel = UUID()
+  model.setFileSystemStateVisible(true, viewer: panel)
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  model.setFileSystemStateVisible(false, viewer: panel)
+  try await fsAppModelWait { clock.waiting.isEmpty }
+
+  model.openFileSystemSettings()
+  #expect(harness.settings == 1)
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  clock.tick()
+  try await fsAppModelWait { clock.calls == 2 && clock.waiting.count == 1 }
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+@MainActor @Test func fsAppModelPollsWhileALocationIsBlockedByTheExtension() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let clock = FSStatePollClock()
+  let connection = fsAppModelConnection()
+  let model = try harness.model(connections: [connection], pollWait: { try await clock.wait() })
+  harness.enabled = false
+  await model.connections.connectIfNeeded(connection)
+  try await fsAppModelWait { clock.waiting.count == 1 }
+  try await model.connections.remove(connection)
+  try await fsAppModelWait { clock.waiting.isEmpty }
+  model.prepareToQuit()
+  #expect(await model.finishQuitting())
+}
+
+// 自动挂载时点卡片上的“取消”只停下这一个位置，其余位置照常挂载
+@MainActor @Test func fsAppModelCancelStopsOneAutomaticMount() async throws {
+  let harness = FSAppModelHarness()
+  defer { harness.clean() }
+  let slow = Connection(kind: .smb, name: "Slow", autoMount: true, openInFinderAfterMount: false,
+    params: ["host": "nas.invalid", "share": "a", "guest": "true"])
+  let next = Connection(kind: .smb, name: "Next", autoMount: true, openInFinderAfterMount: false,
+    params: ["host": "nas.invalid", "share": "b", "guest": "true"])
+  let model = try harness.model(
+    connections: [slow, next],
+    systemMount: DemoMountService(delay: { try await Task.sleep(for: .milliseconds(300)) }))
+  let run = Task { await model.autoMount() }
+  try await fsAppModelWait { model.connections.states[slow.id] == .connecting }
+  model.operations.cancel(connectionID: slow.id)
+  await run.value
+  #expect(model.connections.states[slow.id] == .disconnected)
+  if case .mounted = model.connections.states[next.id] {} else { Issue.record("其余位置应继续挂载") }
 }

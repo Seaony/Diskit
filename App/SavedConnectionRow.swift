@@ -23,7 +23,7 @@ struct SavedConnectionRow: View {
   let canMoveUp: Bool
   let canMoveDown: Bool
   let onSelect: () -> Void
-  let onPrimary: () -> Void
+  let onPrimary: (ConnectionCardAction) -> Void
   let onActivate: () -> Void
   let onEdit: () -> Void
   let onReauthenticate: () -> Void
@@ -227,14 +227,14 @@ struct SavedConnectionRow: View {
     switch state {
     case .mounted(let mounted):
       [(L("在 Finder 中打开"), "folder", { if !isDemo { NSWorkspace.shared.open(mounted.url) } }),
-       (L("推出"), "eject", onPrimary),
+       (L("推出"), "eject", { onPrimary(.eject) }),
        (L("复制路径"), "doc.on.doc", { copy(mounted.url.path) })]
-    case .connecting, .awaitingAuthorization: [(L("取消"), "xmark.circle", onPrimary)]
+    case .connecting, .awaitingAuthorization: [(L("取消"), "xmark.circle", { onPrimary(.cancel) })]
     case .ejecting, .unavailable: []
     case .needsLogin: [(L("重新登录…"), "key", onReauthenticate)]
-    case .failed: [(L("重试"), "arrow.clockwise", onPrimary), (L("复制错误信息"), "doc.on.doc", { copy(fullStatus) })]
+    case .failed: [(L("重试"), "arrow.clockwise", { onPrimary(.connect) }), (L("复制错误信息"), "doc.on.doc", { copy(fullStatus) })]
     case .tested, .disconnected:
-      [(PanelCopy.buttonTitle(state, kind: connection.kind), connection.kind.usesMount ? "externaldrive.badge.plus" : "checkmark.circle", onPrimary)]
+      [(PanelCopy.buttonTitle(state, kind: connection.kind), connection.kind.usesMount ? "externaldrive.badge.plus" : "checkmark.circle", { onPrimary(.connect) })]
     }
   }
 

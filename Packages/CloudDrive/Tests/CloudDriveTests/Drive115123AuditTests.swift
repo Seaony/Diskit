@@ -39,30 +39,166 @@ private func auditSession(_ transport: any HTTPTransport) throws -> OAuthSession
       scopes: []), secretKey: "account", secrets: secrets, transport: transport)
 }
 
+private func auditQuery(_ request: URLRequest, _ name: String) -> String? {
+  URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?
+    .first { $0.name == name }?.value
+}
+
+private func auditFormContains(_ request: URLRequest, _ name: String, _ value: String) -> Bool {
+  String(decoding: request.httpBody ?? Data(), as: UTF8.self)
+    .contains("name=\"\(name)\"\r\n\r\n\(value)\r\n")
+}
+
 @Test(arguments: [false, true])
-func drive115RejectsAmbiguousNamesBeforeAnyMutation(listFirst: Bool) async throws {
+func drive115DuplicateNamesGetFinderStyleNamesAndTheirOwnID(listFirst: Bool) async throws {
   let http = AuditDriveHTTP { request in
     switch request.url?.path {
     case "/open/user/info": return auditJSON(audit115User)
     case "/open/ufile/files":
       return auditJSON(
-        #"{"state":true,"count":2,"data":[{"fid":"1","fc":"1","fn":"dup","fs":1},{"fid":"2","fc":"1","fn":"dup","fs":2}]}"#
+        #"{"state":true,"count":2,"data":[{"fid":"2","fc":"1","fn":"dup.txt","fs":2},{"fid":"1","fc":"1","fn":"dup.txt","fs":1}]}"#
       )
+    case "/open/folder/get_info":
+      let id = auditQuery(request, "file_id") ?? ""
+      return auditJSON(
+        "{\"state\":true,\"data\":{\"file_id\":\"\(id)\",\"file_name\":\"dup.txt\",\"file_category\":\"1\",\"size_byte\":\(id)}}"
+      )
+    case "/open/ufile/delete", "/open/ufile/update": return auditJSON(#"{"state":true}"#)
     default: return HTTPResponse(status: 404)
     }
   }
   let provider = Drive115Provider(session: try auditSession(http), transport: http)
   try await provider.connect()
-  if listFirst { #expect(try await provider.list(RemotePath("/")).count == 2) }
-  await #expect(throws: RemoteError.posix(EEXIST)) {
-    try await provider.remove(RemotePath("/dup"), recursive: false)
+  if listFirst {
+    let items = try await provider.list(RemotePath("/"))
+    #expect(items.map(\.path.value) == ["/dup (2).txt", "/dup.txt"])
+    #expect(items.map(\.name) == ["dup (2).txt", "dup.txt"])
   }
-  #expect(
-    !http.requests.withLock {
-      $0.contains {
-        $0.url?.path == "/open/ufile/delete" || $0.url?.path == "/open/folder/get_info"
+  #expect(try await provider.stat(RemotePath("/dup (2).txt")).size == 2)
+  try await provider.remove(RemotePath("/dup (2).txt"), recursive: false)
+  let delete = try #require(
+    http.requests.withLock { $0.last { $0.url?.path == "/open/ufile/delete" } })
+  #expect(auditFormContains(delete, "file_ids", "2"))
+  // 新建和显示名同名的条目按已存在处理
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.makeDirectory(RemotePath("/dup (2).txt"))
+  }
+  #expect(!http.requests.withLock { $0.contains { $0.url?.path == "/open/folder/add" } })
+  // 改名按真实名字判断，改的是编号对应的那一份
+  try await provider.move(RemotePath("/dup (2).txt"), to: RemotePath("/other.txt"))
+  let update = try #require(
+    http.requests.withLock { $0.last { $0.url?.path == "/open/ufile/update" } })
+  #expect(auditFormContains(update, "file_id", "2"))
+  #expect(auditFormContains(update, "file_name", "other.txt"))
+}
+
+@Test func drive115ReadReusesPickCodeAndDownloadURL() async throws {
+  let clock = Mutex(Date(timeIntervalSince1970: 0))
+  let links = Mutex(0)
+  let downloads = Mutex(0)
+  let http = AuditDriveHTTP { request in
+    if request.url?.host == "cdn.example.invalid" {
+      let count = downloads.withLock {
+        $0 += 1
+        return $0
       }
-    })
+      // 第 3 次下载模拟地址过期
+      if count == 3 { return HTTPResponse(status: 403) }
+      #expect(request.url?.path == "/a\(links.withLock { $0 })")
+      return HTTPResponse(status: 206, body: Data([1]))
+    }
+    switch request.url?.path {
+    case "/open/user/info": return auditJSON(audit115User)
+    case "/open/ufile/files":
+      return auditJSON(
+        #"{"state":true,"count":1,"data":[{"fid":"7","fc":"1","fn":"a.bin","fs":4,"pc":"pick7","uet":1}]}"#
+      )
+    case "/open/ufile/downurl":
+      #expect(auditFormContains(request, "pick_code", "pick7"))
+      let count = links.withLock {
+        $0 += 1
+        return $0
+      }
+      return auditJSON(
+        "{\"state\":true,\"data\":{\"7\":{\"url\":{\"url\":\"https://cdn.example.invalid/a\(count)\"}}}}"
+      )
+    default:
+      Issue.record("读文件不应再请求 \(request.url?.path ?? "")")
+      return HTTPResponse(status: 404)
+    }
+  }
+  let provider = Drive115Provider(
+    session: try auditSession(http), transport: http, multipartThreshold: 1, partSize: 1,
+    now: { clock.withLock { $0 } })
+  try await provider.connect()
+  _ = try await provider.list(RemotePath("/"))
+  _ = try await provider.read(RemotePath("/a.bin"), range: 0..<1)
+  _ = try await provider.read(RemotePath("/a.bin"), range: 1..<2)
+  #expect(links.withLock { $0 } == 1)
+  _ = try await provider.read(RemotePath("/a.bin"), range: 2..<3)
+  #expect(links.withLock { $0 } == 2)
+  #expect(downloads.withLock { $0 } == 4)
+  clock.withLock { $0 += Drive115Provider.downloadLinkLifetime }
+  _ = try await provider.read(RemotePath("/a.bin"), range: 3..<4)
+  #expect(links.withLock { $0 } == 3)
+}
+
+@Test func drive123ReadReusesDownloadURLAndDuplicatesTargetTheirOwnID() async throws {
+  let clock = Mutex(Date(timeIntervalSince1970: 0))
+  let links = Mutex(0)
+  let downloads = Mutex(0)
+  let http = AuditDriveHTTP { request in
+    if request.url?.host == "cdn.example.invalid" {
+      let count = downloads.withLock {
+        $0 += 1
+        return $0
+      }
+      if count == 3 { return HTTPResponse(status: 403) }
+      #expect(request.url?.path == "/a\(links.withLock { $0 })")
+      return HTTPResponse(status: 206, body: Data([1]))
+    }
+    switch request.url?.path {
+    case "/api/v1/user/info": return auditJSON(audit123User)
+    case "/api/v2/file/list":
+      return auditJSON(
+        #"{"code":0,"data":{"lastFileId":-1,"fileList":[{"fileId":8,"filename":"a.bin","type":0,"size":4,"parentFileId":0,"trashed":0},{"fileId":7,"filename":"a.bin","type":0,"size":4,"parentFileId":0,"trashed":0}]}}"#
+      )
+    case "/api/v1/file/download_info":
+      #expect(auditQuery(request, "fileId") == "8")
+      let count = links.withLock {
+        $0 += 1
+        return $0
+      }
+      return auditJSON(
+        "{\"code\":0,\"data\":{\"downloadUrl\":\"https://cdn.example.invalid/a\(count)\"}}")
+    case "/api/v1/file/detail":
+      #expect(auditQuery(request, "fileID") == "8")
+      return auditJSON(
+        #"{"code":0,"data":{"fileID":8,"filename":"a.bin","type":0,"size":4,"parentFileID":0,"trashed":0}}"#
+      )
+    default:
+      Issue.record("读文件不应再请求 \(request.url?.path ?? "")")
+      return HTTPResponse(status: 404)
+    }
+  }
+  let provider = Drive123Provider(
+    session: try auditSession(http), transport: http, completionPollLimit: 1,
+    completionDeadline: nil, now: { clock.withLock { $0 } })
+  try await provider.connect()
+  #expect(
+    try await provider.list(RemotePath("/")).map(\.path.value) == ["/a (2).bin", "/a.bin"])
+  _ = try await provider.read(RemotePath("/a (2).bin"), range: 0..<1)
+  _ = try await provider.read(RemotePath("/a (2).bin"), range: 1..<2)
+  #expect(links.withLock { $0 } == 1)
+  _ = try await provider.read(RemotePath("/a (2).bin"), range: 2..<3)
+  #expect(links.withLock { $0 } == 2)
+  #expect(downloads.withLock { $0 } == 4)
+  clock.withLock { $0 += Drive123Provider.downloadLinkLifetime }
+  _ = try await provider.read(RemotePath("/a (2).bin"), range: 3..<4)
+  #expect(links.withLock { $0 } == 3)
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.makeDirectory(RemotePath("/a (2).bin"))
+  }
 }
 
 @Test func drive115SpaceRefreshesAfterConnection() async throws {
@@ -220,21 +356,21 @@ func drive115OSSSignatureIncludesRawObjectAndSortedSubresources(endpoint: String
 @Test func drive115FindsDuplicateAcrossShortPages() async throws {
   let http = AuditDriveHTTP { request in
     if request.url?.path == "/open/user/info" { return auditJSON(audit115User) }
+    if request.url?.path == "/open/folder/get_info" {
+      #expect(auditQuery(request, "file_id") == "1")
+      return auditJSON(
+        #"{"state":true,"data":{"file_id":"1","file_name":"dup","file_category":"1","size_byte":1}}"#)
+    }
     guard request.url?.path == "/open/ufile/files" else { return HTTPResponse(status: 404) }
-    let offset =
-      URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?.queryItems?.first {
-        $0.name == "offset"
-      }?.value ?? "0"
+    let offset = auditQuery(request, "offset") ?? "0"
     return auditJSON(
       "{\"state\":true,\"count\":2,\"data\":[{\"fid\":\"\(offset)\",\"fc\":\"1\",\"fn\":\"dup\",\"fs\":1}]}"
     )
   }
   let provider = Drive115Provider(session: try auditSession(http), transport: http)
   try await provider.connect()
-  #expect(try await provider.list(RemotePath("/")).count == 2)
-  await #expect(throws: RemoteError.posix(EEXIST)) {
-    _ = try await provider.stat(RemotePath("/dup"))
-  }
+  #expect(try await provider.list(RemotePath("/")).map(\.path.value) == ["/dup", "/dup (2)"])
+  #expect(try await provider.stat(RemotePath("/dup (2)")).path.value == "/dup (2)")
 }
 
 private actor Slow123CompletionHTTP: HTTPTransport {

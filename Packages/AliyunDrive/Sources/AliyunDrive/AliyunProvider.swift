@@ -2,6 +2,8 @@ import Core
 import Foundation
 
 public actor AliyunProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: AliyunSession
@@ -9,6 +11,7 @@ public actor AliyunProvider: RemoteFileProvider {
   private let taskDeadline: HTTPProgressDeadline?
   private var driveID: String?
   private var rootID = "root"
+  // 路径用 Finder 里显示的名字（同名文件编了号）
   private var paths: [String: AliyunFile] = [:]
   private var cacheGeneration: UInt64 = 0
   private var listings: [String: UUID] = [:]
@@ -51,7 +54,7 @@ public actor AliyunProvider: RemoteFileProvider {
     let parent = try await resolve(path)
     guard parent.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     return try await children(path, fileID: parent.fileID).map {
-      try $0.item(at: path.appending($0.name))
+      try $0.file.item(at: path.appending($0.name))
     }
   }
   public func stat(_ path: RemotePath) async throws -> RemoteItem {
@@ -74,9 +77,9 @@ public actor AliyunProvider: RemoteFileProvider {
   public func read(_ path: RemotePath, range: Range<Int64>?) async throws -> AsyncThrowingStream<
     Data, Error
   > {
-    let item = try await stat(path)
-    guard !item.isDirectory else { throw RemoteError.posix(EISDIR) }
     let file = try await resolve(path)
+    let item = try file.item(at: path)
+    guard !item.isDirectory else { throw RemoteError.posix(EISDIR) }
     if item.size == 0 {
       guard range == nil || range?.isEmpty == true else { throw RemoteError.posix(EINVAL) }
       return AsyncThrowingStream { $0.finish() }
@@ -126,10 +129,14 @@ public actor AliyunProvider: RemoteFileProvider {
     let name = basename(path)
     let parentFile = try await resolve(destination)
     guard parentFile.isDirectory else { throw RemoteError.posix(ENOTDIR) }
-    let matches = try await children(destination, fileID: parentFile.fileID).filter {
-      $0.name == name
+    let entries = try await children(destination, fileID: parentFile.fileID)
+    let matches = entries.filter { $0.name == name }.map(\.file)
+    // 覆盖同名文件里的某一份后，新文件 ID 变了，编号可能和另一份对调，所以不覆盖
+    if let match = matches.first,
+      match.name != name || entries.filter({ $0.file.name == match.name }).count > 1
+    {
+      throw AliyunFileError.duplicateNames
     }
-    guard matches.count <= 1 else { throw AliyunFileError.duplicateNames }
     guard matches.first?.isDirectory != true else { throw RemoteError.posix(EISDIR) }
     let size = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize
     guard let size, size >= 0 else { throw RemoteError.posix(EIO) }
@@ -215,7 +222,6 @@ public actor AliyunProvider: RemoteFileProvider {
     let matches = try await children(destination, fileID: parentFile.fileID).filter {
       $0.name == basename(path)
     }
-    guard matches.count <= 1 else { throw AliyunFileError.duplicateNames }
     guard matches.isEmpty else { throw RemoteError.posix(EEXIST) }
     defer { invalidate(destination) }
     let _: AliyunCreatedFile = try await rpc(
@@ -245,17 +251,18 @@ public actor AliyunProvider: RemoteFileProvider {
     guard target.isDirectory else { throw RemoteError.posix(ENOTDIR) }
     let destinationFiles = try await children(destination, fileID: target.fileID)
     let collisions = destinationFiles.filter {
-      $0.name == basename(to) && $0.fileID != file.fileID
+      $0.name == basename(to) && $0.file.fileID != file.fileID
     }
     guard collisions.isEmpty else { throw RemoteError.posix(EEXIST) }
     defer {
       invalidate(source)
       invalidate(destination)
     }
+    // 同名文件在 Finder 里显示的是编号后的名字，这里都按网盘上的真实名字比
     let renameDuringMove =
       source != destination
       && destinationFiles.contains {
-        $0.name == basename(from) && $0.fileID != file.fileID
+        $0.file.name == file.name && $0.file.fileID != file.fileID
       }
     if source != destination {
       var parameters: [String: Any] = [
@@ -266,7 +273,7 @@ public actor AliyunProvider: RemoteFileProvider {
         "move", parameters)
       try await waitForTask(result.asyncTaskID)
     }
-    if basename(from) != basename(to), !renameDuringMove {
+    if file.name != basename(to), !renameDuringMove {
       let _: AliyunFile = try await rpc(
         "update", ["file_id": file.fileID, "name": basename(to), "check_name_mode": "refuse"])
     }
@@ -293,15 +300,18 @@ public actor AliyunProvider: RemoteFileProvider {
         current = next
         continue
       }
-      let matches = try await children(current, fileID: file.fileID).filter { $0.name == name }
-      guard matches.count <= 1 else { throw AliyunFileError.duplicateNames }
-      guard let matched = matches.first else { throw RemoteError.posix(ENOENT) }
-      file = matched
+      guard let matched = try await children(current, fileID: file.fileID).first(where: {
+        $0.name == name
+      }) else { throw RemoteError.posix(ENOENT) }
+      file = matched.file
       current = next
     }
     return file
   }
-  private func children(_ path: RemotePath, fileID: String) async throws -> [AliyunFile] {
+  // 返回每个子项和它在 Finder 里显示的名字
+  private func children(
+    _ path: RemotePath, fileID: String
+  ) async throws -> [(name: String, file: AliyunFile)] {
     let generation = cacheGeneration
     let requestID = UUID()
     listings[path.value] = requestID
@@ -322,13 +332,17 @@ public actor AliyunProvider: RemoteFileProvider {
       throw RemoteError.posix(EAGAIN)
     }
     clearCachedPaths(path)
-    let counts = Dictionary(grouping: files, by: \.name)
+    let names = duplicateNames.assign(
+      files.map { DuplicateNames.Entry(id: $0.fileID, name: $0.name, isDirectory: $0.isDirectory) }, in: path.value)
+    var result: [(name: String, file: AliyunFile)] = []
     for file in files {
-      let child = try path.appending(file.name)
+      guard let name = names[file.fileID] else { throw RemoteError.protocolError }
+      let child = try path.appending(name)
       _ = try file.item(at: child)
-      if counts[file.name]?.count == 1 { paths[child.value] = file }
+      paths[child.value] = file
+      result.append((name, file))
     }
-    return files
+    return result
   }
   private func invalidate(_ directory: RemotePath) {
     cacheGeneration &+= 1

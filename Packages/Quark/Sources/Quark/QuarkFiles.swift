@@ -8,14 +8,19 @@ struct QuarkFile: Decodable, Sendable {
   let file: Bool
   let size: Int64
   let updatedAt: Int64
+  // 同目录重名时 Finder 里显示的名字，列目录时分配
+  var displayName: String?
   enum CodingKeys: String, CodingKey {
     case fid, file, size
     case fileName = "file_name"
     case updatedAt = "updated_at"
   }
-  var name: String { QuarkNames.decode(fileName) }
+  // 网盘上的真实名字
+  var rawName: String { QuarkNames.decode(fileName) }
+  var name: String { displayName ?? rawName }
   func item(at path: RemotePath) throws -> RemoteItem {
-    guard !fid.isEmpty, !name.isEmpty, !name.contains("/"), name != ".", name != "..", size >= 0
+    guard !fid.isEmpty, !rawName.isEmpty, !rawName.contains("/"), rawName != ".", rawName != "..",
+      size >= 0
     else { throw RemoteError.protocolError }
     return RemoteItem(
       path: path, name: name, isDirectory: !file, size: size,

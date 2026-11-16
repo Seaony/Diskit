@@ -1,9 +1,10 @@
 import Core
 import Foundation
+import OSLog
 
 public actor ADBProvider: RemoteFileProvider {
   public nonisolated let capabilities = ProviderCapabilities(
-    canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: false)
+    canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private var session: ADBSession
   private let reconnect: (@Sendable () async throws -> ADBSession)?
   private var needsNewSession = false
@@ -11,6 +12,8 @@ public actor ADBProvider: RemoteFileProvider {
   private var connected = false
   private var busy = false
   private var sdPath: String?
+  private var rangeUnsupported = false
+  private static let logger = Logger(subsystem: "com.seaony.Diskit", category: "ADB")
   private var progress: (@Sendable (Int64, Int64) -> Void)?
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
     self.progress = progress
@@ -119,8 +122,12 @@ public actor ADBProvider: RemoteFileProvider {
         let length = try lengthReader.u32()
         guard length <= 255 else { throw RemoteError.protocolError }
         let bytes = try await session.readExactly(Int(length))
+        // LIS2 的 error 字段非 0 表示 lstat 失败，多是列目录途中被删掉的临时文件，跳过这一项
+        if v2, value != 0 { continue }
         guard let name = String(data: bytes, encoding: .utf8) else {
-          throw RemoteError.protocolError
+          // 非 UTF-8 的文件名没法在 Finder 里表示，跳过这一项，别让整个目录读失败
+          Self.logger.error("跳过非 UTF-8 文件名：\(bytes.base64EncodedString(), privacy: .private)")
+          continue
         }
         if name == "." || name == ".." { continue }
         result.append(try ADBSync.decodeDent(prefix + rest, name: name, parent: path, v2: v2))
@@ -149,11 +156,17 @@ public actor ADBProvider: RemoteFileProvider {
   public func read(_ path: RemotePath, range: Range<Int64>?) async throws -> AsyncThrowingStream<
     Data, Error
   > {
+    if let range {
+      let data = try await readRange(path, range)
+      return AsyncThrowingStream {
+        $0.yield(data)
+        $0.finish()
+      }
+    }
     let progress = self.progress
-    guard range == nil else { throw RemoteError.unsupported }
-    let item = try await stat(path)
+    // 总大小只用于进度显示；Core 读之前已经 stat 过，没人看进度就省掉这次往返
+    let total = progress == nil ? 0 : try await stat(path).size
     let v2 = await session.features.contains("sendrecv_v2")
-    guard v2 || item.size <= UInt32.max else { throw RemoteError.tooLarge }
     try begin()
     do {
       try await session.open("sync:")
@@ -165,14 +178,41 @@ public actor ADBProvider: RemoteFileProvider {
         try await session.write(setup)
       }
       let cursor = ADBReadCursor(
-        session: session, maximum: v2 ? Int64.max : Int64(UInt32.max),
-        total: item.size, progress: progress,
+        session: session, total: total, progress: progress,
         finished: { await self.endRead(reusable: $0) })
       return AsyncThrowingStream(unfolding: { try await cursor.next() })
     } catch {
       await operationFailed(error)
       throw error
     }
+  }
+  // 用 dd 按 64 KiB 块读，再在本机裁掉多读的头尾：Android 8～10 的 toybox dd 还没有
+  // iflag=skip_bytes,count_bytes，按块的 bs/skip/count 所有版本都支持
+  private static let rangeBlock: Int64 = 65_536
+  private func readRange(_ path: RemotePath, _ range: Range<Int64>) async throws -> Data {
+    // 没有 shell_v2 只能用带 PTY 的 shell:，会改坏二进制数据，交给整文件读取
+    guard !rangeUnsupported, await session.features.contains("shell_v2") else {
+      throw RemoteError.unsupported
+    }
+    let block = Self.rangeBlock
+    let first = range.lowerBound / block
+    let count = range.upperBound / block + (range.upperBound % block == 0 ? 0 : 1) - first
+    let expected = Int(count * block)
+    let output: Data
+    do {
+      output = try await shell(
+        "dd if=" + ADBShell.quote(mapped(path))
+          + " bs=\(block) skip=\(first) count=\(count) status=none",
+        limit: expected + 65_536)
+    } catch RemoteError.unsupported {
+      rangeUnsupported = true
+      throw RemoteError.unsupported
+    }
+    guard output.count <= expected else { throw RemoteError.protocolError }
+    // dd 正常退出时输出变短只会是读到了文件末尾
+    let head = Int(range.lowerBound - first * block)
+    guard output.count > head else { return Data() }
+    return Data(output[head..<min(output.count, head + range.count)])
   }
   private func endRead(reusable: Bool) {
     busy = false
@@ -191,7 +231,6 @@ public actor ADBProvider: RemoteFileProvider {
     let seconds = modified.timeIntervalSince1970.rounded(.down)
     guard seconds >= 0, seconds <= Double(UInt32.max) else { throw RemoteError.posix(EOVERFLOW) }
     let v2 = await session.features.contains("sendrecv_v2")
-    guard v2 || size <= UInt32.max else { throw RemoteError.tooLarge }
     try begin()
     defer { busy = false }
     let file = try FileHandle(forReadingFrom: localFile)
@@ -286,16 +325,16 @@ public actor ADBProvider: RemoteFileProvider {
     else { throw RemoteError.protocolError }
     return size
   }
-  private func shell(_ command: String) async throws -> Data {
+  private func shell(_ command: String, limit: Int = 1_048_576) async throws -> Data {
     try begin()
     defer { busy = false }
-    do { return try await executeShell(command) } catch {
+    do { return try await executeShell(command, limit: limit) } catch {
       await operationFailed(error)
       throw error
     }
   }
 
-  private func executeShell(_ command: String) async throws -> Data {
+  private func executeShell(_ command: String, limit: Int = 1_048_576) async throws -> Data {
     var output = Data()
     var errorOutput = Data()
     var exitCode: UInt8?
@@ -307,7 +346,7 @@ public actor ADBProvider: RemoteFileProvider {
         let length = try header.u32()
         guard length <= 1_048_576 else { throw RemoteError.protocolError }
         let data = try await session.readExactly(Int(length))
-        guard output.count + errorOutput.count + data.count <= 1_048_576 else {
+        guard output.count + errorOutput.count + data.count <= limit else {
           throw RemoteError.protocolError
         }
         switch id {
@@ -327,7 +366,7 @@ public actor ADBProvider: RemoteFileProvider {
       try await session.open("shell:" + wrapped)
       while let chunk = try await session.readChunk() {
         output.append(chunk)
-        guard output.count <= 1_048_576 else { throw RemoteError.protocolError }
+        guard output.count <= limit else { throw RemoteError.protocolError }
       }
       guard let footer = output.range(of: Data(("\n" + marker).utf8), options: .backwards),
         let status = UInt8(
@@ -340,6 +379,8 @@ public actor ADBProvider: RemoteFileProvider {
     }
     try await session.closeService()
     guard exitCode == 0 else {
+      // sh 找不到或执行不了命令
+      if exitCode == 126 || exitCode == 127 { throw RemoteError.unsupported }
       let error = String(decoding: errorOutput, as: UTF8.self)
       if error.trimmingCharacters(in: .whitespacesAndNewlines) == "File exists" {
         throw RemoteError.posix(EEXIST)
@@ -357,19 +398,17 @@ public actor ADBProvider: RemoteFileProvider {
 private actor ADBReadCursor {
   let session: ADBSession
   let finished: @Sendable (Bool) async -> Void
-  let maximum: Int64
   let total: Int64
   let progress: (@Sendable (Int64, Int64) -> Void)?
   var received: Int64 = 0
   var done = false
   init(
-    session: ADBSession, maximum: Int64, total: Int64,
+    session: ADBSession, total: Int64,
     progress: (@Sendable (Int64, Int64) -> Void)?,
     finished: @escaping @Sendable (Bool) async -> Void
   ) {
     self.session = session
     self.finished = finished
-    self.maximum = maximum
     self.total = total
     self.progress = progress
   }
@@ -400,7 +439,6 @@ private actor ADBReadCursor {
       if id == ADBSync.id("FAIL") { throw try await ADBSync.failure(session, length: length) }
       guard id == ADBSync.id("DATA"), length <= 65_536 else { throw RemoteError.protocolError }
       received += Int64(length)
-      guard received <= maximum else { throw RemoteError.tooLarge }
       let data = try await session.readExactly(Int(length), timeout: RemoteTimeout.transferIdle)
       progress?(received, total)
       return data

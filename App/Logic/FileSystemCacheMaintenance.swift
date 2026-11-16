@@ -28,6 +28,18 @@ actor FileSystemCacheMaintenance {
     for entry in try entries() { try FileManager.default.removeItem(at: entry.url) }
   }
 
+  // 位置删除后调用：删掉下载缓存 Read 和本地元数据 Overlay，留下还没上传的 Writes
+  func remove(connectionID: UUID) throws {
+    let directory = root.appending(path: connectionID.uuidString, directoryHint: .isDirectory)
+    guard try directoryExists(directory) else { return }
+    for name in ["Read", "Overlay"] {
+      let url = directory.appending(path: name, directoryHint: .isDirectory)
+      if try details(url) != nil { try FileManager.default.removeItem(at: url) }
+    }
+    // 没有待上传内容时连同空目录一起删掉
+    _ = Darwin.rmdir(directory.path)
+  }
+
   func enforceLimit(bytes limit: Int64) throws {
     guard limit >= 0 else { throw POSIXError(.EINVAL) }
     let entries = try entries().sorted {

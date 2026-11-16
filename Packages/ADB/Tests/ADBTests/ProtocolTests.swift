@@ -184,14 +184,12 @@ private func syncDone() -> Data {
   #expect(try RemotePath("//sdcard/./DCIM/").value == "/sdcard/DCIM")
 }
 
+// Core 读之前已经 stat 过，没人看进度时整文件读取直接发 RCV2，不再多一次 STA2
 @Test func streamedDownloadReadsChunksAndClosesService() async throws {
-  let stat = statV2(size: 6)
   let transport = FakeTransport([
-    hello(), .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.write, 11, 1, payload: stat),
-    .init(.close, 11, 1),
-    .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2),
-    .init(.write, 12, 2, payload: dataFrame("abc") + dataFrame("def") + syncDone()),
-    .init(.close, 12, 2),
+    hello(), .init(.okay, 12, 1), .init(.okay, 12, 1), .init(.okay, 12, 1),
+    .init(.write, 12, 1, payload: dataFrame("abc") + dataFrame("def") + syncDone()),
+    .init(.close, 12, 1),
   ])
   let provider = ADBProvider(
     session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
@@ -201,6 +199,7 @@ private func syncDone() -> Data {
     chunks.append(chunk)
   }
   #expect(chunks == [Data("abc".utf8), Data("def".utf8)])
+  #expect(await transport.output().range(of: Data("STA2".utf8)) == nil)
   await provider.disconnect()
   #expect(await transport.closed)
 }
@@ -336,21 +335,24 @@ private func shellFrame(_ id: UInt8, _ bytes: Data) -> Data {
   #expect(await transport.closed)
 }
 
-@Test func legacyTransferRejectsLargeFilesBeforeUpload() async throws {
-  let transport = FakeTransport([hello("")])
+// v1 的 SEND 按 DATA 块一直发到 DONE，没有总大小字段，超过 4 GiB 也照常上传
+@Test func legacyTransferUploadsFilesAboveFourGiB() async throws {
+  let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+  try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+  defer { try? FileManager.default.removeItem(at: directory) }
+  let transport = LocalADBTransport(directory: directory, modern: false, uploadFailure: "interrupt")
   let provider = ADBProvider(
     session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
-  let url = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-  defer { try? FileManager.default.removeItem(at: url) }
+  let url = directory.appending(path: "local")
   FileManager.default.createFile(atPath: url.path, contents: nil)
   let handle = try FileHandle(forWritingTo: url)
   try handle.truncate(atOffset: 5_000_000_000)
   try handle.close()
   try await provider.connect()
-  await #expect(throws: RemoteError.tooLarge) {
+  await #expect(throws: RemoteError.notConnected) {
     try await provider.write(RemotePath("/large"), from: url)
   }
-  await provider.disconnect()
+  #expect(await transport.events.prefix(2).map { $0.hasPrefix("send:") ? "send" : $0 } == ["send", "data"])
 }
 
 @Test(arguments: [false, true])
@@ -429,12 +431,9 @@ func ordinaryADBServiceErrorsAllowTheNextOperation(operation: String) async thro
   switch operation {
   case "read":
     messages += [
-      .init(.okay, 11, 1), .init(.okay, 11, 1), .init(.write, 11, 1, payload: statV2(size: 3)),
-      .init(.close, 11, 1),
-      .init(.okay, 12, 2), .init(.okay, 12, 2), .init(.okay, 12, 2),
-      .init(.write, 12, 2, payload: failure), .init(.close, 12, 2),
+      .init(.okay, 12, 1), .init(.okay, 12, 1), .init(.okay, 12, 1),
+      .init(.write, 12, 1, payload: failure), .init(.close, 12, 1),
     ]
-    nextLocal = 3
   case "write":
     messages = [
       hello("shell_v2,sendrecv_v2,ls_v2"), .init(.okay, 11, 1),
@@ -497,4 +496,61 @@ func adbCapacityRejectsNegativeAndOverflowingUsedBytes(used: String) async throw
   let provider = ADBProvider(session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
   try await provider.connect()
   await #expect(throws: RemoteError.protocolError) { _ = try await provider.spaceInfo() }
+}
+
+// 列目录途中被删的文件（LIS2 带 error）和非 UTF-8 文件名只跳过那一项，目录照常列出、连接不断
+@Test func listingSkipsFailedAndNonUTF8Entries() async throws {
+  func entry(_ name: Data, error: UInt32 = 0) -> Data {
+    var dent = statV2(size: 12, error: error)
+    dent.replaceSubrange(0..<4, with: Data("DNT2".utf8))
+    dent.appendLE(UInt32(name.count))
+    return dent + name
+  }
+  var done = Data("DONE".utf8)
+  done.append(Data(repeating: 0, count: 72))
+  let listing =
+    entry(Data(".tmp-123".utf8), error: UInt32(ENOENT)) + entry(Data([0x66, 0xff, 0xfe]))
+    + entry(Data("保留.txt".utf8)) + done
+  let transport = FakeTransport([
+    hello("ls_v2"), .init(.okay, 11, 1), .init(.okay, 11, 1),
+    .init(.write, 11, 1, payload: listing), .init(.close, 11, 1),
+  ])
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  #expect(try await provider.list(RemotePath("/DCIM")).map(\.name) == ["保留.txt"])
+  #expect(await !transport.closed)
+}
+
+// 没有 shell_v2 的手机只能用带 PTY 的 shell:，范围读交给整文件读取，不发任何命令
+@Test func rangeReadWithoutShellV2IsUnsupported() async throws {
+  let transport = FakeTransport([hello("stat_v2,ls_v2,sendrecv_v2")])
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  await #expect(throws: RemoteError.unsupported) {
+    _ = try await provider.read(RemotePath("/a.mp4"), range: 0..<10)
+  }
+  #expect(await transport.output().range(of: Data("dd if=".utf8)) == nil)
+}
+
+// 手机上没有 dd（sh 返回 127）时记住不支持，之后的范围读直接交给整文件读取
+@Test func rangeReadWithoutDDFallsBackForTheDevice() async throws {
+  let transport = FakeTransport([
+    hello("shell_v2"), .init(.okay, 11, 1),
+    .init(.write, 11, 1, payload: shellFrame(3, Data([0]))), .init(.close, 11, 1),
+    .init(.okay, 12, 2),
+    .init(.write, 12, 2, payload: shellFrame(2, Data("dd: not found\n".utf8)) + shellFrame(3, Data([127]))),
+    .init(.close, 12, 2),
+  ])
+  let provider = ADBProvider(
+    session: ADBSession(transport: transport, identity: ADBIdentity(store: TestSecrets())))
+  try await provider.connect()
+  for _ in 0..<2 {
+    await #expect(throws: RemoteError.unsupported) {
+      _ = try await provider.read(RemotePath("/a.mp4"), range: 0..<10)
+    }
+  }
+  #expect(await !transport.closed)
+  #expect(await transport.unread() == 0)
 }

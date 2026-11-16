@@ -39,6 +39,8 @@ import TianyiDrive
   var saving: Task<Void, Never>?
   var pairingTask: Task<Void, Never>?
   var shareTask: Task<Void, Never>?
+  // 点过“取消”但可能还没真正结束的任务；关窗口时要等它们结束再撤回钥匙串
+  private var cancelledTasks: [Task<Void, Never>] = []
   var selectedKind: ConnectionKind? {
     didSet { if selectedKind != nil { selectedDiscovery = nil } }
   }
@@ -54,6 +56,8 @@ import TianyiDrive
   var preparationExpanded = false
   var webdavPreset = "custom"
   var tianyiFamilySpaces: [TianyiFamilySpace] = []
+  // 已保存的位置第一次重新登录前的钥匙串内容；没保存就关窗口时写回去
+  @ObservationIgnored private var secretsBeforeLogin: [String: Data?]?
 
   init(
     model: AppModel,
@@ -181,7 +185,7 @@ import TianyiDrive
     let previousKind = draft.kind
     let nextKind: ConnectionKind = kind == .webdav ? .webdavHTTPS : kind
     if previousKind != nextKind {
-      model.discardUnsavedSessions(for: draft)
+      model.discardUnsavedSecrets(for: draft)
       draft.params.removeAll()
       password = ""
       shares = []
@@ -202,7 +206,7 @@ import TianyiDrive
     if kind == .tianyiDrive, draft.params["scope"] == nil {
       draft.params["scope"] = "personal"
     }
-    if kind == .androidUSB { autoSelectDevice() }
+    if kind == .androidUSB || kind == .androidWiFi { autoSelectDevice() }
     applyObjectStorageDefaults(for: kind, previousKind: previousKind)
     chosen = true
     error = nil
@@ -211,7 +215,7 @@ import TianyiDrive
 
   // 从“已发现”进入第二步：带上发现时预填的地址、序列号等
   func chooseDiscovered(_ connection: Connection, pairing: String?) {
-    model.discardUnsavedSessions(for: draft)
+    model.discardUnsavedSecrets(for: draft)
     password = ""
     shares = []
     accountSpace = nil
@@ -285,9 +289,24 @@ import TianyiDrive
     case .ricohGR: if let device = model.ricohDevices.first { selectDevice(device.id) }
     case .cameraUSB: if let device = model.cameraUSBDevices.first { selectDevice(device.id) }
     case .androidWiFi where pairingID.isEmpty:
-      pairingID = model.wirelessDevices.first(where: { $0.type == .pairing })?.id ?? ""
+      // 只发现一台等待配对的手机时直接选上，有好几台让用户自己选
+      let devices = model.wirelessDevices.filter { $0.type == .pairing }
+      if devices.count == 1 { pairingID = devices[0].id }
     default: break
     }
+  }
+
+  // 发现的无线设备变了：能选上就选上；配对码已经填完、刚解析出地址时接着配对
+  func wirelessDevicesChanged() {
+    guard draft.kind == .androidWiFi, draft.params["guid"] == nil else { return }
+    // 选中的配对服务没了（手机上重新打开了配对码页面）就不再留着它
+    if !pairingID.isEmpty,
+      !model.wirelessDevices.contains(where: { $0.type == .pairing && $0.id == pairingID })
+    {
+      pairingID = ""
+    }
+    autoSelectDevice()
+    if pairingCode.count == 6, !busy { pairWirelessDevice() }
   }
 
   func pairWirelessDevice() {
@@ -414,6 +433,7 @@ import TianyiDrive
           let hasToken = try await session.hasToken()
           if model.forceLogin || !hasToken {
             stage = L("等待浏览器授权…")
+            try rememberSecretsBeforeLogin()
             let state = UUID().uuidString
             let url = try await session.authorizationURL(state: state)
             guard
@@ -447,6 +467,7 @@ import TianyiDrive
           let hasToken = try await session.hasToken()
           if model.forceLogin || !hasToken {
             stage = L("等待浏览器授权…")
+            try rememberSecretsBeforeLogin()
             let state = UUID().uuidString
             let url = try await session.authorizationURL(state: state)
             guard
@@ -508,6 +529,7 @@ import TianyiDrive
           let account: PikPakAccount
           if model.forceLogin || !hasToken {
             stage = L("正在登录 PikPak…")
+            try rememberSecretsBeforeLogin()
             account = try await session.login(
               username: draft.params["username"] ?? "", password: password)
           } else {
@@ -585,8 +607,32 @@ import TianyiDrive
     }
   }
 
+  // 登录会立刻把新账号写进钥匙串：已保存的位置先记下原来的，没保存就关窗口时写回去
+  func rememberSecretsBeforeLogin() throws {
+    guard secretsBeforeLogin == nil,
+      let saved = model.connections.connections.first(where: { $0.id == draft.id })
+    else { return }
+    secretsBeforeLogin = try model.sessionSecrets(for: saved)
+  }
+
+  // 编辑窗口关闭：没保存时撤回这次登录写进钥匙串的内容。
+  // 先等取消的登录真正结束，否则网络返回后迟到的写入会盖掉撤回
+  @discardableResult func close() -> Task<Void, Never> {
+    let running = [saving, pairingTask, shareTask].compactMap { $0 } + cancelledTasks
+    cancelWork()
+    cancelledTasks = []
+    return Task { [self] in
+      for task in running { await task.value }
+      guard !didSave else { return }
+      if let secretsBeforeLogin { model.restoreSessionSecrets(secretsBeforeLogin, for: draft) }
+      secretsBeforeLogin = nil
+      model.discardUnsavedSecrets(for: draft)
+    }
+  }
+
   func cancelWork() {
     model.discardUnsavedSessions(for: draft)
+    cancelledTasks += [saving, pairingTask, shareTask].compactMap { $0 }
     saving?.cancel()
     pairingTask?.cancel()
     shareTask?.cancel()

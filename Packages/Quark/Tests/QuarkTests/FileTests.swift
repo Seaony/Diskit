@@ -495,3 +495,78 @@ func quarkPendingTaskIsPolledUntilCompleted(status: Int) async throws {
   #expect(QuarkNames.decode("&amp;lt;") == "&lt;")
   #expect(QuarkNames.decode("") == "")
 }
+
+@Test func quarkDuplicateNamesGetFinderStyleNamesAndHitTheRightFile() async throws {
+  let url = try local(Data("new".utf8))
+  defer { try? FileManager.default.removeItem(at: url) }
+  let (provider, http) = try setup([
+    list([file("f2", "a.txt", size: 100), file("f1", "a.txt"), file("d", "a", folder: true)]),
+    Reply("/file/download", data: [["download_url": "https://download.quark.cn/second"]]),
+    Reply("/second", status: 206, bytes: Data([1, 2]), headers: ["Content-Range": "bytes 0-1/100"]),
+    list([file("d", "a", folder: true), file("f1", "a.txt"), file("f2", "a.txt", size: 100)]),
+    Reply("/file/delete"),
+  ])
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(Set(items.map(\.path.value)) == ["/a.txt", "/a (2).txt", "/a"])
+  #expect(try await provider.stat(RemotePath("/a (2).txt")).size == 100)
+  var bytes = Data()
+  for try await chunk in try await provider.read(RemotePath("/a (2).txt"), range: 0..<2) {
+    bytes.append(chunk)
+  }
+  #expect(bytes == Data([1, 2]))
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.write(RemotePath("/a (2).txt"), from: url)
+  }
+  // 上传前重新列了目录，顺序变了对应关系也不变
+  try await provider.remove(RemotePath("/a (2).txt"), recursive: false)
+  let requests = await http.files()
+  let download = try #require(requests.first { $0.url!.path.hasSuffix("/file/download") })
+  #expect(try body(download)["fids"] as? [String] == ["f2"])
+  #expect(try body(try #require(requests.last))["filelist"] as? [String] == ["f2"])
+  #expect(await http.replies.isEmpty)
+}
+
+@Test func quarkDuplicateMovedOutKeepsItsShownName() async throws {
+  let (provider, http) = try setup([
+    list([file("f1", "a.txt"), file("f2", "a.txt"), file("dest", "dir", folder: true)]),
+    list([]), Reply("/file/move"), Reply("/file/rename"),
+  ])
+  try await provider.connect()
+  try await provider.move(RemotePath("/a (2).txt"), to: RemotePath("/dir/a (2).txt"))
+  let requests = await http.files()
+  #expect(requests.map { $0.url!.lastPathComponent } == ["sort", "sort", "move", "rename"])
+  #expect(try body(requests[2])["filelist"] as? [String] == ["f2"])
+  #expect(try body(requests[3])["fid"] as? String == "f2")
+  #expect(try body(requests[3])["file_name"] as? String == "a (2).txt")
+}
+
+@Test func quarkRenamingDuplicateToItsSiblingNameConflicts() async throws {
+  let (provider, http) = try setup([
+    list([file("f1", "a.txt"), file("f2", "a.txt")]),
+    list([file("f1", "a.txt"), file("f2", "a.txt")]),
+  ])
+  try await provider.connect()
+  await #expect(throws: RemoteError.posix(EEXIST)) {
+    try await provider.move(RemotePath("/a (2).txt"), to: RemotePath("/a.txt"))
+  }
+  #expect(await http.files().allSatisfy { $0.httpMethod == "GET" })
+}
+
+// Finder 多选删除同名文件：删掉第一个后剩下的不重新编号，第二次删的仍是选中的那个
+@Test func quarkDeletingDuplicatesOneByOneHitsTheSelectedFiles() async throws {
+  let (provider, http) = try setup([
+    list([file("f1", "a.txt"), file("f2", "a.txt"), file("f3", "a.txt")]),
+    Reply("/file/delete"),
+    list([file("f2", "a.txt"), file("f3", "a.txt")]),
+    Reply("/file/delete"),
+  ])
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(Set(items.map(\.path.value)) == ["/a.txt", "/a (2).txt", "/a (3).txt"])
+  try await provider.remove(RemotePath("/a.txt"), recursive: false)
+  try await provider.remove(RemotePath("/a (2).txt"), recursive: false)
+  let deletions = await http.files().filter { $0.url!.path.hasSuffix("/file/delete") }
+  #expect(try deletions.map { try body($0)["filelist"] as? [String] } == [["f1"], ["f2"]])
+  #expect(await http.replies.isEmpty)
+}

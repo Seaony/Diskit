@@ -294,7 +294,7 @@ private func conflictingExtensionError() -> NSError {
   #expect(fixture.unmounted.map(\.path) == ["/Volumes/Late"])
 }
 
-@MainActor @Test func cacheMaintenanceStopsMountsUntilEndAndReopensGateAfterFailure() async throws {
+@MainActor @Test func cacheMaintenanceHoldsMountsUntilEndAndReopensGateAfterFailure() async throws {
   let fixture = FileSystemMountFixture()
   let connection = mountConnection()
   fixture.entries = [try mountEntry(connection)]
@@ -304,10 +304,12 @@ private func conflictingExtensionError() -> NSError {
   #expect(fixture.unmounted.map(\.path) == ["/Volumes/Fixture"])
   fixture.entries = []
   #expect(!service.hasActiveVolumesOrMounts)
-  await #expect(throws: ConnectionError.busy) { try await service.mount(connection, password: "") }
+  let waiting = Task { try await service.mount(connection, password: "") }
+  try await Task.sleep(for: .milliseconds(300))
   #expect(fixture.calls.isEmpty)
   service.endCacheMaintenance()
-  _ = try await service.mount(connection, password: "")
+  _ = try await waiting.value
+  #expect(fixture.calls == ["client"])
   fixture.entries = [try mountEntry(connection)]
   fixture.unmountFailure = POSIXError(.EBUSY)
   await #expect(throws: POSIXError.self) { try await service.beginCacheMaintenance() }
@@ -316,7 +318,8 @@ private func conflictingExtensionError() -> NSError {
   #expect(fixture.calls == ["client", "client"])
 }
 
-@MainActor @Test func cacheMaintenanceAlsoStopsMountsWaitingForExtensionStatus() async throws {
+// 启动时自动挂载正在查扩展状态，清理缓存插了进来：挂载等清理结束后照常完成，不报“正在处理”
+@MainActor @Test func cacheMaintenanceDelaysMountsWaitingForExtensionStatus() async throws {
   let fixture = FileSystemMountFixture()
   let checking = TestEvent()
   var pendingStatus: FileSystemCompletion<Bool?>?
@@ -330,7 +333,21 @@ private func conflictingExtensionError() -> NSError {
   try await checking.wait()
   try await service.beginCacheMaintenance()
   pendingStatus?(.success(true))
-  await #expect(throws: ConnectionError.busy) { try await mount.value }
+  try await Task.sleep(for: .milliseconds(300))
+  #expect(fixture.calls.isEmpty)
+  service.endCacheMaintenance()
+  _ = try await mount.value
+  #expect(fixture.calls == ["client"])
+}
+
+@MainActor @Test func mountWaitingForCacheMaintenanceCanBeCancelled() async throws {
+  let fixture = FileSystemMountFixture()
+  let service = FileSystemMountService(location: fixture.location, operations: fixture.operations())
+  try await service.beginCacheMaintenance()
+  let mount = Task { try await service.mount(mountConnection(), password: "") }
+  try await Task.sleep(for: .milliseconds(150))
+  mount.cancel()
+  await #expect(throws: CancellationError.self) { try await mount.value }
   #expect(fixture.calls.isEmpty)
   service.endCacheMaintenance()
 }

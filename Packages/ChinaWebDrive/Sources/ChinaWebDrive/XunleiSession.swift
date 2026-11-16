@@ -185,11 +185,14 @@ public actor XunleiSession {
     if value.contains("space") || value.contains("not_enough") {
       return .posix(ENOSPC)
     }
-    if value.contains("exist") || value.contains("conflict") {
-      return .posix(EEXIST)
-    }
-    if value.contains("not_found") || value.contains("not found") {
+    // 先认「不存在」：file_not_exist 里也含 exist，后判断会被当成已存在
+    if value.contains("not_found") || value.contains("not found") || value.contains("not_exist")
+      || value.contains("not exist")
+    {
       return .posix(ENOENT)
+    }
+    if value.contains("exist") || value.contains("conflict") || value.contains("duplicate") {
+      return .posix(EEXIST)
     }
     if value.contains("too_many") || value.contains("too many") {
       return .rateLimited

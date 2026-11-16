@@ -283,6 +283,27 @@ func oauthPermissionFailurePreservesLoginWithoutInvalidation(_ stream: Bool) asy
   #expect(account.total == 9_000_000_000 && account.used == 3_456_789_012)
 }
 
+@Test func oauthAccountOverQuotaStillConnects() async throws {
+  let key = "account.over"
+  let secrets = OAuthSecrets()
+  try oauthStore(secrets, key: key)
+  let transport = OAuthHTTP { request in
+    if request.url?.path == "/adrive/v1.0/user/getDriveInfo" {
+      return HTTPResponse(
+        status: 200,
+        body: Data(#"{"default_drive_id":"drive","user_id":"user","name":"昵称"}"#.utf8))
+    }
+    // 会员过期后已用空间会超过总空间
+    return HTTPResponse(
+      status: 200,
+      body: Data(#"{"personal_space_info":{"total_size":100,"used_size":250}}"#.utf8))
+  }
+  let session = AliyunSession(
+    secretKey: key, secrets: secrets, configuration: oauthConfiguration, transport: transport)
+  let account = try await session.account()
+  #expect(account.total == 100 && account.used == 250)
+}
+
 private final class OAuthBatchGate: Sendable {
   private let state = Mutex((entered: 0, queued: 0))
   private let release = TestEvent()

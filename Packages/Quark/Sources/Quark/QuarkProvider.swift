@@ -3,6 +3,8 @@ import Foundation
 import UniformTypeIdentifiers
 
 public actor QuarkProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: QuarkSession
@@ -64,9 +66,9 @@ public actor QuarkProvider: RemoteFileProvider {
     }
     let folder = try await resolve(parent)
     guard !folder.file else { throw RemoteError.posix(ENOTDIR) }
-    let matches = try await children(parent, fid: folder.fid).filter { $0.name == basename(path) }
-    guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-    guard let file = matches.first else { throw RemoteError.posix(ENOENT) }
+    guard let file = try await children(parent, fid: folder.fid).first(where: {
+      $0.name == basename(path)
+    }) else { throw RemoteError.posix(ENOENT) }
     return try file.item(at: path)
   }
   public func read(_ path: RemotePath, range: Range<Int64>?) async throws -> AsyncThrowingStream<
@@ -231,11 +233,10 @@ public actor QuarkProvider: RemoteFileProvider {
     let destination = parent(of: path)
     let folder = try await resolve(destination)
     guard !folder.file else { throw RemoteError.posix(ENOTDIR) }
-    let existing = try await children(destination, fid: folder.fid).filter {
-      $0.name == basename(path)
+    let existing = try await children(destination, fid: folder.fid)
+    guard !existing.contains(where: { $0.name == basename(path) }) else {
+      throw RemoteError.posix(EEXIST)
     }
-    guard existing.count <= 1 else { throw RemoteError.posix(EEXIST) }
-    guard existing.isEmpty else { throw RemoteError.posix(EEXIST) }
     invalidate(destination)
     defer { invalidate(destination) }
     let _: QuarkStatus = try await rpc(
@@ -277,8 +278,9 @@ public actor QuarkProvider: RemoteFileProvider {
       invalidate(destination)
     }
     if source != destination {
-      if basename(from) != basename(to),
-        destinationFiles.contains(where: { $0.name == basename(from) && $0.fid != file.fid })
+      // 移动时网盘上用的是真实名字，目标目录里有同名的就先改个临时名再搬
+      if file.rawName != basename(to),
+        destinationFiles.contains(where: { $0.rawName == file.rawName && $0.fid != file.fid })
       {
         let temporaryName = ".diskit-move-" + UUID().uuidString
         try await rename(file.fid, to: temporaryName)
@@ -290,7 +292,7 @@ public actor QuarkProvider: RemoteFileProvider {
         } catch {
           let originalError = error
           let restoreParent = moved
-          let originalName = basename(from)
+          let originalName = file.rawName
           let recovery = Task.detached {
             if restoreParent { try await self.moveFile(file.fid, to: originalParent.fid) }
             try await self.rename(file.fid, to: originalName)
@@ -305,7 +307,7 @@ public actor QuarkProvider: RemoteFileProvider {
       }
       try await moveFile(file.fid, to: folder.fid)
     }
-    if basename(from) != basename(to) {
+    if file.rawName != basename(to) {
       try await rename(file.fid, to: basename(to))
     }
   }
@@ -360,9 +362,8 @@ public actor QuarkProvider: RemoteFileProvider {
         current = next
         continue
       }
-      let matches = try await children(current, fid: folder.fid).filter { $0.name == name }
-      guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-      guard let file = matches.first else { throw RemoteError.posix(ENOENT) }
+      guard let file = try await children(current, fid: folder.fid).first(where: { $0.name == name })
+      else { throw RemoteError.posix(ENOENT) }
       folder = file
       current = next
     }
@@ -399,6 +400,9 @@ public actor QuarkProvider: RemoteFileProvider {
       output += result.data.list
       page += 1
     } while output.count < total
+    // 翻页期间目录有增删时，同一个文件可能出现在相邻两页，去掉后才不会被当成重名
+    var seen = Set<String>()
+    output = output.filter { seen.insert($0.fid).inserted }
     let prefix = path.value == "/" ? "/" : path.value + "/"
     let currentIDs = Set(output.map(\.fid))
     for (key, file) in paths where key.hasPrefix(prefix) && !currentIDs.contains(file.fid) {
@@ -406,11 +410,13 @@ public actor QuarkProvider: RemoteFileProvider {
     }
     clearCached(path)
     listedAt[path.value] = Date()
-    let grouped = Dictionary(grouping: output, by: \.name)
-    for file in output {
-      let child = try path.appending(file.name)
-      _ = try file.item(at: child)
-      if grouped[file.name]?.count == 1 { paths[child.value] = file }
+    let names = duplicateNames.assign(
+      output.map { .init(id: $0.fid, name: $0.rawName, isDirectory: !$0.file) }, in: path.value)
+    for index in output.indices {
+      output[index].displayName = names[output[index].fid]
+      let child = try path.appending(output[index].name)
+      _ = try output[index].item(at: child)
+      paths[child.value] = output[index]
     }
     return output
   }

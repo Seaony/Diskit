@@ -218,3 +218,20 @@ private struct EditorExpiredLogin: LoginRequiredFailure {
   #expect(!editor.didSave)
   #expect(!editor.model.forceLogin)
 }
+
+// 选“无线调试”后只发现一台等待配对的手机时直接选上，输完六位配对码就会配对
+@MainActor @Test func editorWiFiSelectsTheOnlyPairingDeviceAndPairsWhenItAppears() async throws {
+  let editor = workflowEditor()
+  editor.choose(.androidUSB)
+  editor.choose(.androidWiFi)
+  let device = try #require(editor.model.wirelessDevices.first { $0.type == .pairing })
+  #expect(editor.pairingID == device.id)
+  // 之前选的配对服务已经不在了：换成现在唯一的那台
+  editor.pairingID = "gone"
+  editor.pairingCode = "123456"
+  editor.wirelessDevicesChanged()
+  #expect(editor.pairingID == device.id)
+  let task = try #require(editor.pairingTask)
+  await task.value
+  #expect(editor.draft.params["guid"] == "adb-demo-ABC123")
+}

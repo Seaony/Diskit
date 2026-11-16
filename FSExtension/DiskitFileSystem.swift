@@ -52,7 +52,10 @@ final class DiskitFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations, @u
           provider: provider, connectionID: connection.id, kind: connection.kind,
           cacheRoot: location.cacheDirectory,
           replacesExisting: connection.kind == .androidUSB || connection.kind == .androidWiFi
-            || connection.kind == .aliyunDrive)
+            || connection.kind == .aliyunDrive,
+          pendingUploadsFile: PendingUploads.file(
+            dataDirectory: location.dataDirectory, connectionID: connection.id),
+          uploadTarget: connection.uploadTarget)
         backend = created
         let space = try await created.connect()
         // 有些 Provider 的 connect 只检查参数，读根目录后才确认可以实际访问。
@@ -62,6 +65,8 @@ final class DiskitFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations, @u
         containerStatus = .ready
         logger.info("load ready connection=\(connection.id.uuidString, privacy: .public)")
         reply.body(volume, nil)
+        // 上次没传上去的内容，挂好后再传一次
+        await created.uploadPendingWrites()
       } catch {
         FileSystemLoginEvent.postIfNeeded(error, connection: connection)
         if let backend { await backend.disconnect() }

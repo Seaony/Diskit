@@ -27,7 +27,10 @@ extension RemoteVolumeBackend {
     let file = try temporaryWriteFile()
     do {
       let size = try await download(path, to: file)
-      guard size == item.size else { throw RemoteError.protocolError }
+      guard size == item.size else {
+        await invalidate([path])
+        throw Self.sizeChanged
+      }
       staged[path] = StagedFile(url: file, item: item, dirty: false, existedRemotely: true)
     } catch {
       try? FileManager.default.removeItem(at: file)
@@ -45,6 +48,7 @@ extension RemoteVolumeBackend {
       }
       try backend.requireConnection()
       try await backend.prepareStage(path)
+      try backend.recordJournal(path, .writing)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
       let handle = try FileHandle(forWritingTo: stage.url)
       defer { try? handle.close() }
@@ -68,6 +72,7 @@ extension RemoteVolumeBackend {
       }
       try backend.requireConnection()
       try await backend.prepareStage(path)
+      try backend.recordJournal(path, .writing)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
       let handle = try FileHandle(forWritingTo: stage.url)
       defer { try? handle.close() }
@@ -88,6 +93,7 @@ extension RemoteVolumeBackend {
       }
       try backend.requireConnection()
       try await backend.prepareStage(path)
+      try backend.recordJournal(path, .writing)
       guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
       try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: stage.url.path)
       stage.item.modified = date
@@ -105,7 +111,12 @@ extension RemoteVolumeBackend {
     try await perform("flush-all") { backend in
       backend.attributesByPath.removeAll()
       try backend.overlay.flush(RemotePath("/"))
-      for path in Array(backend.staged.keys) { try await backend.flushUnlocked(path) }
+      // 一个失败也要把其余的都试一遍，每个都记成“已写完”，下次挂载才会接着传
+      var failure: Error?
+      for path in Array(backend.staged.keys) {
+        do { try await backend.flushUnlocked(path) } catch { failure = failure ?? error }
+      }
+      if let failure { throw failure }
     }
   }
 
@@ -115,7 +126,10 @@ extension RemoteVolumeBackend {
       try overlay.flush(path)
       return
     }
-    guard var stage = staged[path], stage.dirty else { return }
+    guard staged[path]?.dirty == true else { return }
+    // 走到上传说明写入方已经写完；之后传失败了，下次挂载也能按这份记录接着传
+    try recordJournal(path, .ready)
+    guard var stage = staged[path] else { return }
     try requireConnection()
     guard capabilities.canWrite else { throw RemoteError.posix(EROFS) }
     let exists = try await remoteItem(path) != nil
@@ -136,11 +150,18 @@ extension RemoteVolumeBackend {
         do {
           try await provider.write(temporary, from: uploadFile)
           let uploaded = try await provider.stat(temporary)
+          // 传上去的大小不对是这次上传坏了，不是断线；原文件还在，本地内容也留着
           guard !uploaded.isDirectory, uploaded.size == stage.item.size else {
-            throw RemoteError.protocolError
+            throw RemoteError.posix(EIO)
           }
           try await provider.remove(path, recursive: false)
-          try await provider.move(temporary, to: path)
+          do { try await provider.move(temporary, to: path) } catch {
+            // 原文件已经删了：改名再试一次，还不行就让远端暂存露出来，别让文件凭空消失
+            do { try await provider.move(temporary, to: path) } catch {
+              hiddenUploads.remove(temporary)
+              throw error
+            }
+          }
           hiddenUploads.remove(temporary)
         } catch {
           logger.error(
@@ -153,6 +174,10 @@ extension RemoteVolumeBackend {
       }
       stage.dirty = false
       stage.existedRemotely = true
+      if stage.journal != nil {
+        try? FileManager.default.removeItem(at: WriteJournal.url(for: stage.url))
+        stage.journal = nil
+      }
       staged[path] = stage
       await invalidate([path])
       logger.info(
@@ -171,12 +196,7 @@ extension RemoteVolumeBackend {
       backend.openedPaths.remove(path)
       backend.attributesByPath.removeValue(forKey: path)
       try await backend.flushUnlocked(path)
-      if let stage = backend.staged[path], !stage.retainedForRecovery {
-        backend.staged.removeValue(forKey: path)
-        do { try FileManager.default.removeItem(at: stage.url) } catch {
-          backend.logger.error("上传已成功，本地暂存未清理：\(stage.url.path, privacy: .public)")
-        }
-      }
+      if backend.staged[path]?.retainedForRecovery == false { backend.discardStage(path) }
       backend.wholeFiles.removeValue(forKey: path)
     }
   }
@@ -193,9 +213,7 @@ extension RemoteVolumeBackend {
         try await backend.provider.remove(path, recursive: recursive)
       }
       for key in Array(backend.staged.keys) where Self.contains(path, key) {
-        if let stage = backend.staged.removeValue(forKey: key) {
-          try? FileManager.default.removeItem(at: stage.url)
-        }
+        backend.discardStage(key)
       }
       backend.openedPaths = backend.openedPaths.filter { !Self.contains(path, $0) }
       await backend.invalidate([path])
@@ -223,7 +241,13 @@ extension RemoteVolumeBackend {
       }
       if from == to { return }
       let source = try await backend.statUnlocked(from)
-      let remoteTarget = try await backend.remoteItem(to)
+      var remoteTarget = try await backend.remoteItem(to)
+      // 不分大小写的网盘（OneDrive、Dropbox）上 photo.JPG → photo.jpg，查目标会查到源文件自己
+      if let found = remoteTarget, found.path == from,
+        from.value.caseInsensitiveCompare(to.value) == .orderedSame
+      {
+        remoteTarget = nil
+      }
       let target = backend.staged[to]?.item ?? remoteTarget
       if let target {
         guard replacing else { throw RemoteError.posix(EEXIST) }
@@ -240,8 +264,10 @@ extension RemoteVolumeBackend {
         try await backend.flushUnlocked(path)
       }
       let confirmed = try await backend.provider.stat(from)
-      guard confirmed.isDirectory == source.isDirectory, confirmed.size == source.size else {
-        throw RemoteError.protocolError
+      guard confirmed.isDirectory == source.isDirectory else { throw RemoteError.protocolError }
+      guard confirmed.size == source.size else {
+        await backend.invalidate([from])
+        throw Self.sizeChanged
       }
       do {
         if remoteTarget != nil { try await backend.provider.remove(to, recursive: false) }
@@ -255,9 +281,7 @@ extension RemoteVolumeBackend {
         await backend.invalidate([from, to])
         throw error
       }
-      if let replaced = backend.staged.removeValue(forKey: to) {
-        try? FileManager.default.removeItem(at: replaced.url)
-      }
+      backend.discardStage(to)
       for path in Array(backend.staged.keys) where Self.contains(from, path) {
         guard var stage = backend.staged.removeValue(forKey: path) else { continue }
         let destination = try RemotePath(to.value + path.value.dropFirst(from.value.count))
@@ -280,6 +304,17 @@ extension RemoteVolumeBackend {
           "远端移动已完成，本地元数据未迁移：\(from.value, privacy: .public) → \(to.value, privacy: .public)")
         throw error
       }
+    }
+  }
+
+  // 丢掉暂存：本地内容和旁边的记录一起删
+  func discardStage(_ path: RemotePath) {
+    guard let stage = staged.removeValue(forKey: path) else { return }
+    do { try FileManager.default.removeItem(at: stage.url) } catch {
+      logger.error("本地暂存未清理：\(stage.url.path, privacy: .public)")
+    }
+    if stage.journal != nil {
+      try? FileManager.default.removeItem(at: WriteJournal.url(for: stage.url))
     }
   }
 }

@@ -170,7 +170,7 @@ private func created(_ id: String = "new", url: String = "https://files.example/
   let record = file("video", "movie", size: 1024)
   let expiry = "2099-01-01T00:00:00Z"
   let (provider, http) = try setup([
-    list([record]), FileReply("get", json: record),
+    list([record]),
     FileReply(
       "getDownloadUrl",
       json: ["url": "https://files.example/expired", "expiration": expiry, "method": "GET"]),
@@ -205,7 +205,7 @@ private func created(_ id: String = "new", url: String = "https://files.example/
   ] {
     let record = file("video", "movie", size: 1024)
     let (provider, _) = try setup([
-      list([record]), FileReply("get", json: record),
+      list([record]),
       FileReply(
         "getDownloadUrl",
         json: [
@@ -480,7 +480,7 @@ private func raceProvider(
 @Test func aliyunRepeatedRangeReadReusesUnexpiredDownloadLink() async throws {
   let record = file("video", "movie", size: 1024)
   let (provider, http) = try setup([
-    list([record]), FileReply("get", json: record),
+    list([record]),
     FileReply(
       "getDownloadUrl",
       json: [
@@ -489,7 +489,6 @@ private func raceProvider(
       ]),
     FileReply(
       "/current", status: 206, bytes: Data([1, 2]), headers: ["Content-Range": "bytes 0-1/1024"]),
-    FileReply("get", json: record),
     FileReply(
       "/current", status: 206, bytes: Data([3, 4]), headers: ["Content-Range": "bytes 2-3/1024"]),
   ])
@@ -504,6 +503,37 @@ private func raceProvider(
   }
   let requests = await http.fileRequests()
   #expect(requests.filter { $0.url?.lastPathComponent == "getDownloadUrl" }.count == 1)
+  // 读文件直接用列目录时记下的条目，不再每次查一遍文件信息
+  #expect(!requests.contains { $0.url?.lastPathComponent == "get" })
+}
+
+@Test func aliyunDuplicateNamesGetFinderNamesAndTheirOwnID() async throws {
+  let url = try local(Data("new".utf8))
+  defer { try? FileManager.default.removeItem(at: url) }
+  let duplicates = [file("b", "same.txt"), file("a", "same.txt")]
+  let (provider, http) = try setup([
+    list(duplicates), FileReply("get", json: file("b", "same.txt")),
+    FileReply("recyclebin/trash"), list(duplicates), list(duplicates),
+    FileReply("update", json: file("b", "other.txt")),
+  ])
+  try await provider.connect()
+  let items = try await provider.list(RemotePath("/"))
+  #expect(items.map(\.path.value) == ["/same (2).txt", "/same.txt"])
+  #expect(items.map(\.name) == ["same (2).txt", "same.txt"])
+  #expect(try await provider.stat(RemotePath("/same (2).txt")).path.value == "/same (2).txt")
+  try await provider.remove(RemotePath("/same (2).txt"), recursive: false)
+  // 写入和编号名同名的文件按已存在处理，不上传也不删除
+  await #expect(throws: AliyunFileError.duplicateNames) {
+    try await provider.write(RemotePath("/same (2).txt"), from: url)
+  }
+  try await provider.move(RemotePath("/same (2).txt"), to: RemotePath("/other.txt"))
+  let requests = await http.fileRequests()
+  #expect(try body(requests[1])["file_id"] as? String == "b")
+  #expect(try body(requests[2])["file_id"] as? String == "b")
+  #expect(!requests.contains { $0.url!.path.hasSuffix("/create") })
+  #expect(try body(requests[5])["file_id"] as? String == "b")
+  #expect(try body(requests[5])["name"] as? String == "other.txt")
+  #expect(await http.replies.isEmpty)
 }
 
 private actor SlowAliyunTaskHTTP: HTTPTransport {

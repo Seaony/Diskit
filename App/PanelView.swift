@@ -28,6 +28,7 @@ struct PanelView: View {
   @Environment(\.openSettings) private var showSettings
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @State private var panelVisible = false
+  @State private var stateViewer = UUID()
   @State private var draggedID: UUID?
   @State private var dragSource = PanelDraggingSource()
   @State private var dropTargetID: UUID?
@@ -144,6 +145,9 @@ struct PanelView: View {
     .background(DiskitTheme.background)
     .buttonStyle(FlatButtonStyle())
     .onDisappear { panelVisible = false }
+    .onChange(of: panelVisible) { _, visible in
+      model.setFileSystemStateVisible(visible, viewer: stateViewer)
+    }
     .onChange(of: draggedID) { _, id in
       if id == nil { dropTargetID = nil; endDropTargeted = false }
     }
@@ -153,15 +157,13 @@ struct PanelView: View {
     .background(PanelKeyboardAnchor(handle: handleInitialKey))
     .onAppear {
       model.start()
-      selection.select(model.connections.connections.first?.id, reveal: false)
+      // 打开时不选中任何位置，方向键或点击后才有选中
+      selection.select(nil, reveal: false)
     }
     .onChange(of: focusedConnectionID) { _, id in
       if let id, id != selection.id { selection.select(id, reveal: false) }
     }
-    .onChange(of: model.connections.connections.map(\.id)) { _, ids in
-      if let id = selection.id, ids.contains(id) { return }
-      selection.select(ids.first, reveal: false)
-    }
+    .onChange(of: model.connections.connections.map(\.id)) { _, ids in selection.keep(in: ids) }
     .onKeyPress(.upArrow) {
       moveSelection(-columnCount)
       return .handled
@@ -241,12 +243,12 @@ struct PanelView: View {
         layout: isGrid ? .grid : .list,
         showsDivider: index > 0,
         dragSource: dragSource,
-        selected: selection.id == connection.id && focusedConnectionID != nil,
+        selected: selection.id == connection.id,
         rowFocus: $focusedConnectionID,
         canMoveUp: index > 0,
         canMoveDown: index + 1 < model.connections.connections.count,
         onSelect: { selection.select(connection.id, reveal: false) },
-        onPrimary: { primaryAction(connection) },
+        onPrimary: { perform($0, on: connection) },
         onActivate: { activate(connection) },
         onEdit: { edit(connection) },
         onReauthenticate: { edit(connection, reauthenticate: true) },
@@ -409,39 +411,37 @@ struct PanelView: View {
   }
 
   private func moveSelection(_ offset: Int) {
-    let connections = model.connections.connections
-    guard !connections.isEmpty else { return }
-    let current =
-      selection.id.flatMap { id in
-        connections.firstIndex { $0.id == id }
-      } ?? 0
-    // 上下换行时没有目标行就停在原地，不横跳到隔壁格子
-    if abs(offset) > 1 && !connections.indices.contains(current + offset) { return }
-    let next = min(max(current + offset, 0), connections.count - 1)
-    selection.select(connections[next].id, reveal: true)
-    focusedConnectionID = connections[next].id
+    selection.move(offset, in: model.connections.connections.map(\.id))
+    if let id = selection.id { focusedConnectionID = id }
   }
 
-  // 点卡片或回车：已挂载就在 Finder 打开，进行中或不可用时不动，其余执行主操作
+  // 点卡片或回车：已挂载就在 Finder 打开，进行中或不可用时不动，登录过期去重新登录，其余连接
   private func activate(_ connection: Connection) {
-    switch model.connections.states[connection.id] ?? .disconnected {
+    switch state(of: connection) {
     case .mounted(let mounted): if !model.options.isDemo { NSWorkspace.shared.open(mounted.url) }
     case .connecting, .awaitingAuthorization, .ejecting, .unavailable: break
-    default: primaryAction(connection)
+    case .needsLogin: edit(connection, reauthenticate: true)
+    default: perform(.connect, on: connection)
     }
   }
 
-  private func primaryAction(_ connection: Connection) {
-    let state = model.connections.states[connection.id] ?? .disconnected
-    if state == .connecting || state == .awaitingAuthorization {
+  private func state(of connection: Connection) -> ConnectionState {
+    model.connections.states[connection.id] ?? .disconnected
+  }
+
+  private func perform(_ action: ConnectionCardAction, on connection: Connection) {
+    guard action.allowed(in: state(of: connection)) else { return }
+    switch action {
+    case .cancel:
       model.operations.cancel(connectionID: connection.id)
       model.connections.cancelIdleOperation(connection)
-    } else if state == .unavailable || state == .ejecting {
-      return
-    } else if state == .needsLogin {
-      edit(connection, reauthenticate: true)
-    } else {
-      model.operations.start(connectionID: connection.id) { await model.toggleConnection(connection) }
+    case .eject:
+      model.operations.start(connectionID: connection.id) { await model.connections.eject(connection) }
+    case .connect:
+      model.operations.start(connectionID: connection.id) {
+        guard action.allowed(in: state(of: connection)) else { return }
+        await model.toggleConnection(connection)
+      }
     }
   }
 

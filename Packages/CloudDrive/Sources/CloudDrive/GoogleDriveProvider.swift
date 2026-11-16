@@ -2,14 +2,18 @@ import Core
 import Foundation
 
 public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
   private let session: OAuthSession
+  // 路径用 Finder 里显示的名字（同名文件编了号），对应到 Google 的文件 ID
   private var ids: [String: String] = ["/": "root"]
   private var mimeTypes: [String: String] = [:]
+  // 文件 ID 对应网盘上的真实名字
+  private var names: [String: String] = [:]
   private var connected = false
   private let chunkSize = 8 * 1024 * 1024
-  private static let identityPrefix = "~diskit~"
   private var cacheRevision: UInt64 = 0
 
   private var progress: (@Sendable (Int64, Int64) -> Void)?
@@ -32,6 +36,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     cacheRevision &+= 1
     ids = ["/": "root"]
     mimeTypes = [:]
+    names = [:]
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -57,10 +62,14 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   public func list(_ path: RemotePath) async throws -> [RemoteItem] {
     try ensureConnected()
+    return try await entries(path).map(\.item)
+  }
+
+  private func entries(_ path: RemotePath) async throws -> [(item: RemoteItem, file: GoogleFile)] {
     let parentID = try await resolve(path)
     let revision = cacheRevision
     var pageToken: String?
-    var items: [GoogleFile] = []
+    var files: [GoogleFile] = []
     repeat {
       var query = [
         URLQueryItem(name: "q", value: "'\(escaped(parentID))' in parents and trashed = false"),
@@ -73,34 +82,38 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       let response = try await session.authorized(URLRequest(url: try url("/files", query: query)))
       try check(response)
       let page = try JSONDecoder().decode(GooglePage.self, from: response.body)
-      items.append(contentsOf: page.files)
+      files.append(contentsOf: page.files)
       pageToken = page.nextPageToken
     } while pageToken != nil
-    // 重名和不能作为路径段的名称按服务端 ID 区分，显示名称保持原样。
-    let counts = Dictionary(grouping: items, by: \.name).mapValues(\.count)
-    let result = try items.map { file in
-      guard !file.id.isEmpty else { throw RemoteError.protocolError }
-      let needsIdentity =
-        counts[file.name, default: 0] > 1 || file.name.contains("/") || file.name.contains("\0")
-        || file.name == "." || file.name == ".." || file.name.isEmpty
-        || file.name.hasPrefix(Self.identityPrefix)
-      let component = needsIdentity ? Self.identityComponent(file.id) : file.name
-      return try file.item(parent: path, component: component)
+    let display = duplicateNames.assign(
+      try files.map { file in
+        guard !file.id.isEmpty else { throw RemoteError.protocolError }
+        return DuplicateNames.Entry(
+          id: file.id, name: Self.segment(file.name), isDirectory: file.isDirectory)
+      }, in: path.value)
+    let result = try files.map { file in
+      guard let name = display[file.id] else { throw RemoteError.protocolError }
+      return (item: try file.item(at: path.appending(name)), file: file)
     }
     if cacheRevision == revision {
       let prefix = path.value == "/" ? "/" : path.value + "/"
       ids = ids.filter { !$0.key.hasPrefix(prefix) }
       mimeTypes = mimeTypes.filter { !$0.key.hasPrefix(prefix) }
       ids[path.value] = parentID
-      for (file, item) in zip(items, result) {
+      for (item, file) in result {
         ids[item.path.value] = file.id
         mimeTypes[item.path.value] = file.mimeType
-        let identityPath = try path.appending(Self.identityComponent(file.id))
-        ids[identityPath.value] = file.id
-        mimeTypes[identityPath.value] = file.mimeType
+        names[file.id] = file.name
       }
     }
     return result
+  }
+
+  // 路径段里不能有 /，按 macOS 惯例换成 :（Finder 会把 : 显示成 /）；空名和 . .. 前面加 _
+  static func segment(_ name: String) -> String {
+    let value = name.replacingOccurrences(of: "/", with: ":")
+      .replacingOccurrences(of: "\0", with: "")
+    return ["", ".", ".."].contains(value) ? "_" + value : value
   }
 
   public func stat(_ path: RemotePath) async throws -> RemoteItem {
@@ -118,8 +131,11 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       URLRequest(url: try url("/files/\(id)", query: query)))
     try check(response)
     let file = try JSONDecoder().decode(GoogleFile.self, from: response.body)
-    if cacheRevision == revision { mimeTypes[path.value] = file.mimeType }
-    return try file.item(parent: parent(path), component: basename(path))
+    if cacheRevision == revision {
+      mimeTypes[path.value] = file.mimeType
+      names[file.id] = file.name
+    }
+    return file.item(at: path)
   }
 
   public func read(
@@ -231,11 +247,11 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
     }
-    let targetName =
-      basename(from).hasPrefix(Self.identityPrefix) && basename(from) == basename(to)
-      ? try await stat(from).name : basename(to)
-    try await ensureNameMissing(to, name: targetName)
     let id = try await resolve(from)
+    // 显示名是编号或替换过字符的名字时，只要目标显示名不变就保留网盘上的真实名字
+    let currentName = names[id] ?? basename(from)
+    let targetName = Self.segment(currentName) == basename(to) ? currentName : basename(to)
+    try await ensureNameMissing(to, name: targetName)
     let oldParent = try await resolve(parent(from))
     let newParent = try await resolve(parent(to))
     var query = [URLQueryItem(name: "fields", value: "id,name,parents")]
@@ -377,46 +393,10 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   private func resolve(_ path: RemotePath) async throws -> String {
     if let id = ids[path.value] { return id }
-    let revision = cacheRevision
-    var currentPath = try RemotePath("/")
-    var currentID = "root"
-    for component in path.value.split(separator: "/") {
-      let next = try currentPath.appending(String(component))
-      if let cached = ids[next.value] {
-        currentPath = next
-        currentID = cached
-        continue
-      }
-      if component.hasPrefix(Self.identityPrefix) {
-        _ = try await list(currentPath)
-        if let listed = ids[next.value] {
-          currentID = listed
-          currentPath = next
-          continue
-        }
-      }
-      let query = [
-        URLQueryItem(
-          name: "q",
-          value:
-            "'\(escaped(currentID))' in parents and name = '\(escaped(String(component)))' and trashed = false"
-        ),
-        URLQueryItem(name: "fields", value: "files(id,name,mimeType)"),
-        URLQueryItem(name: "pageSize", value: "2"),
-      ]
-      let response = try await session.authorized(URLRequest(url: try url("/files", query: query)))
-      try check(response)
-      let page = try JSONDecoder().decode(GooglePage.self, from: response.body)
-      guard !page.files.isEmpty else { throw RemoteError.posix(ENOENT) }
-      guard page.files.count == 1 else { throw RemoteError.posix(EEXIST) }
-      currentID = page.files[0].id
-      if cacheRevision == revision {
-        ids[next.value] = currentID
-        mimeTypes[next.value] = page.files[0].mimeType
-      }
-      currentPath = next
+    guard let match = try await entries(parent(path)).first(where: { $0.item.path == path }) else {
+      throw RemoteError.posix(ENOENT)
     }
-    return currentID
+    return match.file.id
   }
 
   private func invalidate(from path: RemotePath) {
@@ -428,12 +408,11 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   }
 
   private func ensureNameMissing(_ path: RemotePath, name: String? = nil) async throws {
-    if name == nil, basename(path).hasPrefix(Self.identityPrefix) {
-      do {
-        _ = try await resolve(path)
-        throw RemoteError.posix(EEXIST)
-      } catch RemoteError.posix(ENOENT) {}
-    }
+    // 先看 Finder 里的名字有没有被占（同名文件编号后的名字也算）
+    do {
+      _ = try await resolve(path)
+      throw RemoteError.posix(EEXIST)
+    } catch RemoteError.posix(ENOENT) {}
     let parentID = try await resolve(parent(path))
     let query = [
       URLQueryItem(
@@ -461,13 +440,6 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       .replacingOccurrences(of: "+", with: "%2B")
     guard let url = components.url else { throw RemoteError.invalidPath }
     return url
-  }
-
-  private static func identityComponent(_ id: String) -> String {
-    identityPrefix
-      + Data(id.utf8).base64EncodedString()
-      .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
-      .replacingOccurrences(of: "=", with: "")
   }
 
   private func escaped(_ value: String) -> String {
@@ -577,10 +549,10 @@ private struct GoogleFile: Decodable {
   let mimeType: String
   let size: String?
   let modifiedTime: String?
-  func item(parent: RemotePath, component: String? = nil) throws -> RemoteItem {
+  var isDirectory: Bool { mimeType == "application/vnd.google-apps.folder" }
+  func item(at path: RemotePath) -> RemoteItem {
     RemoteItem(
-      path: try parent.appending(component ?? name), name: name,
-      isDirectory: mimeType == "application/vnd.google-apps.folder",
+      path: path, name: path.basename, isDirectory: isDirectory,
       size: Int64(size ?? "0") ?? 0,
       modified: RemoteTimestamp.parse(modifiedTime)
         ?? Date(timeIntervalSince1970: 0))

@@ -19,7 +19,12 @@ private actor GoogleRecoveryHTTP: HTTPTransport {
     }
     if url.host == "www.googleapis.com", url.path == "/drive/v3/files" {
       let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
-      #expect(query.first { $0.name == "q" }?.value == "'root' in parents and name = 'file' and trashed = false")
+      let q = query.first { $0.name == "q" }?.value
+      // 先列目录确认 Finder 里的名字没被占
+      if q == "'root' in parents and trashed = false" {
+        return HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8))
+      }
+      #expect(q == "'root' in parents and name = 'file' and trashed = false")
       names += 1
       return HTTPResponse(status: 200, body: Data(
         (scenario == .conflict && names > 1 ? #"{"files":[{"id":"existing"}]}"# : #"{"files":[]}"#).utf8))

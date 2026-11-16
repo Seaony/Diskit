@@ -8,10 +8,24 @@ struct TianyiNode: Sendable, Equatable {
   let isDirectory: Bool
   let size: Int64
   let modified: Date
+  // 同目录重名时在 Finder 里显示的「名称 (2)」，其余情况就是原名
+  var displayName: String
+
+  init(
+    id: String, name: String, isDirectory: Bool, size: Int64, modified: Date,
+    displayName: String? = nil
+  ) {
+    self.id = id
+    self.name = name
+    self.isDirectory = isDirectory
+    self.size = size
+    self.modified = modified
+    self.displayName = displayName ?? name
+  }
 
   func item(at path: RemotePath) -> RemoteItem {
     RemoteItem(
-      path: path, name: name, isDirectory: isDirectory, size: size, modified: modified)
+      path: path, name: displayName, isDirectory: isDirectory, size: size, modified: modified)
   }
 }
 

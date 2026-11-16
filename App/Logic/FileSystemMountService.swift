@@ -126,12 +126,10 @@ enum FileSystemMountError: Error, LocalizedError {
   }
 
   func mount(_ connection: Connection, password: String) async throws -> URL {
-    guard !cacheMaintenance else { throw ConnectionError.busy }
     let address = try FileSystemAddress.url(for: connection)
-    try Task.checkCancellation()
+    try await waitForCacheMaintenance()
     let status = await extensionStatus()
-    try Task.checkCancellation()
-    guard !cacheMaintenance else { throw ConnectionError.busy }
+    try await waitForCacheMaintenance()
     switch status {
     case .enabled: break
     case .disabled:
@@ -240,6 +238,12 @@ enum FileSystemMountError: Error, LocalizedError {
   }
 
   func endCacheMaintenance() { cacheMaintenance = false }
+
+  // 启动时清理缓存和自动挂载会同时发生：挂载先等清理结束，不能直接报“正在处理”
+  private func waitForCacheMaintenance() async throws {
+    try Task.checkCancellation()
+    while cacheMaintenance { try await operations.sleep(.milliseconds(100)) }
+  }
 
   private func finishMount(_ id: UUID, caller: Bool = false, native: Bool = false) {
     guard var pending = pendingMounts[id] else { return }

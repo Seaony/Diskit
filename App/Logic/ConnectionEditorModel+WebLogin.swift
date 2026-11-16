@@ -29,6 +29,7 @@ extension ConnectionEditorModel {
 
   func loginWeb(_ service: WebLoginService) async throws {
     stage = L("等待网页登录…")
+    try rememberSecretsBeforeLogin()
     if manualLogin && !model.options.isDemo {
       guard
         let credentials = WebLoginCredentialParser.manual(

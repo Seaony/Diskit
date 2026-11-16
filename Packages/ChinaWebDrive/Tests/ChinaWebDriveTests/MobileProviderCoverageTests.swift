@@ -212,3 +212,29 @@ func mobileListingRejectsInvalidRemoteMetadata(problem: String) async throws {
     _ = try await provider.list(RemotePath("/"))
   }
 }
+
+@Test func mobileDownloadLinkIsReusedUntilRejectedOrFileChanges() async throws {
+  let link = coverageReply(#"{"success":true,"data":{"url":"https://download.example/file"}}"#)
+  let resized = coverageReply(
+    #"{"success":true,"data":{"items":[{"fileId":"f","name":"file","type":"file","size":5}]}}"#)
+  let ok = HTTPResponse(status: 206, headers: ["Content-Range": "bytes 0-1/4"])
+  let http = MobileCoverageHTTP(
+    [coverageRoute, coverageFile, link, link, resized, link],
+    streams: [
+      ok, ok, HTTPResponse(status: 403), ok,
+      HTTPResponse(status: 206, headers: ["Content-Range": "bytes 0-1/5"]),
+    ])
+  let provider = coverageProvider(http)
+  try await provider.connect()
+  func linkRequests() async -> Int {
+    await http.paths.filter { $0.hasSuffix("file/getDownloadUrl") }.count
+  }
+  _ = try await provider.read(RemotePath("/file"), range: 0..<2)
+  _ = try await provider.read(RemotePath("/file"), range: 0..<2)
+  #expect(await linkRequests() == 1)
+  _ = try await provider.read(RemotePath("/file"), range: 0..<2)
+  #expect(await linkRequests() == 2)
+  _ = try await provider.list(RemotePath("/"))
+  _ = try await provider.read(RemotePath("/file"), range: 0..<2)
+  #expect(await linkRequests() == 3)
+}

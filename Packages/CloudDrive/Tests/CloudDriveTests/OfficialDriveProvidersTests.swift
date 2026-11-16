@@ -49,7 +49,6 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     [
       HTTPResponse(status: 200, body: Data(#"{"errno":0,"uk":7,"vip_type":0}"#.utf8)),
       HTTPResponse(status: 200, body: Data(list.utf8)),
-      HTTPResponse(status: 200, body: Data(list.utf8)),
       HTTPResponse(
         status: 200,
         body: Data(
@@ -240,7 +239,7 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     })
 }
 
-@Test func drive123RefreshesBusinessAuthenticationAndRejectsDuplicateNames() async throws {
+@Test func drive123RefreshesBusinessAuthenticationAndNamesDuplicates() async throws {
   let transport = ProviderFakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"code":401}"#.utf8)),
     HTTPResponse(
@@ -257,12 +256,18 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       body: Data(
         #"{"code":0,"data":{"lastFileId":-1,"fileList":[{"fileId":1,"filename":"dup","type":0,"size":1,"parentFileId":0,"trashed":0},{"fileId":2,"filename":"dup","type":0,"size":1,"parentFileId":0,"trashed":0}]}}"#
           .utf8)),
+    HTTPResponse(
+      status: 200,
+      body: Data(
+        #"{"code":0,"data":{"fileID":2,"filename":"dup","type":0,"size":1,"parentFileID":0,"trashed":0}}"#
+          .utf8)),
   ])
   let provider = Drive123Provider(session: try providerSession(transport), transport: transport)
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EEXIST)) {
-    _ = try await provider.stat(try RemotePath("/dup"))
-  }
+  #expect(try await provider.stat(try RemotePath("/dup (2)")).path.value == "/dup (2)")
+  let detail = try #require(transport.requests.withLock { $0.last })
+  #expect(detail.url?.path == "/api/v1/file/detail")
+  #expect(detail.url?.query == "fileID=2")
 }
 
 @Test func drive123UploadCompletionStopsAtItsLimit() async throws {

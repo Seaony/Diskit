@@ -54,7 +54,7 @@ enum TianyiHTTP {
       return false
     }
     if response.status == 401 { return true }
-    let text = String(decoding: response.body, as: UTF8.self).lowercased()
+    let text = reason(in: response.body)
     return text.contains("invalidsessionkey")
       || text.contains("invalidaccesstoken")
       || text.contains("usersessionbo is null")
@@ -69,15 +69,8 @@ enum TianyiHTTP {
       }
       guard let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
       else { return }
-      let reason = [
-        object["errorCode"], object["errorMsg"], object["code"], object["message"],
-        object["msg"], object["res_message"],
-      ]
-      .compactMap(string)
-      .joined(separator: " ")
-      .lowercased()
       if isServiceSuccess(object) { return }
-      throw map(status: response.status, body: response.body, reason: reason)
+      throw map(status: response.status, body: response.body, reason: reason(in: object))
     } catch {
       if (200..<300).contains(response.status) {
         PackageDiagnostics.failure(error, category: .tianyiDrive, operation: .request)
@@ -92,22 +85,7 @@ enum TianyiHTTP {
     if isVerificationChallenge(HTTPResponse(status: status, body: body ?? Data())) {
       return .posix(EAGAIN)
     }
-    let reason: String
-    if let supplied {
-      reason = supplied.lowercased()
-    } else if let body,
-      let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any]
-    {
-      reason = [
-        object["errorCode"], object["errorMsg"], object["code"], object["message"],
-        object["msg"], object["res_message"],
-      ]
-      .compactMap(string)
-      .joined(separator: " ")
-      .lowercased()
-    } else {
-      reason = String(decoding: body ?? Data(), as: UTF8.self).lowercased()
-    }
+    let reason = supplied?.lowercased() ?? Self.reason(in: body ?? Data())
     if reason.contains("invalidsessionkey") || reason.contains("invalidaccesstoken")
       || reason.contains("usersessionbo is null")
     {
@@ -162,8 +140,27 @@ enum TianyiHTTP {
   }
 
   private static func isVerificationChallenge(_ response: HTTPResponse) -> Bool {
-    let text = String(decoding: response.body, as: UTF8.self).lowercased()
+    let text = reason(in: response.body)
     return ["captcha", "riskcontrol", "risk_control", "验证码", "风控"].contains { text.contains($0) }
+  }
+
+  // JSON 只看错误码和提示字段：成功的文件列表里文件名可能恰好带这些词。
+  // 不是 JSON 的（比如验证网页）才看整段内容。
+  private static func reason(in body: Data) -> String {
+    if let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] {
+      return reason(in: object)
+    }
+    return String(decoding: body, as: UTF8.self).lowercased()
+  }
+
+  private static func reason(in object: [String: Any]) -> String {
+    [
+      object["res_code"], object["res_message"], object["errorCode"], object["errorMsg"],
+      object["code"], object["message"], object["msg"], object["error"],
+    ]
+    .compactMap(string)
+    .joined(separator: " ")
+    .lowercased()
   }
 
   private static func isServiceSuccess(_ object: [String: Any]) -> Bool {

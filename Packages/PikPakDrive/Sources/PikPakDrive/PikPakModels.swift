@@ -90,6 +90,8 @@ struct PikPakFile: Decodable, Sendable {
   let parentID: String?
   let phase: String?
   let links: Links?
+  // 在 Finder 里显示的名字：同目录重名时由列目录分配「名称 (2)」，否则就是 name
+  var displayName: String
 
   enum CodingKeys: String, CodingKey {
     case id, name, kind, size, phase, links
@@ -134,6 +136,7 @@ struct PikPakFile: Decodable, Sendable {
     self.parentID = parentID
     self.phase = phase
     self.links = links
+    displayName = name
   }
 
   init(from decoder: Decoder) throws {
@@ -147,6 +150,7 @@ struct PikPakFile: Decodable, Sendable {
     parentID = try values.decodeIfPresent(String.self, forKey: .parentID)
     phase = try values.decodeIfPresent(String.self, forKey: .phase)
     links = try values.decodeIfPresent(Links.self, forKey: .links)
+    displayName = name
   }
 
   var isDirectory: Bool { kind == "drive#folder" }
@@ -163,7 +167,8 @@ struct PikPakFile: Decodable, Sendable {
       throw RemoteError.protocolError
     }
     return RemoteItem(
-      path: path, name: name, isDirectory: isDirectory, size: isDirectory ? Int64(0) : size!,
+      path: path, name: displayName, isDirectory: isDirectory,
+      size: isDirectory ? Int64(0) : size!,
       modified: modified)
   }
 }

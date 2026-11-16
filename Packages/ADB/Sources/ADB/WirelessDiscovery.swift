@@ -118,6 +118,11 @@ public final class WirelessDiscovery: NSObject, @preconcurrency NetServiceDelega
 
   private func update(_ devices: [WirelessDevice], type: WirelessServiceType) {
     snapshots[type] = devices
+    // 又收到设备列表说明发现已经恢复（如网络回来了），之前的发现失败提示不再成立
+    if issue != nil, issue != .resolutionFailed {
+      error = nil
+      issue = nil
+    }
     let liveIDs = Set(snapshots.values.flatMap { $0.map(\.id) })
     for id in Set(resolving.keys).subtracting(liveIDs) {
       resolving.removeValue(forKey: id)

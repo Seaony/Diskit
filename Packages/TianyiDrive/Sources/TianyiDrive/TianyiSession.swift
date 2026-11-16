@@ -239,9 +239,10 @@ public actor TianyiSession {
       }
       selected = family
     }
-    guard selected.totalSize >= 0, selected.usedSize >= 0,
-      selected.usedSize <= selected.totalSize
-    else { throw TianyiError.invalidResponse }
+    // 超出容量的账号已用会大于总量，照常连接
+    guard selected.totalSize >= 0, selected.usedSize >= 0 else {
+      throw TianyiError.invalidResponse
+    }
     let userID = capacity.account ?? state.loginName
     return TianyiAccount(
       scope: configuration.scope,

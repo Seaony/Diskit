@@ -21,14 +21,31 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private var userID: UInt64 = 0
   private var vipType = 0
   private var progress: (@Sendable (Int64, Int64) -> Void)?
+  private let now: @Sendable () -> Date
+  // 目录列表短时间内直接拿来回答 stat 和 read，免得 Finder 每读一块都把整个目录列一遍
+  private var listings: [String: (entries: [BaiduItem], fetched: Date)] = [:]
+  private var listingGeneration: UInt64 = 0
+  private var downloadLinks: [UInt64: BaiduDownloadLink] = [:]
+  static let listingLifetime: TimeInterval = 30
+  // 百度的下载地址 8 小时内有效，留出余量
+  static let downloadLinkLifetime: TimeInterval = 4 * 3_600
 
   public init(
     configuration: BaiduDriveConfiguration, session: OAuthSession,
     transport: any HTTPTransport = URLSessionHTTPTransport()
   ) {
+    self.init(
+      configuration: configuration, session: session, transport: transport, now: { Date() })
+  }
+
+  init(
+    configuration: BaiduDriveConfiguration, session: OAuthSession, transport: any HTTPTransport,
+    now: @escaping @Sendable () -> Date
+  ) {
     self.configuration = configuration
     self.session = session
     self.transport = session.limited(transport)
+    self.now = now
   }
 
   public func onProgress(_ progress: @escaping @Sendable (Int64, Int64) -> Void) {
@@ -47,6 +64,8 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   public func disconnect() async {
     connected = false
+    invalidateListings()
+    downloadLinks.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -77,6 +96,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
 
   private func listEntries(_ path: RemotePath) async throws -> [BaiduItem] {
     let directory = remotePath(path)
+    let generation = listingGeneration
     var start = 0
     var result: [BaiduItem] = []
     while true {
@@ -105,6 +125,12 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       guard entries.count == 1_000 else { break }
       start += entries.count
     }
+    // 列表期间有改动就不缓存，免得旧结果盖掉改动
+    if generation == listingGeneration {
+      let current = now()
+      listings = listings.filter { current.timeIntervalSince($0.value.fetched) < Self.listingLifetime }
+      listings[path.value] = (result, current)
+    }
     return result
   }
 
@@ -115,7 +141,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         path: path, name: "/", isDirectory: true, size: 0,
         modified: Date(timeIntervalSince1970: 0))
     }
-    let item = try await metadata(path, download: false)
+    let item = try await metadata(path)
     return try item.item(root: configuration.rootPath)
   }
 
@@ -127,25 +153,34 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       throw RemoteError.posix(EINVAL)
     }
     if range?.isEmpty == true { return CloudDriveSupport.emptyStream() }
-    let metadata = try await metadata(path, download: true)
-    guard let rawLink = metadata.dlink else { throw RemoteError.protocolError }
-    let token = try await session.accessToken()
-    guard let link = URL(string: rawLink), link.scheme?.lowercased() == "https",
-      link.host != nil, link.user == nil, link.password == nil
-    else { throw RemoteError.protocolError }
-    let url = try CloudDriveSupport.url(
-      rawLink, query: [URLQueryItem(name: "access_token", value: token)])
-    var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
-    request.setValue("pan.baidu.com", forHTTPHeaderField: "User-Agent")
-    if let range {
-      request.setValue(
-        "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
-        forHTTPHeaderField: "Range")
+    let entry = try await metadata(path)
+    guard let id = entry.fs_id else { throw RemoteError.protocolError }
+    for attempt in 0..<2 {
+      let rawLink = try await downloadLink(entry, id: id)
+      let token = try await session.accessToken()
+      guard let link = URL(string: rawLink), link.scheme?.lowercased() == "https",
+        link.host != nil, link.user == nil, link.password == nil
+      else { throw RemoteError.protocolError }
+      let url = try CloudDriveSupport.url(
+        rawLink, query: [URLQueryItem(name: "access_token", value: token)])
+      var request = URLRequest(url: url, timeoutInterval: RemoteTimeout.transferIdle)
+      request.setValue("pan.baidu.com", forHTTPHeaderField: "User-Agent")
+      if let range {
+        request.setValue(
+          "bytes=\(range.lowerBound)-\(max(range.lowerBound, range.upperBound - 1))",
+          forHTTPHeaderField: "Range")
+      }
+      let response = try await CloudDriveSupport.streamWithRetry(transport, request)
+      // 下载地址过期会返回 403，换一个新地址再试一次
+      if response.response.status == 403, attempt == 0 {
+        downloadLinks.removeValue(forKey: id)
+        continue
+      }
+      if let error = CloudDriveSupport.mapHTTP(response.response) { throw error }
+      if range != nil, response.response.status != 206 { throw RemoteError.protocolError }
+      return response.body
     }
-    let response = try await CloudDriveSupport.streamWithRetry(transport, request)
-    if let error = CloudDriveSupport.mapHTTP(response.response) { throw error }
-    if range != nil, response.response.status != 206 { throw RemoteError.protocolError }
-    return response.body
+    throw RemoteError.posix(EACCES)
   }
 
   public func write(_ path: RemotePath, from localFile: URL) async throws {
@@ -154,6 +189,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     let target = remotePath(path)
     try await ensureMissing(path)
+    defer { invalidateListings() }
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
       throw RemoteError.posix(EIO)
@@ -236,6 +272,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     try ensureConnected()
     guard path.value != "/" else { return }
     try await ensureMissing(path)
+    defer { invalidateListings() }
     let response = try await request(
       method: "POST", path: "/rest/2.0/xpan/file",
       query: [URLQueryItem(name: "method", value: "create")],
@@ -252,6 +289,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       throw RemoteError.posix(ENOTEMPTY)
     }
     let entries = try jsonString([["path": remotePath(path)]])
+    defer { invalidateListings() }
     let response = try await request(
       method: "POST", path: "/rest/2.0/xpan/file",
       query: [
@@ -276,6 +314,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         "newname": CloudDriveSupport.basename(to),
       ]
     ])
+    defer { invalidateListings() }
     let response = try await request(
       method: "POST", path: "/rest/2.0/xpan/file",
       query: [
@@ -286,13 +325,30 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     try checkBaidu(response)
   }
 
-  private func metadata(_ path: RemotePath, download: Bool) async throws -> BaiduItem {
-    let matches = try await listEntries(CloudDriveSupport.parent(path))
-      .filter { $0.path == remotePath(path) }
+  private func metadata(_ path: RemotePath) async throws -> BaiduItem {
+    let parent = CloudDriveSupport.parent(path)
+    let entries: [BaiduItem]
+    if let cached = listings[parent.value],
+      now().timeIntervalSince(cached.fetched) < Self.listingLifetime
+    {
+      entries = cached.entries
+    } else {
+      entries = try await listEntries(parent)
+    }
+    let matches = entries.filter { $0.path == remotePath(path) }
     guard let match = matches.first else { throw RemoteError.posix(ENOENT) }
     guard matches.count == 1 else { throw RemoteError.posix(EEXIST) }
-    if !download { return match }
-    guard let id = match.fs_id else { throw RemoteError.protocolError }
+    return match
+  }
+
+  private func downloadLink(_ match: BaiduItem, id: UInt64) async throws -> String {
+    let current = now()
+    if let cached = downloadLinks[id], cached.size == match.size,
+      cached.modified == match.server_mtime,
+      current.timeIntervalSince(cached.fetched) < Self.downloadLinkLifetime
+    {
+      return cached.link
+    }
     let response = try await request(
       method: "GET", path: "/rest/2.0/xpan/multimedia",
       query: [
@@ -303,9 +359,19 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     let value = try decode(BaiduListResponse.self, from: response)
     let items = value.list ?? value.data?.list ?? []
     guard items.count == 1, let item = items.first,
-      item.fs_id == id, item.path == match.path
+      item.fs_id == id, item.path == match.path, let link = item.dlink
     else { throw RemoteError.protocolError }
-    return item
+    downloadLinks = downloadLinks.filter {
+      current.timeIntervalSince($0.value.fetched) < Self.downloadLinkLifetime
+    }
+    downloadLinks[id] = BaiduDownloadLink(
+      link: link, size: match.size, modified: match.server_mtime, fetched: current)
+    return link
+  }
+
+  private func invalidateListings() {
+    listings.removeAll()
+    listingGeneration &+= 1
   }
 
   private func request(
@@ -481,6 +547,13 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
   private func ensureConnected() throws {
     guard connected else { throw RemoteError.notConnected }
   }
+}
+
+private struct BaiduDownloadLink {
+  let link: String
+  let size: Int64?
+  let modified: Int64?
+  let fetched: Date
 }
 
 private struct BaiduFileResult: Decodable {

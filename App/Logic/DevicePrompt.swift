@@ -66,7 +66,7 @@ extension AppModel {
     mountingPromptDevice = key
     devicePromptErrors[key] = nil
     system.removeNotifications([DevicePrompt.notificationID(key)])
-    operations.start { [self] in
+    operations.start(connectionID: connection.id) { [self] in
       do {
         try await connections.save(connection, password: "")
         if connection.kind.usesMount { await toggleConnection(connection) }

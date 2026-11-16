@@ -190,7 +190,10 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
     }
-    try await ensureMissing(to)
+    // 网盘不分大小写，只改大小写时查到的「目标」就是源文件自己，不算重名
+    if from.value.caseInsensitiveCompare(to.value) != .orderedSame {
+      try await ensureMissing(to)
+    }
     var request = apiRequest(
       url: "https://api.dropboxapi.com/2/files/move_v2",
       json: [

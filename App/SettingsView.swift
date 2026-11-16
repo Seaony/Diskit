@@ -14,6 +14,7 @@ struct SettingsView: View {
   @AppStorage("notifications.disconnect") private var notifyDisconnect = true
   @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
   @State private var language = AppLanguage.saved
+  @State private var stateViewer = UUID()
   @State private var startsAtLogin = false
   @State private var loginNeedsApproval = false
   @State private var loginError: String?
@@ -63,6 +64,7 @@ struct SettingsView: View {
       }
     }
     .onAppear {
+      model.setFileSystemStateVisible(true, viewer: stateViewer)
       if model.options.isDemo,
         let tab = model.options.demoSettingsTab,
         ["general", "notifications", "storage", "android", "about"].contains(tab)
@@ -71,6 +73,7 @@ struct SettingsView: View {
       }
     }
     .onDisappear {
+      model.setFileSystemStateVisible(false, viewer: stateViewer)
       copyFeedback?.cancel()
       copyFeedback = nil
       copiedFingerprint = false

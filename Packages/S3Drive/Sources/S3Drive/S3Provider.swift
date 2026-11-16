@@ -118,6 +118,9 @@ public actor S3Provider: RemoteFileProvider {
   private let partSize: Int64
   private var connected = false
   private var progress: (@Sendable (Int64, Int64) -> Void)?
+  // 同一层既有对象 a 又有前缀 a/ 时，目录保留原名，文件显示成「a (2)」。
+  // 列目录时记下这两个路径各自对应的键和类型，后续操作按它找回原对象。
+  private var aliases: [RemotePath: S3Alias] = [:]
 
   public init(
     configuration: S3Configuration, transport: any HTTPTransport = URLSessionHTTPTransport(),
@@ -154,6 +157,7 @@ public actor S3Provider: RemoteFileProvider {
 
   public func disconnect() async {
     connected = false
+    aliases.removeAll()
   }
 
   public func spaceInfo() async throws -> SpaceInfo {
@@ -171,15 +175,34 @@ public actor S3Provider: RemoteFileProvider {
     for key in listing.prefixes where key != prefix {
       let item = try item(
         key: key, size: 0, date: Date(timeIntervalSince1970: 0), directory: true)
-      items["dir:\(item.path.value)"] = item
+      items["d:\(item.name)"] = item
     }
     for object in listing.objects where object.key != prefix {
       let directory = object.key.hasSuffix("/")
       let item = try item(
         key: object.key, size: object.size, date: object.modified, directory: directory)
-      items["\(directory ? "dir" : "file"):\(item.path.value)"] = item
+      items["\(directory ? "d" : "f"):\(item.name)"] = item
     }
-    return items.values.sorted {
+    // 标识里目录排在文件前面，重名时总是文件被编号，目录路径不用改写
+    let displayNames = DuplicateNames.displayNames(
+      items.map { .init(id: $0.key, name: $0.value.name, isDirectory: $0.value.isDirectory) })
+    aliases = aliases.filter { $0.key.parent != path }
+    var result: [RemoteItem] = []
+    for (id, item) in items {
+      let name = displayNames[id] ?? item.name
+      guard name != item.name else {
+        result.append(item)
+        continue
+      }
+      let shown = try path.appending(name)
+      let key = objectKey(item.path, directory: false)
+      aliases[shown] = S3Alias(key: key, isDirectory: false)
+      aliases[item.path] = S3Alias(key: key, isDirectory: true)
+      result.append(
+        RemoteItem(
+          path: shown, name: name, isDirectory: false, size: item.size, modified: item.modified))
+    }
+    return result.sorted {
       $0.name.localizedStandardCompare($1.name) == .orderedAscending
     }
   }
@@ -190,23 +213,24 @@ public actor S3Provider: RemoteFileProvider {
       return RemoteItem(
         path: path, name: "/", isDirectory: true, size: 0, modified: Date(timeIntervalSince1970: 0))
     }
-    let key = objectKey(path, directory: false)
-    let object = try await headObject(key)
-    if let object {
-      return try item(
-        key: key, size: object.size, date: object.modified, directory: false)
+    let (key, kind) = target(path)
+    if kind != true, let object = try await headObject(key) {
+      return RemoteItem(
+        path: path, name: path.basename, isDirectory: false, size: object.size,
+        modified: object.modified)
     }
-    guard let child = try await firstObject(prefix: key + "/") else {
+    guard kind != false, let child = try await firstObject(prefix: key + "/") else {
       throw RemoteError.posix(ENOENT)
     }
-    return try item(key: key, size: 0, date: child.modified, directory: true)
+    return RemoteItem(
+      path: path, name: path.basename, isDirectory: true, size: 0, modified: child.modified)
   }
 
   public func read(
     _ path: RemotePath, range: Range<Int64>?
   ) async throws -> AsyncThrowingStream<Data, Error> {
     try ensureConnected()
-    let key = objectKey(path, directory: false)
+    let key = target(path).key
     var headers: [String: String] = [:]
     if let range {
       guard range.lowerBound >= 0, range.lowerBound < range.upperBound else {
@@ -235,6 +259,7 @@ public actor S3Provider: RemoteFileProvider {
     let progress = self.progress
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
+    guard aliases[path] == nil else { throw RemoteError.posix(EEXIST) }
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
       throw RemoteError.posix(EIO)
@@ -253,6 +278,7 @@ public actor S3Provider: RemoteFileProvider {
   public func makeDirectory(_ path: RemotePath) async throws {
     try ensureConnected()
     guard path.value != "/" else { return }
+    guard aliases[path] == nil else { throw RemoteError.posix(EEXIST) }
     let key = objectKey(path, directory: true)
     try await putConditionally(key: key, body: Data(), upload: false)
   }
@@ -260,16 +286,19 @@ public actor S3Provider: RemoteFileProvider {
   public func remove(_ path: RemotePath, recursive: Bool) async throws {
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EACCES) }
-    let key = objectKey(path, directory: false)
-    let exact = try await headObject(key)
-    let descendants = try await listAll(prefix: key + "/", delimiter: nil).objects
-    guard exact != nil || !descendants.isEmpty else { throw RemoteError.posix(ENOENT) }
+    let (key, kind) = target(path)
+    let exact = kind == true ? nil : try await headObject(key)
+    let descendants =
+      kind == false ? [] : try await listAll(prefix: key + "/", delimiter: nil).objects
+    // 没有目录标记对象的目录，删完里面的文件后前缀就不存在了，这时算删除成功
+    guard exact != nil || !descendants.isEmpty else { return }
     if !recursive, descendants.contains(where: { $0.key != key + "/" }) {
       throw RemoteError.posix(ENOTEMPTY)
     }
     var keys = descendants.map(\.key)
     if exact != nil { keys.append(key) }
     try await deleteObjects(keys)
+    aliases.removeValue(forKey: path)
   }
 
   public func move(_ from: RemotePath, to: RemotePath) async throws {
@@ -278,11 +307,13 @@ public actor S3Provider: RemoteFileProvider {
     guard from.value != "/", to.value != "/", from != to else {
       throw RemoteError.posix(EINVAL)
     }
-    let sourceKey = objectKey(from, directory: false)
+    let (sourceKey, kind) = target(from)
     let targetKey = objectKey(to, directory: false)
     guard !targetKey.hasPrefix(sourceKey + "/") else { throw RemoteError.posix(EINVAL) }
-    let sourceExact = try await headObject(sourceKey)
-    let sourceChildren = try await listAll(prefix: sourceKey + "/", delimiter: nil).objects
+    guard aliases[to] == nil else { throw RemoteError.posix(EEXIST) }
+    let sourceExact = kind == true ? nil : try await headObject(sourceKey)
+    let sourceChildren =
+      kind == false ? [] : try await listAll(prefix: sourceKey + "/", delimiter: nil).objects
     guard sourceExact != nil || !sourceChildren.isEmpty else {
       throw RemoteError.posix(ENOENT)
     }
@@ -328,6 +359,7 @@ public actor S3Provider: RemoteFileProvider {
     var keys = sourceChildren.map(\.key)
     if sourceExact != nil { keys.append(sourceKey) }
     try await deleteObjects(keys, conditions: sourceETags)
+    aliases.removeValue(forKey: from)
   }
 
   private func copy(
@@ -698,6 +730,12 @@ public actor S3Provider: RemoteFileProvider {
     return "/" + key
   }
 
+  // 返回路径对应的键；列目录时遇到文件和目录重名的，同时给出它是文件还是目录
+  private func target(_ path: RemotePath) -> (key: String, isDirectory: Bool?) {
+    if let alias = aliases[path] { return (alias.key, alias.isDirectory) }
+    return (objectKey(path, directory: false), nil)
+  }
+
   private func objectKey(_ path: RemotePath, directory: Bool) -> String {
     let key = path.value.dropFirst()
     if directory, !key.isEmpty, !key.hasSuffix("/") { return key + "/" }
@@ -836,6 +874,11 @@ private struct S3ObjectInfo {
   let size: Int64
   let modified: Date
   let headers: [String: String]
+}
+
+private struct S3Alias {
+  let key: String
+  let isDirectory: Bool
 }
 
 private struct S3ListResult {

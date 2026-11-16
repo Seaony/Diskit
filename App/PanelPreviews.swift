@@ -29,7 +29,7 @@ private struct PanelRowPreview: View {
       connection: connection, state: state, errorDetail: nil, isDemo: true, layout: .grid, dragSource: dragSource,
       selected: focus == connection.id,
       rowFocus: $focus, canMoveUp: true, canMoveDown: true,
-      onSelect: { focus = connection.id }, onPrimary: {}, onActivate: {}, onEdit: {},
+      onSelect: { focus = connection.id }, onPrimary: { _ in }, onActivate: {}, onEdit: {},
       onReauthenticate: {}, onMove: { _ in }, onDelete: {},
       draggedID: $draggedID, dropTargetID: $dropTargetID, onDrop: { _ in }
     ).padding(Space.lg).frame(width: 120).background(DiskitTheme.background)

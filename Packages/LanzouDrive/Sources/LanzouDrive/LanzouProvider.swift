@@ -2,10 +2,21 @@ import Core
 import Foundation
 
 public actor LanzouProvider: RemoteFileProvider {
+  // 重名文件分到的编号在本次连接里保持不变
+  private let duplicateNames = DuplicateNameMemory()
   private enum Backing: Hashable, Sendable {
     case accountFolder(String)
     case accountFile(String)
     case sharePage(URL)
+
+    // 给重名编号用的稳定标识
+    var identity: String {
+      switch self {
+      case .accountFolder(let id): "folder:" + id
+      case .accountFile(let id): "file:" + id
+      case .sharePage(let url): "share:" + url.absoluteString
+      }
+    }
   }
 
   private struct Node: Sendable {
@@ -96,6 +107,9 @@ public actor LanzouProvider: RemoteFileProvider {
         let body = try await session.streamDownload(directURL, range: range)
         guard connected, generation == operation else { throw CancellationError() }
         return body
+      } catch LanzouError.rangeUnsupported {
+        // 下载服务不认范围请求时交给 Core 退回整个文件下载
+        throw RemoteError.unsupported
       } catch let error
         as LanzouError
         where attempt == 0 && (error == .notFound || error == .http(401) || error == .http(403))
@@ -130,10 +144,11 @@ public actor LanzouProvider: RemoteFileProvider {
     var current = rootNode()
     for component in path.value.split(separator: "/").map(String.init) {
       let nextPath = try currentPath.appending(component)
-      let children = try await directoryContents(current)
-      let matches = children.filter { $0.item.name == component }
-      guard matches.count <= 1 else { throw RemoteError.posix(EEXIST) }
-      guard let child = matches.first else { throw RemoteError.posix(ENOENT) }
+      guard
+        let child = try await directoryContents(current).first(where: {
+          $0.item.name == component
+        })
+      else { throw RemoteError.posix(ENOENT) }
       currentPath = nextPath
       current = child
     }
@@ -193,8 +208,7 @@ public actor LanzouProvider: RemoteFileProvider {
         downloadTasks.removeValue(forKey: old.backing)?.cancel()
       }
     }
-    let grouped = Dictionary(grouping: children, by: { $0.item.name })
-    for child in children where grouped[child.item.name]?.count == 1 {
+    for child in children {
       nodes[child.item.path.value] = child
     }
     return children
@@ -209,10 +223,16 @@ public actor LanzouProvider: RemoteFileProvider {
   private func nodes(
     for entries: [(LanzouEntry, Backing)], at parent: RemotePath
   ) async throws -> [Node] {
+    // 蓝奏云允许同名文件，重名的按 Finder 习惯显示成「名称 (2)」
+    let displayNames = duplicateNames.assign(
+      entries.map {
+        .init(id: $0.1.identity, name: $0.0.name, isDirectory: $0.0.isDirectory)
+      }, in: parent.value)
     var result: [Node] = []
     for (entry, backing) in entries {
       try Task.checkCancellation()
-      let path = try parent.appending(entry.name)
+      let name = displayNames[backing.identity] ?? entry.name
+      let path = try parent.appending(name)
       let size: Int64
       if let exact = entry.size {
         size = exact
@@ -223,7 +243,7 @@ public actor LanzouProvider: RemoteFileProvider {
       result.append(
         Node(
           item: RemoteItem(
-            path: path, name: entry.name, isDirectory: entry.isDirectory,
+            path: path, name: name, isDirectory: entry.isDirectory,
             size: size, modified: entry.modified), backing: backing))
     }
     return result

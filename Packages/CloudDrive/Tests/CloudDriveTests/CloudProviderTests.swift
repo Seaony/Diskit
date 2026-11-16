@@ -102,6 +102,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   let transport = FakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"user":{}}"#.utf8)),
     HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
+    HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
     HTTPResponse(status: 200, headers: ["Location": "https://upload.example.com/session"]),
     HTTPResponse(status: 308, headers: ["Range": "bytes=0-8388607"]),
     HTTPResponse(status: 201, body: Data(#"{"id":"new"}"#.utf8)),
@@ -113,12 +114,12 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   try await provider.write(try RemotePath("/large.bin"), from: file)
   #expect(progress.withLock { $0 } == [8 * 1024 * 1024, Int64(size)])
   let requests = transport.requests.withLock { $0 }
-  #expect(requests[2].url?.query?.contains("uploadType=resumable") == true)
+  #expect(requests[3].url?.query?.contains("uploadType=resumable") == true)
   #expect(transport.uploadRequests.withLock { $0.count } == 2)
-  #expect(requests[3].httpBody?.count == 8 * 1024 * 1024)
-  #expect(requests[4].httpBody?.count == 1)
+  #expect(requests[4].httpBody?.count == 8 * 1024 * 1024)
+  #expect(requests[5].httpBody?.count == 1)
   #expect(
-    requests[4].value(forHTTPHeaderField: "Content-Range") == "bytes 8388608-8388608/8388609")
+    requests[5].value(forHTTPHeaderField: "Content-Range") == "bytes 8388608-8388608/8388609")
 }
 
 @Test func googleDriveSmallUploadUsesMultipartEndpoint() async throws {
@@ -127,6 +128,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   try Data("hello".utf8).write(to: file)
   let transport = FakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"user":{}}"#.utf8)),
+    HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
     HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
     HTTPResponse(status: 200, body: Data(#"{"id":"new"}"#.utf8)),
   ])
@@ -199,6 +201,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   try Data("new".utf8).write(to: file)
   let transport = FakeTransport([
     HTTPResponse(status: 200, body: Data(#"{"user":{}}"#.utf8)),
+    HTTPResponse(status: 200, body: Data(#"{"files":[]}"#.utf8)),
     HTTPResponse(
       status: 200, body: Data(#"{"files":[{"id":"1"}]}"#.utf8)),
   ])
@@ -207,7 +210,7 @@ private func session(_ transport: FakeTransport) throws -> OAuthSession {
   await #expect(throws: RemoteError.posix(EEXIST)) {
     try await provider.write(try RemotePath("/A.txt"), from: file)
   }
-  #expect(transport.requests.withLock { $0.count } == 2)
+  #expect(transport.requests.withLock { $0.count } == 3)
 }
 
 @Test func dropboxFollowsCursorAndRejectsMissingRange() async throws {
