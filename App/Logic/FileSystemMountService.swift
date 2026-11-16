@@ -18,7 +18,13 @@ enum FileSystemMountError: Error, LocalizedError {
 
   // launchd 165：同一个扩展 ID 之前从另一份 Diskit（开发版、DMG 里直接打开的）启动过。
   static func isConflictingExtension(_ error: Error) -> Bool {
-    ErrorDiagnostics.chain(error).contains { $0.domain == "OSLaunchdErrorDomain" && $0.code == 165 }
+    if case .conflictingExtension? = error as? FileSystemMountError { return true }
+    return ErrorDiagnostics.chain(error).contains { $0.domain == "OSLaunchdErrorDomain" && $0.code == 165 }
+  }
+
+  // mount 命令只给出文字：同样的冲突显示为 extensionKit 错误 2，文字随系统语言变，只认错误域和编号
+  nonisolated static func isConflictingExtension(commandOutput: String) -> Bool {
+    commandOutput.range(of: #"com\.apple\.extensionKit\.errorDomain\D{0,8}2(?!\d)"#, options: .regularExpression) != nil
   }
 }
 
@@ -162,7 +168,9 @@ enum FileSystemMountError: Error, LocalizedError {
   }
 
   private func mountOnce(_ connection: Connection, address: URL) async throws -> URL {
-    let point = operations.usesClient() ? nil : try prepareMountPoint(connection.id)
+    // macOS 27 的系统挂载用位置名称在 /Volumes 下建目录，名称带中文等非英文字符时会失败（errno 22），
+    // 这时改用 mount 命令挂到 Diskit 自己的目录；Finder 显示的盘名取自最后一级目录名，所以用位置名称命名。
+    let point = operations.usesClient() && connection.name.allSatisfy(\.isASCII) ? nil : try prepareMountPoint(connection)
     var started = false
     let requestID = UUID()
     defer { finishMount(requestID, caller: true) }
@@ -177,7 +185,7 @@ enum FileSystemMountError: Error, LocalizedError {
         pendingMounts[requestID] = PendingMount()
         let received: FileSystemCompletion<URL> = { result in
           // 先等系统结束，失败后只删空挂载点；取消时不能提前撤掉正在使用的目录。
-          if case .failure = result, let point { _ = rmdir(point.path) }
+          if case .failure = result, let point { Self.removeMountPoint(point) }
           completion(result)
         }
         if let point { try operations.mountCommand(address, point, received) }
@@ -185,7 +193,7 @@ enum FileSystemMountError: Error, LocalizedError {
         started = true
       }
     } catch {
-      if !started, let point { _ = rmdir(point.path) }
+      if !started, let point { Self.removeMountPoint(point) }
       throw error
     }
   }
@@ -279,7 +287,7 @@ enum FileSystemMountError: Error, LocalizedError {
   private func didUnmount(_ url: URL) {
     availableCapacity = availableCapacity.filter { $0.key.path != url.standardizedFileURL }
     let root = location.dataDirectory.appending(path: "Mounts").standardizedFileURL
-    if url.deletingLastPathComponent().standardizedFileURL == root { _ = rmdir(url.path) }
+    if url.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL == root { Self.removeMountPoint(url) }
   }
 
   func isFileSystemVolume(_ url: URL) -> Bool {
@@ -329,23 +337,46 @@ enum FileSystemMountError: Error, LocalizedError {
     return MountedShare(url: entry.path, availableBytes: availableCapacity[key] ?? entry.availableBytes)
   }
 
-  private func prepareMountPoint(_ id: UUID) throws -> URL {
+  // 挂载点是 Mounts/<编号>/<位置名称>：编号保证不和别的位置撞，名称给 Finder 显示
+  private func prepareMountPoint(_ connection: Connection) throws -> URL {
     let root = location.dataDirectory.appending(path: "Mounts", directoryHint: .isDirectory)
     try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-    let point = root.appending(path: id.uuidString.lowercased(), directoryHint: .isDirectory)
-    for directory in [root, point] {
-      var info = stat()
-      if lstat(directory.path, &info) == 0 {
-        guard info.st_mode & S_IFMT == S_IFDIR else { throw POSIXError(.ENOTDIR) }
-      } else {
-        guard errno == ENOENT else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
-      }
+    let parent = root.appending(path: connection.id.uuidString.lowercased(), directoryHint: .isDirectory)
+    let point = parent.appending(path: Self.mountDirectoryName(connection.name), directoryHint: .isDirectory)
+    for directory in [root, parent] { try Self.prepareDirectory(directory) }
+    // 先删掉上次留下的空目录（改名前的、只差大小写的都算），再建这次的；不是空目录说明里面有东西，不能挂在上面
+    for name in try FileManager.default.contentsOfDirectory(atPath: parent.path) {
+      _ = rmdir(parent.appending(path: name).path)
     }
-    guard try FileManager.default.contentsOfDirectory(atPath: point.path).isEmpty else {
-      throw POSIXError(.ENOTEMPTY)
-    }
+    try Self.prepareDirectory(point)
+    guard try FileManager.default.contentsOfDirectory(atPath: parent.path).count == 1,
+      try FileManager.default.contentsOfDirectory(atPath: point.path).isEmpty
+    else { throw POSIXError(.ENOTEMPTY) }
     return point
+  }
+
+  nonisolated private static func prepareDirectory(_ directory: URL) throws {
+    var info = stat()
+    if lstat(directory.path, &info) == 0 {
+      guard info.st_mode & S_IFMT == S_IFDIR else { throw POSIXError(.ENOTDIR) }
+    } else {
+      guard errno == ENOENT else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+      try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
+    }
+  }
+
+  // 目录名不能有斜杠，冒号在 Finder 里会显示成斜杠；太长时截到 255 字节以内
+  nonisolated static func mountDirectoryName(_ name: String) -> String {
+    var value = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    while value.utf8.count > 255 { value.removeLast() }
+    return value.isEmpty || value == "." || value == ".." ? "Diskit" : value
+  }
+
+  // 只删空目录：先删名称目录，再删编号目录
+  nonisolated private static func removeMountPoint(_ point: URL) {
+    _ = rmdir(point.path)
+    _ = rmdir(point.deletingLastPathComponent().path)
   }
 
   private func log(_ error: Error, operation: String, path: String = "") {

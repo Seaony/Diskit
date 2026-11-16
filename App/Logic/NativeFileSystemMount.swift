@@ -2,6 +2,7 @@ import AppKit
 import Core
 import Darwin
 import Foundation
+import OSLog
 import FSKit
 import ServiceManagement
 
@@ -27,11 +28,20 @@ import ServiceManagement
     process.executableURL = URL(filePath: "/sbin/mount")
     process.arguments = ["-F", "-t", "diskit", url.absoluteString, point.path]
     process.standardOutput = FileHandle.nullDevice
-    process.standardError = FileHandle.nullDevice
+    // 失败原因只在 mount 的输出里，记进日志方便排查
+    let errors = Pipe()
+    process.standardError = errors
     process.terminationHandler = { [process] _ in
       process.terminationHandler = nil
       if process.terminationStatus == 0 { completion(.success(point)) }
-      else { completion(.failure(FileSystemMountError.commandFailed(process.terminationStatus))) }
+      else {
+        let output = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        Logger(subsystem: "com.seaony.Diskit", category: "mount").error(
+          "mount 命令失败 status=\(process.terminationStatus) \(output, privacy: .public)")
+        completion(.failure(
+          FileSystemMountError.isConflictingExtension(commandOutput: output)
+            ? FileSystemMountError.conflictingExtension : FileSystemMountError.commandFailed(process.terminationStatus)))
+      }
     }
     // 不杀掉挂载命令；等系统给出结果，取消后的迟到成功也会被推出。
     try process.run()

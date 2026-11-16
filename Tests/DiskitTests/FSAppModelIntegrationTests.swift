@@ -170,7 +170,7 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
 @MainActor @Test func fsAppModelUnknownReadQuitFailurePersistsWithUnderlyingReason() async throws {
   let harness = FSAppModelHarness()
   defer { harness.clean() }
-  let connection = Connection(kind: .androidUSB, name: "断线手机", openInFinderAfterMount: false)
+  let connection = Connection(kind: .androidUSB, name: "Disconnected Phone", openInFinderAfterMount: false)
   let model = try harness.model(connections: [connection])
   await model.toggleConnection(connection)
   #expect(harness.mounts == 1)
@@ -467,9 +467,9 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   defer { harness.clean() }
   let clock = FSStatePollClock()
   let blocked = fsAppModelConnection()
-  let bad = Connection(kind: .androidUSB, name: "其他失败", autoMount: true,
+  let bad = Connection(kind: .androidUSB, name: "Other Failure", autoMount: true,
     openInFinderAfterMount: false, params: ["deviceID": "bad"])
-  let ready = Connection(kind: .androidUSB, name: "在线自动", autoMount: true,
+  let ready = Connection(kind: .androidUSB, name: "Online Auto", autoMount: true,
     openInFinderAfterMount: false, params: ["deviceID": "ready"])
   let manual = Connection(kind: .androidUSB, autoMount: false,
     openInFinderAfterMount: false, params: ["deviceID": "manual"])

@@ -65,8 +65,8 @@ import Testing
   func removeFiles() { try? FileManager.default.removeItem(at: location.dataDirectory.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()) }
 }
 
-private func mountConnection(_ kind: ConnectionKind = .androidUSB, id: UUID = UUID()) -> Connection {
-  Connection(id: id, kind: kind, name: "与挂载目录不同的名称")
+private func mountConnection(_ kind: ConnectionKind = .androidUSB, id: UUID = UUID(), name: String = "Fixture Phone") -> Connection {
+  Connection(id: id, kind: kind, name: name)
 }
 
 private func mountEntry(_ connection: Connection, path: String = "/Volumes/Fixture", filesystemID: Data = Data([1]), available: Int64? = nil) throws -> FileSystemMountService.MountEntry {
@@ -83,8 +83,10 @@ private func mountEntry(_ connection: Connection, path: String = "/Volumes/Fixtu
     let result = try await service.mount(connection, password: "")
     #expect(fixture.calls == [client ? "client" : "command"])
     if !client {
-      #expect(result.lastPathComponent == connection.id.uuidString.lowercased())
-      #expect(result.deletingLastPathComponent() == fixture.location.dataDirectory.appending(path: "Mounts", directoryHint: .isDirectory))
+      // Finder 用最后一级目录名当盘名，所以是 Mounts/<编号>/<位置名称>
+      #expect(result.lastPathComponent == connection.name)
+      #expect(result.deletingLastPathComponent().lastPathComponent == connection.id.uuidString.lowercased())
+      #expect(result.deletingLastPathComponent().deletingLastPathComponent() == fixture.location.dataDirectory.appending(path: "Mounts", directoryHint: .isDirectory))
       try FileManager.default.createDirectory(at: result, withIntermediateDirectories: true)
       let original = result.appending(path: "keep.txt")
       try Data("保留".utf8).write(to: original)
@@ -137,6 +139,66 @@ private func conflictingExtensionError() -> NSError {
   let service = FileSystemMountService(location: fixture.location, operations: operations)
   await #expect(throws: POSIXError.self) { try await service.mount(mountConnection(), password: "") }
   #expect(attempts == 1)
+}
+
+@MainActor @Test func nonEnglishNameMountsIntoOwnFolderAndCleansUpAfterEject() async throws {
+  let fixture = FileSystemMountFixture()
+  defer { fixture.removeFiles() }
+  let connection = mountConnection(.quark, name: "夸克网盘")
+  let service = FileSystemMountService(location: fixture.location, operations: fixture.operations())
+  let point = try await service.mount(connection, password: "")
+  #expect(fixture.calls == ["command"])
+  #expect(point.lastPathComponent == "夸克网盘")
+  #expect(FileManager.default.fileExists(atPath: point.path))
+  try await service.unmount(point)
+  #expect(!FileManager.default.fileExists(atPath: point.deletingLastPathComponent().path))
+  _ = try await service.mount(mountConnection(.quark, name: "Quark"), password: "")
+  #expect(fixture.calls == ["command", "client"])
+}
+
+@MainActor @Test func renamedLocationReusesFolderAfterRemovingEmptyLeftovers() async throws {
+  let fixture = FileSystemMountFixture()
+  defer { fixture.removeFiles() }
+  let id = UUID()
+  let parent = fixture.location.dataDirectory.appending(path: "Mounts/" + id.uuidString.lowercased(), directoryHint: .isDirectory)
+  for leftover in ["云盘-Work", "旧名字"] {
+    try FileManager.default.createDirectory(at: parent.appending(path: leftover), withIntermediateDirectories: true)
+  }
+  let service = FileSystemMountService(location: fixture.location, operations: fixture.operations())
+  let point = try await service.mount(mountConnection(.quark, id: id, name: "云盘-work"), password: "")
+  #expect(point.lastPathComponent == "云盘-work")
+  #expect(try FileManager.default.contentsOfDirectory(atPath: parent.path) == ["云盘-work"])
+}
+
+@MainActor @Test func commandMountRetriesOnceWhenSystemReportsExtensionConflict() async throws {
+  let fixture = FileSystemMountFixture()
+  defer { fixture.removeFiles() }
+  var attempts = 0
+  var operations = fixture.operations()
+  operations.mountCommand = { _, point, completion in
+    attempts += 1
+    #expect(FileManager.default.fileExists(atPath: point.path))
+    completion(attempts == 1 ? .failure(FileSystemMountError.conflictingExtension) : .success(point))
+  }
+  operations.sleep = { duration in if duration != .seconds(1) { try await Task.sleep(for: duration) } }
+  let service = FileSystemMountService(location: fixture.location, operations: operations)
+  let point = try await service.mount(mountConnection(.quark, name: "夸克网盘"), password: "")
+  #expect(attempts == 2)
+  #expect(point.lastPathComponent == "夸克网盘")
+}
+
+@Test func mountCommandOutputConflictMatchesEveryLanguageOnly() {
+  #expect(FileSystemMountError.isConflictingExtension(commandOutput: "mount: Loading resource: The operation couldn’t be completed. (com.apple.extensionKit.errorDomain error 2.)"))
+  #expect(FileSystemMountError.isConflictingExtension(commandOutput: "mount: Loading resource: 未能完成操作。（com.apple.extensionKit.errorDomain错误2。）"))
+  #expect(!FileSystemMountError.isConflictingExtension(commandOutput: "(com.apple.extensionKit.errorDomain error 22.)"))
+  #expect(!FileSystemMountError.isConflictingExtension(commandOutput: "mount: Loading resource: Resource busy"))
+}
+
+@Test func mountDirectoryNameKeepsNameButDropsPathCharacters() {
+  #expect(FileSystemMountService.mountDirectoryName("夸克网盘") == "夸克网盘")
+  #expect(FileSystemMountService.mountDirectoryName(" 照片/备份:2026 ") == "照片-备份-2026")
+  #expect(FileSystemMountService.mountDirectoryName("..") == "Diskit")
+  #expect(FileSystemMountService.mountDirectoryName(String(repeating: "盘", count: 100)).utf8.count <= 255)
 }
 
 @MainActor @Test func mountChecksDisabledAndUnavailableBeforeStartingFSKit() async throws {
