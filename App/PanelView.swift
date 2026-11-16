@@ -345,8 +345,9 @@ struct PanelView: View {
       }
       .padding(.bottom, 10) // grid: ok 插图与标题间距
       Text(L("还没有位置")).font(.system(size: 15, weight: .semibold)).foregroundStyle(DiskitTheme.primaryText)
-      Text(L("接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。"))
-        .font(.system(size: 12.5)).foregroundStyle(DiskitTheme.secondaryText)
+      // 副标题只是补充说明，比标题弱一档；不用三级文字色，浅色模式下会看不清。
+      Text(L("添加后，手机、相机、共享文件夹和网盘\n会像 U 盘一样出现在 Finder 里。"))
+        .font(.system(size: 11.5)).foregroundStyle(DiskitTheme.secondaryText.opacity(0.75))
         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
       Button { edit(nil) } label: { Label(L("添加位置"), systemImage: "plus") }
         .buttonStyle(FlatButtonStyle(prominent: true))

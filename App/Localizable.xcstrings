@@ -6354,19 +6354,19 @@
         }
       }
     },
-    "接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。": {
+    "添加后，手机、相机、共享文件夹和网盘\n会像 U 盘一样出现在 Finder 里。": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connect phones, cameras, network shares, or cloud drives, then use them right in Finder."
+            "value": "Once added, phones, cameras, shared folders, and cloud drives show up in Finder like USB drives."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "接入手机、相机、局域网共享或网盘，之后在 Finder 里直接使用。"
+            "value": "添加后，手机、相机、共享文件夹和网盘\n会像 U 盘一样出现在 Finder 里。"
           }
         }
       }
