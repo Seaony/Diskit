@@ -60,6 +60,11 @@ final class DiskitAppDelegate: NSObject, NSApplicationDelegate, UNUserNotificati
       return
     }
     pendingReopen = false
+    // 优先打开菜单栏图标下面的面板；图标看不见时才开独立窗口，保证总有入口
+    if MenuBarPanelOpener.open() {
+      windows.closePanelWindow()
+      return
+    }
     windows.prepareToOpen()
     performance?.requestPanel()
     openPanel()

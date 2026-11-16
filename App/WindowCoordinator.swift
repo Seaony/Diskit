@@ -66,9 +66,10 @@ import SwiftUI
     if window.isVisible || window.isMiniaturized { refreshActivation() }
   }
 
+  // 兜底的面板窗口不算：再次打开时要先试菜单栏下拉面板
   func showExistingWindow() -> Bool {
     guard
-      let window = windows.values.compactMap(\.window)
+      let window = windows.values.filter({ $0.role != "panel" }).compactMap(\.window)
         .first(where: { $0.isVisible || $0.isMiniaturized })
     else { return false }
     prepareToOpen()
@@ -77,6 +78,11 @@ import SwiftUI
     window.makeKeyAndOrderFront(nil)
     NSApplication.shared.activate()
     return true
+  }
+
+  // 下拉面板打开后，关掉之前图标看不见时开的面板窗口，免得同时有两个面板
+  func closePanelWindow() {
+    for entry in windows.values where entry.role == "panel" { entry.window?.close() }
   }
 
   private func refreshActivation(excluding closing: NSWindow? = nil) {
