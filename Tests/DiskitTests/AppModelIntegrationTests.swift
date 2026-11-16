@@ -168,6 +168,30 @@ func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownS
   #expect(harness.opened.last == url)
 }
 
+@MainActor @Test func firstNotificationAsksForPermissionOnceAndSendsAfterAllowed() async throws {
+  let harness = ModelHarness()
+  harness.status = .notDetermined
+  let model = harness.model()
+  model.reportMountFailure("first")
+  try await harness.notified.wait()
+  #expect(harness.requests == 1)
+  #expect(model.notificationAuthorization == .authorized)
+  #expect(harness.notifications.map(\.content.body) == ["first"])
+  model.reportMountFailure("second")
+  for _ in 0..<100 where harness.notifications.count < 2 { await Task.yield() }
+  #expect(harness.requests == 1)
+  #expect(harness.notifications.count == 2)
+}
+
+@MainActor @Test func deniedNotificationsAreNotRequestedAgainOrSent() async throws {
+  let harness = ModelHarness()
+  let model = harness.model()
+  model.reportMountFailure("denied")
+  for _ in 0..<100 { await Task.yield() }
+  #expect(harness.requests == 0)
+  #expect(harness.notifications.isEmpty)
+}
+
 @MainActor @Test func productionCacheMaintenanceOnlyTouchesInjectedDirectory() async throws {
   let harness = ModelHarness()
   let model = harness.model()

@@ -947,10 +947,19 @@ import UserNotifications
     if defaults.object(forKey: kind.preferenceKey) != nil,
       !defaults.bool(forKey: kind.preferenceKey)
     {
+      logger.info("通知未发送：设置里已关闭 kind=\(kind.rawValue, privacy: .public)")
       return
     }
     Task {
-      guard await system.notificationStatus() == .authorized else {
+      var status = await system.notificationStatus()
+      if status == .notDetermined {
+        // 第一次真要发通知时才向系统申请权限，用户看得出是为了什么；允许后这条接着发。
+        try? await system.requestNotifications()
+        status = await system.notificationStatus()
+        notificationAuthorization = status
+      }
+      guard status == .authorized || status == .provisional else {
+        logger.notice("通知未发送：系统通知未允许 kind=\(kind.rawValue, privacy: .public) status=\(status.rawValue, privacy: .public)")
         return
       }
       let content = UNMutableNotificationContent()
@@ -958,10 +967,14 @@ import UserNotifications
       content.body = body
       if let category { content.categoryIdentifier = category }
       content.userInfo = userInfo
-      try? await system.notify(
-        UNNotificationRequest(
-          identifier: identifier ?? "\(kind.rawValue)-\(UUID().uuidString)", content: content,
-          trigger: nil))
+      do {
+        try await system.notify(
+          UNNotificationRequest(
+            identifier: identifier ?? "\(kind.rawValue)-\(UUID().uuidString)", content: content,
+            trigger: nil))
+      } catch {
+        logger.error("通知发送失败 kind=\(kind.rawValue, privacy: .public) \(ErrorDiagnostics.summary(error), privacy: .public)")
+      }
     }
   }
 }
