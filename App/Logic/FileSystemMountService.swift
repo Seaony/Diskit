@@ -4,15 +4,21 @@ import Foundation
 import OSLog
 
 enum FileSystemMountError: Error, LocalizedError {
-  case disabled, unavailable, unsavedConnection, commandFailed(Int32)
+  case disabled, unavailable, unsavedConnection, commandFailed(Int32), conflictingExtension
 
   var errorDescription: String? {
     switch self {
     case .disabled: L("请先在系统设置中启用 Diskit 文件系统扩展。")
+    case .conflictingExtension: L("系统里还登记着另一份 Diskit。请退出其他位置打开的 Diskit，然后重试。")
     case .unavailable: L("此版本无法使用文件系统扩展，请重新构建并签名 Diskit。")
     case .unsavedConnection: L("请先保存这个位置，再验证挂载。")
     case .commandFailed(let code): LF("挂载命令失败（退出码 %@），请查看 Diskit 日志。", String(code))
     }
+  }
+
+  // launchd 165：同一个扩展 ID 之前从另一份 Diskit（开发版、DMG 里直接打开的）启动过。
+  static func isConflictingExtension(_ error: Error) -> Bool {
+    ErrorDiagnostics.chain(error).contains { $0.domain == "OSLaunchdErrorDomain" && $0.code == 165 }
   }
 }
 
@@ -131,6 +137,31 @@ enum FileSystemMountError: Error, LocalizedError {
     }
     try Task.checkCancellation()
     if let existing = mounted(connection) { return existing.url }
+    logger.info("开始挂载 id=\(connection.id.uuidString, privacy: .public) kind=\(connection.kind.rawValue, privacy: .public)")
+    do {
+      let url: URL
+      do { url = try await mountOnce(connection, address: address) }
+      catch where FileSystemMountError.isConflictingExtension(error) {
+        // 系统拒绝这次启动时会顺手清掉旧登记，稍等再挂一次就能成功，不让用户手动重试。
+        log(error, operation: "mount-conflict-retry", path: connection.id.uuidString)
+        try await operations.sleep(.seconds(1))
+        guard !cacheMaintenance else { throw ConnectionError.busy }
+        do { url = try await mountOnce(connection, address: address) }
+        catch where FileSystemMountError.isConflictingExtension(error) { throw FileSystemMountError.conflictingExtension }
+      }
+      if Task.isCancelled {
+        try await unmount(url)
+        throw CancellationError()
+      }
+      logger.info("挂载成功 id=\(connection.id.uuidString, privacy: .public) path=\(url.path, privacy: .public)")
+      return url
+    } catch {
+      log(error, operation: "mount", path: connection.id.uuidString)
+      throw error
+    }
+  }
+
+  private func mountOnce(_ connection: Connection, address: URL) async throws -> URL {
     let point = operations.usesClient() ? nil : try prepareMountPoint(connection.id)
     var started = false
     let requestID = UUID()
@@ -139,10 +170,9 @@ enum FileSystemMountError: Error, LocalizedError {
       sleep: operations.sleep,
       lateSuccess: { [self] url in await cleanUpLateMount(url) },
       nativeCompleted: { [weak self] in self?.finishMount(requestID, native: true) })
-    logger.info("开始挂载 id=\(connection.id.uuidString, privacy: .public) kind=\(connection.kind.rawValue, privacy: .public)")
     do {
       // 首次 USB 授权可等 60 秒，不能套用普通设备请求的 15 秒期限。
-      let url = try await request.run(timeout: .seconds(90)) { completion in
+      return try await request.run(timeout: .seconds(90)) { completion in
         guard !cacheMaintenance else { throw ConnectionError.busy }
         pendingMounts[requestID] = PendingMount()
         let received: FileSystemCompletion<URL> = { result in
@@ -154,15 +184,8 @@ enum FileSystemMountError: Error, LocalizedError {
         else { try operations.mountClient(address, received) }
         started = true
       }
-      if Task.isCancelled {
-        try await unmount(url)
-        throw CancellationError()
-      }
-      logger.info("挂载成功 id=\(connection.id.uuidString, privacy: .public) path=\(url.path, privacy: .public)")
-      return url
     } catch {
       if !started, let point { _ = rmdir(point.path) }
-      log(error, operation: "mount", path: connection.id.uuidString)
       throw error
     }
   }

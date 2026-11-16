@@ -95,6 +95,50 @@ private func mountEntry(_ connection: Connection, path: String = "/Volumes/Fixtu
   }
 }
 
+// 系统真实报错的结构：extensionKit 2 → RunningBoard 5 → launchd 165。
+private func conflictingExtensionError() -> NSError {
+  let launchd = NSError(domain: "OSLaunchdErrorDomain", code: 165)
+  let runningBoard = NSError(domain: "RBSRequestErrorDomain", code: 5, userInfo: [NSUnderlyingErrorKey: launchd])
+  return NSError(domain: "com.apple.extensionKit.errorDomain", code: 2, userInfo: [NSUnderlyingErrorKey: runningBoard])
+}
+
+@MainActor @Test func mountRetriesOnceWhenSystemStillHasAnotherDiskitExtension() async throws {
+  for failures in [1, 2] {
+    let fixture = FileSystemMountFixture()
+    var attempts = 0
+    var operations = fixture.operations()
+    operations.mountClient = { _, completion in
+      attempts += 1
+      if attempts <= failures { completion(.failure(conflictingExtensionError())) }
+      else { completion(.success(URL(filePath: "/Volumes/Fixture"))) }
+    }
+    operations.sleep = { duration in if duration != .seconds(1) { try await Task.sleep(for: duration) } }
+    let service = FileSystemMountService(location: fixture.location, operations: operations)
+    do {
+      let url = try await service.mount(mountConnection(), password: "")
+      #expect(failures == 1)
+      #expect(url.path == "/Volumes/Fixture")
+    } catch FileSystemMountError.conflictingExtension {
+      #expect(failures == 2)
+    }
+    #expect(attempts == 2)
+    #expect(!service.hasActiveVolumesOrMounts)
+  }
+}
+
+@MainActor @Test func mountDoesNotRetryOtherFailures() async throws {
+  let fixture = FileSystemMountFixture()
+  var attempts = 0
+  var operations = fixture.operations()
+  operations.mountClient = { _, completion in
+    attempts += 1
+    completion(.failure(POSIXError(.EIO)))
+  }
+  let service = FileSystemMountService(location: fixture.location, operations: operations)
+  await #expect(throws: POSIXError.self) { try await service.mount(mountConnection(), password: "") }
+  #expect(attempts == 1)
+}
+
 @MainActor @Test func mountChecksDisabledAndUnavailableBeforeStartingFSKit() async throws {
   for (shared, enabled, expected) in [(false, true, FileSystemExtensionState.unavailable), (true, false, .disabled), (true, nil, .unavailable)] as [(Bool, Bool?, FileSystemExtensionState)] {
     let fixture = FileSystemMountFixture()

@@ -7019,6 +7019,22 @@
         }
       }
     },
+    "系统里还登记着另一份 Diskit。请退出其他位置打开的 Diskit，然后重试。": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS still has another copy of Diskit registered. Quit any other copy of Diskit, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统里还登记着另一份 Diskit。请退出其他位置打开的 Diskit，然后重试。"
+          }
+        }
+      }
+    },
     "请打开系统设置，在登录项与扩展中启用 Diskit。": {
       "localizations": {
         "en": {
