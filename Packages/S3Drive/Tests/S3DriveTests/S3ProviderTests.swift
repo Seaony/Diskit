@@ -429,7 +429,27 @@ private func encodedPath(_ request: URLRequest) -> String? {
   #expect(try await mappedError(HTTPResponse(status: 429)) == .rateLimited)
   #expect(try await mappedError(HTTPResponse(status: 504)) == .posix(ETIMEDOUT))
   #expect(try await mappedError(HTTPResponse(status: 507)) == .posix(ENOSPC))
-  #expect(try await mappedError(HTTPResponse(status: 500)) == .posix(EIO))
+  // 5xx 和未识别的 XML 错误要带上状态码和 Code、Message，errno 仍按状态码定
+  #expect(
+    try await mappedError(HTTPResponse(status: 500))
+      == .failed(EIO, LF("S3 服务出错（HTTP %@），没有返回错误说明", String(500))))
+  #expect(
+    try await mappedError(
+      HTTPResponse(
+        status: 500,
+        body: Data(
+          "<Error><Code>InternalError</Code><Message>We encountered an internal error.</Message></Error>"
+            .utf8)))
+      == .failed(
+        EIO,
+        LF(
+          "S3 返回错误：%@（HTTP %@）", "InternalError: We encountered an internal error.",
+          String(500))))
+  #expect(
+    try await mappedError(
+      HTTPResponse(
+        status: 403, body: Data("<Error><Code>RequestTimeTooSkewed</Code></Error>".utf8)))
+      == .failed(EACCES, LF("S3 返回错误：%@（HTTP %@）", "RequestTimeTooSkewed", String(403))))
 }
 
 @Test(arguments: [true, false])

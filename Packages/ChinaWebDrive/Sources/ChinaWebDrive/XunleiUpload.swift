@@ -192,8 +192,23 @@ struct AliyunOSSXunleiUploader: XunleiVendorUploader {
       case 429, 503: return RemoteError.rateLimited
       case 507: return RemoteError.posix(ENOSPC)
       case 400, 416: return RemoteError.posix(EINVAL)
-      default: return RemoteError.posix(EIO)
+      default:
+        // 其他状态把对象存储的原话和错误码写出来，方便排查
+        return RemoteError.failed(
+          EIO,
+          LF(
+            "迅雷上传服务返回错误：%@（错误码 %@，HTTP %@）",
+            error.message.isEmpty ? L("没有说明") : error.message, error.code,
+            String(error.statusCode)))
       }
+    }
+    // 不是网络错误就报出它自己的说明，不压成笼统的读写错误
+    if !NetworkFailure.isTransportError(error), (error as NSError).domain != NSPOSIXErrorDomain {
+      // SDK 错误的完整描述里有类型和字段（比如 CRC64 校验不一致时两端的值），一起带上
+      let text = error.localizedDescription
+      let full = String(describing: error)
+      return RemoteError.failed(
+        EIO, LF("迅雷上传失败：%@", full == text || full.isEmpty ? text : text + "（" + full + "）"))
     }
     return NetworkFailure.posix(error)
   }

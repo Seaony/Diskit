@@ -261,10 +261,17 @@ private func created(_ id: String = "new", url: String = "https://files.example/
   let url = try local(Data("new".utf8))
   defer { try? FileManager.default.removeItem(at: url) }
   let (provider, http) = try setup([
-    list([file("old", "same")]), created(), FileReply("/part", status: 500),
+    list([file("old", "same")]), created(),
+    FileReply(
+      "/part", status: 500,
+      bytes: Data("<Error><Code>InternalError</Code><Message>oss busy</Message></Error>".utf8)),
   ])
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  // OSS 的 Code、Message 和状态码要带进提示，errno 仍是 EIO
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("阿里云盘返回错误：%@（HTTP %@）", "InternalError: oss busy", String(500)))
+  ) {
     try await provider.write(RemotePath("/same"), from: url)
   }
   let requests = await http.fileRequests()
@@ -280,8 +287,12 @@ private func created(_ id: String = "new", url: String = "https://files.example/
     FileReply("complete", json: file("new", "same")), FileReply("recyclebin/trash", status: 403),
   ])
   try await provider.connect()
-  await #expect(throws: AliyunFileError.replacementCleanupFailed) {
+  await #expect {
     try await provider.write(RemotePath("/same"), from: url)
+  } throws: { error in
+    // 回收失败的原因（这里是 HTTP 403）要跟着一起报出来
+    guard case .replacementCleanupFailed(let cause) = error as? AliyunFileError else { return false }
+    return (cause as? RemoteError) == .posix(EACCES)
   }
   let requests = await http.fileRequests()
   let trash = try #require(requests.last)

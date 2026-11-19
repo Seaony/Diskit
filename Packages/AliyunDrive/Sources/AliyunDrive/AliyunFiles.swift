@@ -78,7 +78,12 @@ struct AliyunMutation: Decodable, Sendable {
   enum CodingKeys: String, CodingKey { case asyncTaskID = "async_task_id" }
 }
 
-struct AliyunTaskState: Decodable, Sendable { let state: String }
+// 失败时服务器可能附带 code、message，有就带进提示
+struct AliyunTaskState: Decodable, Sendable {
+  let state: String
+  let code: String?
+  let message: String?
+}
 
 struct AliyunPart: Equatable, Sendable {
   let number: Int
@@ -105,15 +110,39 @@ enum AliyunMultipart {
   }
 }
 
-public enum AliyunFileError: Error, LocalizedError, CustomNSError, Sendable {
-  case duplicateNames, replacementCleanupFailed
+public enum AliyunFileError: Error, Equatable, LocalizedError, CustomNSError, Sendable {
+  case duplicateNames
+  // 带上回收旧文件失败的原因，提示和日志里都能看到
+  case replacementCleanupFailed(any Error)
   public static var errorDomain: String { NSPOSIXErrorDomain }
-  public var errorCode: Int { self == .duplicateNames ? Int(EEXIST) : Int(EIO) }
+  public var errorCode: Int {
+    switch self {
+    case .duplicateNames: Int(EEXIST)
+    case .replacementCleanupFailed: Int(EIO)
+    }
+  }
   public var errorDescription: String? {
     switch self {
     case .duplicateNames: L("目录中已有多份同名文件，无法确定要操作哪一份")
-    case .replacementCleanupFailed: L("新文件已上传，旧文件回收失败或结果未确认，请检查同名文件")
+    case .replacementCleanupFailed(let cause):
+      L("新文件已上传，旧文件回收失败或结果未确认，请检查同名文件") + "\n" + cause.localizedDescription
     }
   }
-  public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
+  // 回收失败时按原因的错误域和错误码比较
+  public static func == (lhs: AliyunFileError, rhs: AliyunFileError) -> Bool {
+    switch (lhs, rhs) {
+    case (.duplicateNames, .duplicateNames): true
+    case (.replacementCleanupFailed(let left), .replacementCleanupFailed(let right)):
+      (left as NSError).domain == (right as NSError).domain
+        && (left as NSError).code == (right as NSError).code
+    default: false
+    }
+  }
+  public var errorUserInfo: [String: Any] {
+    var info: [String: Any] = [NSLocalizedDescriptionKey: errorDescription ?? ""]
+    if case .replacementCleanupFailed(let cause) = self {
+      info[NSUnderlyingErrorKey] = cause as NSError
+    }
+    return info
+  }
 }

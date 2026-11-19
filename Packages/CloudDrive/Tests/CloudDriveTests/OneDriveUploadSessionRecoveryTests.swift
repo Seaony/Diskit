@@ -109,7 +109,10 @@ func oneDriveRecoveryIsBoundedAndNeverOverwrites(mode: String) async throws {
   try Data(repeating: 1, count: 327683).write(to: file)
   try await provider.connect()
   let expected: RemoteError = mode == "conflict" ? .posix(EEXIST)
-    : mode == "invalid" ? .protocolError : mode == "stalled" ? .posix(EIO) : .posix(ENOENT)
+    : mode == "invalid" ? .protocolError
+    : mode == "stalled"
+      ? .failed(EIO, LF("OneDrive 上传进度停在第 %lld 字节，重试 %lld 次仍没有前进", Int64(0), Int64(3)))
+    : .posix(ENOENT)
   await #expect(throws: expected) {
     try await provider.write(RemotePath("/recovery.bin"), from: file)
   }

@@ -73,7 +73,7 @@ private let photo = CameraCatalogItem(kind: .file, name: "photo.jpg", handle: 7,
 @Test @MainActor func cameraAccessUsesSessionAndRetainsFailures() async throws {
   let session = Session()
   let access = ImageCaptureAccess(session: session)
-  await #expect(throws: RemoteError.posix(EIO)) { try await access.snapshot() }
+  await #expect(throws: RemoteError.failed(EIO, L("相机会话还没打开"))) { try await access.snapshot() }
   try await access.open()
   #expect(session.waited)
   _ = try await access.snapshot()
@@ -96,12 +96,13 @@ private let photo = CameraCatalogItem(kind: .file, name: "photo.jpg", handle: 7,
     try await access.read(handle: 7, offset: 0, length: 1)
   }
   await access.close()
-  await #expect(throws: RemoteError.posix(EIO)) {
-    try await access.read(handle: 7, offset: 0, length: 1)
-  }
-  await #expect(throws: RemoteError.posix(EIO)) { try await access.delete(handles: [7]) }
+  let notOpen = RemoteError.failed(EIO, L("相机会话还没打开"))
+  await #expect(throws: notOpen) { try await access.read(handle: 7, offset: 0, length: 1) }
+  await #expect(throws: notOpen) { try await access.delete(handles: [7]) }
   session.available = false
-  await #expect(throws: RemoteError.posix(EIO)) { try await access.open() }
+  let removed = RemoteError.failed(EIO, L("相机已经拔出或断开"))
+  await #expect(throws: removed) { try await access.open() }
+  await #expect(throws: removed) { try await access.snapshot() }
   session.available = true
   session.failure = RemoteError.posix(EBUSY)
   await #expect(throws: RemoteError.posix(EBUSY)) { try await access.open() }

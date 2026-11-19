@@ -87,7 +87,11 @@ func s3PreflightFailureNeverWrites(status: Int) async throws {
   let transport = UnconditionalObjectStore(headStatus: status)
   let s3 = safetyProvider(transport)
   try await s3.connect()
-  await #expect(throws: RemoteError.posix(status == 403 ? EACCES : EIO)) {
+  let expected =
+    status == 403
+    ? RemoteError.posix(EACCES)
+    : RemoteError.failed(EIO, LF("S3 服务出错（HTTP %@），没有返回错误说明", String(status)))
+  await #expect(throws: expected) {
     try await s3.makeDirectory(try RemotePath("/item"))
   }
   #expect(await transport.object == nil)

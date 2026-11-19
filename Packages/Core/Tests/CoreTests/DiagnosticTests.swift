@@ -4,17 +4,20 @@ import Testing
 
 @testable import Core
 
-@Test func diagnosticsExcludeUntrustedErrorMetadata() throws {
-  let secret = "password=private-token-cookie-file-content"
+@Test func diagnosticsKeepTheFullErrorChain() throws {
+  let underlying = NSError(
+    domain: "IOUSBHostErrorDomain", code: -536_870_199,
+    userInfo: [NSLocalizedDescriptionKey: "Failed to create IOUSBHostInterface."])
   let error = NSError(
-    domain: secret, code: 17,
-    userInfo: [
-      NSLocalizedDescriptionKey: secret,
-      NSURLErrorKey: URL(string: "https://example.invalid/?token=secret")!,
-    ])
+    domain: "Example", code: 17,
+    userInfo: [NSLocalizedDescriptionKey: "outer failure", NSUnderlyingErrorKey: underlying])
   let event = try #require(SafeDiagnostic(category: .cloudDrive, operation: .request, error: error))
   #expect(event.message == "request application 17")
-  #expect(!String(describing: event).contains(secret))
+  #expect(event.logLine.contains("Example 17: outer failure"))
+  #expect(event.logLine.contains("IOUSBHostErrorDomain -536870199 (0xe00002c9): Failed to create IOUSBHostInterface."))
+  let reason = SafeDiagnostic(
+    category: .adb, operation: .connect, error: RemoteError.failed(EIO, "phone said no"))
+  #expect(reason?.logLine.contains("errno 5: phone said no") == true)
   #expect(SafeDiagnostic(category: .adb, operation: .connect, error: CancellationError()) == nil)
   #expect(SafeDiagnostic(category: .adb, operation: .connect, error: URLError(.cancelled)) == nil)
   #expect(SafeDiagnostic(category: .adb, operation: .connect, error: POSIXError(.ECANCELED)) == nil)

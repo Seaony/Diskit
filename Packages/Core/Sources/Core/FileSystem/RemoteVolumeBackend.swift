@@ -178,8 +178,9 @@ public actor RemoteVolumeBackend {
 
   static func isDisconnect(_ error: Error) -> Bool {
     if NetworkFailure.isTransportError(error) { return true }
-    if let error = error as? RemoteError, error == .notConnected || error == .protocolError {
-      return true
+    if let error = error as? RemoteError {
+      if error == .notConnected || error == .protocolError { return true }
+      if case .malformed = error { return true }
     }
     let value = error as NSError
     return value.domain == NSPOSIXErrorDomain
@@ -471,7 +472,10 @@ public actor RemoteVolumeBackend {
     guard
       let data = try await RemoteReadCache.shared.read(
         cached.url, expectedSize: cached.item.size, offset: offset, length: length)
-    else { throw RemoteError.posix(EIO) }
+    else {
+      // 刚装进缓存的文件被清掉了或大小对不上
+      throw RemoteError.failed(EIO, LF("刚下载到本机缓存的文件不见了或大小不对：%@", cached.url.path))
+    }
     firstReadSeconds = Self.seconds(since: firstReadStarted)
     completed = true
     return data

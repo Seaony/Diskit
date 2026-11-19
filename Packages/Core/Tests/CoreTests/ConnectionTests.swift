@@ -516,7 +516,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   await #expect(throws: RemoteError.occupied) { try await manager.save(remote, password: "") }
   f.smb.mountFailure = RemoteError.occupied
   await manager.toggle(remote)
-  #expect(logged == Array(repeating: RemoteError.occupied.localizedDescription, count: 2))
+  #expect(logged.map(firstLine) == Array(repeating: RemoteError.occupied.localizedDescription, count: 2))
   #expect(notified.count == 1)
   f.smb.mountFailure = nil
   let smb = sample()
@@ -537,36 +537,35 @@ private func sample(_ name: String = "Windows") -> Connection {
   await manager.toggle(smb)
   await #expect(throws: ConnectionError.busy) { try await manager.remove(smb) }
   #expect(logged.count == 7)
-  #expect(logged.suffix(2) == Array(repeating: ConnectionError.busy.localizedDescription, count: 2))
+  #expect(logged.suffix(2).map(firstLine) == Array(repeating: ConnectionError.busy.localizedDescription, count: 2))
   #expect(notified.count == 2)
 }
 
-@Test @MainActor func connectionLogsNeverIncludeUnknownErrorDetails() async throws {
+private func firstLine(_ value: String) -> String {
+  String(value.split(separator: "\n", omittingEmptySubsequences: false)[0])
+}
+
+@Test @MainActor func connectionLogsKeepTheFullErrorChain() async throws {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
   var logged: [String] = []
   manager.operationFailed = { logged.append($0) }
-  f.smb.mountFailure = NSError(
-    domain: NSURLErrorDomain, code: NSURLErrorTimedOut,
-    userInfo: [
-      NSLocalizedDescriptionKey:
-        "https://secret.example/?token=secret Cookie=secret password=secret"
-    ])
-  await manager.toggle(Connection(kind: .quark, name: "含敏感信息的名称"))
-  #expect(logged == [ConnectionError.timeout.localizedDescription])
+  let underlying = NSError(
+    domain: "IOUSBHostErrorDomain", code: -536_870_199,
+    userInfo: [NSLocalizedDescriptionKey: "Failed to create IOUSBHostInterface."])
   manager.reportOperationError(
     NSError(
-      domain: NSPOSIXErrorDomain, code: Int(EACCES),
-      userInfo: [NSLocalizedDescriptionKey: "token=secret"]))
-  manager.reportOperationError(
-    NSError(domain: "unknown", code: 99, userInfo: [NSLocalizedDescriptionKey: "Cookie=secret"]))
+      domain: "unknown", code: 99,
+      userInfo: [NSLocalizedDescriptionKey: "outer reason", NSUnderlyingErrorKey: underlying]))
+  manager.reportOperationError(RemoteError.failed(EIO, "phone said no"))
   manager.reportOperationError(CancellationError())
-  #expect(
-    logged == [
-      ConnectionError.timeout.localizedDescription, RemoteError.posix(EACCES).localizedDescription,
-      L("操作没有完成，请稍后重试"),
-    ])
+  #expect(logged.count == 2)
+  #expect(firstLine(logged[0]) == "outer reason")
+  #expect(logged[0].contains("unknown 99: outer reason"))
+  #expect(logged[0].contains("IOUSBHostErrorDomain -536870199 (0xe00002c9): Failed to create IOUSBHostInterface."))
+  #expect(firstLine(logged[1]) == "phone said no")
+  #expect(logged[1].contains("RemoteError.failed errno 5: phone said no"))
 }
 
 @Test(arguments: [EIO, EBUSY, ENOTCONN])
@@ -587,7 +586,8 @@ private func sample(_ name: String = "Windows") -> Connection {
   let message = HumanError.posix(code)
   #expect(manager.states[connection.id] == .failed(message))
   #expect(manager.detailedErrors[connection.id] == "\(message) (errno \(code))")
-  #expect(logged == [message])
+  #expect(logged.map(firstLine) == ["\(message) (errno \(code))"])
+  #expect(logged[0].contains("NSCocoaErrorDomain \(NSFileReadUnknownError)"))
   #expect(notified == [message])
 
   f.smb.mountFailure = nil
@@ -596,7 +596,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .failed(message))
   #expect(manager.detailedErrors[connection.id] == "\(message) (errno \(code))")
-  #expect(logged == [message, message])
+  #expect(logged.map(firstLine) == Array(repeating: "\(message) (errno \(code))", count: 2))
   #expect(notified == [message])
 }
 
@@ -620,7 +620,7 @@ private struct ActionableMountFailure: Error, LocalizedError {
   #expect(manager.states[connection.id] == .failed(failure.localizedDescription))
   #expect(manager.detailedErrors[connection.id] == failure.localizedDescription)
   #expect(notified == [failure.localizedDescription])
-  #expect(logged == [L("操作没有完成，请稍后重试")])
+  #expect(logged.map(firstLine) == [failure.localizedDescription])
 }
 
 @Test @MainActor func webDriveAuthenticationFailureAsksForLogin() async {

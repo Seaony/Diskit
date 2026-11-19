@@ -24,6 +24,11 @@ final class SystemADBNetworkIO: ADBNetworkIO, @unchecked Sendable {
     }
     connection = NWConnection(to: endpoint, using: parameters)
   }
+  init(plainTCP endpoint: NWEndpoint) {
+    let tcp = NWProtocolTCP.Options()
+    tcp.noDelay = true
+    connection = NWConnection(to: endpoint, using: NWParameters(tls: nil, tcp: tcp))
+  }
   func start(_ handler: @escaping @Sendable (NWConnection.State) -> Void) {
     connection.stateUpdateHandler = handler
     connection.start(queue: queue)

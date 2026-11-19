@@ -103,7 +103,10 @@ func xunleiVerificationDoesNotRefreshLogin(status: Int) async throws {
   #expect(XunleiPartFile.bufferSize == 128 * 1024)
   part = nil
   #expect(!FileManager.default.fileExists(atPath: url.path))
-  #expect(throws: RemoteError.posix(EIO)) {
+  #expect(
+    throws: RemoteError.failed(
+      EIO, LF("本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动", Int64(1)))
+  ) {
     _ = try XunleiPartFile(source: source, offset: Int64(bytes.count), length: 1)
   }
 }
@@ -200,7 +203,9 @@ private let newXLListing =
       refreshes.withLock { $0 += 1 }
       return old
     }, transport: XunleiReplies { _ in xlReply(#"{"error":"invalid_token"}"#, status: 500) })
-  await #expect(throws: RemoteError.http(500)) {
+  await #expect(
+    throws: RemoteError.failed(EIO, LF("迅雷云盘返回错误：%@（HTTP %@）", "invalid_token", String(500)))
+  ) {
     _ = try await session.request(method: "GET", path: "about")
   }
   #expect(refreshes.withLock { $0 } == 0)

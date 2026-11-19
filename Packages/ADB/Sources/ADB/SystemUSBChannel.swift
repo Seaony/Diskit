@@ -32,7 +32,13 @@ actor SystemUSBChannel: USBChannel {
       self.packetSize = endpoints.packetSize
     } catch {
       opened?.destroy()
-      throw USBTransport.mappedError(error)
+      // 被别的程序独占时 IOUSBHost 只报笼统的 internal error（0xe00002c9），
+      // 系统注册表里的 UsbExclusiveOwner 写着是谁占着（如 "pid 14435, adb"）
+      let owner = IORegistryEntryCreateCFProperty(
+        service, "UsbExclusiveOwner" as CFString, kCFAllocatorDefault, 0)?
+        .takeRetainedValue() as? String
+      if let owner, !owner.isEmpty { throw USBTransport.occupied(by: owner) }
+      throw USBTransport.mappedOpenError(error)
     }
   }
 

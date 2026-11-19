@@ -132,7 +132,10 @@ func dropboxUploadRejectsImpossibleServerOffset(offset: Int) async throws {
   let (provider, file) = try uploadFixture(transport)
   defer { try? FileManager.default.removeItem(at: file) }
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("服务器返回错误：%@（HTTP %@）", #"{"error":{".tag":"not_found"}}"#, String(409)))
+  ) {
     try await provider.write(RemotePath("/sample"), from: file)
   }
   #expect(await transport.requests.count == 5)
@@ -158,8 +161,14 @@ func dropboxUploadRejectsImpossibleServerOffset(offset: Int) async throws {
   let (provider, file) = try uploadFixture(transport)
   defer { try? FileManager.default.removeItem(at: file) }
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  // 会话已关闭时照实带上 Dropbox 返回的 closed，errno 仍是 EIO
+  let error = await #expect(throws: RemoteError.self) {
     try await provider.write(RemotePath("/sample"), from: file)
+  }
+  if case .failed(EIO, let reason) = error {
+    #expect(reason.contains("closed"))
+  } else {
+    Issue.record("应报出具体原因：\(String(describing: error))")
   }
   #expect(await transport.requests.filter { $0.url?.lastPathComponent == "start" }.count == 1)
 }

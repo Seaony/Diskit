@@ -1,7 +1,7 @@
 import Core
 import Foundation
 
-public actor ADBSession {
+public actor ADBSession: ADBStreamSession {
   private let now: @Sendable () -> ContinuousClock.Instant
   private let transport: any ADBTransport
   private let identity: ADBIdentity
@@ -174,7 +174,7 @@ public actor ADBSession {
       throw RemoteError.protocolError
     }
   }
-  public func write(_ bytes: Data, timeout: TimeInterval = RemoteTimeout.deviceRequest) async throws
+  public func write(_ bytes: Data, timeout: TimeInterval) async throws
   {
     guard let remote else { throw RemoteError.notConnected }
     let deadline = try operationDeadline(timeout: timeout)
@@ -195,7 +195,7 @@ public actor ADBSession {
       offset = end
     }
   }
-  public func readExactly(_ count: Int, timeout: TimeInterval = RemoteTimeout.deviceRequest)
+  public func readExactly(_ count: Int, timeout: TimeInterval)
     async throws -> Data
   {
     let deadline = try operationDeadline(timeout: timeout)
@@ -211,7 +211,7 @@ public actor ADBSession {
     buffered.removeFirst(count)
     return result
   }
-  public func readChunk(timeout: TimeInterval = RemoteTimeout.deviceRequest) async throws -> Data? {
+  public func readChunk(timeout: TimeInterval) async throws -> Data? {
     let deadline = try operationDeadline(timeout: timeout)
     if !buffered.isEmpty {
       let value = buffered

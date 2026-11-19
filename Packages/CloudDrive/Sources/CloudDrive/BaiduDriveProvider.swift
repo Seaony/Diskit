@@ -192,7 +192,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     defer { invalidateListings() }
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     let size = Int64(fileSize)
     let blockSize: Int64 =
@@ -231,7 +231,8 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       let length = min(blockSize, size - offset)
       let data = try handle.read(upToCount: Int(length)) ?? Data()
       guard data.count == Int(length) else {
-        throw RemoteError.posix(EIO)
+        throw CloudDriveSupport.localShortRead(
+          localFile, offset: offset, expected: length, actual: data.count)
       }
       var form = MultipartFormData()
       form.addFile("file", filename: "part-\(part)", data: data)
@@ -262,9 +263,8 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         "block_list": try jsonString(confirmedHashes), "uploadid": uploadID, "rtype": "0",
       ])
     let done = try decode(BaiduCreated.self, from: created)
-    guard done.errno == 0, done.fs_id != nil else {
-      throw mapBusiness(done.errno)
-    }
+    guard done.errno == 0 else { throw mapBusiness(done.errno) }
+    guard done.fs_id != nil else { throw RemoteError.protocolError }
     progress?(size, size)
   }
 
@@ -448,7 +448,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       if let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
         let errno = status.code, errno != 0
       {
-        throw mapBusiness(errno)
+        throw mapBusiness(errno, message: status.message)
       }
       do {
         return try JSONDecoder().decode(type, from: response.body)
@@ -469,7 +469,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       guard let status = try? JSONDecoder().decode(BaiduStatus.self, from: response.body),
         let errno = status.code
       else { throw RemoteError.protocolError }
-      if errno != 0 { throw mapBusiness(errno) }
+      if errno != 0 { throw mapBusiness(errno, message: status.message) }
       guard let result = try? JSONDecoder().decode(BaiduFileResult.self, from: response.body) else {
         throw RemoteError.protocolError
       }
@@ -496,8 +496,10 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     while remaining > 0 {
       try Task.checkCancellation()
       let length = min(blockSize, remaining)
-      guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-        throw RemoteError.posix(EIO)
+      let data = try handle.read(upToCount: Int(length)) ?? Data()
+      guard data.count == Int(length) else {
+        throw CloudDriveSupport.localShortRead(
+          file, offset: size - remaining, expected: length, actual: data.count)
       }
       hasher.update(data: data)
       values.append(CloudDriveSupport.md5Hex(data))
@@ -521,7 +523,7 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     return string
   }
 
-  private func mapBusiness(_ code: Int?) -> RemoteError {
+  private func mapBusiness(_ code: Int?, message: String? = nil) -> RemoteError {
     switch code {
     case -6, 20016, 20017, 31045:
       return .unauthorized
@@ -533,14 +535,13 @@ public actor BaiduDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       return .posix(ENOENT)
     case -10, 31190:
       return .posix(ENOSPC)
-    case 20012:
-      return .posix(EIO)
     case 31034, 42905:
       return .rateLimited
     case 31365:
       return .posix(EFBIG)
     default:
-      return .protocolError
+      // 其他错误码照实带上百度网盘的原话
+      return CloudDriveSupport.businessFailure(L("百度网盘"), code: code, message: message)
     }
   }
 
@@ -566,9 +567,19 @@ private struct BaiduStatus: Decodable {
   let error_code: Int?
   let errmsg: String?
   let show_msg: String?
+  let error_msg: String?
   var code: Int? {
     if let errno, errno != 0 { return errno }
     return error_code ?? errno
+  }
+  // 百度的说明可能在 errmsg、show_msg 或 error_msg 里，都带上
+  var message: String? {
+    var parts: [String] = []
+    for text in [errmsg, show_msg, error_msg].compactMap({ $0 })
+    where !text.isEmpty && !parts.contains(text) {
+      parts.append(text)
+    }
+    return parts.isEmpty ? nil : parts.joined(separator: " / ")
   }
 }
 

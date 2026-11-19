@@ -15,12 +15,12 @@ func quitFailureUsesTheSharedUnderlyingReason(code: Int32) {
   #expect(QuitFailure.reason(for: failure).contains(HumanError.posix(EBUSY)))
 }
 
-@Test func unknownQuitFailureKeepsItsCodeWithoutTheSystemJargon() {
+@Test func unknownQuitFailureShowsItsOwnTextAndCode() {
   let failure = NSError(domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
                         userInfo: [NSLocalizedDescriptionKey: "raw unknown error"])
   let reason = QuitFailure.reason(for: failure)
   #expect(reason == HumanError.ejectionDetail(failure))
   #expect(reason.contains("256"))
   #expect(failure.localizedDescription == "raw unknown error")
-  #expect(!reason.contains("raw unknown error"))
+  #expect(reason.contains("raw unknown error"))
 }

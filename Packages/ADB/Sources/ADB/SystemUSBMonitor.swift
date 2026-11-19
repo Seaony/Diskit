@@ -13,7 +13,7 @@ import IOKit
     self.changed = changed
     guard port == nil else { return }
     guard let port = IONotificationPortCreate(kIOMainPortDefault) else {
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(EIO, L("系统没能创建 USB 插拔通知（IONotificationPortCreate 返回空）"))
     }
     self.port = port
     IONotificationPortSetDispatchQueue(port, .main)

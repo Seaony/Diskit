@@ -114,9 +114,13 @@ func mobileRefreshFailureDoesNotRetainBrokenTask(mode: String) async throws {
 }
 
 @Test func chinaBusinessErrorsAndMalformedFlexibleValuesRemainExplicit() throws {
-  for (code, expected) in [(404, ENOENT), (409, EEXIST), (507, ENOSPC), (999, EIO)] {
+  for (code, expected) in [(404, ENOENT), (409, EEXIST), (507, ENOSPC)] {
     #expect(ChinaWebSupport.mapBusiness(code: code, message: nil) == .posix(expected))
   }
+  // 认不出的错误码要把对方原话和错误码写出来，不能只剩 EIO
+  #expect(
+    ChinaWebSupport.mapBusiness(code: 999, message: "busy", rawCode: "999")
+      == .failed(EIO, LF("移动云盘返回错误：%@（错误码 %@）", "busy", "999")))
   #expect(ChinaWebSupport.mapBusiness(code: 200, message: "file size too large") == .posix(EFBIG))
   #expect(ChinaWebSupport.mapBusiness(code: 200, message: "same name") == .posix(EEXIST))
   #expect(ChinaWebSupport.mapBusiness(code: 429, message: nil) == .rateLimited)

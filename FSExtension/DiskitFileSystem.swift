@@ -70,10 +70,13 @@ final class DiskitFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations, @u
       } catch {
         FileSystemLoginEvent.postIfNeeded(error, connection: connection)
         if let backend { await backend.disconnect() }
-        let value = error as NSError
         logger.error(
-          "load failed connection=\(connection.id.uuidString, privacy: .public) domain=\(value.domain, privacy: .public) code=\(value.code)"
+          "load failed connection=\(connection.id.uuidString, privacy: .public) \(ErrorChain.lines(error).joined(separator: " <- "), privacy: .public)"
         )
+        // App 只能拿到 errno，真实原因写到共享目录给它读
+        if let location = try? SharedStorageLocation() {
+          try? MountFailureRecord.save(error, connection: connection, dataDirectory: location.dataDirectory)
+        }
         reply.body(nil, Self.filesystemError(error))
       }
     }

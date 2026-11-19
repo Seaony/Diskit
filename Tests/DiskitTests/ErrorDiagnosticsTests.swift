@@ -1,29 +1,27 @@
 import Foundation
 import Testing
 
-@Test func errorDiagnosticsIncludesEveryUnderlyingErrorWithoutPrivateUserInfo() {
-  let secret = "private-token-should-not-appear"
+// 日志记完整错误链：每层的错误域、错误码和原文都在，推出被占用时带上占用者进程号
+@Test func errorDiagnosticsIncludesEveryUnderlyingErrorWithItsOwnText() {
   let leaf = NSError(
     domain: NSPOSIXErrorDomain, code: Int(EIO),
-    userInfo: [NSLocalizedDescriptionKey: secret])
+    userInfo: [NSLocalizedDescriptionKey: "leaf reason"])
   let nested = NSError(
     domain: "fixture.nested", code: 7,
-    userInfo: [NSUnderlyingErrorKey: leaf,
+    userInfo: [NSUnderlyingErrorKey: leaf, NSLocalizedDescriptionKey: "nested reason",
                NSFileManagerUnmountDissentingProcessIdentifierErrorKey: NSNumber(value: 42)])
   let additional = NSError(domain: "fixture.additional", code: 11)
   let outer = NSError(
     domain: NSCocoaErrorDomain, code: NSFileReadUnknownError,
     userInfo: [NSUnderlyingErrorKey: nested, NSMultipleUnderlyingErrorsKey: [leaf, additional],
-               NSLocalizedDescriptionKey: secret, NSLocalizedFailureReasonErrorKey: secret,
-               NSURLErrorKey: URL(string: "https://user:password@fixture.invalid/private")!,
-               "credential": secret])
+               NSLocalizedDescriptionKey: "outer reason"])
 
   let summary = ErrorDiagnostics.summary(outer)
-  #expect(summary == "domain=NSCocoaErrorDomain code=256; domain=fixture.nested code=7 dissenting_pid=42; domain=NSPOSIXErrorDomain code=5; domain=fixture.additional code=11")
-  #expect(outer.userInfo["credential"] as? String == secret)
-  #expect(!summary.contains(secret))
-  #expect(!summary.contains("password"))
-  #expect(!summary.contains("fixture.invalid"))
+  #expect(summary.contains("NSCocoaErrorDomain 256: outer reason"))
+  #expect(summary.contains("fixture.nested 7: nested reason"))
+  #expect(summary.contains("NSPOSIXErrorDomain 5: leaf reason"))
+  #expect(summary.contains("fixture.additional 11"))
+  #expect(summary.hasSuffix("dissenting_pid=42"))
 }
 
 private final class CyclicDiagnosticError: NSError, @unchecked Sendable {
@@ -32,5 +30,5 @@ private final class CyclicDiagnosticError: NSError, @unchecked Sendable {
 
 @Test func errorDiagnosticsStopsAtRepeatedErrorObjects() {
   let error = CyclicDiagnosticError(domain: "fixture.cycle", code: 9)
-  #expect(ErrorDiagnostics.summary(error) == "domain=fixture.cycle code=9")
+  #expect(ErrorDiagnostics.summary(error).components(separatedBy: "fixture.cycle 9").count == 2)
 }

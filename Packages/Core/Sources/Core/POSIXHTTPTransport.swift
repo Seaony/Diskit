@@ -15,13 +15,15 @@ public enum NetworkFailure {
     let source = error as NSError
     if source.domain == NSPOSIXErrorDomain { return error }
     let code: Int32
+    // 认不出的错误也要给系统一个 errno，但说明保留原文
+    var keepsOriginalText = false
     if let network = error as? NWError {
       switch network {
       case .posix(let value): code = value.rawValue
       case .dns: code = EHOSTUNREACH
       case .tls: code = EACCES
-      case .wifiAware: code = EIO
-      @unknown default: code = EIO
+      case .wifiAware: code = EIO; keepsOriginalText = true
+      @unknown default: code = EIO; keepsOriginalText = true
       }
     } else if source.domain == NSURLErrorDomain {
       switch URLError.Code(rawValue: source.code) {
@@ -37,15 +39,17 @@ public enum NetworkFailure {
         .serverCertificateHasUnknownRoot, .serverCertificateNotYetValid,
         .clientCertificateRejected, .clientCertificateRequired, .dataNotAllowed:
         code = EACCES
-      default: code = EIO
+      default: code = EIO; keepsOriginalText = true
       }
     } else {
       code = EIO
+      keepsOriginalText = true
     }
     return NSError(
       domain: NSPOSIXErrorDomain, code: Int(code),
       userInfo: [
-        NSLocalizedDescriptionKey: HumanError.posix(code), NSUnderlyingErrorKey: error,
+        NSLocalizedDescriptionKey: keepsOriginalText ? source.localizedDescription : HumanError.posix(code),
+        NSUnderlyingErrorKey: error,
         sourceKey: true,
       ])
   }

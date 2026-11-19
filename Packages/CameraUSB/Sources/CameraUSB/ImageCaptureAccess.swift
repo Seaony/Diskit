@@ -8,6 +8,12 @@ import ImageCaptureCore
   var canDelete: Bool { session.canDelete }
 
   init(session: any CameraDeviceSession) { self.session = session }
+
+  private static let removed = RemoteError.failed(EIO, L("相机已经拔出或断开"))
+  private func requireOpen() throws {
+    guard session.available else { throw Self.removed }
+    guard session.isOpen else { throw RemoteError.failed(EIO, L("相机会话还没打开")) }
+  }
   convenience init(camera: ICCameraDevice, discovery: CameraUSBDiscovery) {
     self.init(
       session: NativeCameraSession(camera: ICCCameraHardware(camera: camera, discovery: discovery)))
@@ -16,7 +22,7 @@ import ImageCaptureCore
     try await open(until: .now.advanced(by: .seconds(RemoteTimeout.deviceRequest)))
   }
   func open(until deadline: ContinuousClock.Instant) async throws {
-    guard session.available else { throw RemoteError.posix(EIO) }
+    guard session.available else { throw Self.removed }
     do {
       try await session.open(until: deadline)
       if !session.catalogReady { try await session.waitForCatalog(until: deadline) }
@@ -31,7 +37,7 @@ import ImageCaptureCore
   }
   func snapshot(until deadline: ContinuousClock.Instant) async throws -> CameraUSBSnapshot {
     _ = try RemoteTimeout.remaining(until: deadline)
-    guard session.available, session.isOpen else { throw RemoteError.posix(EIO) }
+    try requireOpen()
     handles.removeAll()
     let result = try CameraCatalog.snapshot(session.catalog())
     handles = Set(result.entries.compactMap(\.fileHandle))
@@ -39,7 +45,7 @@ import ImageCaptureCore
     return result
   }
   func read(handle: UInt32, offset: Int64, length: Int) async throws -> Data {
-    guard session.available, session.isOpen else { throw RemoteError.posix(EIO) }
+    try requireOpen()
     guard handles.contains(handle) else { throw RemoteError.posix(ENOENT) }
     do { return try await session.read(handle: handle, offset: offset, length: length) } catch {
       throw CameraUSBErrorMapper.map(error)
@@ -50,7 +56,7 @@ import ImageCaptureCore
       handles: handles, until: .now.advanced(by: .seconds(RemoteTimeout.deviceRequest)))
   }
   func delete(handles: [UInt32], until deadline: ContinuousClock.Instant) async throws {
-    guard session.available, session.isOpen else { throw RemoteError.posix(EIO) }
+    try requireOpen()
     guard canDelete else { throw RemoteError.posix(EACCES) }
     guard handles.allSatisfy({ self.handles.contains($0) }) else { throw RemoteError.posix(ENOENT) }
     do { try await session.delete(handles: handles, until: deadline) } catch {

@@ -102,11 +102,15 @@ private func auditSession(
   #expect(items.first { $0.id == "target-existing" }?.name == "old")
 }
 
+// 500 带了原话时要报出原话
+private let mobileServerFailure = RemoteError.failed(
+  EIO, LF("移动云盘返回错误：%@（HTTP %@）", "server failure", String(500)))
+
 @Test func mobileFailedFinalRenameRestoresOriginalLocation() async throws {
   let http = MobileMoveHTTP(failFinalRename: true)
   let provider = MobileCloudProvider(session: auditSession(http))
   try await provider.connect()
-  await #expect(throws: RemoteError.http(500)) {
+  await #expect(throws: mobileServerFailure) {
     try await provider.move(RemotePath("/old"), to: RemotePath("/dest/new"))
   }
   let item = await http.items.first { $0.id == "moving" }
@@ -124,8 +128,8 @@ private func auditSession(
     Issue.record("回滚失败不应成功")
   } catch let error as MobileCloudMoveFailure {
     #expect(error.lastConfirmedPath.hasPrefix("/.diskit-move-"))
-    #expect(error.original as? RemoteError == .http(500))
-    #expect(error.recovery as? RemoteError == .http(500))
+    #expect(error.original as? RemoteError == mobileServerFailure)
+    #expect(error.recovery as? RemoteError == mobileServerFailure)
   }
   #expect(await http.items.count == 4)
 }

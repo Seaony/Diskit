@@ -3,10 +3,9 @@ import Core
 import Foundation
 import UserNotifications
 
-// 第一次插上手机或相机时问要不要添加：同意就保存并设为插上自动连接，以后插上直接连接；
-// 拒绝就记住，不再问（仍可在添加窗口的“已发现”里手动添加）
+// 插上还没添加的手机或相机时问要不要添加：同意就保存并设为插上自动连接，以后插上直接连接；
+// 选“不用了”只在这次插着时不再问，拔掉再插上会重新问（也可在添加窗口的“已发现”里手动添加）
 enum DevicePrompt {
-  static let declinedKey = "devices.declinedMountPrompt"
   static let category = "device-found"
   static let mountAction = "mount"
   static let declineAction = "decline"
@@ -27,12 +26,14 @@ extension AppModel {
     options.isDemo ? [] : cameraUSBDiscovery.phonesWithoutDebugging
   }
 
-  // 可以问的设备：插着、还没保存、能直接连接、没拒绝过
+  // 插着、还没保存、能直接连接的设备
+  private var pluggedDevices: [DiscoveredItem] {
+    discoveredItems.filter { DevicePrompt.kinds.contains($0.kind) && $0.connection != nil }
+  }
+
+  // 可以问的设备：这次插上后还没点过“不用了”
   private var promptableDevices: [DiscoveredItem] {
-    discoveredItems.filter {
-      DevicePrompt.kinds.contains($0.kind) && $0.connection != nil
-        && !declinedDevices.contains(DevicePrompt.key($0))
-    }
+    pluggedDevices.filter { !declinedDevices.contains(DevicePrompt.key($0)) }
   }
 
   // 面板顶部要问的那台设备
@@ -40,6 +41,8 @@ extension AppModel {
 
   // 设备变化后调用：新出现的设备各发一次通知；拔掉的设备忘掉，下次插上再提醒
   func refreshDevicePrompts() {
+    // 拔掉的设备忘掉“不用了”，下次插上重新问
+    declinedDevices.formIntersection(pluggedDevices.map(DevicePrompt.key))
     let current = promptableDevices
     let keys = Set(current.map(DevicePrompt.key))
     for gone in notifiedDevices.subtracting(keys) {
@@ -78,11 +81,10 @@ extension AppModel {
     }
   }
 
-  // 不添加：记住这台设备，不再问
+  // 不添加：这次插着时不再问
   func declineDevicePrompt(_ item: DiscoveredItem) {
     let key = DevicePrompt.key(item)
     declinedDevices.insert(key)
-    preferences.set(declinedDevices.sorted(), forKey: DevicePrompt.declinedKey)
     system.removeNotifications([DevicePrompt.notificationID(key)])
     devicePromptErrors[key] = nil
   }

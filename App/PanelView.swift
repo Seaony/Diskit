@@ -10,6 +10,12 @@ private struct PanelError: Identifiable {
   let id = UUID()
   let title: String
   let message: String
+  let report: String
+  init(title: String, error: Error) {
+    self.title = title
+    message = HumanError.detail(error)
+    report = HumanError.report(error)
+  }
 }
 
 private struct ScrollContentHeightKey: PreferenceKey {
@@ -212,7 +218,7 @@ struct PanelView: View {
       Button(L("好"), role: .cancel) { actionError = nil }
       Button(L("复制详细信息")) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(error.message, forType: .string)
+        NSPasteboard.general.setString(error.report, forType: .string)
       }
     } message: { error in
       Text(error.message)
@@ -457,7 +463,7 @@ struct PanelView: View {
       }
       model.undoManager.setActionName(L("调整位置顺序"))
     } catch {
-      actionError = PanelError(title: L("调整位置顺序失败"), message: HumanError.detail(error))
+      actionError = PanelError(title: L("调整位置顺序失败"), error: error)
     }
   }
 
@@ -493,9 +499,7 @@ struct PanelView: View {
       do {
         try await model.connections.remove(target)
       } catch {
-        actionError = PanelError(
-          title: LF("删除“%@”失败", target.name),
-          message: HumanError.detail(error))
+        actionError = PanelError(title: LF("删除“%@”失败", target.name), error: error)
       }
     }
   }

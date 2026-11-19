@@ -137,7 +137,7 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
     try ensureConnected()
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     guard let fileSize = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     let size = Int64(fileSize)
     if size <= uploadSessionThreshold {
@@ -221,9 +221,10 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
       try Task.checkCancellation()
       if sessionID == nil {
         try handle.seek(toOffset: 0)
-        guard let first = try handle.read(upToCount: Int(min(chunkSize, size))), !first.isEmpty
-        else {
-          throw RemoteError.posix(EIO)
+        let first = try handle.read(upToCount: Int(min(chunkSize, size))) ?? Data()
+        guard !first.isEmpty else {
+          throw CloudDriveSupport.localShortRead(
+            localFile, offset: 0, expected: min(chunkSize, size), actual: 0)
         }
         var start = contentRequest(
           endpoint: "https://content.dropboxapi.com/2/files/upload_session/start",
@@ -253,8 +254,10 @@ public actor DropboxProvider: RemoteFileProvider, OAuthProfileProviding {
       } else {
         try handle.seek(toOffset: UInt64(offset))
         let count = Int(min(chunkSize, size - offset))
-        guard let data = try handle.read(upToCount: count), data.count == count else {
-          throw RemoteError.posix(EIO)
+        let data = try handle.read(upToCount: count) ?? Data()
+        guard data.count == count else {
+          throw CloudDriveSupport.localShortRead(
+            localFile, offset: offset, expected: Int64(count), actual: data.count)
         }
         request = contentRequest(
           endpoint: "https://content.dropboxapi.com/2/files/upload_session/append_v2",

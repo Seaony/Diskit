@@ -25,7 +25,14 @@ public enum ADBSync {
     let modified: Int64
     if v2 {
       let error = try r.u32()
-      guard error == 0 else { throw RemoteError.posix(ADBErrno.darwin(error)) }
+      guard error == 0 else {
+        let code = ADBErrno.darwin(error)
+        // 对不上 macOS 的 Linux 错误码，原样报出来
+        if code == EIO, error != 5 {
+          throw RemoteError.failed(EIO, LF("手机返回 Linux 错误码 %@", String(error)))
+        }
+        throw RemoteError.posix(code)
+      }
       _ = try r.u64()
       _ = try r.u64()
       mode = try r.u32()
@@ -70,13 +77,13 @@ public enum ADBSync {
     }
     return "/sdcard" + path.value
   }
-  static func failure(_ session: ADBSession, length: UInt32) async throws -> RemoteError {
+  static func failure(_ session: any ADBStreamSession, length: UInt32) async throws -> RemoteError {
     guard length <= 65_536 else { return .protocolError }
-    let text = String(decoding: try await session.readExactly(Int(length)), as: UTF8.self)
-      .lowercased()
+    let original = String(decoding: try await session.readExactly(Int(length)), as: UTF8.self)
+    let text = original.lowercased()
     if text.contains("permission denied") { return .posix(EACCES) }
     if text.contains("no such file") { return .posix(ENOENT) }
     if text.contains("no space") { return .posix(ENOSPC) }
-    return .posix(EIO)
+    return .failed(EIO, LF("手机返回错误：%@", original))
   }
 }

@@ -276,11 +276,11 @@ public actor OAuthSession {
     guard let topLevel = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
     else {
       if !(200..<300).contains(response.status) {
-        throw tokenResponseError(status: response.status, payload: [:])
+        throw tokenResponseError(status: response.status, payload: [:], body: response.body)
       }
       throw OAuthDriveError.invalidResponse
     }
-    try throwIfTokenError(in: topLevel, status: response.status)
+    try throwIfTokenError(in: topLevel, status: response.status, body: response.body)
     let object: [String: Any]
     if let key = configuration.tokenResponseDataKey {
       guard let nested = topLevel[key] as? [String: Any] else {
@@ -303,7 +303,7 @@ public actor OAuthSession {
       expiresAt: Date().addingTimeInterval(max(0, expires)))
   }
 
-  private func throwIfTokenError(in payload: [String: Any], status: Int) throws {
+  private func throwIfTokenError(in payload: [String: Any], status: Int, body: Data) throws {
     if status == 429 || status >= 500 { throw OAuthDriveError.temporarilyUnavailable }
     let rejection = (payload["error"] ?? payload["error_code"] ?? payload["code"]) as? String
     if ["invalid_grant", "invalid_token", "token_revoked"].contains(rejection ?? "") {
@@ -311,7 +311,7 @@ public actor OAuthSession {
     }
     let explicitSuccess = isSuccessfulState(payload["state"])
     if explicitSuccess, !(200..<300).contains(status) {
-      throw tokenResponseError(status: status, payload: payload)
+      throw tokenResponseError(status: status, payload: payload, body: body)
     }
     if payload["access_token"] is String { return }
 
@@ -325,14 +325,19 @@ public actor OAuthSession {
       throw OAuthDriveError.temporarilyUnavailable
     }
     if !(200..<300).contains(status) {
-      throw tokenResponseError(status: status, payload: payload)
+      throw tokenResponseError(status: status, payload: payload, body: body)
     }
     if payload["state"] != nil {
+      // 明确返回失败（state 为假）时照实报出登录服务的原话和错误码
+      guard explicitSuccess else {
+        throw CloudDriveSupport.businessFailure(
+          L("登录服务"), code: code, message: CloudDriveSupport.messageFields(body))
+      }
       throw OAuthDriveError.invalidResponse
     }
   }
 
-  private func tokenResponseError(status: Int, payload: [String: Any]) -> OAuthDriveError {
+  private func tokenResponseError(status: Int, payload: [String: Any], body: Data) -> Error {
     let code =
       payload["error"] as? String
       ?? payload["error_code"] as? String
@@ -347,11 +352,18 @@ public actor OAuthSession {
       || numericCode == 5_113
       || numericCode == 40_140_117
       || code == "temporarily_unavailable"
-    if rateLimited { return .temporarilyUnavailable }
+    if rateLimited { return OAuthDriveError.temporarilyUnavailable }
     let rejected =
       ["invalid_grant", "invalid_token", "token_revoked"].contains(code ?? "")
       || [40_140_114, 40_140_115, 40_140_116].contains(numericCode ?? -1)
-    return rejected ? .loginRequired : .temporarilyUnavailable
+    if rejected { return OAuthDriveError.loginRequired }
+    // 其他拒绝照实报出登录服务的原话和 HTTP 状态，不再笼统说「暂时无法连接」
+    let message = CloudDriveSupport.serverMessage(body)
+    return RemoteError.failed(
+      EIO,
+      message.isEmpty
+        ? LF("登录服务返回 HTTP %@，没有附带说明", String(status))
+        : LF("登录服务返回错误：%@（HTTP %@）", message, String(status)))
   }
 
   private func isSuccessfulState(_ value: Any?) -> Bool {

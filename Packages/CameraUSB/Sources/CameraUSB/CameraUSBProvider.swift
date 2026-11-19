@@ -142,7 +142,7 @@ import Synchronization
     until deadline: ContinuousClock.Instant = .now.advanced(
       by: .seconds(RemoteTimeout.deviceRequest))
   ) async throws -> CameraUSBSnapshot {
-    guard connected else { throw RemoteError.posix(EIO) }
+    guard connected else { throw RemoteError.failed(EIO, L("相机还没连接")) }
     do {
       let snapshot = try await access.snapshot(until: deadline)
       deletionAllowed.withLock { $0 = access.canDelete }
@@ -257,7 +257,10 @@ private actor CameraUSBReadCursor {
     let length = Int(min(1_048_576, end - offset))
     do {
       let data = try await access.read(handle: handle, offset: offset, length: length)
-      guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
+      guard !data.isEmpty, data.count <= length else {
+        throw RemoteError.failed(
+          EIO, LF("相机返回的数据长度不对（收到 %lld 字节，最多 %lld）", Int64(data.count), Int64(length)))
+      }
       offset += Int64(data.count)
       return data
     } catch {

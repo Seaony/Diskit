@@ -1,8 +1,11 @@
 import Foundation
 
 public enum HumanError {
+  // 没有专门文案的 errno 用系统自己的说明（如「连接被拒绝」），不换成笼统的话
   public static func posix(_ code: Int32) -> String {
-    posixMessage(code) ?? L("操作没有完成，请稍后重试")
+    posixMessage(code)
+      ?? NSError(domain: NSPOSIXErrorDomain, code: Int(code)).localizedFailureReason
+      ?? String(cString: strerror(code))
   }
 
   private static func posixMessage(_ code: Int32) -> String? {
@@ -52,6 +55,8 @@ public enum HumanError {
         L("登录已失效，请重新登录")
       default: L("没有访问权限")
       }
+    case .occupied where kind == .androidUSB || kind == .androidWiFi:
+      L("手机的 USB 调试接口被电脑上的其它程序占用（比如 Android Studio、scrcpy），关掉它们后重试")
     case .posix(ETIMEDOUT): timeout(kind: kind)
     case .http(let status): http(status)
     default:
@@ -83,20 +88,48 @@ public enum HumanError {
     } else {
       code = systemError.code
     }
-    return LF("推出失败（错误码 %@）", String(code))
+    // 认不出的错误也写上它自己的说明，不只给一个错误码
+    return LF("推出失败：%@（错误码 %@）", value?.message ?? error.localizedDescription, String(code))
   }
 
   private struct Presentation {
     let message: String
     var code: String? = nil
     var recognized = true
+    // 只写进复制的报告，不显示在界面上
+    var reportCode: String? = nil
     var detail: String { code.map { "\(message) (\($0))" } ?? message }
+  }
+
+  // IOKit、OSStatus 这类错误码按十六进制查文档更方便，一起给出
+  static func code(_ error: NSError) -> String {
+    let value = error.code
+    guard value < 0 || value > 0xFFFF else { return String(value) }
+    return "\(value) (0x\(String(UInt32(truncatingIfNeeded: value), radix: 16)))"
+  }
+
+  // 「复制详细信息」的内容：界面上那句话 + 每一层错误的类型、错误域、错误码和说明 + 版本，
+  // 用户发过来就能定位
+  public static func report(_ error: Error, kind: ConnectionKind? = nil) -> String {
+    let shown = presentation(error, kind: kind)
+    var lines = [shown?.detail ?? error.localizedDescription]
+    if let kind { lines.append("Kind: \(kind.rawValue)") }
+    if let code = shown?.reportCode { lines.append("Code: \(code)") }
+    lines.append("Error chain:")
+    lines += ErrorChain.lines(error).map { "  " + $0 }
+    let info = Bundle.main.infoDictionary
+    let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+    let build = info?["CFBundleVersion"] as? String ?? "?"
+    lines.append(
+      "Diskit \(version) (\(build)) · macOS \(ProcessInfo.processInfo.operatingSystemVersionString)")
+    return lines.joined(separator: "\n")
   }
 
   private static func presentation(_ error: Error, kind: ConnectionKind? = nil) -> Presentation? {
     var visited = Set<ObjectIdentifier>()
 
     func resolve(_ error: Error) -> Presentation? {
+      if let mount = error as? ExtensionMountFailure { return Presentation(message: mount.record.message) }
       // 先保留明确的错误类型，不能把协议错误桥接后的 EIO 当成断开。
       if let error = error as? RemoteError {
         let message = kind.map { remote(error, kind: $0) } ?? error.localizedDescription
@@ -104,6 +137,7 @@ public enum HumanError {
         case .posix(let code):
           return Presentation(message: message, code: "errno \(code)", recognized: posixMessage(code) != nil)
         case .http(let status): return Presentation(message: message, code: "HTTP \(status)")
+        case .failed(let code, _): return Presentation(message: message, reportCode: "errno \(code)")
         default: return Presentation(message: message)
         }
       }
@@ -121,8 +155,14 @@ public enum HumanError {
       }
       if systemError.domain == NSPOSIXErrorDomain, let code = Int32(exactly: systemError.code) {
         let message = code == ETIMEDOUT ? kind.map { timeout(kind: $0) } : nil
-        return Presentation(message: message ?? posix(code), code: "errno \(code)",
-                            recognized: posixMessage(code) != nil)
+        // 错误自己带了说明（各网盘的错误类型、带原文的 NSError）就用它，errno 只用来补默认文案
+        let own: String? =
+          if type(of: error) == POSIXError.self { nil }
+          else if let text = systemError.userInfo[NSLocalizedDescriptionKey] as? String { text }
+          else if !(type(of: error) is NSError.Type) { (error as? LocalizedError)?.errorDescription }
+          else { nil }
+        return Presentation(message: message ?? own ?? posix(code), code: "errno \(code)",
+                            recognized: own != nil || posixMessage(code) != nil)
       }
       if systemError.domain == NSURLErrorDomain {
         let message: String?
@@ -138,13 +178,11 @@ public enum HumanError {
         }
       }
       // Cocoa 的通用外层说明不覆盖底层已经明确的读写、占用或断开原因。
-      var fallback: Presentation?
       for underlying in systemError.underlyingErrors {
-        guard let value = resolve(underlying) else { continue }
-        if value.recognized { return value }
-        if fallback == nil { fallback = value }
+        if let value = resolve(underlying), value.recognized { return value }
       }
-      return fallback
+      // 认不出的错误：显示它自己的说明，不换成笼统的话；错误域和错误码在复制的报告里
+      return Presentation(message: systemError.localizedDescription, recognized: false)
     }
 
     return resolve(error)

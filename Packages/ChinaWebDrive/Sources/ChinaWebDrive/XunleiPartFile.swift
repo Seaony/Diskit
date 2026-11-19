@@ -16,7 +16,7 @@ final class XunleiPartFile: Sendable {
       guard
         FileManager.default.createFile(
           atPath: url.path, contents: nil, attributes: [.posixPermissions: 0o600])
-      else { throw RemoteError.posix(EIO) }
+      else { throw RemoteError.failed(EIO, LF("无法创建上传用的临时文件：%@", url.path)) }
       let sourceHandle = try FileHandle(forReadingFrom: source)
       defer { try? sourceHandle.close() }
       let output = try FileHandle(forWritingTo: url)
@@ -28,7 +28,7 @@ final class XunleiPartFile: Sendable {
         guard
           let data = try sourceHandle.read(upToCount: Int(min(Int64(Self.bufferSize), remaining))),
           !data.isEmpty
-        else { throw RemoteError.posix(EIO) }
+        else { throw RemoteError.failed(EIO, LF("本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动", remaining)) }
         try output.write(contentsOf: data)
         remaining -= Int64(data.count)
       }

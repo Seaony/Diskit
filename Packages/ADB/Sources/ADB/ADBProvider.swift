@@ -5,8 +5,8 @@ import OSLog
 public actor ADBProvider: RemoteFileProvider {
   public nonisolated let capabilities = ProviderCapabilities(
     canWrite: true, canRename: true, canMove: true, canDelete: true, supportsRangeRead: true)
-  private var session: ADBSession
-  private let reconnect: (@Sendable () async throws -> ADBSession)?
+  private var session: any ADBStreamSession
+  private let reconnect: (@Sendable () async throws -> any ADBStreamSession)?
   private var needsNewSession = false
   private var connecting = false
   private var connected = false
@@ -22,6 +22,17 @@ public actor ADBProvider: RemoteFileProvider {
     session: ADBSession, reconnect: (@Sendable () async throws -> ADBSession)? = nil
   ) {
     self.session = session
+    if let reconnect {
+      self.reconnect = { @Sendable () async throws -> any ADBStreamSession in try await reconnect() }
+    } else {
+      self.reconnect = nil
+    }
+  }
+  init(
+    stream: any ADBStreamSession,
+    reconnect: (@Sendable () async throws -> any ADBStreamSession)? = nil
+  ) {
+    self.session = stream
     self.reconnect = reconnect
   }
   public static func usb(serial: String, identity: ADBIdentity = ADBIdentity()) throws -> ADBProvider {
@@ -388,7 +399,13 @@ public actor ADBProvider: RemoteFileProvider {
       if error.contains("Permission denied") { throw RemoteError.posix(EACCES) }
       if error.contains("No such file") { throw RemoteError.posix(ENOENT) }
       if error.contains("No space") { throw RemoteError.posix(ENOSPC) }
-      throw RemoteError.posix(EIO)
+      // 其它失败把手机上命令的原始输出和退出码报出来
+      let detail = error.trimmingCharacters(in: .whitespacesAndNewlines)
+      throw RemoteError.failed(
+        EIO,
+        detail.isEmpty
+          ? LF("手机上的命令执行失败，退出码 %@", String(exitCode ?? 0))
+          : LF("手机上的命令执行失败（退出码 %@）：%@", String(exitCode ?? 0), detail))
     }
     return output
   }
@@ -396,14 +413,14 @@ public actor ADBProvider: RemoteFileProvider {
 }
 
 private actor ADBReadCursor {
-  let session: ADBSession
+  let session: any ADBStreamSession
   let finished: @Sendable (Bool) async -> Void
   let total: Int64
   let progress: (@Sendable (Int64, Int64) -> Void)?
   var received: Int64 = 0
   var done = false
   init(
-    session: ADBSession, total: Int64,
+    session: any ADBStreamSession, total: Int64,
     progress: (@Sendable (Int64, Int64) -> Void)?,
     finished: @escaping @Sendable (Bool) async -> Void
   ) {

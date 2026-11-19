@@ -100,7 +100,6 @@ import UserNotifications
       root: dependencies != nil || options.isDemo
         ? location.dataDirectory.appending(path: "FileSystemCache")
         : FileSystemCacheMaintenance.defaultRoot)
-    declinedDevices = Set(preferences.stringArray(forKey: DevicePrompt.declinedKey) ?? [])
     if let notification = options.demoNotification {
       notificationAuthorization = notification.authorization
     }
@@ -952,7 +951,7 @@ import UserNotifications
         system.open(url)
       } catch {
         presentOperationAlert(
-          title: L("无法显示日志"), message: HumanError.detail(error),
+          title: L("无法显示日志"), message: HumanError.detail(error), report: HumanError.report(error),
           retryTitle: L("重试"), retry: { [weak self] in self?.showLogs() })
       }
     }
@@ -1025,7 +1024,7 @@ import UserNotifications
       connections.refreshMounts()
     } catch {
       presentOperationAlert(
-        title: L("无法清除缓存"), message: HumanError.detail(error),
+        title: L("无法清除缓存"), message: HumanError.detail(error), report: HumanError.report(error),
         retryTitle: L("重试"),
         retry: { [weak self] in
           Task { await self?.clearCache() }
@@ -1034,7 +1033,7 @@ import UserNotifications
   }
 
   private func presentOperationAlert(
-    title: String, message: String, retryTitle: String? = nil,
+    title: String, message: String, report: String? = nil, retryTitle: String? = nil,
     retry: (@MainActor @Sendable () -> Void)? = nil
   ) {
     let hasRetry = retry != nil && retryTitle != nil
@@ -1042,7 +1041,7 @@ import UserNotifications
     system.alert(title, message, buttons) { [system] response in
       switch OperationAlertAction.resolve(response, hasRetry: hasRetry) {
       case .retry: retry?()
-      case .copy: system.copy(message)
+      case .copy: system.copy(report ?? message)
       case .dismiss: break
       }
     }

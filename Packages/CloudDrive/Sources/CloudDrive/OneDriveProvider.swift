@@ -136,7 +136,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     try await ensureMissing(path)
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     let size = Int64(fileSize)
     if size <= min(uploadSessionThreshold, 8 * 1024 * 1024) {
@@ -171,12 +171,16 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
       var restarts = 0
       var recoveries = 0
       var reported: Int64 = 0
+      // 最后一次分片失败的真实情况，重试用完时照实报出来
+      var lastFailure = ""
       while offset < size {
         try Task.checkCancellation()
         let length = min(chunkSize, size - offset)
         try handle.seek(toOffset: UInt64(offset))
-        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-          throw RemoteError.posix(EIO)
+        let data = try handle.read(upToCount: Int(length)) ?? Data()
+        guard data.count == Int(length) else {
+          throw CloudDriveSupport.localShortRead(
+            localFile, offset: offset, expected: length, actual: data.count)
         }
         let end = offset + length
         var request = URLRequest(url: uploadURL, timeoutInterval: RemoteTimeout.transferIdle)
@@ -190,6 +194,7 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
           response = try await CloudDriveSupport.sendWithRetry(
             transport, request, upload: true, retrySafe: false)
           queryStatus = response.status == 416 || (500...599).contains(response.status)
+          if queryStatus { lastFailure = CloudDriveSupport.responseSummary(response) }
           if (500...599).contains(response.status) {
             guard recoveries < 3 else { try check(response); throw RemoteError.protocolError }
             try await recoverySleep(.seconds(1 << recoveries))
@@ -197,9 +202,13 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         } catch let error as URLError where [.networkConnectionLost, .timedOut, .notConnectedToInternet].contains(error.code) {
           response = HTTPResponse(status: 0)
           queryStatus = true
+          lastFailure = "\(error.localizedDescription) (URLError \(error.code.rawValue))"
         }
         if queryStatus {
-          guard recoveries < 3 else { throw RemoteError.posix(EIO) }
+          guard recoveries < 3 else {
+            throw RemoteError.failed(
+              EIO, LF("OneDrive 上传分片重试 %lld 次仍失败：%@", Int64(recoveries), lastFailure))
+          }
           recoveries += 1
           // 不猜测上次 PUT 是否生效，先取得服务端缺失范围。
           response = try await transport.send(URLRequest(url: uploadURL,
@@ -222,7 +231,11 @@ public actor OneDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         let next = try nextUploadOffset(response, size: size)
         guard next <= end else { throw RemoteError.protocolError }
         if next <= offset {
-          guard recoveries < 3 else { throw RemoteError.posix(EIO) }
+          guard recoveries < 3 else {
+            throw RemoteError.failed(
+              EIO,
+              LF("OneDrive 上传进度停在第 %lld 字节，重试 %lld 次仍没有前进", next, Int64(recoveries)))
+          }
           recoveries += 1
         }
         offset = next

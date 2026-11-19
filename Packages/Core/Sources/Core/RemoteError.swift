@@ -5,13 +5,18 @@ public enum RemoteError: Error, Equatable, LocalizedError, CustomNSError, Sendab
   case rateLimited
   case http(Int)
   case posix(Int32)
+  // 说得清原因的失败：reason 直接给人看，写清哪一步、对方返回了什么、系统错误码；
+  // errno 只给 Finder 和系统用。不要再把具体原因压成一个笼统的 EIO
+  case failed(Int32, String)
+  // 对方返回的数据不对（解析不了、缺字段）：和 protocolError 一样按断线处理、会重连，但带上具体哪里不对
+  case malformed(String)
   public static var errorDomain: String { NSPOSIXErrorDomain }
   public var errorCode: Int { Int(errno) }
   public var errorUserInfo: [String: Any] { [NSLocalizedDescriptionKey: errorDescription ?? ""] }
   public var errno: Int32 {
     switch self {
     case .invalidPath: EINVAL
-    case .notConnected, .protocolError: EIO
+    case .notConnected, .protocolError, .malformed: EIO
     case .unauthorized: EACCES
     case .occupied: EBUSY
     case .tooLarge: EFBIG
@@ -30,6 +35,7 @@ public enum RemoteError: Error, Equatable, LocalizedError, CustomNSError, Sendab
       }
     case .unsupported: ENOTSUP
     case .posix(let value): value
+    case .failed(let value, _): value
     }
   }
   public var errorDescription: String? {
@@ -45,6 +51,8 @@ public enum RemoteError: Error, Equatable, LocalizedError, CustomNSError, Sendab
     case .http(let status): HumanError.http(status)
     case .posix(let code) where code == EROFS: L("此位置为只读，不能上传、创建目录或移动文件")
     case .posix(let code): HumanError.posix(code)
+    case .failed(_, let reason): reason
+    case .malformed(let reason): reason
     }
   }
 }

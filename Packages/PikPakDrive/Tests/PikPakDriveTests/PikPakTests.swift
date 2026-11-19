@@ -1050,3 +1050,16 @@ func failedUploadKeepsPrimaryErrorWhenCleanupFails(asynchronous: Bool) async thr
   try await provider.remove(RemotePath("/a (2).txt"), recursive: false)
   #expect(trashed.withLock { $0 } == ["f2"])
 }
+
+@Test func pikPakUnknownServerErrorKeepsServerWords() {
+  // 状态码说明不了原因时，要把 PikPak 的原话和错误码写出来
+  let body = Data(
+    #"{"error":"internal_error","error_code":500,"error_description":"service busy"}"#.utf8)
+  #expect(
+    PikPakHTTP.map(status: 500, body: body)
+      == .failed(
+        EIO,
+        LF("PikPak 返回错误：%@（错误码 %@，HTTP %@）", "service busy", "500 / internal_error", String(500))))
+  #expect(PikPakHTTP.map(status: 500, body: nil) == .http(500))
+  #expect(PikPakHTTP.map(status: 404, body: nil) == .posix(ENOENT))
+}

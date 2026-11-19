@@ -20,7 +20,12 @@ import Testing
     CameraUSBErrorMapper.map(
       NSError(
         domain: ICErrorDomain,
-        code: ICReturnConnectionError.Code.closedSessionSuddenly.rawValue)) == .posix(EIO))
+        code: ICReturnConnectionError.Code.closedSessionSuddenly.rawValue))
+      == .failed(
+        EIO,
+        LF(
+          "ImageCapture 报错：%@（%@ %@）", L("相机意外关闭了会话"), ICErrorDomain,
+          String(ICReturnConnectionError.Code.closedSessionSuddenly.rawValue))))
   #expect(
     CameraUSBErrorMapper.map(
       NSError(
@@ -43,15 +48,22 @@ import Testing
 }
 
 @Test func errorMapperUsesIOForUnknownAndCancellationForCancelledWork() {
+  // 不认识的错误保留 EIO，同时带上系统原话、错误域和错误码
+  let unknown = NSError(domain: "Unknown", code: 1)
   #expect(
-    CameraUSBErrorMapper.map(NSError(domain: "Unknown", code: 1)) == .posix(EIO))
+    CameraUSBErrorMapper.map(unknown)
+      == .failed(EIO, LF("系统报错：%@（%@ %@）", unknown.localizedDescription, "Unknown", "1")))
   #expect(CameraUSBErrorMapper.map(CancellationError()) == .posix(ECANCELED))
 }
 
 @Test func cameraErrorMappingCoversMalformedPOSIXAndNativeCodes() {
   for code in [0, -1, Int.max] {
+    let error = NSError(domain: NSPOSIXErrorDomain, code: code)
     #expect(
-      CameraUSBErrorMapper.map(NSError(domain: NSPOSIXErrorDomain, code: code)) == .posix(EIO))
+      CameraUSBErrorMapper.map(error)
+        == .failed(
+          EIO,
+          LF("系统报错：%@（%@ %@）", error.localizedDescription, NSPOSIXErrorDomain, String(code))))
   }
   let codes: [(Int, Int32)] = [
     (ICReturn.Code.invalidParam.rawValue, EINVAL),
@@ -59,10 +71,14 @@ import Testing
     (ICReturnConnectionError.Code.sessionAlreadyOpen.rawValue, EBUSY),
     (ICLegacyReturn.Code.deviceUnsupportedErr.rawValue, ENOTSUP),
     (ICReturn.Code.deleteFilesCanceled.rawValue, ECANCELED),
-    (-999999, EIO),
   ]
   for (code, expected) in codes {
     #expect(
       CameraUSBErrorMapper.map(NSError(domain: ICErrorDomain, code: code)) == .posix(expected))
   }
+  let unknown = NSError(domain: ICErrorDomain, code: -999999)
+  #expect(
+    CameraUSBErrorMapper.map(unknown)
+      == .failed(
+        EIO, LF("ImageCapture 报错：%@（%@ %@）", unknown.localizedDescription, ICErrorDomain, "-999999")))
 }

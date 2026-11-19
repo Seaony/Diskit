@@ -29,7 +29,7 @@ final class NativeCameraSession: CameraDeviceSession {
     }
   }
   func close() async {
-    ready?(.failure(RemoteError.posix(EIO)))
+    ready?(.failure(RemoteError.failed(EIO, L("相机目录还没加载完，连接就被关闭了"))))
     ready = nil
     if camera.isOpen {
       do {
@@ -65,7 +65,7 @@ final class NativeCameraSession: CameraDeviceSession {
       file.read(offset: offset, length: length) { data, error in
         complete(
           error.map { .failure($0) } ?? data.map { .success($0) }
-            ?? .failure(RemoteError.posix(EIO)))
+            ?? .failure(RemoteError.failed(EIO, L("相机没有返回数据，也没有报错"))))
       }
     }
   }
@@ -83,7 +83,7 @@ final class NativeCameraSession: CameraDeviceSession {
   }
   func didRemove() {
     available = false
-    ready?(.failure(RemoteError.posix(EIO)))
+    ready?(.failure(RemoteError.failed(EIO, L("相机在加载目录时被拔出或断开"))))
     ready = nil
   }
   func didBecomeReady() {

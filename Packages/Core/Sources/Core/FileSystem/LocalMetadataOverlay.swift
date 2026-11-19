@@ -83,7 +83,10 @@ public struct LocalMetadataOverlay: Sendable {
         let count = Darwin.pwrite(
           descriptor, bytes.baseAddress!.advanced(by: written), data.count - written,
           off_t(offset + Int64(written)))
-        guard count > 0 else { throw count < 0 ? posixFailure() : RemoteError.posix(EIO) }
+        guard count > 0 else {
+          throw count < 0
+            ? posixFailure() : RemoteError.failed(EIO, LF("写入本机文件时一个字节也没写进去：%@", path.value))
+        }
         written += count
       }
     }
@@ -179,7 +182,9 @@ public struct LocalMetadataOverlay: Sendable {
 
   public func listXattrs(of path: RemotePath) throws -> [Data] {
     try (loadAttributes()[path.value] ?? [:]).keys.map { key in
-      guard let name = Data(base64Encoded: key) else { throw RemoteError.posix(EIO) }
+      guard let name = Data(base64Encoded: key) else {
+        throw RemoteError.failed(EIO, LF("本机保存的扩展属性名格式不对：%@", key))
+      }
       return name
     }.sorted { $0.lexicographicallyPrecedes($1) }
   }
@@ -281,7 +286,8 @@ public struct LocalMetadataOverlay: Sendable {
     do {
       return try JSONDecoder().decode(Attributes.self, from: Data(contentsOf: attributesFile))
     } catch {
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(
+        EIO, LF("本机保存的扩展属性文件读不出来：%@（%@）", attributesFile.path, error.localizedDescription))
     }
   }
 
@@ -332,7 +338,8 @@ public struct LocalMetadataOverlay: Sendable {
       {
         throw RemoteError.posix(Int32(underlying.code))
       }
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(
+        EIO, LF("本机文件操作失败：%@（%@ %@）", value.localizedDescription, value.domain, String(value.code)))
     }
   }
 }

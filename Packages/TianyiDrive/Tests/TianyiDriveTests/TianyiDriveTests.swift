@@ -286,6 +286,15 @@ func rangeReadUsesShortLivedURLAndValidatesContentRange(_ scheme: String) async 
   #expect(TianyiHTTP.map(status: 404, body: nil) == .posix(ENOENT))
   #expect(TianyiHTTP.map(status: 429, body: nil) == .rateLimited)
   #expect(TianyiHTTP.map(status: 500, body: nil) == .http(500))
+  // 认不出的错误要带上天翼云盘的原话和错误码
+  #expect(
+    TianyiHTTP.map(
+      status: 200, body: Data(#"{"res_code":"FileTooLarge","res_message":"文件超过上限"}"#.utf8))
+      == .failed(
+        EIO, LF("天翼云盘返回错误：%@（错误码 %@，HTTP %@）", "文件超过上限", "FileTooLarge", String(200))))
+  #expect(
+    TianyiHTTP.map(status: 502, body: Data(#"{"message":"gateway down"}"#.utf8))
+      == .failed(EIO, LF("天翼云盘返回错误：%@（HTTP %@）", "gateway down", String(502))))
 }
 
 @Test func multipartUploadSendsExactPartsAndCommitsInOrder() async throws {
@@ -1040,7 +1049,12 @@ func tianyiCompletedTaskWithFailedItemsIsNotSuccess(state: Int) async throws {
   let http = FakeHTTP { _ in json(["taskStatus": state, "failedCount": 1, "successedCount": 2]) }
   let (session, _) = try session(http)
   let provider = TianyiProvider(session: session, taskPollInterval: .zero)
-  await #expect(throws: RemoteError.posix(state == 2 ? EEXIST : EIO)) {
+  // 有失败项时要写清是哪个任务、失败几项
+  let expected =
+    state == 2
+    ? RemoteError.posix(EEXIST)
+    : .failed(EIO, LF("天翼云盘的 %@ 任务有 %lld 项失败（任务号 %@）", "DELETE", Int64(1), "task"))
+  await #expect(throws: expected) {
     try await provider.waitForTask(taskID: "task", type: "DELETE")
   }
 }

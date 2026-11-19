@@ -142,6 +142,7 @@ enum FileSystemMountError: Error, LocalizedError {
     try Task.checkCancellation()
     if let existing = mounted(connection) { return existing.url }
     logger.info("开始挂载 id=\(connection.id.uuidString, privacy: .public) kind=\(connection.kind.rawValue, privacy: .public)")
+    let started = Date()
     do {
       let url: URL
       do { url = try await mountOnce(connection, address: address) }
@@ -161,6 +162,13 @@ enum FileSystemMountError: Error, LocalizedError {
       return url
     } catch {
       log(error, operation: "mount", path: connection.id.uuidString)
+      // 扩展记下了真实原因就用它，不只报 errno 或 mount 命令的退出码
+      if !(error is CancellationError),
+        let record = MountFailureRecord.take(
+          dataDirectory: location.dataDirectory, connectionID: connection.id, since: started)
+      {
+        throw ExtensionMountFailure(record: record, underlying: error)
+      }
       throw error
     }
   }

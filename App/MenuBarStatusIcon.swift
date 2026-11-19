@@ -24,7 +24,7 @@ struct MenuBarStatusIcon: View {
         dimmed: glyph == .dimmedGlyph,
         needsAttention: status.attention > 0)
     )
-    .renderingMode(.original)
+    .renderingMode(status.attention > 0 ? .original : .template)
     .frame(width: 22, height: 16)
     .transaction { $0.animation = nil }
     .task(id: shouldPulse) {

@@ -22,8 +22,11 @@ struct TianyiUploadPlan: Equatable, Sendable {
   static func make(from file: URL, size: Int64, requestedSliceSize: Int64?) throws -> Self {
     guard size >= 0 else { throw RemoteError.posix(EINVAL) }
     let sliceSize = try sliceSize(for: size, requested: requestedSliceSize)
-    guard let handle = try? FileHandle(forReadingFrom: file) else {
-      throw RemoteError.posix(EIO)
+    let handle: FileHandle
+    do {
+      handle = try FileHandle(forReadingFrom: file)
+    } catch {
+      throw RemoteError.failed(EIO, LF("打不开要上传的本地文件：%@", error.localizedDescription))
     }
     defer { try? handle.close() }
     let count = max(1, Int((size + sliceSize - 1) / sliceSize))
@@ -88,7 +91,9 @@ struct TianyiUploadPlan: Equatable, Sendable {
     while data.count < count {
       try Task.checkCancellation()
       guard let chunk = try handle.read(upToCount: count - data.count), !chunk.isEmpty else {
-        throw RemoteError.posix(EIO)
+        throw RemoteError.failed(
+          EIO,
+          LF("本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动", Int64(count - data.count)))
       }
       data.append(chunk)
     }

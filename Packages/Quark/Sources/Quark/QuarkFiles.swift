@@ -31,6 +31,7 @@ struct QuarkFile: Decodable, Sendable {
 struct QuarkStatus: Decodable {
   let status: Int
   let code: Int
+  let message: String?
 }
 struct QuarkMutation: Decodable {
   struct Result: Decodable {
@@ -41,6 +42,8 @@ struct QuarkMutation: Decodable {
 }
 struct QuarkTask: Decodable, Sendable {
   let status: Int
+  // 失败时服务器可能附带说明，有就带进提示
+  let message: String?
 }
 struct QuarkData<T: Decodable>: Decodable { let data: T }
 extension QuarkData: Sendable where T: Sendable {}

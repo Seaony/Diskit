@@ -24,7 +24,9 @@ import TianyiDrive
   var draft = Connection()
   var password = ""
   var shares: [String] = []
-  var error: String?
+  var error: String? { didSet { errorReport = nil } }
+  // 「复制详细信息」复制的完整报告；只有真实错误才有，界面提示文字没有
+  @ObservationIgnored var errorReport: String?
   var busy = false
   var chosen = false
   var pairingCode = ""
@@ -170,6 +172,7 @@ import TianyiDrive
       !NetworkFailure.isTransportError(failure)
       && (failure as? any LoginRequiredFailure)?.requiresLogin == true
     error = HumanError.detail(failure, kind: draft.kind)
+    errorReport = HumanError.report(failure, kind: draft.kind)
   }
   func updatePairingCode(_ value: String) {
     pairingCode = PairingDigits.normalized(value)
@@ -337,6 +340,7 @@ import TianyiDrive
         self.error =
           (error as? PairingError) == .wrongCode
           ? L("配对码错误，请重新输入。") : HumanError.detail(error, kind: draft.kind)
+        errorReport = HumanError.report(error, kind: draft.kind)
         pairingCode = ""
       }
     }

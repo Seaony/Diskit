@@ -74,7 +74,7 @@ import Testing
   #expect(items[0].children[0].modified == Date(timeIntervalSince1970: 0))
   #expect(try await session.read(handle: 1, offset: 0, length: 2) == Data([1, 2]))
   photo.data = nil
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(throws: RemoteError.failed(EIO, L("相机没有返回数据，也没有报错"))) {
     try await session.read(handle: 1, offset: 0, length: 2)
   }
   photo.failure = RemoteError.posix(ETIMEDOUT)
@@ -126,7 +126,7 @@ import Testing
   hardware.onReadyInstalled = { [weak hardware] in hardware?.ready?() }
   try await session.waitForCatalog(until: .now.advanced(by: .seconds(15)))
   hardware.onReadyInstalled = { [weak hardware] in hardware?.removed?() }
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(throws: RemoteError.failed(EIO, L("相机在加载目录时被拔出或断开"))) {
     try await session.waitForCatalog(until: .now.advanced(by: .seconds(15)))
   }
   #expect(!session.available)
@@ -143,7 +143,7 @@ import Testing
     userInfo: [NSLocalizedDescriptionKey: "private-camera-and-path"])
   var closing: Task<Void, Never>?
   hardware.onReadyInstalled = { closing = Task { @MainActor in await session.close() } }
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(throws: RemoteError.failed(EIO, L("相机目录还没加载完，连接就被关闭了"))) {
     try await session.waitForCatalog(until: .now.advanced(by: .seconds(15)))
   }
   await closing?.value

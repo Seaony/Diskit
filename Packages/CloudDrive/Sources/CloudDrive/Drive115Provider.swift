@@ -208,7 +208,7 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     try await ensureMissing(path)
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     let size = Int64(fileSize)
     let parent = try await resolve(CloudDriveSupport.parent(path))
@@ -231,7 +231,10 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     if prepared.status == 2 { return }
     guard prepared.status == 1, let callback = prepared.callback,
       let object = prepared.object, !object.isEmpty
-    else { throw driveError(prepared.code) }
+    else {
+      throw driveError(
+        prepared.code, message: LF("上传初始化返回状态 %@", String(prepared.status)))
+    }
     let credentials = try await uploadCredentials()
     guard let bucket = prepared.bucket, !bucket.isEmpty else {
       throw RemoteError.protocolError
@@ -418,8 +421,10 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
         try Task.checkCancellation()
         try handle.seek(toOffset: UInt64(offset))
         let length = min(partSize, size - offset)
-        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-          throw RemoteError.posix(EIO)
+        let data = try handle.read(upToCount: Int(length)) ?? Data()
+        guard data.count == Int(length) else {
+          throw CloudDriveSupport.localShortRead(
+            file, offset: offset, expected: length, actual: data.count)
         }
         let response = try await sendUploadRequest(credentials: &credentials, bucket: bucket, upload: true) { signer, endpoint in
           try signer.request(
@@ -489,13 +494,23 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
 
   private func checkUploadResult(_ response: HTTPResponse) throws {
     if let error = CloudDriveSupport.mapHTTP(response) { throw error }
-    guard response.status == 200, Drive115XML.value("Code", in: response.body) == nil else {
-      throw RemoteError.posix(EIO)
+    let code = Drive115XML.value("Code", in: response.body)
+    guard response.status == 200, code == nil else {
+      // 对象存储回的是 XML（Code、Message），取不到就用原始正文
+      let detail =
+        [code, Drive115XML.value("Message", in: response.body)].compactMap { $0 }
+        .filter { !$0.isEmpty }.joined(separator: " / ")
+      throw RemoteError.failed(
+        EIO,
+        LF(
+          "115 网盘上传后确认失败：%@（HTTP %@）",
+          detail.isEmpty ? CloudDriveSupport.serverMessage(response.body) : detail,
+          String(response.status)))
     }
     if let envelope = try? JSONDecoder().decode(Drive115StatusEnvelope.self, from: response.body),
       !envelope.state.isTrue
     {
-      throw driveError(envelope.code)
+      throw driveError(envelope.code, message: CloudDriveSupport.messageFields(response.body))
     }
   }
 
@@ -540,7 +555,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
       do {
         let value = try JSONDecoder().decode(type, from: response.body)
         if let envelope = value as? Drive115Stateful, !envelope.success {
-          throw driveError(envelope.businessCode)
+          throw driveError(
+            envelope.businessCode, message: CloudDriveSupport.messageFields(response.body))
         }
         return value
       } catch let error as RemoteError {
@@ -590,12 +606,13 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     defer { try? handle.close() }
     try handle.seek(toOffset: UInt64(bounds[0]))
     guard let data = try handle.read(upToCount: Int(bounds[1] - bounds[0] + 1)) else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localShortRead(
+        file, offset: bounds[0], expected: bounds[1] - bounds[0] + 1, actual: 0)
     }
     return CloudDriveSupport.sha1Hex(data, uppercase: true)
   }
 
-  private func driveError(_ code: Int?) -> RemoteError {
+  private func driveError(_ code: Int?, message: String? = nil) -> RemoteError {
     switch code {
     case 40_140_116, 40_140_119, 40_140_120, 40_140_125, 40_140_126, 40_140_137, 40_140_127:
       return .unauthorized
@@ -606,7 +623,8 @@ public actor Drive115Provider: RemoteFileProvider, OAuthProfileProviding {
     case 40_140_117:
       return .rateLimited
     default:
-      return .protocolError
+      // 其他错误码照实带上 115 网盘的原话
+      return CloudDriveSupport.businessFailure(L("115 网盘"), code: code, message: message)
     }
   }
 

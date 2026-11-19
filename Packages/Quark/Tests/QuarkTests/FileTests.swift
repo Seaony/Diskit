@@ -341,10 +341,14 @@ private func auth() -> Reply {
 @Test func quarkDeleteTaskFailureIsNotReportedAsSuccess() async throws {
   let (provider, http) = try setup([
     list([file("f", "x")]), Reply("/file/delete", data: ["task_id": "delete-task"]),
-    Reply("/task", data: ["status": 3]),
+    Reply("/task", data: ["status": 3, "message": "文件不存在"]),
   ])
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  // 任务失败要报出服务器给的原因，errno 仍是 EIO
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("夸克网盘后台任务 %@ 执行失败：%@（状态 %@）", "delete-task", "文件不存在", String(3)))
+  ) {
     try await provider.remove(RemotePath("/x"), recursive: false)
   }
   #expect(await http.files().last?.url?.lastPathComponent == "task")
@@ -569,4 +573,22 @@ func quarkPendingTaskIsPolledUntilCompleted(status: Int) async throws {
   let deletions = await http.files().filter { $0.url!.path.hasSuffix("/file/delete") }
   #expect(try deletions.map { try body($0)["filelist"] as? [String] } == [["f1"], ["f2"]])
   #expect(await http.replies.isEmpty)
+}
+
+@Test func quarkAPIErrorKeepsServerMessageAndCode() async throws {
+  let (provider, _) = try setup([
+    list([]),
+    Reply(
+      "/file", status: 400,
+      bytes: Data(#"{"status":400,"code":23008,"message":"文件名不合法"}"#.utf8)),
+  ])
+  try await provider.connect()
+  // HTTP 400 的 errno 仍是 EINVAL，提示里带上夸克的原话和错误码
+  await #expect(
+    throws: RemoteError.failed(
+      EINVAL,
+      LF("夸克网盘返回错误：%@（HTTP %@，错误码 %@）", "文件名不合法", String(400), String(23008)))
+  ) {
+    try await provider.makeDirectory(RemotePath("/bad"))
+  }
 }

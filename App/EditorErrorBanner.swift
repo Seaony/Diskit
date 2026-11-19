@@ -23,7 +23,7 @@ struct EditorErrorBanner: View {
             if editor.permissionSettingsURL != nil {
               Button(L("打开系统设置")) { editor.openPermissionSettings() }
             }
-            Button(L("复制详细信息")) { editor.copy(error) }
+            Button(L("复制详细信息")) { editor.copy(editor.errorReport ?? error) }
           }
         }
         Spacer(minLength: 0)

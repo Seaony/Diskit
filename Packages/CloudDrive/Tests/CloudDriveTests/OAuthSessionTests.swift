@@ -163,7 +163,11 @@ private func tokenResponse(
   let session = OAuthSession(
     configuration: configuration, secretKey: "oauth", secrets: secrets, transport: transport)
 
-  await #expect(throws: OAuthDriveError.temporarilyUnavailable) {
+  // 照实报出登录服务的原话和状态，不再笼统说暂时无法连接
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("登录服务返回错误：%@（HTTP %@）", "server_error", String(400)))
+  ) {
     _ = try await session.authorized(
       URLRequest(url: URL(string: "https://example.com/files")!))
   }

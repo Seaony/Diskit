@@ -90,7 +90,23 @@ enum PikPakHTTP {
     case 409, 412: return .posix(EEXIST)
     case 429, 503: return .rateLimited
     case 507: return .posix(ENOSPC)
-    default: return .http(status)
+    default:
+      // 状态码说明不了原因，把 PikPak 的原话和错误码照实写出来
+      let description = api?.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let error = api?.error?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let message = description.isEmpty ? error : description
+      guard !message.isEmpty else { return .http(status) }
+      let codes = [api?.code.map(String.init), description.isEmpty ? nil : error]
+        .compactMap { $0 }.filter { !$0.isEmpty }
+      let posixCode = RemoteError.http(status).errno
+      guard !codes.isEmpty else {
+        return .failed(posixCode, LF("PikPak 返回错误：%@（HTTP %@）", message, String(status)))
+      }
+      return .failed(
+        posixCode,
+        LF(
+          "PikPak 返回错误：%@（错误码 %@，HTTP %@）", message, codes.joined(separator: " / "),
+          String(status)))
     }
   }
 
@@ -105,7 +121,9 @@ enum PikPakHTTP {
     case .cancelled:
       return CancellationError()
     default:
-      return RemoteError.posix(EIO)
+      return RemoteError.failed(
+        EIO,
+        LF("连接 PikPak 失败：%@（URLError %@）", error.localizedDescription, String(error.code.rawValue)))
     }
   }
 }

@@ -471,7 +471,12 @@ func ordinaryADBServiceErrorsAllowTheNextOperation(operation: String) async thro
   let file = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
   defer { try? FileManager.default.removeItem(at: file) }
   try Data("abc".utf8).write(to: file)
-  await #expect(throws: RemoteError.posix(operation == "shell-unknown" ? EIO : EACCES)) {
+  // 认不出的命令失败把手机的原始输出报出来
+  let expected =
+    operation == "shell-unknown"
+    ? RemoteError.failed(EIO, LF("手机上的命令执行失败（退出码 %@）：%@", String(1), "Other command error"))
+    : RemoteError.posix(EACCES)
+  await #expect(throws: expected) {
     switch operation {
     case "read": for try await _ in try await provider.read(RemotePath("/file"), range: nil) {}
     case "write": try await provider.write(RemotePath("/file"), from: file)

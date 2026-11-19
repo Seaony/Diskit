@@ -156,7 +156,6 @@ enum CloudDriveSupport {
     case 401: .unauthorized
     case 403: .posix(EACCES)
     case 404: .posix(ENOENT)
-    case 409: .posix(EIO)
     case 412: .posix(EEXIST)
     case 416: .posix(EINVAL)
     case 429, 503: .rateLimited
@@ -180,7 +179,87 @@ enum CloudDriveSupport {
     if isNameConflict(response, text: text) {
       return .posix(EEXIST)
     }
-    return fallback
+    guard case .http(let status) = fallback else { return fallback }
+    // 没有专门含义的状态码（400、5xx、不是同名冲突的 409 等）：把服务器原话带上。
+    // 409 的 errno 按 EIO 报，免得 Finder 当成「已存在」；其他状态沿用 .http 的 errno
+    let errno = status == 409 ? EIO : fallback.errno
+    let message = serverMessage(response.body)
+    if message.isEmpty {
+      return status == 409
+        ? .failed(EIO, LF("服务器返回 HTTP %@，没有附带说明", String(status))) : fallback
+    }
+    return .failed(errno, LF("服务器返回错误：%@（HTTP %@）", message, String(status)))
+  }
+
+  // 一句话写清 HTTP 状态和服务器原话，重试多次仍失败时带上最后一次的情况
+  static func responseSummary(_ response: HTTPResponse) -> String {
+    let message = serverMessage(response.body)
+    return message.isEmpty
+      ? "HTTP \(response.status)" : LF("HTTP %@：%@", String(response.status), message)
+  }
+
+  // 从失败响应里取服务器原话：先找 JSON 里的说明字段，找不到就用原始正文。
+  // 正文可能是整页 HTML，太长只留开头，免得界面上铺满一大段
+  static func serverMessage(_ body: Data) -> String {
+    if let fields = messageFields(body) { return fields }
+    let text = String(decoding: body, as: UTF8.self)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    return text.count > 300 ? String(text.prefix(300)) + "…" : text
+  }
+
+  // 只取 JSON 里的说明字段（message、errmsg、error_summary 等），没有就返回 nil
+  static func messageFields(_ body: Data) -> String? {
+    guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any]
+    else { return nil }
+    var parts: [String] = []
+    func add(_ value: Any?) {
+      guard let text = (value as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+        !text.isEmpty, !parts.contains(text)
+      else { return }
+      parts.append(text)
+    }
+    if let error = object["error"] as? [String: Any] {
+      add(error["code"])
+      add(error["status"])
+      add(error["message"])
+    } else {
+      add(object["error"])
+    }
+    for key in [
+      "error_summary", "error_description", "message", "msg", "errmsg", "error_msg", "show_msg",
+    ] {
+      add(object[key])
+    }
+    return parts.isEmpty ? nil : parts.joined(separator: " / ")
+  }
+
+  // 网盘返回了没有单独处理的业务错误码：写清是哪个网盘、对方原话和错误码
+  static func businessFailure(_ service: String, code: Int?, message: String?) -> RemoteError {
+    let text = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    let reason: String
+    switch (code, text.isEmpty) {
+    case (let code?, false): reason = LF("%@返回错误：%@（错误码 %@）", service, text, String(code))
+    case (let code?, true): reason = LF("%@返回错误码 %@，没有附带说明", service, String(code))
+    case (nil, false): reason = LF("%@返回错误：%@", service, text)
+    case (nil, true): reason = LF("%@返回失败，没有附带错误码和说明", service)
+    }
+    return .failed(EIO, reason)
+  }
+
+  // 上传前读不到本地暂存文件的类型或大小
+  static func localFileUnreadable(_ file: URL) -> RemoteError {
+    .failed(EIO, LF("要上传的本地文件不是普通文件，或读不到它的大小：%@", file.path))
+  }
+
+  // 上传时从本地文件读到的字节数不对（文件在上传过程中被改小或截断了）
+  static func localShortRead(
+    _ file: URL, offset: Int64, expected: Int64, actual: Int
+  ) -> RemoteError {
+    .failed(
+      EIO,
+      LF(
+        "读取本地文件出错：从第 %lld 字节起应读 %lld 字节，实际只读到 %lld 字节（%@）", offset, expected,
+        Int64(actual), file.path))
   }
 
   static func sendWithRetry(

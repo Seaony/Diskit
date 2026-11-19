@@ -529,7 +529,7 @@ final class DiskitRemoteVolume: FSVolume, FSVolume.Operations, FSVolume.OpenClos
         } else {
           errno = failure.domain == NSPOSIXErrorDomain ? failure.code : Int(EIO)
         }
-        self.operationLog.error("connection=\(self.connectionID, privacy: .public) operation=\(operation, privacy: .public) path=\(path, privacy: .public) offset=\(offset) errno=\(errno) error=\(failure.localizedDescription, privacy: .public)")
+        self.operationLog.error("connection=\(self.connectionID, privacy: .public) operation=\(operation, privacy: .public) path=\(path, privacy: .public) offset=\(offset) errno=\(errno) error=\(ErrorChain.lines(error).joined(separator: " <- "), privacy: .public)")
         call.completion(.failure(POSIXError(POSIXErrorCode(rawValue: Int32(errno)) ?? .EIO)))
       }
     }

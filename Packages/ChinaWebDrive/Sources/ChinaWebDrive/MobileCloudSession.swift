@@ -336,6 +336,12 @@ public actor MobileCloudSession {
       }
       if isUnauthorized(response) { throw MobileCloudError.loginRequired }
       guard (200..<300).contains(response.status) else {
+        // 状态码本身说明不了原因时，带上移动云盘的原话
+        let said = message(in: response.body)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if RemoteError.http(response.status).errno == EIO, let said, !said.isEmpty {
+          throw RemoteError.failed(
+            EIO, LF("移动云盘返回错误：%@（HTTP %@）", said, String(response.status)))
+        }
         throw RemoteError.http(response.status)
       }
       guard let root = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any]
@@ -377,7 +383,9 @@ public actor MobileCloudSession {
       ?? (root["code"] as? String).flatMap(Int.init)
     let message =
       root["message"] as? String ?? root["msg"] as? String ?? root["error_msg"] as? String
-    return ChinaWebSupport.mapBusiness(code: code ?? response.status, message: message)
+    return ChinaWebSupport.mapBusiness(
+      code: code ?? response.status, message: message,
+      rawCode: root["code"].map { String(describing: $0) } ?? "HTTP \(response.status)")
   }
 
   private func message(in body: Data) -> String? {

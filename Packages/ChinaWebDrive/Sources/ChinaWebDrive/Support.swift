@@ -77,7 +77,8 @@ enum ChinaWebSupport {
     }
   }
 
-  static func mapBusiness(code: Int?, message: String?) -> RemoteError {
+  // rawCode 是对方原样的错误码（可能不是数字），只用来写进错误说明
+  static func mapBusiness(code: Int?, message: String?, rawCode: String? = nil) -> RemoteError {
     let text = message?.lowercased() ?? ""
     if text.contains("space") || text.contains("quota") || text.contains("空间")
       || text.contains("容量")
@@ -98,7 +99,13 @@ enum ChinaWebSupport {
     case 409, 412: return .posix(EEXIST)
     case 429, 503: return .rateLimited
     case 507, 9424, 4_000_012, 1_809_010_017, 1_909_011_527: return .posix(ENOSPC)
-    default: return .posix(EIO)
+    default:
+      // 目前只有移动云盘用这里；认不出的错误把对方原话和错误码照实写出来
+      let said = message?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+      let reason = said.isEmpty ? L("没有说明") : said
+      guard let shown = rawCode.flatMap({ $0.isEmpty ? nil : $0 }) ?? code.map(String.init)
+      else { return .failed(EIO, LF("移动云盘返回错误：%@", reason)) }
+      return .failed(EIO, LF("移动云盘返回错误：%@（错误码 %@）", reason, shown))
     }
   }
 

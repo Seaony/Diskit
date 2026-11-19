@@ -259,7 +259,7 @@ public actor MobileCloudProvider: RemoteFileProvider {
     }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let size = attributes.fileSize, size >= 0 else {
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(EIO, LF("要上传的不是普通文件，或读不到它的大小：%@", localFile.path))
     }
     let parts = try MobileCloudUploadPart.split(size: Int64(size), partSize: partSize)
     let hashAlgorithm = await session.hashAlgorithm
@@ -340,7 +340,13 @@ public actor MobileCloudProvider: RemoteFileProvider {
           while payload.count < part.length {
             guard let block = try handle.read(upToCount: Int(part.length) - payload.count),
               !block.isEmpty
-            else { throw RemoteError.posix(EIO) }
+            else {
+              throw RemoteError.failed(
+                EIO,
+                LF(
+                  "本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动",
+                  Int64(Int(part.length) - payload.count)))
+            }
             payload.append(block)
           }
           var request = URLRequest(

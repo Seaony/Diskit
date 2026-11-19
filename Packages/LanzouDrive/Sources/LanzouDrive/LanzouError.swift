@@ -53,7 +53,8 @@ public enum LanzouError: Error, Equatable, LocalizedError, CustomNSError, LoginR
       .unauthorized
     case .notFound: .posix(ENOENT)
     case .rateLimited: .rateLimited
-    case .antiBotChallenge, .service: .protocolError
+    // 带上具体原因，不压成「无法识别的数据」
+    case .antiBotChallenge, .service: .failed(EIO, errorDescription ?? "")
     case .rangeUnsupported: .unsupported
     case .http(let status): .http(status)
     }

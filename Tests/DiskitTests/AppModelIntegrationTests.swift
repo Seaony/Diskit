@@ -326,8 +326,8 @@ private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
   #expect(!ProviderAccess.isReadOnly(model.providerCapabilities(for: Connection(kind: .smb))))
 }
 
-// 设备询问：换个 USB 口仍认得出同一台；拒绝后记在偏好里，重新启动也不再问
-@MainActor @Test func declinedDevicePromptIsRemembered() throws {
+// 设备询问：换个 USB 口仍认得出同一台；“不用了”只管这次插着，拔掉后忘掉，重新启动也不记得
+@MainActor @Test func declinedDevicePromptLastsUntilUnplugged() throws {
   let harness = ModelHarness()
   let model = harness.model()
   let phone = DiscoveredItem(
@@ -345,7 +345,10 @@ private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
   #expect(DevicePrompt.key(noSerial) == "camera-usb:9")
   model.declineDevicePrompt(phone)
   #expect(model.declinedDevices.contains(DevicePrompt.key(phone)))
-  #expect(harness.model().declinedDevices.contains(DevicePrompt.key(phone)))
+  #expect(harness.model().declinedDevices.isEmpty)
+  // 测试环境里没有插着的设备，刷新时等同于拔掉
+  model.refreshDevicePrompts()
+  #expect(model.declinedDevices.isEmpty)
 }
 
 @MainActor @Test func pendingUploadsNotifyOnlyWhenMoreFilesFail() async throws {

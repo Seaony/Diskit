@@ -133,7 +133,9 @@ public actor QuarkProvider: RemoteFileProvider {
     let attributes = try localFile.resourceValues(forKeys: [
       .fileSizeKey, .creationDateKey, .contentModificationDateKey,
     ])
-    guard let size = attributes.fileSize, size >= 0 else { throw RemoteError.posix(EIO) }
+    guard let size = attributes.fileSize, size >= 0 else {
+      throw RemoteError.failed(EIO, L("读不到要上传的本地文件大小"))
+    }
     let contentType =
       UTType(filenameExtension: (basename(path) as NSString).pathExtension)?.preferredMIMEType
       ?? "application/octet-stream"
@@ -180,7 +182,13 @@ public actor QuarkProvider: RemoteFileProvider {
       while payload.count < part.length {
         guard let block = try handle.read(upToCount: Int(part.length) - payload.count),
           !block.isEmpty
-        else { throw RemoteError.posix(EIO) }
+        else {
+          throw RemoteError.failed(
+            EIO,
+            LF(
+              "读取本地文件不完整：从第 %lld 字节起应读 %lld 字节，只读到 %lld 字节（文件可能在上传时被改动）",
+              part.offset, part.length, Int64(payload.count)))
+        }
         payload.append(block)
       }
       let date = QuarkOSS.date()
@@ -342,8 +350,17 @@ public actor QuarkProvider: RemoteFileProvider {
         case 0, 1:
           retry += 1
           try await Task.sleep(for: .milliseconds(500))
-        case 3, 4: throw RemoteError.posix(EIO)
-        default: throw RemoteError.protocolError
+        case 3, 4:
+          let status = Int64(result.data.status)
+          if let message = result.data.message, !message.isEmpty {
+            throw RemoteError.failed(
+              EIO, LF("夸克网盘后台任务 %@ 执行失败：%@（状态 %@）", id, message, String(status)))
+          }
+          throw RemoteError.failed(
+            EIO, LF("夸克网盘后台任务 %@ 执行失败（状态 %@），服务器没有说明原因", id, String(status)))
+        default:
+          throw RemoteError.failed(
+            EIO, LF("夸克网盘后台任务 %@ 返回了未知状态 %@", id, String(result.data.status)))
         }
       }
     }
@@ -491,16 +508,68 @@ public actor QuarkProvider: RemoteFileProvider {
     try checkHTTP(response)
     do {
       let status = try JSONDecoder().decode(QuarkStatus.self, from: response.body)
-      guard status.status < 400, status.code == 0 else { throw RemoteError.posix(EIO) }
+      guard status.status < 400, status.code == 0 else {
+        let codes = (Int64(status.status), Int64(status.code))
+        if let message = status.message, !message.isEmpty {
+          throw RemoteError.failed(
+            EIO, LF("夸克网盘返回错误：%@（状态 %@，错误码 %@）", message, String(codes.0), String(codes.1)))
+        }
+        throw RemoteError.failed(
+          EIO, LF("夸克网盘返回错误（状态 %@，错误码 %@），没有说明原因", String(codes.0), String(codes.1)))
+      }
       return try JSONDecoder().decode(T.self, from: response.body)
-    } catch let error as RemoteError { throw error } catch { throw RemoteError.protocolError }
+    } catch let error as RemoteError { throw error } catch {
+      throw RemoteError.malformed(
+        LF("夸克网盘接口 %@ 返回的数据无法解析：%@", path, Self.decodingDetail(error)))
+    }
   }
   private func checkHTTP(_ response: HTTPResponse) throws {
-    guard (200..<300).contains(response.status) else {
-      switch response.status {
-      case 401: throw QuarkError.loginRequired
-      default: throw RemoteError.http(response.status)
+    let status = response.status
+    guard !(200..<300).contains(status) else { return }
+    if status == 401 { throw QuarkError.loginRequired }
+    // 找不到、同名、限流、空间不足这些状态码本身说得清；其余带上服务器原话，errno 不变
+    guard ![404, 409, 412, 429, 503, 507].contains(status),
+      let reason = Self.failureReason(response.body, status: status)
+    else { throw RemoteError.http(status) }
+    throw RemoteError.failed(RemoteError.http(status).errno, reason)
+  }
+  // 取出错误响应里服务器的原话：接口回 JSON（message、code），上传用的 OSS 回 XML（Code、Message）
+  static func failureReason(_ body: Data, status: Int) -> String? {
+    if let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] {
+      let message = (object["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+      guard let message, !message.isEmpty else { return nil }
+      // 错误码可能是数字也可能是字符串，原样写出；没有就不写
+      let code = (object["code"] as? NSNumber)?.stringValue ?? (object["code"] as? String)
+      guard let code, !code.isEmpty else {
+        return LF("夸克网盘返回错误：%@（HTTP %@）", message, String(status))
       }
+      return LF("夸克网盘返回错误：%@（HTTP %@，错误码 %@）", message, String(status), code)
+    }
+    let text = String(decoding: body, as: UTF8.self)
+    let parts = ["Code", "Message"].compactMap { tag -> String? in
+      guard let start = text.range(of: "<\(tag)>"),
+        let end = text.range(of: "</\(tag)>", range: start.upperBound..<text.endIndex)
+      else { return nil }
+      let value = text[start.upperBound..<end.lowerBound]
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      return value.isEmpty ? nil : value
+    }
+    guard !parts.isEmpty else { return nil }
+    return LF("夸克网盘返回错误：%@（HTTP %@）", parts.joined(separator: ": "), String(status))
+  }
+  // 说清 JSON 里哪个字段不对，方便发现接口改版
+  static func decodingDetail(_ error: Error) -> String {
+    guard let error = error as? DecodingError else { return error.localizedDescription }
+    func path(_ keys: [CodingKey]) -> String {
+      keys.map { $0.intValue.map { "[\($0)]" } ?? $0.stringValue }.joined(separator: ".")
+    }
+    switch error {
+    case .keyNotFound(let key, let context):
+      return LF("缺少字段 %@", path(context.codingPath + [key]))
+    case .typeMismatch(_, let context): return LF("字段 %@ 的类型不对", path(context.codingPath))
+    case .valueNotFound(_, let context): return LF("字段 %@ 为空", path(context.codingPath))
+    case .dataCorrupted(let context): return context.debugDescription
+    @unknown default: return error.localizedDescription
     }
   }
   static func validRange(_ header: String?, requested: Range<Int64>, size: Int64) -> Bool {

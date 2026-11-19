@@ -43,7 +43,11 @@ enum PikPakDigest {
       var data = Data()
       while data.count < Int(length) {
         guard let chunk = try handle.read(upToCount: Int(length) - data.count), !chunk.isEmpty
-        else { throw RemoteError.posix(EIO) }
+        else {
+          throw RemoteError.failed(
+            EIO,
+            LF("本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动", length - Int64(data.count)))
+        }
         data.append(chunk)
       }
       outer.update(data: Data(Insecure.SHA1.hash(data: data)))
@@ -94,7 +98,13 @@ struct PikPakS3Uploader: Sendable {
         while body.count < Int(part.length) {
           guard let chunk = try handle.read(upToCount: Int(part.length) - body.count),
             !chunk.isEmpty
-          else { throw RemoteError.posix(EIO) }
+          else {
+            throw RemoteError.failed(
+              EIO,
+              LF(
+                "本地文件提前读完，还差 %lld 字节，文件可能在上传期间被改动",
+                part.length - Int64(body.count)))
+          }
           body.append(chunk)
         }
         let response = try await request(

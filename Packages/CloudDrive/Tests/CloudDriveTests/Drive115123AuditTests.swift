@@ -274,7 +274,10 @@ func drive115UploadCallbackFailureNeverReportsSuccess(status: Int) async throws 
   try Data([1]).write(to: file)
   let provider = Drive115Provider(session: try auditSession(http), transport: http)
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("115 网盘上传后确认失败：%@（HTTP %@）", "CallbackFailed", String(status)))
+  ) {
     try await provider.write(RemotePath("/new"), from: file)
   }
 }

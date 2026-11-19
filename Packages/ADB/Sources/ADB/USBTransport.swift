@@ -66,7 +66,40 @@ public actor USBTransport: ADBTransport {
     case Int(kIOReturnNotPrivileged), Int(kIOReturnNotPermitted): return RemoteError.posix(EACCES)
     case Int(kIOReturnNoDevice): return RemoteError.posix(ENODEV)
     case Int(kIOReturnTimeout): return RemoteError.posix(ETIMEDOUT)
-    default: return RemoteError.posix(EIO)
+    default:
+      return RemoteError.failed(
+        EIO, LF("和手机的 USB 通信出错：%@", USBTransport.describe(failure)))
     }
+  }
+
+  static func mappedOpenError(_ error: Error) -> Error {
+    let mapped = mappedError(error)
+    if case .failed? = mapped as? RemoteError {
+      return RemoteError.failed(
+        EIO, LF("打不开手机的 USB 调试接口：%@", USBTransport.describe(error as NSError)))
+    }
+    return mapped
+  }
+
+  // owner 是系统记的独占者，格式 "pid 14435, adb"；拆成程序名和进程号给人看
+  static func occupied(by owner: String) -> RemoteError {
+    let parts = owner.split(separator: ",", maxSplits: 1).map {
+      $0.trimmingCharacters(in: .whitespaces)
+    }
+    if parts.count == 2, parts[0].hasPrefix("pid "), !parts[1].isEmpty {
+      return .failed(
+        EBUSY,
+        LF("手机的 USB 调试接口正被电脑上的“%@”（进程 %@）占用，关掉它后重试", parts[1],
+          String(parts[0].dropFirst(4))))
+    }
+    return .failed(EBUSY, LF("手机的 USB 调试接口正被电脑上的“%@”占用，关掉它后重试", owner))
+  }
+
+  // IOKit 错误码的系统说明，加上错误域、十六进制码和 IOUSBHost 给的原因
+  static func describe(_ failure: NSError) -> String {
+    let code = Int32(truncatingIfNeeded: failure.code)
+    var text = String(cString: mach_error_string(code))
+    if let reason = failure.localizedFailureReason, !reason.isEmpty { text += "，" + reason }
+    return text + "（\(failure.domain) 0x\(String(UInt32(bitPattern: code), radix: 16))）"
   }
 }

@@ -321,7 +321,15 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
       == RemoteError.posix(EACCES))
   #expect(
     CloudDriveSupport.mapHTTP(HTTPResponse(status: 409, body: Data(#"{"error":"other"}"#.utf8)))
-      == RemoteError.posix(EIO))
+      == RemoteError.failed(EIO, LF("服务器返回错误：%@（HTTP %@）", "other", String(409))))
+  // 没有正文的 409 也写清状态，不再只报笼统的 EIO
+  #expect(
+    CloudDriveSupport.mapHTTP(HTTPResponse(status: 409))
+      == RemoteError.failed(EIO, LF("服务器返回 HTTP %@，没有附带说明", String(409))))
+  #expect(
+    CloudDriveSupport.mapHTTP(
+      HTTPResponse(status: 500, body: Data(#"{"error":{"code":500,"message":"Backend Error"}}"#.utf8)))
+      == RemoteError.failed(EIO, LF("服务器返回错误：%@（HTTP %@）", "Backend Error", String(500))))
   #expect(
     CloudDriveSupport.mapHTTP(
       HTTPResponse(status: 409, body: Data(#"{"error_summary":"path/insufficient_space"}"#.utf8)))
@@ -364,6 +372,19 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
     CloudDriveSupport.mapHTTP(
       HTTPResponse(status: 200, body: Data(#"{"errno": -10}"#.utf8)))
       == RemoteError.posix(ENOSPC))
+}
+
+// 没单独处理的业务错误码要带上网盘原话和错误码，不能再压成笼统的 EIO
+@Test func unknownBusinessErrorKeepsServerMessageAndCode() {
+  let body = Data(#"{"errno":31023,"errmsg":"param error","show_msg":"参数错误"}"#.utf8)
+  #expect(CloudDriveSupport.messageFields(body) == "param error / 参数错误")
+  #expect(
+    CloudDriveSupport.businessFailure("百度网盘", code: 31023, message: "param error")
+      == RemoteError.failed(
+        EIO, LF("%@返回错误：%@（错误码 %@）", "百度网盘", "param error", String(31023))))
+  #expect(
+    CloudDriveSupport.businessFailure("115 网盘", code: 7, message: nil)
+      == RemoteError.failed(EIO, LF("%@返回错误码 %@，没有附带说明", "115 网盘", String(7))))
 }
 
 @Test func drive115NumericBusinessStateRefreshesAuthentication() async throws {
@@ -562,7 +583,10 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
   ])
   let google = GoogleDriveProvider(session: try providerSession(googleTransport))
   try await google.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("服务器返回错误：%@（HTTP %@）", #"{"error":{"code":409}}"#, String(409)))
+  ) {
     try await google.makeDirectory(try RemotePath("/conflict"))
   }
 
@@ -572,7 +596,9 @@ private func collect(_ stream: AsyncThrowingStream<Data, Error>) async throws ->
   ])
   let dropbox = DropboxProvider(session: try providerSession(dropboxTransport))
   try await dropbox.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(
+    throws: RemoteError.failed(EIO, LF("服务器返回错误：%@（HTTP %@）", #"{"error":{}}"#, String(409)))
+  ) {
     try await dropbox.move(
       try RemotePath("/source"), to: try RemotePath("/destination"))
   }

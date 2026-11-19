@@ -33,6 +33,11 @@ public actor NetworkTransport: ADBTransport {
     io = try SystemADBNetworkIO(endpoint: endpoint, startTLS: startTLS, identity: identity)
     sleep = { try await Task.sleep(for: $0) }
   }
+  // 不加密的 TCP，用来连本机的 adb server
+  init(plainTCP endpoint: NWEndpoint) {
+    io = SystemADBNetworkIO(plainTCP: endpoint)
+    sleep = { try await Task.sleep(for: $0) }
+  }
   init(
     io: any ADBNetworkIO,
     sleep: @escaping @Sendable (Duration) async throws -> Void = { try await Task.sleep(for: $0) }

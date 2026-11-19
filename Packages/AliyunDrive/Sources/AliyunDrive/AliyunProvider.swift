@@ -139,7 +139,9 @@ public actor AliyunProvider: RemoteFileProvider {
     }
     guard matches.first?.isDirectory != true else { throw RemoteError.posix(EISDIR) }
     let size = try localFile.resourceValues(forKeys: [.fileSizeKey]).fileSize
-    guard let size, size >= 0 else { throw RemoteError.posix(EIO) }
+    guard let size, size >= 0 else {
+      throw RemoteError.failed(EIO, L("读不到要上传的本地文件大小"))
+    }
     let parts = try AliyunMultipart.parts(size: Int64(size))
     defer { invalidate(destination) }
     let created: AliyunCreatedFile = try await rpc(
@@ -173,7 +175,13 @@ public actor AliyunProvider: RemoteFileProvider {
         while data.count < part.length {
           guard let chunk = try handle.read(upToCount: Int(part.length) - data.count),
             !chunk.isEmpty
-          else { throw RemoteError.posix(EIO) }
+          else {
+            throw RemoteError.failed(
+              EIO,
+              LF(
+                "读取本地文件不完整：从第 %lld 字节起应读 %lld 字节，只读到 %lld 字节（文件可能在上传时被改动）",
+                part.offset, part.length, Int64(data.count)))
+          }
           data.append(chunk)
         }
         if urls[part.number] == nil {
@@ -208,7 +216,7 @@ public actor AliyunProvider: RemoteFileProvider {
       do {
         let result: AliyunMutation = try await rpc("recyclebin/trash", ["file_id": previous.fileID])
         try await waitForTask(result.asyncTaskID)
-      } catch { throw AliyunFileError.replacementCleanupFailed }
+      } catch { throw AliyunFileError.replacementCleanupFailed(error) }
     }
   }
   public func makeDirectory(_ path: RemotePath) async throws {
@@ -391,9 +399,17 @@ public actor AliyunProvider: RemoteFileProvider {
           let result: AliyunTaskState = try await self.rpc("async_task/get", ["async_task_id": id])
           switch result.state {
           case "Succeed": return
-          case "Failed": throw RemoteError.posix(EIO)
+          case "Failed":
+            let detail = [result.code, result.message].compactMap { $0 }.filter { !$0.isEmpty }
+            throw RemoteError.failed(
+              EIO,
+              detail.isEmpty
+                ? LF("阿里云盘后台任务 %@ 执行失败，服务器没有说明原因", id)
+                : LF("阿里云盘后台任务 %@ 执行失败：%@", id, detail.joined(separator: ": ")))
           case "Running": try await Task.sleep(for: .seconds(1))
-          default: throw RemoteError.protocolError
+          default:
+            throw RemoteError.failed(
+              EIO, LF("阿里云盘后台任务 %@ 返回了未知状态“%@”", id, result.state))
           }
         }
       }
@@ -414,20 +430,68 @@ public actor AliyunProvider: RemoteFileProvider {
     try check(response)
     do { return try JSONDecoder().decode(T.self, from: response.body) } catch {
       PackageDiagnostics.failure(error, category: .aliyunDrive, operation: .request)
-      throw RemoteError.protocolError
+      throw RemoteError.malformed(
+        LF("阿里云盘接口 %@ 返回的数据无法解析：%@", endpoint, Self.decodingDetail(error)))
     }
   }
   private func check(_ response: HTTPResponse) throws {
-    guard (200..<300).contains(response.status) else {
+    guard !(200..<300).contains(response.status) else { return }
+    switch response.status {
+    case 404: throw RemoteError.posix(ENOENT)
+    case 409: throw RemoteError.posix(EEXIST)
+    case 429: throw RemoteError.posix(EAGAIN)
+    case 507: throw RemoteError.posix(ENOSPC)
+    default: break
+    }
+    // 其余状态码含义笼统：errno 照旧，提示里带上服务器原话和状态码
+    let code: Int32 =
       switch response.status {
-      case 400: throw RemoteError.posix(EINVAL)
-      case 401, 403: throw RemoteError.posix(EACCES)
-      case 404: throw RemoteError.posix(ENOENT)
-      case 409: throw RemoteError.posix(EEXIST)
-      case 429: throw RemoteError.posix(EAGAIN)
-      case 507: throw RemoteError.posix(ENOSPC)
-      default: throw RemoteError.posix(EIO)
+      case 400: EINVAL
+      case 401, 403: EACCES
+      default: EIO
       }
+    let status = Int64(response.status)
+    if let detail = Self.serverDetail(response.body) {
+      throw RemoteError.failed(code, LF("阿里云盘返回错误：%@（HTTP %@）", detail, String(status)))
+    }
+    guard code == EIO else { throw RemoteError.posix(code) }
+    throw RemoteError.failed(EIO, LF("阿里云盘请求失败（HTTP %@），服务器没有说明原因", String(status)))
+  }
+  // 取出错误响应里服务器的原话：开放接口回 JSON（code、message），分片上传的 OSS 回 XML（Code、Message）
+  static func serverDetail(_ body: Data) -> String? {
+    var parts: [String] = []
+    if let object = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] {
+      parts = ["code", "message"].compactMap { object[$0] as? String }
+    } else {
+      let text = String(decoding: body, as: UTF8.self)
+      parts = ["Code", "Message"].compactMap { tag in
+        guard let start = text.range(of: "<\(tag)>"),
+          let end = text.range(of: "</\(tag)>", range: start.upperBound..<text.endIndex)
+        else { return nil }
+        return String(text[start.upperBound..<end.lowerBound])
+      }
+      // 不是 XML 的短文本也原样带上，HTML 错误页太长没法看就不放
+      let plain = text.trimmingCharacters(in: .whitespacesAndNewlines)
+      if parts.isEmpty, !plain.isEmpty, !plain.hasPrefix("<"), plain.count <= 300 {
+        parts = [plain]
+      }
+    }
+    parts = parts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+    return parts.isEmpty ? nil : parts.joined(separator: ": ")
+  }
+  // 说清 JSON 里哪个字段不对，方便发现接口改版
+  static func decodingDetail(_ error: Error) -> String {
+    guard let error = error as? DecodingError else { return error.localizedDescription }
+    func path(_ keys: [CodingKey]) -> String {
+      keys.map { $0.intValue.map { "[\($0)]" } ?? $0.stringValue }.joined(separator: ".")
+    }
+    switch error {
+    case .keyNotFound(let key, let context):
+      return LF("缺少字段 %@", path(context.codingPath + [key]))
+    case .typeMismatch(_, let context): return LF("字段 %@ 的类型不对", path(context.codingPath))
+    case .valueNotFound(_, let context): return LF("字段 %@ 为空", path(context.codingPath))
+    case .dataCorrupted(let context): return context.debugDescription
+    @unknown default: return error.localizedDescription
     }
   }
   static func validContentRange(_ header: String?, requested: Range<Int64>, size: Int64) -> Bool {

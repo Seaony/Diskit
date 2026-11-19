@@ -188,7 +188,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     try await ensureMissing(path)
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let fileSize = values.fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     let size = Int64(fileSize)
     try Self.validateFileSize(size)
@@ -214,8 +214,10 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       try Task.checkCancellation()
       try handle.seek(toOffset: UInt64(offset))
       let length = min(sliceSize, size - offset)
-      guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-        throw RemoteError.posix(EIO)
+      let data = try handle.read(upToCount: Int(length)) ?? Data()
+      guard data.count == Int(length) else {
+        throw CloudDriveSupport.localShortRead(
+          localFile, offset: offset, expected: length, actual: data.count)
       }
       var form = MultipartFormData()
       form.addText("preuploadID", preuploadID)
@@ -332,7 +334,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
       } catch {
         throw RemoteError.protocolError
       }
-      if envelope.code != 0 { throw businessError(envelope.code) }
+      if envelope.code != 0 { throw businessError(envelope.code, message: envelope.message) }
       if Value.self == EmptyResponse.self, envelope.data == nil {
         return EmptyResponse() as! Value
       }
@@ -407,7 +409,7 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     return hasher.finalize().map { String(format: "%02x", $0) }.joined()
   }
 
-  private func businessError(_ code: Int?) -> RemoteError {
+  private func businessError(_ code: Int?, message: String?) -> RemoteError {
     switch code {
     case 401:
       return .unauthorized
@@ -418,7 +420,8 @@ public actor Drive123Provider: RemoteFileProvider, OAuthProfileProviding {
     case 5066:
       return .posix(ENOENT)
     default:
-      return .protocolError
+      // 其他错误码照实带上 123 云盘的原话
+      return CloudDriveSupport.businessFailure(L("123 云盘"), code: code, message: message)
     }
   }
 

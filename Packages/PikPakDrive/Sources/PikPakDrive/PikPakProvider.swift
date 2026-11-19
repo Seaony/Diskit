@@ -161,7 +161,7 @@ public actor PikPakProvider: RemoteFileProvider {
     defer { invalidate(destination) }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0 else {
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(EIO, LF("要上传的不是普通文件，或读不到它的大小：%@", localFile.path))
     }
     let size = Int64(fileSize)
     let generation = cacheGeneration
@@ -453,7 +453,10 @@ public actor PikPakProvider: RemoteFileProvider {
         method: "GET", path: "/drive/v1/tasks/" + detailedID(id))
       switch task.phase {
       case "PHASE_TYPE_COMPLETE": return
-      case "PHASE_TYPE_ERROR": throw PikPakError.taskFailed
+      case "PHASE_TYPE_ERROR":
+        // 有原话就报原话，没有才用笼统的「任务没完成」
+        guard let message = task.message, !message.isEmpty else { throw PikPakError.taskFailed }
+        throw RemoteError.failed(EIO, LF("PikPak 任务失败：%@", message))
       case "PHASE_TYPE_RUNNING", "PHASE_TYPE_PENDING":
         if let current = task.progress, current > progress {
           progress = current

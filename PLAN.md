@@ -419,7 +419,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 - 不手写密码学原语（RSA 签名用 Security 框架，TLS 用 Network.framework，SPAKE2 用 BoringSSL）。
 - 参考开源代码时注意许可证：AOSP（Apache‑2.0）可参考并注明出处；OpenList（AGPL‑3.0）只能看行为不能复制。
 - 阶段一不写任何依赖 Team ID 的代码，路径与钥匙串一律走 §7 的抽象。
-- 日志不打印密码、令牌、Cookie、私钥。
+- 日志和「复制详细信息」原样记录错误的完整原因（每一层的类型、错误域、错误码、说明），不脱敏：数据都在用户自己的电脑上。
 - 所有远端调用有超时（设备 15 秒，网盘 30 秒，大文件传输按无进展 60 秒判超时）。
 - Bundle ID：主 App `com.seaony.Diskit`，扩展 `com.seaony.Diskit.FS`，开发工具 `com.seaony.Diskit.dev`；OAuth 回调 `diskit://`，FSKit 使用单独的 `diskit-` 前缀 scheme。百度、腾讯、B2、R2、Google、移动、迅雷、天翼分别用 `diskit-baidu`、`diskit-cos`、`diskit-b2`、`diskit-r2`、`diskit-google`、`diskit-mobile`、`diskit-thunder`、`diskit-tianyi`，其余见 `ConnectionKind.fileSystemScheme`。
 - 代码注释用简短中文，说明做什么、为什么，不写废话。

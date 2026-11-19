@@ -457,11 +457,8 @@ public enum ConnectionState: Equatable, Sendable {
     if error is CancellationError { return }
     let failure = error as NSError
     if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorCancelled { return }
-    if failure.domain == NSURLErrorDomain && failure.code == NSURLErrorTimedOut {
-      operationFailed?(ConnectionError.timeout.localizedDescription)
-      return
-    }
-    operationFailed?(HumanError.message(error, fallback: L("操作没有完成，请稍后重试")))
+    // 写进错误日志的是完整报告：每一层的错误域、错误码和原文说明，排查时不用再猜
+    operationFailed?(HumanError.report(error))
   }
   public func refreshMounts() {
     for connection in connections

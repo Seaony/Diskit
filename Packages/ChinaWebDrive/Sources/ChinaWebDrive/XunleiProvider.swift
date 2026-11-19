@@ -261,7 +261,7 @@ public actor XunleiProvider: RemoteFileProvider {
     }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0
-    else { throw RemoteError.posix(EIO) }
+    else { throw RemoteError.failed(EIO, LF("要上传的不是普通文件，或读不到它的大小：%@", localFile.path)) }
     let size = Int64(fileSize)
     defer { invalidate(destination) }
     let response = try await session.request(

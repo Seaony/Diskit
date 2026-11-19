@@ -840,7 +840,10 @@ private struct VolumeFixture {
   try await fixture.backend.open(path, writable: true)
   _ = try await fixture.backend.write(path, offset: 0, data: Data("newer".utf8))
   await fixture.provider.corruptNextUpload()
-  await #expect(throws: RemoteError.posix(EIO)) { try await fixture.backend.close(path) }
+  await #expect(
+    throws: RemoteError.failed(
+      EIO, LF("上传后远端文件大小不对（应为 %lld 字节，实际 %lld 字节）", Int64(5), Int64(1)))
+  ) { try await fixture.backend.close(path) }
   #expect(try await fixture.provider.content("/file") == Data("old".utf8))
   #expect(await fixture.backend.pendingWriteFiles[path] != nil)
   try await fixture.backend.close(path)

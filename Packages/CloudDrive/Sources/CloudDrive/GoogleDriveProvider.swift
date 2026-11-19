@@ -179,7 +179,7 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
     try await ensureNameMissing(path)
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard values.isRegularFile == true, let size = values.fileSize else {
-      throw RemoteError.posix(EIO)
+      throw CloudDriveSupport.localFileUnreadable(localFile)
     }
     if size <= 5 * 1024 * 1024 {
       let data = try Data(contentsOf: localFile, options: .mappedIfSafe)
@@ -296,8 +296,11 @@ public actor GoogleDriveProvider: RemoteFileProvider, OAuthProfileProviding {
         try Task.checkCancellation()
         let end = min(offset + Int64(chunkSize), size)
         try handle.seek(toOffset: UInt64(offset))
-        guard let data = try handle.read(upToCount: Int(end - offset)), data.count == end - offset
-        else { throw RemoteError.posix(EIO) }
+        let data = try handle.read(upToCount: Int(end - offset)) ?? Data()
+        guard data.count == end - offset else {
+          throw CloudDriveSupport.localShortRead(
+            localFile, offset: offset, expected: end - offset, actual: data.count)
+        }
         var chunk = URLRequest(url: uploadURL)
         chunk.httpMethod = "PUT"
         chunk.httpBody = data

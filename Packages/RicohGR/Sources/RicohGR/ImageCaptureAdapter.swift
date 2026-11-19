@@ -37,7 +37,7 @@ import ImageCaptureCore
     transaction &+= 1
     let (data, response) = try await device.command(
       RicohPTP.command(code, transaction: transaction, parameters: parameters), until: deadline)
-    try RicohPTP.validateResponse(response)
+    try RicohPTP.validateResponse(response, command: code)
     return data
   }
   func snapshot() async throws -> RicohSnapshot {
@@ -102,7 +102,7 @@ import ImageCaptureCore
     guard files.contains(handle) else { throw RemoteError.posix(ENOENT) }
     do {
       guard let data = try await device.read(handle: handle, offset: offset, length: length) else {
-        throw RemoteError.posix(EIO)
+        throw RemoteError.failed(EIO, L("相机没有返回数据，也没有报错"))
       }
       return data
     } catch { throw RicohErrorMapper.map(error) }

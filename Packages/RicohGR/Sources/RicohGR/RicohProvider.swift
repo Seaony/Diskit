@@ -106,7 +106,7 @@ import Synchronization
     until deadline: ContinuousClock.Instant = .now.advanced(
       by: .seconds(RemoteTimeout.deviceRequest))
   ) async throws -> RicohSnapshot {
-    guard connected else { throw RemoteError.posix(EIO) }
+    guard connected else { throw RemoteError.failed(EIO, L("相机还没连接")) }
     let snapshot: RicohSnapshot
     do { snapshot = try await adapter.snapshot(until: deadline) } catch {
       PackageDiagnostics.failure(error, category: .ricohGR, operation: .snapshot)
@@ -191,7 +191,10 @@ private actor RicohReadCursor {
     let length = Int(min(1_048_576, end - offset))
     do {
       let data = try await adapter.read(handle: handle, offset: offset, length: length)
-      guard !data.isEmpty, data.count <= length else { throw RemoteError.posix(EIO) }
+      guard !data.isEmpty, data.count <= length else {
+        throw RemoteError.failed(
+          EIO, LF("相机返回的数据长度不对（收到 %lld 字节，最多 %lld）", Int64(data.count), Int64(length)))
+      }
       offset += Int64(data.count)
       return data
     } catch {

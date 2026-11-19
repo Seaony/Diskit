@@ -214,14 +214,18 @@ struct PikPakTask: Decodable, Sendable {
   let id: String
   let phase: String
   let progress: Int64?
+  // 任务失败时 PikPak 写在这里的原因
+  let message: String?
 
-  enum CodingKeys: String, CodingKey { case id, phase, progress }
+  enum CodingKeys: String, CodingKey { case id, phase, progress, message }
 
   init(from decoder: Decoder) throws {
     let values = try decoder.container(keyedBy: CodingKeys.self)
     id = try values.decode(String.self, forKey: .id)
     phase = try values.decode(String.self, forKey: .phase)
     progress = try values.decodeFlexibleInt64IfPresent(forKey: .progress)
+    message = (try? values.decodeIfPresent(String.self, forKey: .message))?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
 

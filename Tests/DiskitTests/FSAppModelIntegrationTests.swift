@@ -192,9 +192,8 @@ private func fsAppModelConnection(_ kind: ConnectionKind = .quark) -> Connection
   #expect(pendingFailure?.locations.first?.id == connection.id.uuidString)
   #expect(pendingFailure?.locations.first?.name == connection.name)
   for reason in [pendingFailure?.reason, pendingFailure?.locations.first?.reason] {
-    #expect(reason == HumanError.message(RemoteError.posix(EIO)))
-    #expect(reason?.contains(failure.localizedDescription) != true)
-    #expect(reason?.contains(underlying.localizedDescription) != true)
+    // 底层错误带了原文就显示原文，不换成笼统的读写错误
+    #expect(reason == underlying.localizedDescription)
     #expect(reason?.contains(HumanError.message(RemoteError.notConnected)) != true)
     #expect(reason?.contains(L("请先关闭正在使用这些位置的文件，然后重试退出。")) != true)
   }

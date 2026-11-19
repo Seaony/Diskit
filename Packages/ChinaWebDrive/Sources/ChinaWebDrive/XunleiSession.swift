@@ -106,6 +106,13 @@ public actor XunleiSession {
         continue
       }
       if Self.isUnauthorized(response) { throw XunleiError.loginRequired }
+      // 状态码本身说明不了原因时，带上迅雷返回的原话
+      if !(200..<300).contains(response.status), RemoteError.http(response.status).errno == EIO,
+        let object = try? JSONSerialization.jsonObject(with: response.body) as? [String: Any],
+        let error = Self.serverFailure(object, status: response.status)
+      {
+        throw error
+      }
       try ChinaWebSupport.checkHTTP(response)
       if let error = Self.businessError(response.body) {
         PackageDiagnostics.failure(error, category: .chinaWebDrive, operation: .request)
@@ -205,6 +212,29 @@ public actor XunleiSession {
     if value.contains("params") || value.contains("invalid") {
       return .posix(EINVAL)
     }
-    return .posix(EIO)
+    return serverFailure(object, status: nil)
+  }
+
+  // 把迅雷的原话和错误码照实写进错误；没有任何说明时返回 nil
+  private static func serverFailure(_ object: [String: Any], status: Int?) -> RemoteError? {
+    func text(_ key: String) -> String {
+      (object[key] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+    let error = text("error")
+    let description = text("error_description")
+    let message = description.isEmpty ? error : description
+    guard !message.isEmpty else { return nil }
+    let codes = [
+      object["error_code"].map { String(describing: $0) }, description.isEmpty ? nil : error,
+    ].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " / ")
+    switch (codes.isEmpty, status) {
+    case (true, nil): return .failed(EIO, LF("迅雷云盘返回错误：%@", message))
+    case (false, nil): return .failed(EIO, LF("迅雷云盘返回错误：%@（错误码 %@）", message, codes))
+    case (true, let status?):
+      return .failed(EIO, LF("迅雷云盘返回错误：%@（HTTP %@）", message, String(status)))
+    case (false, let status?):
+      return .failed(
+        EIO, LF("迅雷云盘返回错误：%@（错误码 %@，HTTP %@）", message, codes, String(status)))
+    }
   }
 }

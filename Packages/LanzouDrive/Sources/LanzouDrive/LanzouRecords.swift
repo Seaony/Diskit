@@ -19,7 +19,10 @@ enum LanzouJSON {
         let errorMessage = message(in: object)
         throw errorMessage.isEmpty ? LanzouError.rateLimited : businessError(errorMessage)
       case 9: throw LanzouError.authenticationExpired
-      default: throw businessError(message(in: object))
+      default:
+        // 没给说明时至少带上状态码，免得只剩「操作失败：」
+        let said = message(in: object)
+        throw businessError(said.isEmpty ? LF("没有说明（状态码 zt=%@）", String(status)) : said)
       }
     } catch {
       PackageDiagnostics.failure(error, category: .lanzouDrive, operation: .request)

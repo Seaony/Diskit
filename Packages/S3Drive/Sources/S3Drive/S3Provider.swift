@@ -261,8 +261,11 @@ public actor S3Provider: RemoteFileProvider {
     guard path.value != "/" else { throw RemoteError.posix(EISDIR) }
     guard aliases[path] == nil else { throw RemoteError.posix(EEXIST) }
     let values = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
-    guard values.isRegularFile == true, let fileSize = values.fileSize else {
-      throw RemoteError.posix(EIO)
+    guard values.isRegularFile == true else {
+      throw RemoteError.failed(EIO, L("要上传的不是普通文件"))
+    }
+    guard let fileSize = values.fileSize else {
+      throw RemoteError.failed(EIO, L("读不到要上传的本地文件大小"))
     }
     let size = Int64(fileSize)
     let key = objectKey(path, directory: false)
@@ -519,8 +522,13 @@ public actor S3Provider: RemoteFileProvider {
         try Task.checkCancellation()
         let length = min(partSize, size - offset)
         try handle.seek(toOffset: UInt64(offset))
-        guard let data = try handle.read(upToCount: Int(length)), data.count == Int(length) else {
-          throw RemoteError.posix(EIO)
+        let data = try handle.read(upToCount: Int(length)) ?? Data()
+        guard data.count == Int(length) else {
+          throw RemoteError.failed(
+            EIO,
+            LF(
+              "读取本地文件不完整：从第 %lld 字节起应读 %lld 字节，只读到 %lld 字节（文件可能在上传时被改动）",
+              offset, length, Int64(data.count)))
         }
         let request = try signedRequest(
           method: "PUT", path: key, body: data,
@@ -781,23 +789,35 @@ public actor S3Provider: RemoteFileProvider {
       default:
         break
       }
-      if (200..<300).contains(response.status) {
-        throw RemoteError.posix(EIO)
-      }
     }
+    let status = Int64(response.status)
     switch response.status {
-    case 400: throw RemoteError.posix(EINVAL)
-    case 401, 403: throw RemoteError.posix(EACCES)
     case 404: throw RemoteError.posix(ENOENT)
     case 409: throw RemoteError.posix(EEXIST)
     case 412: throw RemoteError.posix(EEXIST)
-    case 416: throw RemoteError.posix(EINVAL)
     case 429, 503: throw RemoteError.rateLimited
     case 501, 505: throw RemoteError.posix(ENOTSUP)
     case 408, 504: throw RemoteError.posix(ETIMEDOUT)
     case 507: throw RemoteError.posix(ENOSPC)
-    case 500...599: throw RemoteError.posix(EIO)
-    default: throw RemoteError.protocolError
+    default: break
+    }
+    // 其余状态码含义笼统：errno 照旧，有 XML 错误就把 Code、Message 原样写进提示
+    let code: Int32 =
+      switch response.status {
+      case 400, 416: EINVAL
+      case 401, 403: EACCES
+      default: EIO
+      }
+    if let error {
+      let detail = [error.code, error.message ?? ""].filter { !$0.isEmpty }
+      throw RemoteError.failed(
+        code, LF("S3 返回错误：%@（HTTP %@）", detail.joined(separator: ": "), String(status)))
+    }
+    switch response.status {
+    case 400, 401, 403, 416: throw RemoteError.posix(code)
+    case 500...599:
+      throw RemoteError.failed(EIO, LF("S3 服务出错（HTTP %@），没有返回错误说明", String(status)))
+    default: throw RemoteError.failed(EIO, LF("S3 返回了意外的 HTTP 状态 %@", String(status)))
     }
   }
 

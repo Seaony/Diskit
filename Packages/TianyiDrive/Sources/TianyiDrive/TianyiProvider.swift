@@ -171,7 +171,7 @@ public actor TianyiProvider: RemoteFileProvider {
     else { throw RemoteError.posix(EEXIST) }
     let attributes = try localFile.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
     guard attributes.isRegularFile == true, let fileSize = attributes.fileSize, fileSize >= 0 else {
-      throw RemoteError.posix(EIO)
+      throw RemoteError.failed(EIO, LF("要上传的不是普通文件，或读不到它的大小：%@", localFile.path))
     }
     let size = Int64(fileSize)
     let plan = try TianyiUploadPlan.make(
@@ -505,7 +505,11 @@ public actor TianyiProvider: RemoteFileProvider {
             (0...100).contains(status.process ?? 0)
           else { throw TianyiError.invalidResponse }
           if state == 2 { throw RemoteError.posix(EEXIST) }
-          if (status.failedCount ?? 0) > 0 { throw RemoteError.posix(EIO) }
+          if let failed = status.failedCount, failed > 0 {
+            // 查询接口只给失败数量，不给原因
+            throw RemoteError.failed(
+              EIO, LF("天翼云盘的 %@ 任务有 %lld 项失败（任务号 %@）", type, Int64(failed), taskID))
+          }
           if (status.successedCount ?? 0) > completed || (status.process ?? 0) > percent {
             completed = max(completed, status.successedCount ?? 0)
             percent = max(percent, status.process ?? 0)

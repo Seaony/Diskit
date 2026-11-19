@@ -103,10 +103,16 @@ private func dropboxProvider(_ transport: DropboxRequestTransport) throws -> Dro
   let transport = DropboxRequestTransport(missing: false)
   let provider = try dropboxProvider(transport)
   try await provider.connect()
-  await #expect(throws: RemoteError.posix(EIO)) {
+  let error = await #expect(throws: RemoteError.self) {
     try await provider.move(RemotePath("/source"), to: RemotePath("/destination"))
   }
   #expect(await transport.requests.count == 2)
+  // 照实带上 Dropbox 的原话，errno 仍是 EIO
+  guard case .failed(EIO, let reason) = error else {
+    Issue.record("应报出具体原因：\(String(describing: error))")
+    return
+  }
+  #expect(reason.contains("restricted_content"))
 }
 
 @Test func dropboxContentHeadersRoundTripUnicodeAndDEL() async throws {

@@ -66,7 +66,8 @@ func adbProductionFactoryPrefersOnlyUnambiguousUSB(duplicate: Bool) async throws
       await routes.record(guid)
       return ADBSession(
         transport: FactoryTransport(), identity: ADBIdentity(store: MemorySecretStore()))
-    })
+    },
+    server: { ADBServerSession(serial: $0, dial: { throw RemoteError.notConnected }) })
   #expect(await routes.selected == [duplicate ? "adb-same-Ab12Cd" : device.id])
 }
 

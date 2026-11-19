@@ -49,7 +49,9 @@ extension RemoteVolumeBackend {
       try backend.requireConnection()
       try await backend.prepareStage(path)
       try backend.recordJournal(path, .writing)
-      guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
+      guard var stage = backend.staged[path] else {
+        throw RemoteError.failed(EIO, LF("找不到这个文件的本地暂存内容：%@", path.value))
+      }
       let handle = try FileHandle(forWritingTo: stage.url)
       defer { try? handle.close() }
       try handle.seek(toOffset: UInt64(offset))
@@ -73,7 +75,9 @@ extension RemoteVolumeBackend {
       try backend.requireConnection()
       try await backend.prepareStage(path)
       try backend.recordJournal(path, .writing)
-      guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
+      guard var stage = backend.staged[path] else {
+        throw RemoteError.failed(EIO, LF("找不到这个文件的本地暂存内容：%@", path.value))
+      }
       let handle = try FileHandle(forWritingTo: stage.url)
       defer { try? handle.close() }
       try handle.truncate(atOffset: UInt64(size))
@@ -94,7 +98,9 @@ extension RemoteVolumeBackend {
       try backend.requireConnection()
       try await backend.prepareStage(path)
       try backend.recordJournal(path, .writing)
-      guard var stage = backend.staged[path] else { throw RemoteError.posix(EIO) }
+      guard var stage = backend.staged[path] else {
+        throw RemoteError.failed(EIO, LF("找不到这个文件的本地暂存内容：%@", path.value))
+      }
       try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: stage.url.path)
       stage.item.modified = date
       stage.dirty = true
@@ -151,8 +157,15 @@ extension RemoteVolumeBackend {
           try await provider.write(temporary, from: uploadFile)
           let uploaded = try await provider.stat(temporary)
           // 传上去的大小不对是这次上传坏了，不是断线；原文件还在，本地内容也留着
-          guard !uploaded.isDirectory, uploaded.size == stage.item.size else {
-            throw RemoteError.posix(EIO)
+          guard !uploaded.isDirectory else {
+            throw RemoteError.failed(EIO, LF("上传后远端暂存位置变成了文件夹：%@", temporary.value))
+          }
+          guard uploaded.size == stage.item.size else {
+            throw RemoteError.failed(
+              EIO,
+              LF(
+                "上传后远端文件大小不对（应为 %lld 字节，实际 %lld 字节）", stage.item.size,
+                uploaded.size))
           }
           try await provider.remove(path, recursive: false)
           do { try await provider.move(temporary, to: path) } catch {

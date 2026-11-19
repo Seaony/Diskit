@@ -179,7 +179,7 @@ private let storageInfo = Data([
   try await adapter.open()
   _ = try await adapter.snapshot()
   device.data = nil
-  await #expect(throws: RemoteError.posix(EIO)) {
+  await #expect(throws: RemoteError.failed(EIO, L("相机没有返回数据，也没有报错"))) {
     try await adapter.read(handle: 3, offset: 0, length: 3)
   }
   device.failure = CancellationError()
@@ -208,17 +208,35 @@ private let storageInfo = Data([
     (ICReturn.Code.deviceNeedsCredentials.rawValue, EACCES),
     (ICReturnConnectionError.Code.sessionAlreadyOpen.rawValue, EBUSY),
     (ICLegacyReturn.Code.deviceNotFoundErr.rawValue, ENODEV),
-    (ICReturnConnectionError.Code.ejectedSuddenly.rawValue, EIO),
     (ICLegacyReturn.Code.deviceUnsupportedErr.rawValue, ENOTSUP),
-    (ICReturn.Code.downloadCanceled.rawValue, ECANCELED), (-99999, EIO),
+    (ICReturn.Code.downloadCanceled.rawValue, ECANCELED),
   ]
   for (code, expected) in cases {
     #expect(RicohErrorMapper.map(NSError(domain: ICErrorDomain, code: code)) == .posix(expected))
   }
   #expect(RicohErrorMapper.map(CancellationError()) == .posix(ECANCELED))
-  #expect(RicohErrorMapper.map(NSError(domain: NSPOSIXErrorDomain, code: 0)) == .posix(EIO))
-  #expect(RicohErrorMapper.map(NSError(domain: NSPOSIXErrorDomain, code: Int.max)) == .posix(EIO))
-  #expect(RicohErrorMapper.map(NSError(domain: "unknown", code: 1)) == .posix(EIO))
+  // 没有对应 errno 的错误保留 EIO，并写出具体原因和原始错误码
+  let ejected = ICReturnConnectionError.Code.ejectedSuddenly.rawValue
+  #expect(
+    RicohErrorMapper.map(NSError(domain: ICErrorDomain, code: ejected))
+      == .failed(
+        EIO, LF("ImageCapture 报错：%@（%@ %@）", L("相机被意外推出"), ICErrorDomain, String(ejected))))
+  let unknownNative = NSError(domain: ICErrorDomain, code: -99999)
+  #expect(
+    RicohErrorMapper.map(unknownNative)
+      == .failed(
+        EIO,
+        LF("ImageCapture 报错：%@（%@ %@）", unknownNative.localizedDescription, ICErrorDomain, "-99999")))
+  for error in [
+    NSError(domain: NSPOSIXErrorDomain, code: 0), NSError(domain: NSPOSIXErrorDomain, code: Int.max),
+    NSError(domain: "unknown", code: 1),
+  ] {
+    #expect(
+      RicohErrorMapper.map(error)
+        == .failed(
+          EIO,
+          LF("系统报错：%@（%@ %@）", error.localizedDescription, error.domain, String(error.code))))
+  }
 }
 
 @MainActor private final class DefaultDeadlineAdapter: RicohCameraAdapter {
@@ -253,12 +271,25 @@ private let storageInfo = Data([
 @Test func ptpRejectsErrorResponsesAndMalformedDeviceDatasets() throws {
   for (code, error): (UInt8, RemoteError) in [
     (5, .unsupported), (9, .posix(ENOENT)), (0x13, .posix(ENODEV)), (0x19, .posix(EBUSY)),
-    (0xff, .posix(EIO)),
+    (0xff, .failed(EIO, LF("相机返回未知的 PTP 响应码 0x%@", "20FF"))),
+    (0x02, .failed(EIO, LF("相机返回 PTP 错误 0x%@：%@", "2002", "General Error"))),
   ] {
     var response = successResponse
     response[6] = code
     #expect(throws: error) { try RicohPTP.validateResponse(response) }
   }
+  // 带上是哪条命令出的错
+  var failing = successResponse
+  failing[6] = 0x1e
+  #expect(
+    throws: RemoteError.failed(
+      EIO,
+      LF("相机执行 PTP 命令 %@ 时返回错误 0x%@：%@", "0x1005 GetStorageInfo", "201E", "Session Already Open"))
+  ) { try RicohPTP.validateResponse(failing, command: 0x1005) }
+  failing[6] = 0xfe
+  #expect(
+    throws: RemoteError.failed(EIO, LF("相机执行 PTP 命令 %@ 时返回未知响应码 0x%@", "0x9999", "20FE"))
+  ) { try RicohPTP.validateResponse(failing, command: 0x9999) }
   #expect(try RicohPTP.deviceModel(deviceInfo("RICOH GR IV")) == "RICOH GR IV")
   for size in [0, 7, 10, 30, 40] {
     #expect(throws: RemoteError.protocolError) {
