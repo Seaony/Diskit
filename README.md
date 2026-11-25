@@ -54,14 +54,13 @@ It's for you if you move files between several devices and services. If everythi
 ## Supported locations
 
 <table>
-<tr><td><b>Devices</b></td><td>Android phone (USB) · Android phone (wireless debugging) · Ricoh GR IV · USB cameras</td></tr>
+<tr><td><b>Devices</b></td><td>Android phone (USB) · Android phone (wireless debugging) · USB cameras</td></tr>
 <tr><td><b>Shares</b></td><td>SMB · WebDAV (HTTP and HTTPS, with presets for Jianguoyun, Nextcloud, ownCloud, Synology, QNAP and OpenList) · NFS</td></tr>
-<tr><td><b>Cloud drives</b></td><td>Aliyun Drive · Baidu Netdisk · 115 Drive · 123 Drive · OneDrive · Google Drive · Dropbox</td></tr>
 <tr><td><b>Experimental drives</b></td><td>Quark Drive · UC Drive · Tianyi Cloud · Mobile Cloud · Xunlei Drive · PikPak · Lanzou Cloud (read-only)</td></tr>
 <tr><td><b>Object storage</b></td><td>Amazon S3 · Cloudflare R2 · Alibaba Cloud OSS · Tencent Cloud COS · Qiniu Kodo · MinIO · Backblaze B2</td></tr>
 </table>
 
-Official cloud drives sign in through each provider's own authorisation page. Experimental drives sign in through the provider's website or with your account and password, and use unofficial interfaces, so they may stop working when the provider changes its site.
+Experimental drives sign in through the provider's website or with your account and password, and use unofficial interfaces, so they may stop working when the provider changes its site.
 
 ## What it does
 
@@ -75,7 +74,7 @@ SMB, WebDAV and NFS shares mount through macOS, so Finder and every other app se
 
 ### Phones and cameras
 
-Android phones connect over USB debugging or Android 11+ wireless debugging with a pairing code. Diskit implements the ADB protocol itself, so there's no `adb` to install and nothing to add to the phone. Ricoh GR IV and other USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
+Android phones connect over USB debugging or Android 11+ wireless debugging with a pairing code. Diskit implements the ADB protocol itself, so there's no `adb` to install and nothing to add to the phone. USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
 
 ### Built for macOS
 
