@@ -12,7 +12,7 @@
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[下载](https://github.com/Seaony/Diskit/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->[English](README.md) · **简体中文**
+**[下载](https://github.com/Seaony/Diskit/releases/latest)** &nbsp;·&nbsp; **[发布说明](docs/RELEASING.md)** &nbsp;·&nbsp; [English](README.md) · **简体中文**
 
 <br>
 
@@ -86,24 +86,26 @@ SMB、WebDAV、NFS 共享通过 macOS 挂载，Finder 和其他 App 都把它们
 - 已保存的位置在 `~/Library/Application Support/Diskit/connections.json`，不含任何密钥。缓存在 `~/Library/Caches/Diskit/`，错误日志保留 7 天。
 - Diskit 不做任何统计。除了在局域网和 USB 上发现手机、相机和共享，它只和你添加的设备、服务通信，以及访问 Diskit 的 GitHub Releases 检查更新。
 
-<!-- source-only -->
 ## 从源码构建
 
 需要 Xcode 27 和 XcodeGen（`brew install xcodegen`）。
 
 ```sh
-git clone https://github.com/Seaony/Diskit-Source.git
+git clone https://github.com/Seaony/Diskit.git
 cd Diskit
 make build
 open build/DerivedData/Build/Products/Debug/Diskit.app
 ```
 
 `make` 默认用维护者的 Apple Development 身份签名，可以传 `SIGN_IDENTITY='Apple Development: 你的邮箱'` 换成自己的。`make test` 运行测试，`make release` 构建通用版本，`make dev-tool` 构建 `build/bin/diskit-dev`。每种位置类型的细节、演示模式和命令行工具见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)，发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。
-<!-- /source-only -->
 
 ## 致谢
 
 面板设计参考了 [SideMount](https://sidemount.app/)。ADB 依照 [AOSP](https://android.googlesource.com/platform/packages/modules/adb/) 实现，无线配对使用 [BoringSSL](https://boringssl.googlesource.com/boringssl/)，部分网盘行为参照 [rclone](https://github.com/rclone/rclone) 核对。自动更新使用 [Sparkle](https://sparkle-project.org/)。完整清单见 [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)。
+
+## 许可证
+
+[MIT](LICENSE)。第三方代码沿用各自的许可证，见 [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)。
 
 ---
 

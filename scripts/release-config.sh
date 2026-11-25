@@ -1,7 +1,6 @@
 # 发版配置，由共用脚本 ~/.agents/skills/mac-release/scripts/mac-release 读取，变量说明见同目录的 SKILL.md。
 APP_NAME=Diskit
-# 源码在私有仓库 Seaony/Diskit-Source，安装包和更新源发布到公开的 Seaony/Diskit
-RELEASE_REPO=Seaony/Diskit
+# 源码、安装包和更新源都在 origin（Seaony/Diskit），共用脚本默认就发到 origin
 # 版本号唯一来源是 project.yml，发布时一起提交
 VERSION_FILES=project.yml
 release_test() { make test; }
@@ -16,6 +15,5 @@ release_build() {
   SPARKLE_BIN="$PWD/build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin"
 }
 release_validate() { scripts/validate-release.sh "$@"; }
-release_sync() { scripts/sync-release-repo.sh "$@"; }
 # 带背景图和固定图标布局的安装窗口，配置见 scripts/dmg/
 DMG_SETTINGS=scripts/dmg/dmg-settings.py

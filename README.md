@@ -12,7 +12,7 @@ and mount your shares in Finder with one click.
 
 ![macOS 26+](https://img.shields.io/badge/macOS-26%2B-000000?logo=apple&logoColor=white) ![Swift 6](https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white) ![SwiftUI](https://img.shields.io/badge/UI-SwiftUI-0A84FF?logo=swift&logoColor=white)
 
-**[Download](https://github.com/Seaony/Diskit/releases/latest)** &nbsp;·&nbsp; <!-- source-only -->**[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; <!-- /source-only -->**English** · [简体中文](README.zh-CN.md)
+**[Download](https://github.com/Seaony/Diskit/releases/latest)** &nbsp;·&nbsp; **[Releasing](docs/RELEASING.md)** &nbsp;·&nbsp; **English** · [简体中文](README.zh-CN.md)
 
 <br>
 
@@ -86,13 +86,12 @@ Native SwiftUI and AppKit. Light and dark appearance. English and Simplified Chi
 - Saved locations live in `~/Library/Application Support/Diskit/connections.json`, without any secrets. Caches stay in `~/Library/Caches/Diskit/`, and error logs are kept for 7 days.
 - Diskit has no analytics. Besides looking for phones, cameras and shares on your local network and over USB, it talks only to the devices and services you add, and to Diskit's GitHub Releases feed for updates.
 
-<!-- source-only -->
 ## Build from source
 
 You need Xcode 27 and XcodeGen (`brew install xcodegen`).
 
 ```sh
-git clone https://github.com/Seaony/Diskit-Source.git
+git clone https://github.com/Seaony/Diskit.git
 cd Diskit
 make build
 open build/DerivedData/Build/Products/Debug/Diskit.app
@@ -101,11 +100,14 @@ open build/DerivedData/Build/Products/Debug/Diskit.app
 `make build` uses Xcode automatic signing for the paid development team configured in `project.yml`. It builds the provisioned Debug app used for M7 acceptance. The current `make release` still removes the FSKit extension; packaging a provisioned release is a separate step. Each process checks whether shared storage works and keeps using legacy storage if it does not.
 
 `make test` runs the tests, and `make dev-tool SIGN_IDENTITY='Apple Development'` builds `build/bin/diskit-dev`. The tool forwards its commands to the built Debug app or an installed compatible Diskit app, preserving arguments, output and exit status. Open the provisioned Debug app once to migrate existing data before using shared storage from the tool. See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for storage paths and command-line setup, and [docs/RELEASING.md](docs/RELEASING.md) for releases.
-<!-- /source-only -->
 
 ## Acknowledgements
 
 The panel design takes its cue from [SideMount](https://sidemount.app/). ADB follows [AOSP](https://android.googlesource.com/platform/packages/modules/adb/), wireless pairing uses [BoringSSL](https://boringssl.googlesource.com/boringssl/), and several cloud drive behaviours were checked against [rclone](https://github.com/rclone/rclone). Updates use [Sparkle](https://sparkle-project.org/). See [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) for the full list.
+
+## License
+
+[MIT](LICENSE). Third-party code keeps its own license; see [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md).
 
 ---
 

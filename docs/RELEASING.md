@@ -18,9 +18,9 @@ Sparkle 固定为 2.10.1。`Dependencies/Package.resolved` 是生成工程的锁
 
 ## 一键发布
 
-源码仓库 `Seaony/Diskit-Source` 保持私有，安装包和更新源发布到公开仓库 `Seaony/Diskit`；私有仓库的发布文件需要登录才能下载，别人和 Sparkle 都拿不到。公开仓库原名 `Seaony/Diskit-Releases`，0.2.0 里写的就是这个旧地址，靠 GitHub 改名后的自动跳转继续收到更新；以后不能再新建叫 `Diskit-Releases` 的仓库，否则跳转失效。
+源码按 MIT 许可证开源在 `Seaony/Diskit`，安装包和更新源也发布在这个仓库的 Releases。仓库原名 `Seaony/Diskit-Releases`，0.2.0 里写的就是这个旧地址，靠 GitHub 改名后的自动跳转继续收到更新；以后不能再新建叫 `Diskit-Releases` 的仓库，否则跳转失效。
 
-发版用所有 App 共用的脚本（全局技能 `mac-release`，用法和失败重跑说明见它的 `SKILL.md`），Diskit 的差异写在 `scripts/release-config.sh`。在干净、已推送的 master 上后台执行 `~/.agents/skills/mac-release/scripts/mac-release 0.5.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥、签名证书、公证凭据和版本是否已发布；构建号取上一版 appcast 的构建号加 1，和版本号一起写进 `project.yml`；运行 `make test` 与 `make release`；生成 DMG 并签名、公证、装订，再给 App 装订票据后打 ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送源码标签、同步发布仓库，在发布仓库先建草稿 Release 上传三个文件再正式发布。任何一步失败即停止，未提交的版本号改动会还原；原样重跑会接着上次的进度，已提交的公证不会重新上传。
+发版用所有 App 共用的脚本（全局技能 `mac-release`，用法和失败重跑说明见它的 `SKILL.md`），Diskit 的差异写在 `scripts/release-config.sh`。在干净、已推送的 master 上后台执行 `~/.agents/skills/mac-release/scripts/mac-release 0.5.0`。脚本依次：检查分支、工作区、远端同步、GitHub 登录、Sparkle 密钥、签名证书、公证凭据和版本是否已发布；构建号取上一版 appcast 的构建号加 1，和版本号一起写进 `project.yml`；运行 `make test` 与 `make release`；生成 DMG 并签名、公证、装订，再给 App 装订票据后打 ZIP 和带更新说明的签名 appcast 并验证；最后提交并推送版本号、推送标签，先建草稿 Release 上传三个文件再正式发布。任何一步失败即停止，未提交的版本号改动会还原；原样重跑会接着上次的进度，已提交的公证不会重新上传。
 
 安装包是带背景和箭头的拖拽安装窗口，用 dmgbuild 打（`uv tool install dmgbuild`），配置在 `scripts/dmg/`：`dmg-settings.py` 定窗口大小和图标位置，`render-background.swift` 画背景（`swift scripts/dmg/render-background.swift scripts/dmg 16A6FC` 生成 `background.png` 和 `background@2x.png`，主色取图标里文件夹的蓝色；改了窗口尺寸或图标位置要两边一起改再重新生成），`render-volume-icon.swift` 用 1024 图标原图生成挂载后的卷图标。只看效果不发版：在仓库根目录执行 `dmgbuild -s scripts/dmg/dmg-settings.py -D app=<Diskit.app 路径> Diskit /tmp/Diskit-preview.dmg`，再打开挂载出来的卷。不要在配置里隐藏 `.app` 扩展名，那样会往 App 包里写入额外信息，签名校验通不过。
 
