@@ -54,14 +54,13 @@ Diskit 把它们都放进菜单栏的一个面板里：
 ## 支持的位置
 
 <table>
-<tr><td><b>设备</b></td><td>安卓手机（USB） · 安卓手机（无线调试） · 理光 GR IV · USB 相机</td></tr>
+<tr><td><b>设备</b></td><td>安卓手机（USB） · 安卓手机（无线调试） · USB 相机</td></tr>
 <tr><td><b>共享</b></td><td>SMB · WebDAV（HTTP 和 HTTPS，内置坚果云、Nextcloud、ownCloud、群晖、威联通和 OpenList 预设） · NFS</td></tr>
-<tr><td><b>网盘</b></td><td>阿里云盘 · 百度网盘 · 115 网盘 · 123 云盘 · OneDrive · Google Drive · Dropbox</td></tr>
 <tr><td><b>实验性网盘</b></td><td>夸克网盘 · UC 网盘 · 天翼云盘 · 移动云盘 · 迅雷云盘 · PikPak · 蓝奏云（只读）</td></tr>
 <tr><td><b>对象存储</b></td><td>Amazon S3 · Cloudflare R2 · 阿里云 OSS · 腾讯云 COS · 七牛 Kodo · MinIO · Backblaze B2</td></tr>
 </table>
 
-官方网盘通过各自的授权页面登录。实验性网盘通过服务商网页或账号密码登录，使用非官方接口，服务商改版后可能暂时失效。
+实验性网盘通过服务商网页或账号密码登录，使用非官方接口，服务商改版后可能暂时失效。
 
 ## 功能
 
@@ -75,7 +74,7 @@ SMB、WebDAV、NFS 共享通过 macOS 挂载，Finder 和其他 App 都把它们
 
 ### 手机和相机
 
-安卓手机通过 USB 调试连接，Android 11 及以上也可以用配对码走无线调试。Diskit 自己实现了 ADB 协议，不用安装 `adb`，手机上也不用装任何东西。理光 GR IV 和其他 USB 相机通过 macOS 的图像捕捉读取；除非相机允许删除，否则不会改动照片。
+安卓手机通过 USB 调试连接，Android 11 及以上也可以用配对码走无线调试。Diskit 自己实现了 ADB 协议，不用安装 `adb`，手机上也不用装任何东西。USB 相机通过 macOS 的图像捕捉读取；除非相机允许删除，否则不会改动照片。
 
 ### 为 macOS 而做
 
@@ -99,7 +98,7 @@ make build
 open build/DerivedData/Build/Products/Debug/Diskit.app
 ```
 
-`make` 默认用维护者的 Apple Development 身份签名，可以传 `SIGN_IDENTITY='Apple Development: 你的邮箱'` 换成自己的。`make test` 运行测试，`make release` 构建通用版本，`make dev-tool` 构建 `build/bin/diskit-dev`。需要开放平台凭据的网盘从 `Config/Secrets.xcconfig` 读取：复制 `Config/Secrets.example.xcconfig` 并填写，再用 `make build DISKIT_BUILD_CONFIG=Config/App.xcconfig` 构建（默认构建不读取它）。每种位置类型的细节、演示模式和命令行工具见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)，发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。
+`make` 默认用维护者的 Apple Development 身份签名，可以传 `SIGN_IDENTITY='Apple Development: 你的邮箱'` 换成自己的。`make test` 运行测试，`make release` 构建通用版本，`make dev-tool` 构建 `build/bin/diskit-dev`。每种位置类型的细节、演示模式和命令行工具见 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)，发布流程见 [docs/RELEASING.md](docs/RELEASING.md)。
 <!-- /source-only -->
 
 ## 致谢

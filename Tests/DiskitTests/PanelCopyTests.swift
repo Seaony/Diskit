@@ -10,7 +10,6 @@ import Testing
 
 @Test func panelUnavailableExplanationMatchesDeviceType() {
   #expect(PanelCopy.subtitle(.unavailable, kind: .androidUSB) == L("手机未连接"))
-  #expect(PanelCopy.subtitle(.unavailable, kind: .ricohGR) == L("相机未连接"))
   #expect(PanelCopy.subtitle(.unavailable, kind: .cameraUSB) == L("相机未连接"))
 }
 
@@ -19,7 +18,7 @@ import Testing
   #expect(PanelCopy.subtitle(.tested(unknown), kind: .s3) == SpaceSummary.subtitle(unknown))
   #expect(PanelCopy.subtitle(.mounted(MountedShare(url: URL(filePath: "/tmp/demo"))), kind: .smb) == L("已挂载"))
   #expect(PanelCopy.subtitle(.failed("reason"), kind: .smb).contains("reason"))
-  #expect(PanelCopy.subtitle(.needsLogin, kind: .aliyunDrive) == L("登录已过期"))
+  #expect(PanelCopy.subtitle(.needsLogin, kind: .quark) == L("登录已过期"))
   #expect(PanelCopy.subtitle(.disconnected, kind: .smb) == L("未连接"))
   #expect(PanelCopy.subtitle(.ejecting, kind: .smb) == L("正在推出…"))
   #expect(PanelCopy.buttonTitle(.tested(unknown), kind: .s3) == L("挂载"))
@@ -32,7 +31,7 @@ import Testing
   #expect(PanelCopy.cardCaption(.tested(SpaceInfo(total: nil, used: nil)), kind: .s3) == L("已连接"))
   #expect(PanelCopy.cardCaption(.failed("很长的原因"), kind: .smb) == L("出错"))
   #expect(PanelCopy.cardCaption(.awaitingAuthorization, kind: .androidUSB) == L("等待手机授权"))
-  #expect(PanelCopy.cardCaption(.needsLogin, kind: .aliyunDrive) == L("登录已过期"))
+  #expect(PanelCopy.cardCaption(.needsLogin, kind: .quark) == L("登录已过期"))
 }
 
 @Test func listCaptionKeepsErrorDetail() {

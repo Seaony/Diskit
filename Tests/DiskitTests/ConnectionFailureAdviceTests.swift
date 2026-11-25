@@ -2,7 +2,7 @@ import Core
 import Testing
 
 @Test func deviceFailureAdviceDoesNotSuggestNetworkOrAccountLogin() {
-  for kind in [ConnectionKind.androidUSB, .cameraUSB, .ricohGR] {
+  for kind in [ConnectionKind.androidUSB, .cameraUSB] {
     let advice = ConnectionFailureAdvice.text(for: kind)
     #expect(!advice.contains("网络"))
     #expect(!advice.contains("登录"))

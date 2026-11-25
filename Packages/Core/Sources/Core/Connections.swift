@@ -1,11 +1,10 @@
 import Foundation
 
 public enum ConnectionKind: String, Codable, CaseIterable, Sendable {
-  case androidUSB, androidWiFi, smb, ricohGR, aliyunDrive, quark
+  case androidUSB, androidWiFi, smb, quark
   case cameraUSB
   case webdav, webdavHTTPS, nfs
   case s3, cloudflareR2, aliyunOSS, tencentCOS, qiniuKodo, minIO, backblazeB2
-  case baiduDrive, drive115, drive123, oneDrive, googleDrive, dropbox
   case ucDrive, tianyiDrive, mobileCloud, thunderDrive, pikPak, lanzou
   public var usesSystemMount: Bool {
     switch self {
@@ -50,8 +49,7 @@ public struct Connection: Codable, Identifiable, Equatable, Sendable {
   public var passwordKey: String { "\(id.uuidString).password" }
   public var usesFileSystemCache: Bool {
     switch kind {
-    case .androidUSB, .androidWiFi, .ricohGR, .cameraUSB, .aliyunDrive, .quark, .baiduDrive,
-      .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .ucDrive, .tianyiDrive,
+    case .androidUSB, .androidWiFi, .cameraUSB, .quark, .ucDrive, .tianyiDrive,
       .mobileCloud, .thunderDrive, .pikPak, .lanzou:
       true
     case .smb, .webdav, .webdavHTTPS, .nfs, .s3, .cloudflareR2, .aliyunOSS, .tencentCOS,

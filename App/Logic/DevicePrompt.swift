@@ -10,7 +10,7 @@ enum DevicePrompt {
   static let mountAction = "mount"
   static let declineAction = "decline"
   static let keyInfo = "deviceKey"
-  static let kinds: Set<ConnectionKind> = [.androidUSB, .ricohGR, .cameraUSB]
+  static let kinds: Set<ConnectionKind> = [.androidUSB, .cameraUSB]
 
   // 优先用序列号，换个 USB 口也认得出是同一台
   static func key(_ item: DiscoveredItem) -> String {

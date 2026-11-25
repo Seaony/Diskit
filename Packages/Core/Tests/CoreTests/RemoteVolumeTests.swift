@@ -299,7 +299,7 @@ private struct VolumeFixture {
 }
 
 @Test func remoteVolumeDuplicateProviderPathsReturnConflictWithoutChoosingAnItem() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   let path = try fixture.path("/同名文件")
   let first = RemoteItem(
@@ -314,7 +314,7 @@ private struct VolumeFixture {
 }
 
 @Test func remoteVolumeDeviceAndCloudDirectoryTTLAndMutationInvalidation() async throws {
-  for (kind, ttl) in [(ConnectionKind.androidUSB, 5.0), (.aliyunDrive, 30.0)] {
+  for (kind, ttl) in [(ConnectionKind.androidUSB, 5.0), (.quark, 30.0)] {
     let clock = Mutex(Date(timeIntervalSince1970: 100))
     let fixture = VolumeFixture(kind: kind, now: { clock.withLock { $0 } })
     defer { fixture.clean() }
@@ -567,7 +567,7 @@ private struct VolumeFixture {
 }
 
 @Test func remoteVolumeOpenedAttributesUseDeviceAndCloudTTLButStatAndOpenStayFresh() async throws {
-  for (kind, ttl) in [(ConnectionKind.androidUSB, 5.0), (.aliyunDrive, 30.0)] {
+  for (kind, ttl) in [(ConnectionKind.androidUSB, 5.0), (.quark, 30.0)] {
     let clock = Mutex(Date(timeIntervalSince1970: 100))
     let fixture = VolumeFixture(kind: kind, now: { clock.withLock { $0 } })
     defer { fixture.clean() }
@@ -603,7 +603,7 @@ private struct VolumeFixture {
 }
 
 @Test func remoteVolumeAttributeCacheEndsAtCloseAndDisconnectAndFollowsRename() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   let source = try fixture.path("/file")
   let renamed = try fixture.path("/renamed")
@@ -791,7 +791,7 @@ private struct VolumeFixture {
 @Test func remoteVolumeFileGrowingDuringDownloadDropsCachedSizeForTheNextRead() async throws {
   var capabilities = volumeFullAccess
   capabilities.supportsRangeRead = false
-  let fixture = VolumeFixture(capabilities: capabilities, kind: .aliyunDrive)
+  let fixture = VolumeFixture(capabilities: capabilities, kind: .quark)
   defer { fixture.clean() }
   let path = try fixture.path("/video.mp4")
   try await fixture.provider.put("/video.mp4", data: "abcd")
@@ -809,7 +809,7 @@ private struct VolumeFixture {
 }
 
 @Test func remoteVolumeSizeChangesWhileStagingOrMovingAreRetryableNotDisconnects() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   let path = try fixture.path("/file")
   try await fixture.provider.put("/file", data: "abcd")
@@ -936,7 +936,7 @@ private final class TestClock: @unchecked Sendable {
 
 @Test func remoteVolumeOpenedFileReadsReuseOpenAttributesUntilTheyExpire() async throws {
   let clock = TestClock()
-  let fixture = VolumeFixture(kind: .aliyunDrive, now: { clock.now() })
+  let fixture = VolumeFixture(kind: .quark, now: { clock.now() })
   defer { fixture.clean() }
   let path = try fixture.path("/file")
   try await fixture.provider.put("/file", data: "abcdefgh")
@@ -976,7 +976,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumeCaseOnlyRenameOnCaseInsensitiveServiceIsNotAConflict() async throws {
-  let fixture = VolumeFixture(kind: .oneDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   await fixture.provider.ignoreCase()
   try await fixture.provider.put("/photo.JPG", data: "image")
@@ -993,7 +993,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumeFailedUploadSurvivesUnmountAndUploadsOnNextMount() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   _ = try await fixture.backend.connect()
   let path = try fixture.path("/new.txt")
@@ -1038,7 +1038,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumeRecoveredUploadKeepsConflictRulesAndSkipsOpenFiles() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   _ = try await fixture.backend.connect()
   let fresh = try fixture.path("/fresh")
@@ -1067,7 +1067,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumeHalfWrittenContentIsNotUploadedAfterACrash() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   _ = try await fixture.backend.connect()
   let copying = try fixture.path("/copying")
@@ -1108,7 +1108,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumeClosedFileStaysUploadableWhenReconnectFindsExpiredLogin() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   _ = try await fixture.backend.connect()
   let path = try fixture.path("/new.txt")
@@ -1132,7 +1132,7 @@ private final class TestClock: @unchecked Sendable {
 }
 
 @Test func remoteVolumePendingWritesNeverGoToAnotherAccount() async throws {
-  let fixture = VolumeFixture(kind: .aliyunDrive)
+  let fixture = VolumeFixture(kind: .quark)
   defer { fixture.clean() }
   _ = try await fixture.backend.connect()
   let path = try fixture.path("/new.txt")

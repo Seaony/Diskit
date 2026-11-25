@@ -91,7 +91,7 @@ private func attributes(of item: DiskitRemoteItem, on volume: DiskitRemoteVolume
   let path = try RemotePath("/file.txt")
   await provider.replace(path, contents: Data("old".utf8))
   let initial = try await provider.stat(path)
-  let connection = Connection(kind: .aliyunDrive, name: "Test")
+  let connection = Connection(kind: .quark, name: "Test")
   let backend = RemoteVolumeBackend(provider: provider, connectionID: connection.id,
                                     kind: connection.kind, cacheRoot: cache, replacesExisting: true)
   let space = try await backend.connect()

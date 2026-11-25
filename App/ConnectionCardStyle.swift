@@ -30,12 +30,10 @@ extension ConnectionKind {
     switch self {
     case .androidUSB, .androidWiFi: "smartphone"
     case .smb: "desktopcomputer"
-    case .ricohGR: "camera"
     case .webdav, .webdavHTTPS: "externaldrive.connected.to.line.below"
     case .nfs: "network"
     case .cameraUSB: "camera.aperture"
-    case .aliyunDrive, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox,
-      .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak:
+    case .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak:
       "cloud"
     case .quark, .ucDrive: "cloud.fill"
     case .lanzou: "shippingbox"
@@ -48,9 +46,9 @@ extension ConnectionKind {
     switch self {
     case .androidUSB, .androidWiFi: name = "green"
     case .smb: name = "blue"
-    case .ricohGR, .cameraUSB: name = "gray"
+    case .cameraUSB: name = "gray"
     case .webdav, .webdavHTTPS, .nfs: name = "teal"
-    case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2, .aliyunDrive: name = "orange"
+    case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2: name = "orange"
     case .quark, .ucDrive: name = "blue"
     default: name = "purple"
     }
@@ -60,25 +58,20 @@ extension ConnectionKind {
     switch self {
     case .androidUSB, .androidWiFi: L("USB / Wi-Fi")
     case .smb: L("局域网共享")
-    case .ricohGR: L("USB 相机")
     case .cameraUSB: L("相机的 USB 连接")
     case .webdav: L("HTTP WebDAV")
     case .webdavHTTPS: L("加密 WebDAV")
     case .nfs: L("网络文件系统")
     case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2:
       L("对象存储")
-    case .aliyunDrive: L("官方授权")
     case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
       L("实验性")
-    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox:
-      L("官方授权")
     }
   }
   var accentColor: Color { iconColor }
   var isCloud: Bool {
     switch self {
-    case .aliyunDrive, .quark, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-      .dropbox, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
+    case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
       true
     default: false
     }

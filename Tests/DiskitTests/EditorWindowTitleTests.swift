@@ -2,7 +2,7 @@ import Core
 import Testing
 
 @Test func editorReusedWindowChangesFromSavedLocationToDiscoveredDevice() {
-  var title = EditorWindowTitle.text(name: "Demo baiduDrive", isSaved: true)
+  var title = EditorWindowTitle.text(name: "Demo quark", isSaved: true)
   EditorWindowTitle.synchronize(
     EditorWindowTitle.text(name: "Pixel 8", isSaved: false), current: title
   ) { title = $0 }

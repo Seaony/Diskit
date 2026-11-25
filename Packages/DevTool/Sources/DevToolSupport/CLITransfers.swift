@@ -1,7 +1,5 @@
 import ADB
-import AliyunDrive
 import ChinaWebDrive
-import CloudDrive
 import Core
 import Darwin
 import Foundation
@@ -65,20 +63,13 @@ enum CLITransfers {
     } else {
       guard values.isRegularFile == true else { throw RemoteError.unsupported }
       let progress: @Sendable (Int64, Int64) -> Void = { report($0, $1) }
-      if let value = provider as? GoogleDriveProvider { await value.onProgress(progress) }
       if let value = provider as? ADBProvider { await value.onProgress(progress) }
-      if let value = provider as? AliyunProvider { await value.onProgress(progress) }
       if let value = provider as? QuarkProvider { await value.onProgress(progress) }
       if let value = provider as? PikPakProvider { await value.onProgress(progress) }
       if let value = provider as? TianyiProvider { await value.onProgress(progress) }
       if let value = provider as? MobileCloudProvider { await value.onProgress(progress) }
       if let value = provider as? XunleiProvider { await value.onProgress(progress) }
       if let value = provider as? S3Provider { await value.onProgress(progress) }
-      if let value = provider as? BaiduDriveProvider { await value.onProgress(progress) }
-      if let value = provider as? Drive115Provider { await value.onProgress(progress) }
-      if let value = provider as? Drive123Provider { await value.onProgress(progress) }
-      if let value = provider as? OneDriveProvider { await value.onProgress(progress) }
-      if let value = provider as? DropboxProvider { await value.onProgress(progress) }
       try await provider.write(remote, from: local)
       report(Int64(values.fileSize ?? 0), Int64(values.fileSize ?? 0))
     }

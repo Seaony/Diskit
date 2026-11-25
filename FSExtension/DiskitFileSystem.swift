@@ -51,8 +51,7 @@ final class DiskitFileSystem: FSUnaryFileSystem, FSUnaryFileSystemOperations, @u
         let created = RemoteVolumeBackend(
           provider: provider, connectionID: connection.id, kind: connection.kind,
           cacheRoot: location.cacheDirectory,
-          replacesExisting: connection.kind == .androidUSB || connection.kind == .androidWiFi
-            || connection.kind == .aliyunDrive,
+          replacesExisting: connection.kind == .androidUSB || connection.kind == .androidWiFi,
           pendingUploadsFile: PendingUploads.file(
             dataDirectory: location.dataDirectory, connectionID: connection.id),
           uploadTarget: connection.uploadTarget)

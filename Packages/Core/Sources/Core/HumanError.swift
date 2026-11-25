@@ -30,7 +30,7 @@ public enum HumanError {
   public static func timeout(kind: ConnectionKind) -> String {
     switch kind {
     case .androidUSB: L("连接超时，请检查 USB 线缆并解锁手机后重试")
-    case .cameraUSB, .ricohGR: L("连接超时，请检查 USB 线缆并打开相机后重试")
+    case .cameraUSB: L("连接超时，请检查 USB 线缆并打开相机后重试")
     default: L("连接超时，请检查网络后重试")
     }
   }
@@ -40,18 +40,16 @@ public enum HumanError {
     case .unauthorized:
       switch kind {
       case .androidUSB, .androidWiFi: L("请在手机上允许 USB 调试")
-      case .ricohGR, .cameraUSB: L("请在相机上允许访问")
-      case .aliyunDrive, .quark, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-        .dropbox, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
+      case .cameraUSB: L("请在相机上允许访问")
+      case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
         L("登录已失效，请重新登录")
       default: L("没有访问权限")
       }
     case .http(401):
       switch kind {
       case .androidUSB, .androidWiFi: L("请在手机上允许 USB 调试")
-      case .ricohGR, .cameraUSB: L("请在相机上允许访问")
-      case .aliyunDrive, .quark, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-        .dropbox, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
+      case .cameraUSB: L("请在相机上允许访问")
+      case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
         L("登录已失效，请重新登录")
       default: L("没有访问权限")
       }

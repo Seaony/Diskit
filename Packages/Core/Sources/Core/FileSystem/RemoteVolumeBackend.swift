@@ -89,7 +89,7 @@ public actor RemoteVolumeBackend {
 
   static func ttl(_ kind: ConnectionKind) -> TimeInterval {
     switch kind {
-    case .androidUSB, .androidWiFi, .ricohGR, .cameraUSB: 5
+    case .androidUSB, .androidWiFi, .cameraUSB: 5
     default: 30
     }
   }

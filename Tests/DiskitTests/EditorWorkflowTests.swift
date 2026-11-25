@@ -26,12 +26,6 @@ private struct EditorExpiredLogin: LoginRequiredFailure {
   func cancel() { cancellationCount += 1 }
 }
 
-@MainActor private final class EditorOAuthAuthorizer: OAuthAuthorizing {
-  var cancellationCount = 0
-  func authorize(_ url: URL) async throws -> URL { url }
-  func cancel() { cancellationCount += 1 }
-}
-
 @MainActor private func workflowEditor() -> ConnectionEditorModel {
   let transport = EditorLoginHTTP { _ in throw URLError(.unsupportedURL) }
   let app = editorProductionApp(
@@ -79,18 +73,14 @@ private struct EditorExpiredLogin: LoginRequiredFailure {
   let editor = workflowEditor()
   editor.choose(.mobileCloud)
   let web = EditorWebAuthorizer()
-  let oauth = EditorOAuthAuthorizer()
   editor.webLogin = web
-  editor.webAuthorization = oauth
   editor.model.forceLogin = true
   editor.save()
   let task = try #require(editor.saving)
   editor.cancelWork()
   await task.value
   #expect(web.cancellationCount == 1)
-  #expect(oauth.cancellationCount == 1)
   #expect(editor.webLogin == nil)
-  #expect(editor.webAuthorization == nil)
   #expect(!editor.model.forceLogin)
   #expect(!editor.busy)
   #expect(editor.stage == nil)
@@ -198,9 +188,9 @@ private struct EditorExpiredLogin: LoginRequiredFailure {
   #expect(!editor.busy)
 }
 
-@MainActor @Test func editorDemoOAuthLoginCanFinishOrCancelWithoutBrowser() async throws {
+@MainActor @Test func editorDemoDirectLoginCanFinishOrCancelWithoutBrowser() async throws {
   let editor = workflowEditor()
-  editor.choose(.googleDrive)
+  editor.choose(.pikPak)
   editor.busy = true
   editor.login()
   #expect(editor.saving == nil)

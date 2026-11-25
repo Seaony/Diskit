@@ -11,7 +11,7 @@ import Testing
   let error = NSError(
     domain: "Example", code: 17,
     userInfo: [NSLocalizedDescriptionKey: "outer failure", NSUnderlyingErrorKey: underlying])
-  let event = try #require(SafeDiagnostic(category: .cloudDrive, operation: .request, error: error))
+  let event = try #require(SafeDiagnostic(category: .quark, operation: .request, error: error))
   #expect(event.message == "request application 17")
   #expect(event.logLine.contains("Example 17: outer failure"))
   #expect(event.logLine.contains("IOUSBHostErrorDomain -536870199 (0xe00002c9): Failed to create IOUSBHostInterface."))
@@ -57,7 +57,7 @@ private struct DiagnosticFixture: HTTPTransport {
 @Test func diagnosticTransportPreservesUploadAndRedactsResponse() async throws {
   let recorder = DiagnosticRecorder()
   let transport = DiagnosticHTTPTransport(
-    DiagnosticFixture(cancelled: false), category: .cloudDrive, record: recorder.append)
+    DiagnosticFixture(cancelled: false), category: .quark, record: recorder.append)
   var request = URLRequest(url: URL(string: "https://example.invalid/?token=secret")!)
   request.setValue("secret", forHTTPHeaderField: "Authorization")
   request.httpBody = Data("private-content".utf8)

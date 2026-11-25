@@ -34,40 +34,6 @@
         }
       }
     },
-    "115 网盘": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "115 Drive"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "115 网盘"
-          }
-        }
-      }
-    },
-    "123 云盘": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "123 Drive"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "123 云盘"
-          }
-        }
-      }
-    },
     "192.168.1.10 或 DESKTOP-PC": {
       "extractionState": "manual",
       "localizations": {
@@ -148,40 +114,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cloudflare R2"
-          }
-        }
-      }
-    },
-    "Dropbox": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dropbox"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dropbox"
-          }
-        }
-      }
-    },
-    "Google Drive": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Google Drive"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Google Drive"
           }
         }
       }
@@ -427,23 +359,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "NFS"
-          }
-        }
-      }
-    },
-    "OneDrive": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OneDrive"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OneDrive"
           }
         }
       }
@@ -2691,23 +2606,6 @@
         }
       }
     },
-    "我的理光相机": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My Ricoh Camera"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "我的理光相机"
-          }
-        }
-      }
-    },
     "我的相机": {
       "extractionState": "manual",
       "localizations": {
@@ -3977,23 +3875,6 @@
         }
       }
     },
-    "理光 GR IV": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ricoh GR IV"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "理光 GR IV"
-          }
-        }
-      }
-    },
     "用户名": {
       "extractionState": "manual",
       "localizations": {
@@ -4120,22 +4001,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "登录信息格式不正确，请重新复制完整内容。"
-          }
-        }
-      }
-    },
-    "登录后*仅能访问此应用的专属目录*。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "After signing in, you can access *only this app’s dedicated folder*."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "登录后*仅能访问此应用的专属目录*。"
           }
         }
       }
@@ -4297,22 +4162,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "登录过期"
-          }
-        }
-      }
-    },
-    "百度网盘": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Baidu Netdisk"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "百度网盘"
           }
         }
       }
@@ -4497,22 +4346,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "等待手机授权…"
-          }
-        }
-      }
-    },
-    "等待浏览器授权…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Waiting for browser sign-in…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "等待浏览器授权…"
           }
         }
       }
@@ -4728,23 +4561,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "编辑…"
-          }
-        }
-      }
-    },
-    "网盘": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cloud Drives"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "网盘"
           }
         }
       }
@@ -5281,22 +5097,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "读取主机上的共享文件夹"
-          }
-        }
-      }
-    },
-    "读取照片与视频": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Read photos and videos"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "读取照片与视频"
           }
         }
       }
@@ -5898,23 +5698,6 @@
         }
       }
     },
-    "阿里云盘": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aliyun Drive"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "阿里云盘"
-          }
-        }
-      }
-    },
     "隐藏密码": {
       "extractionState": "manual",
       "localizations": {
@@ -5962,22 +5745,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "青色"
-          }
-        }
-      }
-    },
-    "~~非会员账号可能受到服务商的下载速度和文件大小限制~~。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~~Free accounts may have download speed and file size limits set by the provider.~~"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~~非会员账号可能受到服务商的下载速度和文件大小限制~~。"
           }
         }
       }

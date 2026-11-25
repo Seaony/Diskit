@@ -143,7 +143,7 @@ import Testing
   editor.load()
   #expect(editor.accountSpace?.available == 120_000_000_000)
 
-  let offline = model.connections.connections.first { $0.kind == .ricohGR }!
+  let offline = model.connections.connections.first { $0.kind == .tianyiDrive }!
   model.editing = offline
   let offlineEditor = ConnectionEditorModel(model: model)
   offlineEditor.load()

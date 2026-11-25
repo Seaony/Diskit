@@ -46,7 +46,7 @@ extension ConnectionEditorModel {
       "path": "/Photos", "endpoint": "https://objects.demo.invalid", "bucket": "photos",
       "accessKey": "demo-access", "region": "us-east-1", "pathStyle": "false",
       "serial": "demo-usb",
-      "deviceID": kind == .ricohGR ? "demo-gr" : kind == .cameraUSB ? "demo-camera" : "demo-usb",
+      "deviceID": kind == .cameraUSB ? "demo-camera" : "demo-usb",
       "guid": "adb-demo-ABC123", "authMode": "account", "scope": "personal",
       "shareURL": "https://demo.invalid/share", "familyID": "demo-family",
     ]

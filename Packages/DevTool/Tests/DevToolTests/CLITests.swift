@@ -267,13 +267,10 @@ private func execute(
 
 @Test func providerConstructionUsesOnlyInjectedCredentials() async throws {
   let secrets = MemorySecretStore()
-  let environment = CLIEnvironment(values: [
-    "GOOGLE_CLIENT_ID": "fixture.apps.googleusercontent.com"
-  ])
+  let environment = CLIEnvironment(values: [:])
   let kinds: [ConnectionKind] = [
-    .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-    .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .s3, .cloudflareR2, .aliyunOSS,
-    .tencentCOS, .qiniuKodo, .minIO, .backblazeB2,
+    .quark, .ucDrive, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .s3, .cloudflareR2,
+    .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2,
   ]
   for kind in kinds {
     let connection = Connection(
@@ -288,15 +285,6 @@ private func execute(
   _ = try await CLIProviderFactory.make(
     Connection(kind: .tianyiDrive, params: ["scope": "family", "familyID": "fixture"]),
     values: environment, secrets: secrets)
-  for kind in [
-    ConnectionKind.baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .smb,
-  ] {
-    let config = CLIProviderFactory.oauthConfiguration(kind, values: environment)
-    if [.oneDrive, .googleDrive, .dropbox].contains(kind) {
-      #expect(config.clientSecret.isEmpty)
-      #expect(config.usesPKCE)
-    }
-  }
   do {
     _ = try await CLIProviderFactory.make(
       Connection(kind: .smb), values: environment, secrets: secrets)

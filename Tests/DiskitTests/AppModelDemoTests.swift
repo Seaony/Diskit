@@ -11,8 +11,8 @@ import Testing
   #expect(model.demoSetupError == nil)
   #expect(model.connections.connections.count == 20)
   #expect(
-    model.usbDevices.count + model.wirelessDevices.count + model.ricohDevices.count
-      + model.cameraUSBDevices.count + model.smbDevices.count == 5)
+    model.usbDevices.count + model.wirelessDevices.count
+      + model.cameraUSBDevices.count + model.smbDevices.count == 4)
   #expect(
     !model.connections.connections.contains { $0.params["host"] == model.smbDevices.first?.host })
   #expect(
@@ -21,7 +21,6 @@ import Testing
     })
   #expect(model.usbDiscovery.devices.isEmpty)
   #expect(model.discovery.devices.isEmpty)
-  #expect(model.ricohDiscovery.devices.isEmpty)
   #expect(model.cameraUSBDiscovery.devices.isEmpty)
   #expect(model.wirelessDiscovery.devices.isEmpty)
   try model.secrets.write(Data("test".utf8), for: "demo")
@@ -29,9 +28,8 @@ import Testing
   model.preferences.set(42, forKey: "test")
   #expect(other.preferences.object(forKey: "test") == nil)
   await #expect(throws: ConnectionError.notImplemented) {
-    _ = try await model.remoteProvider(for: Connection(kind: .googleDrive))
+    _ = try await model.remoteProvider(for: Connection(kind: .quark))
   }
-  #expect(try await model.oauthProfile(for: Connection(kind: .googleDrive)).nickname == "Demo")
   await model.requestNotificationAuthorization()
   await model.refreshNotificationAuthorization()
   #expect(model.notificationAuthorization == .authorized)
@@ -43,6 +41,6 @@ import Testing
   model.start()
   #expect(model.connections.connections.isEmpty)
   #expect(
-    model.usbDevices.isEmpty && model.wirelessDevices.isEmpty && model.ricohDevices.isEmpty
+    model.usbDevices.isEmpty && model.wirelessDevices.isEmpty
       && model.cameraUSBDevices.isEmpty && model.smbDevices.isEmpty)
 }

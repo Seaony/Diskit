@@ -25,7 +25,6 @@ public enum ConnectionState: Equatable, Sendable {
   private var autoMounting = false
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
-  private var ricohSerials: Set<String>?
   private var cameraUSBSerials: Set<String>?
   public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
@@ -64,7 +63,6 @@ public enum ConnectionState: Equatable, Sendable {
       switch connection.kind {
       case .androidUSB: return usbSerials?.contains(key) == true
       case .androidWiFi: return wifiGUIDs?.contains(key) == true
-      case .ricohGR: return ricohSerials?.contains(key) == true
       case .cameraUSB: return cameraUSBSerials?.contains(key) == true
       default: return false
       }
@@ -285,12 +283,9 @@ public enum ConnectionState: Equatable, Sendable {
     let deletingSecrets = RecoverableSecretStore(base: secrets)
     try deletingSecrets.delete(connection.passwordKey)
     switch connection.kind {
-    case .aliyunDrive:
-      try deletingSecrets.delete("\(connection.id.uuidString).oauth")
     case .quark, .ucDrive:
       try deletingSecrets.delete("\(connection.id.uuidString).cookie")
-    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .pikPak,
-      .tianyiDrive:
+    case .pikPak, .tianyiDrive:
       try deletingSecrets.delete(
         "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)")
     default:
@@ -546,22 +541,12 @@ public enum ConnectionState: Equatable, Sendable {
     {
       return .disconnected
     }
-    if connection.kind == .ricohGR, let ricohSerials,
-      !ricohSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-    {
-      return .disconnected
-    }
     if connection.kind == .cameraUSB, let cameraUSBSerials,
       !cameraUSBSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     {
       return .disconnected
     }
     return result
-  }
-  public func ricohDevicesChanged(serials: Set<String>) {
-    let previous = ricohSerials
-    ricohSerials = serials
-    updateDevices(kind: .ricohGR, previous: previous, current: serials)
   }
   public func cameraUSBDevicesChanged(serials: Set<String>) {
     let previous = cameraUSBSerials

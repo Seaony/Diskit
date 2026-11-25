@@ -10,8 +10,7 @@ struct ConnectionEditor: View {
   init(model: AppModel) {
     _editor = State(
       initialValue: ConnectionEditorModel(
-        model: model, oauthFactory: { WebAuthorization(window: $0) },
-        webFactory: { WebLoginWindowController() }))
+        model: model, webFactory: { WebLoginWindowController() }))
   }
 
   var body: some View {
@@ -80,7 +79,6 @@ struct ConnectionEditor: View {
       if chosen { editor.anchorWindow?.makeFirstResponder(nil) }
     }
     .onChange(of: editor.model.usbDevices.map(\.id)) { _, _ in editor.autoSelectDevice() }
-    .onChange(of: editor.model.ricohDevices.map(\.id)) { _, _ in editor.autoSelectDevice() }
     .onChange(of: editor.model.cameraUSBDevices.map(\.id)) { _, _ in editor.autoSelectDevice() }
     .onChange(of: editor.model.wirelessDevices) { _, _ in editor.wirelessDevicesChanged() }
     // 正在编辑的位置在面板里被删了：关掉窗口，免得保存时又把它加回来

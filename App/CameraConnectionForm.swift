@@ -4,24 +4,7 @@ import SwiftUI
 struct CameraConnectionForm: View {
   @Bindable var editor: ConnectionEditorModel
   var body: some View {
-    if editor.draft.kind == .ricohGR {
-      if editor.model.ricohDevices.isEmpty {
-        empty
-      } else {
-        Picker(
-          L("相机"),
-          selection: Binding(get: { editor.selectedDeviceID }, set: { editor.selectDevice($0) })
-        ) {
-          Text(L("选择相机")).tag("")
-          if !editor.selectedDeviceID.isEmpty,
-            !editor.model.ricohDevices.contains(where: { $0.id == editor.selectedDeviceID })
-          {
-            Text(L("已保存的相机（当前未发现）")).tag(editor.selectedDeviceID)
-          }
-          ForEach(editor.model.ricohDevices) { Text($0.name).tag($0.id) }
-        }.formRow(L("相机"))
-      }
-    } else if editor.model.cameraUSBDevices.isEmpty {
+    if editor.model.cameraUSBDevices.isEmpty {
       empty
     } else {
       Picker(

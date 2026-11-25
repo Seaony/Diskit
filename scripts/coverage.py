@@ -8,8 +8,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "build" / "Coverage"
 LIMITS = {
-    "Core": 85, "ADB": 80, "RicohGR": 75, "AliyunDrive": 85,
-    "Quark": 85, "S3Drive": 85, "CloudDrive": 85, "CameraUSB": 75,
+    "Core": 85, "ADB": 80,
+    "Quark": 85, "S3Drive": 85, "CameraUSB": 75,
     "PikPakDrive": 85, "LanzouDrive": 85, "TianyiDrive": 85,
     "ChinaWebDrive": 85, "DevTool": 70,
 }

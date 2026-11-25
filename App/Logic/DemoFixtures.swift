@@ -39,8 +39,9 @@ struct DemoFixtures {
     }
     let mixedStates: [ConnectionKind: String] = [
       .androidUSB: "authorization", .androidWiFi: "unavailable", .smb: "mounted",
-      .ricohGR: "disconnected", .aliyunDrive: "tested", .quark: "login",
+      .quark: "login",
       .cameraUSB: "failed", .webdav: "ejecting", .webdavHTTPS: "connecting",
+      .s3: "tested", .tianyiDrive: "disconnected",
     ]
     states = Dictionary(
       uniqueKeysWithValues: connections.enumerated().map { index, connection in
@@ -58,13 +59,13 @@ struct DemoFixtures {
     let items: [(ConnectionKind, String, String, ConnectionState)] = [
       (.smb, "Synology NAS", "blue", .mounted(MountedShare(url: URL(filePath: "/tmp/DiskitDemo/nas"), availableBytes: 2_400 * gb))),
       (.androidUSB, "Pixel 9", "green", .tested(SpaceInfo(total: 256 * gb, used: 142 * gb))),
-      (.ricohGR, "GR IV", "orange", .tested(SpaceInfo(total: 128 * gb, used: 37 * gb))),
-      (.aliyunDrive, ConnectionKind.aliyunDrive.title, "purple", .tested(SpaceInfo(total: 2_000 * gb, used: 860 * gb))),
+      (.cameraUSB, ConnectionKind.cameraUSB.title, "orange", .tested(SpaceInfo(total: 128 * gb, used: 37 * gb))),
+      (.quark, ConnectionKind.quark.title, "purple", .tested(SpaceInfo(total: 2_000 * gb, used: 860 * gb))),
       (.webdav, "Nextcloud", "teal", .mounted(MountedShare(url: URL(filePath: "/tmp/DiskitDemo/cloud"), availableBytes: 512 * gb))),
-      (.oneDrive, ConnectionKind.oneDrive.title, "blue", .tested(SpaceInfo(total: 1_000 * gb, used: 318 * gb))),
-      (.googleDrive, ConnectionKind.googleDrive.title, "green", .disconnected),
+      (.tianyiDrive, ConnectionKind.tianyiDrive.title, "blue", .tested(SpaceInfo(total: 1_000 * gb, used: 318 * gb))),
+      (.pikPak, ConnectionKind.pikPak.title, "pink", .disconnected),
       (.cloudflareR2, ConnectionKind.cloudflareR2.title, "orange", .tested(SpaceInfo(total: nil, used: nil))),
-      (.dropbox, ConnectionKind.dropbox.title, "blue", .disconnected),
+      (.s3, ConnectionKind.s3.title, "orange", .disconnected),
     ]
     var connections: [Connection] = []
     var states: [UUID: ConnectionState] = [:]

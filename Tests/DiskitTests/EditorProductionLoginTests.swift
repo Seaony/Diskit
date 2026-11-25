@@ -1,59 +1,10 @@
 import AppKit
-import CloudDrive
 import Core
 import Foundation
 import Testing
 
 private func editorJSON(_ value: [String: Any]) throws -> HTTPResponse {
   HTTPResponse(status: 200, body: try JSONSerialization.data(withJSONObject: value))
-}
-
-@MainActor @Test func editorOAuthUsesRealTokenFlowWithInMemoryTransportAndProvider() async throws {
-  let http = EditorLoginHTTP { _ in
-    try editorJSON([
-      "access_token": "local-access", "refresh_token": "local-refresh", "expires_in": 7200,
-    ])
-  }
-  let provider = EditorLoginProvider()
-  let app = editorProductionApp(transport: http, provider: provider)
-  let oauth = EditorLoginOAuth()
-  let editor = ConnectionEditorModel(model: app, oauthFactory: { _ in oauth })
-  let anchor = NSWindow(contentRect: .zero, styleMask: [], backing: .buffered, defer: true)
-  defer { withExtendedLifetime(anchor) {} }
-  editor.anchorWindow = anchor
-  for kind in [ConnectionKind.googleDrive, .oneDrive, .dropbox, .baiduDrive] {
-    editor.choose(kind)
-    editor.login()
-    await editor.saving?.value
-    #expect(editor.error == nil)
-    #expect(editor.hasRequiredLogin)
-    #expect(editor.draft.params["nickname"] == "Fixture account")
-    #expect(editor.draft.params["userID"] == "fixture-user")
-    #expect(editor.draft.params["avatarURL"] == "https://fixture.invalid/avatar")
-    #expect(editor.accountSpace?.total == 1000)
-    #expect(!editor.didSave)
-    let calls = oauth.calls
-    editor.startSave(loginOnly: true)
-    await editor.saving?.value
-    #expect(editor.error == nil)
-    #expect(oauth.calls == calls)
-  }
-  #expect(oauth.calls == 4)
-  let connects = await provider.connects
-  let disconnects = await provider.disconnects
-  #expect(connects == disconnects)
-}
-
-@MainActor @Test func editorOAuthWithoutAnchorReportsErrorWithoutExchangingToken() async throws {
-  let http = EditorLoginHTTP { _ in throw URLError(.cannotConnectToHost) }
-  let app = editorProductionApp(transport: http)
-  let editor = ConnectionEditorModel(model: app, oauthFactory: { _ in EditorLoginOAuth() })
-  editor.choose(.googleDrive)
-  editor.login()
-  await editor.saving?.value
-  #expect(editor.error != nil)
-  #expect(!editor.didSave)
-  #expect(await http.requests.isEmpty)
 }
 
 @MainActor @Test func editorQuarkAndUCVerifyCookiesThenReuseSavedSession() async throws {
@@ -164,58 +115,6 @@ private func editorJSON(_ value: [String: Any]) throws -> HTTPResponse {
     #expect(editor.password.isEmpty)
     #expect(editor.webLogin == nil)
   }
-}
-
-@MainActor @Test func editorAliyunAccountLoginPersistsIdentityAndSupportsExistingToken()
-  async throws
-{
-  let http = EditorLoginHTTP { request in
-    if request.url?.path.contains("access_token") == true {
-      return try editorJSON([
-        "access_token": "local-access", "refresh_token": "local-refresh", "expires_in": 7200,
-        "token_type": "Bearer",
-      ])
-    }
-    if request.url?.path.contains("getDriveInfo") == true {
-      return try editorJSON([
-        "default_drive_id": "local-drive", "user_id": "local-user", "name": "Local Aliyun",
-      ])
-    }
-    return try editorJSON(["personal_space_info": ["total_size": 1000, "used_size": 200]])
-  }
-  let app = editorProductionApp(transport: http)
-  let oauth = EditorLoginOAuth()
-  let editor = ConnectionEditorModel(model: app, oauthFactory: { _ in oauth })
-  let anchor = NSWindow(contentRect: .zero, styleMask: [], backing: .buffered, defer: true)
-  defer { withExtendedLifetime(anchor) {} }
-  editor.anchorWindow = anchor
-  editor.choose(.aliyunDrive)
-  editor.login()
-  await editor.saving?.value
-  #expect(editor.error == nil)
-  #expect(editor.draft.params["nickname"] == "Local Aliyun")
-  #expect(editor.accountSpace?.used == 200)
-  editor.startSave(loginOnly: true)
-  await editor.saving?.value
-  #expect(editor.error == nil)
-  #expect(oauth.calls == 1)
-}
-
-@MainActor @Test func editorMissingOAuthConfigurationFailsWithoutOpeningAuthorization() async throws
-{
-  let http = EditorLoginHTTP { _ in throw URLError(.unsupportedURL) }
-  let app = editorProductionApp(transport: http, infoOverride: [:])
-  let oauth = EditorLoginOAuth()
-  let editor = ConnectionEditorModel(model: app, oauthFactory: { _ in oauth })
-  for kind in [ConnectionKind.aliyunDrive, .googleDrive] {
-    editor.choose(kind)
-    editor.login()
-    await editor.saving?.value
-    #expect(editor.error != nil)
-    #expect(!editor.didSave)
-  }
-  #expect(oauth.calls == 0)
-  #expect(await http.requests.isEmpty)
 }
 
 @MainActor @Test func editorMobileXunleiAndLanzouValidateBeforeAcceptingSecret() async throws {

@@ -53,4 +53,4 @@ private struct PanelRowPreview: View {
 }
 #Preview("位置 · 推出中") { PanelRowPreview(.ejecting, kind: .smb) }
 #Preview("位置 · 失败") { PanelRowPreview(.failed(L("用户名或密码错误，请检查后重试"))) }
-#Preview("位置 · 登录过期") { PanelRowPreview(.needsLogin, kind: .aliyunDrive) }
+#Preview("位置 · 登录过期") { PanelRowPreview(.needsLogin, kind: .quark) }

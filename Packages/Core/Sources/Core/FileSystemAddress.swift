@@ -5,16 +5,13 @@ extension ConnectionKind {
 
   public var fileSystemScheme: String? {
     switch self {
-    case .smb, .webdav, .webdavHTTPS, .nfs, .ricohGR: nil
+    case .smb, .webdav, .webdavHTTPS, .nfs: nil
     case .androidUSB, .androidWiFi: "diskit-adb"
     case .cameraUSB: "diskit-camera"
-    case .aliyunDrive: "diskit-aliyun"
     case .quark: "diskit-quark"
-    case .baiduDrive: "diskit-baidu"
     case .tencentCOS: "diskit-cos"
     case .backblazeB2: "diskit-b2"
     case .cloudflareR2: "diskit-r2"
-    case .googleDrive: "diskit-google"
     case .mobileCloud: "diskit-mobile"
     case .thunderDrive: "diskit-thunder"
     case .tianyiDrive: "diskit-tianyi"

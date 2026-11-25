@@ -2,7 +2,6 @@ import ADB
 import AppKit
 import CameraUSB
 import Core
-import RicohGR
 
 extension ConnectionEditorModel {
   var permissionSettingsURL: URL? {
@@ -10,10 +9,6 @@ extension ConnectionEditorModel {
     switch draft.kind {
     case .cameraUSB:
       if case .permissionDenied? = model.cameraUSBDiscovery.issue {
-        return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
-      }
-    case .ricohGR:
-      if case .permissionDenied? = model.ricohDiscovery.issue {
         return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
       }
     case .androidWiFi:

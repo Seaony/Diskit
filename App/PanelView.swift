@@ -2,7 +2,6 @@ import ADB
 import AppKit
 import CameraUSB
 import Core
-import RicohGR
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -54,7 +53,6 @@ struct PanelView: View {
       model.discovery.error.map { ($0, model.discovery.issue == .permissionDenied) },
       model.wirelessDiscovery.error.map { ($0, model.wirelessDiscovery.issue == .permissionDenied) },
       model.usbDiscovery.issue.map { _ in (L("暂时无法发现 USB 手机，请重新插拔设备"), false) },
-      model.ricohDiscovery.issue.map { _ in (L("暂时无法发现理光相机，请检查 USB 连接"), false) },
       model.cameraUSBDiscovery.issue.map { _ in (L("暂时无法发现相机，请检查 USB 连接"), false) }
     ].compactMap { $0 }
   }
@@ -347,7 +345,7 @@ struct PanelView: View {
       HStack(alignment: .bottom, spacing: 0) {
         TypeIcon(kind: .androidUSB, color: "green", size: 52)
           .rotationEffect(.degrees(-10)).offset(x: 10, y: 4) // grid: ok 插图错落
-        TypeIcon(kind: .aliyunDrive, color: "blue", size: 60).zIndex(1)
+        TypeIcon(kind: .quark, color: "blue", size: 60).zIndex(1)
         TypeIcon(kind: .smb, color: "orange", size: 52)
           .rotationEffect(.degrees(10)).offset(x: -10, y: 4) // grid: ok 插图错落
       }

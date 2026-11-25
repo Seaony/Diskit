@@ -31,11 +31,8 @@ test: gen
 	xcodebuild -project Diskit.xcodeproj -scheme DiskitTests -destination 'platform=macOS,arch=arm64' -derivedDataPath build/Tests test CODE_SIGNING_ALLOWED=NO -onlyUsePackageVersionsFromResolvedFile
 	swift test --package-path Packages/Core
 	swift test --package-path Packages/ADB
-	swift test --package-path Packages/RicohGR
-	swift test --package-path Packages/AliyunDrive
 	swift test --package-path Packages/Quark
 	swift test --package-path Packages/S3Drive
-	swift test --package-path Packages/CloudDrive
 	swift test --package-path Packages/CameraUSB
 	swift test --package-path Packages/PikPakDrive
 	swift test --package-path Packages/LanzouDrive

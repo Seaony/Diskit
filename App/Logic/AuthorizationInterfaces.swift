@@ -7,8 +7,3 @@ import Foundation
   ) async throws -> WebLoginCredentials
   func cancel()
 }
-
-@MainActor protocol OAuthAuthorizing: AnyObject {
-  func authorize(_ url: URL) async throws -> URL
-  func cancel()
-}

@@ -217,7 +217,7 @@ private func conflictingExtensionError() -> NSError {
 @MainActor @Test func mountedIdentityUsesURLAndIDInsteadOfVolumeName() async throws {
   let fixture = FileSystemMountFixture()
   let first = mountConnection()
-  let cloud = mountConnection(.aliyunDrive)
+  let cloud = mountConnection(.quark)
   var wrongKind = try mountEntry(first, path: "/Volumes/Wrong")
   wrongKind = FileSystemMountService.MountEntry(type: "smbfs", source: wrongKind.source, path: wrongKind.path, filesystemID: wrongKind.filesystemID)
   fixture.entries = [wrongKind, try mountEntry(mountConnection(), path: "/Volumes/SameName"), try mountEntry(first, path: "/Volumes/Unrelated"), try mountEntry(cloud, path: "/Volumes/Cloud")]
@@ -479,7 +479,6 @@ private final class FileSystemCapacityGate: Sendable {
   for kind in [ConnectionKind.smb, .webdav, .webdavHTTPS, .nfs] { _ = try await routing.mount(mountConnection(kind), password: "") }
   #expect(try await routing.shares(host: "fixture", user: "", password: "") == ["share"])
   _ = try await routing.mount(mountConnection(.quark), password: "")
-  await #expect(throws: RemoteError.self) { try await routing.mount(mountConnection(.ricohGR), password: "") }
   try await routing.unmount(URL(filePath: "/Volumes/Fixture"))
   try await routing.unmount(URL(filePath: "/Volumes/System"))
   #expect(system.calls == ["smb", "webdav", "webdavHTTPS", "nfs", "shares", "unmount"])

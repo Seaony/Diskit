@@ -2,7 +2,6 @@ import ADB
 import CameraUSB
 import Core
 import Foundation
-import RicohGR
 
 struct DiscoveredItem: Identifiable {
   let id: String
@@ -37,19 +36,8 @@ extension AppModel {
   var discoveredItems: [DiscoveredItem] {
     var items: [DiscoveredItem] = []
 
-    for camera in ricohDevices
-    where !PanelDiscoveryIdentity.isSavedDevice(connections.connections, kinds: [.ricohGR, .cameraUSB], id: camera.id, serial: camera.serial, serialIsUnique: ricohDevices.filter { $0.serial == camera.serial }.count == 1) {
-      items.append(
-        DiscoveredItem(
-          id: "camera:" + camera.id, kind: .ricohGR, title: camera.name,
-          subtitle: L("USB 相机"),
-          connection: Connection(
-            kind: .ricohGR, name: camera.name, params: ["deviceID": camera.id, "serial": camera.serial]),
-          pairingSelection: nil))
-    }
-
     for camera in cameraUSBDevices
-    where !ricohDevices.contains(where: { PanelDiscoveryIdentity.sameCamera(id: camera.id, serial: camera.serial, otherID: $0.id, otherSerial: $0.serial) }) && !PanelDiscoveryIdentity.isSavedDevice(connections.connections, kinds: [.ricohGR, .cameraUSB], id: camera.id, serial: camera.serial, serialIsUnique: cameraUSBDevices.filter { $0.serial == camera.serial }.count == 1) {
+    where !PanelDiscoveryIdentity.isSavedDevice(connections.connections, kinds: [.cameraUSB], id: camera.id, serial: camera.serial, serialIsUnique: cameraUSBDevices.filter { $0.serial == camera.serial }.count == 1) {
       items.append(
         DiscoveredItem(
           id: "camera-usb:" + camera.id, kind: .cameraUSB, title: camera.name,
@@ -135,9 +123,8 @@ extension ConnectionKind {
     switch self {
     case .androidUSB, .androidWiFi: 0
     case .smb, .webdav, .webdavHTTPS, .nfs: 1
-    case .ricohGR, .cameraUSB: 2
-    case .aliyunDrive, .quark, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-      .dropbox, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
+    case .cameraUSB: 2
+    case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:
       3
     case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2: 4
     }

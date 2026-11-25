@@ -59,8 +59,7 @@ import Testing
   let phone = Connection(
     kind: .androidUSB, name: "手机", autoMount: true, params: ["serial": "phone"])
   let manual = Connection(kind: .s3, name: "手动位置")
-  let camera = Connection(kind: .ricohGR, name: "GR", autoMount: true)
-  let manager = try fixture.manager(connections: [cloud, phone, manual, camera])
+  let manager = try fixture.manager(connections: [cloud, phone, manual])
   var tests = 0
   manager.testRemote = { _ in
     tests += 1

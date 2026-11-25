@@ -1,15 +1,13 @@
-import CloudDrive
 import Core
 import Foundation
 import S3Drive
 import Testing
 
-@MainActor @Test(arguments: [ConnectionKind.aliyunDrive, .pikPak, .tianyiDrive])
+@MainActor @Test(arguments: [ConnectionKind.pikPak, .tianyiDrive])
 func appReusesAccountSessionsAcrossRequests(kind: ConnectionKind) {
   let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
   func session(_ connection: Connection) -> AnyObject {
     switch kind {
-    case .aliyunDrive: model.aliyunSession(for: connection)
     case .pikPak: model.pikPakSession(for: connection)
     default: model.tianyiSession(for: connection)
     }
@@ -44,53 +42,23 @@ func appReusesAccountSessionsAcrossRequests(kind: ConnectionKind) {
 
 @MainActor @Test func appRemovedConnectionReleasesCachedSession() async throws {
   let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
-  let connection = try #require(model.connections.connections.first { $0.kind == .aliyunDrive })
-  let original = model.aliyunSession(for: connection)
+  let connection = try #require(model.connections.connections.first { $0.kind == .quark })
+  let original = model.quarkSession(for: connection)
   try await model.connections.remove(connection)
   #expect(!model.connections.connections.contains { $0.id == connection.id })
-  #expect(original !== model.aliyunSession(for: connection))
-}
-
-@MainActor @Test func cachedOAuthSessionSeesUpdatedInMemoryCredentials() async throws {
-  let cache = RemoteSessionCache()
-  let secrets = MemorySecretStore()
-  let connection = Connection(kind: .googleDrive)
-  func configuration(_ client: String) -> OAuthConfiguration {
-    OAuthConfiguration(
-      clientID: client, clientSecret: "",
-      authorizationURL: URL(string: "https://example.invalid/auth")!,
-      tokenURL: URL(string: "https://example.invalid/token")!, redirectURI: "diskit://test",
-      scopes: [])
-  }
-  func session(_ client: String) -> OAuthSession {
-    let config = configuration(client)
-    return cache.value(for: connection, configuration: config) {
-      OAuthSession(configuration: config, secretKey: "account", secrets: secrets)
-    }
-  }
-  let original = session("first")
-  #expect(try await !original.hasToken())
-  try secrets.write(
-    JSONEncoder().encode(
-      OAuthToken(accessToken: "new", refreshToken: "rotated", expiresAt: .distantFuture)),
-    for: "account")
-  #expect(session("first") === original)
-  #expect(try await original.tokenForTesting()?.accessToken == "new")
-  try secrets.delete("account")
-  #expect(try await !original.hasToken())
-  #expect(session("second") !== original)
+  #expect(original !== model.quarkSession(for: connection))
 }
 
 @MainActor @Test func appDiscardsOnlyUnsavedSessionCache() throws {
   let model = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
-  let draft = Connection(kind: .aliyunDrive)
-  let draftSession = model.aliyunSession(for: draft)
+  let draft = Connection(kind: .quark)
+  let draftSession = model.quarkSession(for: draft)
   model.discardUnsavedSessions(for: draft)
-  #expect(draftSession !== model.aliyunSession(for: draft))
-  let saved = try #require(model.connections.connections.first { $0.kind == .aliyunDrive })
-  let savedSession = model.aliyunSession(for: saved)
+  #expect(draftSession !== model.quarkSession(for: draft))
+  let saved = try #require(model.connections.connections.first { $0.kind == .quark })
+  let savedSession = model.quarkSession(for: saved)
   model.discardUnsavedSessions(for: saved)
-  #expect(savedSession === model.aliyunSession(for: saved))
+  #expect(savedSession === model.quarkSession(for: saved))
 }
 
 @MainActor @Test(arguments: [ConnectionKind.lanzou, .mobileCloud, .thunderDrive, .s3])

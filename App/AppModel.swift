@@ -1,9 +1,7 @@
 import ADB
-import AliyunDrive
 import AppKit
 import CameraUSB
 import ChinaWebDrive
-import CloudDrive
 import Core
 import Foundation
 import LanzouDrive
@@ -12,7 +10,6 @@ import OSLog
 import Observation
 import PikPakDrive
 import Quark
-import RicohGR
 import S3Drive
 import TianyiDrive
 import UserNotifications
@@ -128,11 +125,6 @@ import UserNotifications
             name: "adb-discovered-DEF456", type: .pairing, host: "demo.invalid", port: 12345)
         ] : []) : wirelessDiscovery.devices
   }
-  var ricohDevices: [RicohDevice] {
-    options.isDemo
-      ? (showsDemoDiscovery ? [RicohDevice(id: "demo-gr", serial: "demo-gr", name: "GR IV")] : [])
-      : ricohDiscovery.devices
-  }
   var cameraUSBDevices: [CameraUSBDevice] {
     options.isDemo
       ? (showsDemoDiscovery
@@ -150,7 +142,6 @@ import UserNotifications
   let discovery = SMBDiscovery()
   let usbDiscovery = USBDiscovery()
   let wirelessDiscovery = WirelessDiscovery()
-  let ricohDiscovery = RicohDiscovery()
   let cameraUSBDiscovery = CameraUSBDiscovery()
   var pairingSelection: String?
   var forceLogin = false
@@ -209,12 +200,6 @@ import UserNotifications
     wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
     wirelessDiscovery.start()
     usbDiscovery.start()
-    ricohDiscovery.changed = { [weak self] devices in
-      self?.connections.ricohDevicesChanged(
-        serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
-      self?.refreshDevicePrompts()
-    }
-    ricohDiscovery.start()
     cameraUSBDiscovery.changed = { [weak self] devices in
       self?.connections.cameraUSBDevicesChanged(
         serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
@@ -270,8 +255,7 @@ import UserNotifications
         MainActor.assumeIsolated { self?.recovery.didWake() }
       })
     for name in [
-      AliyunSession.loginInvalidatedNotification, QuarkSession.loginInvalidatedNotification,
-      OAuthSession.invalidationNotification, PikPakSession.loginInvalidatedNotification,
+      QuarkSession.loginInvalidatedNotification, PikPakSession.loginInvalidatedNotification,
       TianyiSession.loginInvalidatedNotification,
     ] {
       observers.append(
@@ -592,19 +576,6 @@ import UserNotifications
     dependencies?.httpTransport ?? URLSessionHTTPTransport(cookieDomain: cookieDomain)
   }
 
-  var aliyunConfiguration: AliyunConfiguration {
-    return AliyunConfiguration(
-      clientID: info["ALIYUN_CLIENT_ID"] as? String ?? "",
-      clientSecret: info["ALIYUN_CLIENT_SECRET"] as? String ?? "",
-      redirectURI: info["ALIYUN_REDIRECT_URI"] as? String ?? "")
-  }
-  func aliyunSession(for connection: Connection) -> AliyunSession {
-    sessionCache.value(for: connection, configuration: aliyunConfiguration) {
-      AliyunSession(
-        secretKey: "\(connection.id.uuidString).oauth", secrets: secrets,
-        configuration: aliyunConfiguration, transport: makeHTTPTransport())
-    }
-  }
   func discardUnsavedSessions(for connection: Connection) {
     guard !connections.connections.contains(where: { $0.id == connection.id }) else { return }
     sessionCache.remove(connection.id)
@@ -615,10 +586,8 @@ import UserNotifications
   static func sessionSecretKeys(for connection: Connection) -> [String] {
     let id = connection.id.uuidString
     switch connection.kind {
-    case .aliyunDrive: return [id + ".oauth"]
     case .quark, .ucDrive: return [id + ".cookie"]
-    case .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox, .pikPak,
-      .tianyiDrive:
+    case .pikPak, .tianyiDrive:
       return ["\(id).oauth.\(connection.kind.rawValue)"]
     default: return []
     }
@@ -689,123 +658,17 @@ import UserNotifications
         transport: makeHTTPTransport(cookieDomain: configuration.cookieDomain))
     }
   }
-  func oauthConfiguration(for kind: ConnectionKind) -> OAuthConfiguration? {
-    func value(_ key: String) -> String { info[key] as? String ?? "" }
-    switch kind {
-    case .baiduDrive:
-      return OAuthConfiguration(
-        clientID: value("BAIDU_CLIENT_ID"),
-        clientSecret: value("BAIDU_CLIENT_SECRET"),
-        authorizationURL: URL(string: "https://openapi.baidu.com/oauth/2.0/authorize")!,
-        tokenURL: URL(string: "https://openapi.baidu.com/oauth/2.0/token")!,
-        redirectURI: value("BAIDU_REDIRECT_URI"),
-        scopes: ["basic", "netdisk"], scopeSeparator: ",",
-        tokenRequestMethod: "GET", tokenRequestPlacement: .query)
-    case .drive115:
-      return OAuthConfiguration(
-        clientID: value("DRIVE115_CLIENT_ID"),
-        clientSecret: value("DRIVE115_CLIENT_SECRET"),
-        authorizationURL: URL(string: "https://passportapi.115.com/open/authorize")!,
-        tokenURL: URL(string: "https://passportapi.115.com/open/authCodeToToken")!,
-        refreshTokenURL: URL(string: "https://passportapi.115.com/open/refreshToken")!,
-        redirectURI: value("DRIVE115_REDIRECT_URI"), scopes: [],
-        tokenResponseDataKey: "data", refreshGrantIncludesClientCredentials: false)
-    case .drive123:
-      return OAuthConfiguration(
-        clientID: value("DRIVE123_CLIENT_ID"),
-        clientSecret: value("DRIVE123_CLIENT_SECRET"),
-        authorizationURL: URL(string: "https://yun.123pan.com/auth")!,
-        tokenURL: URL(string: "https://open-api.123pan.com/api/v1/oauth2/access_token")!,
-        redirectURI: value("DRIVE123_REDIRECT_URI"),
-        scopes: ["user:base", "file:all:read", "file:all:write"], scopeSeparator: ",")
-    case .oneDrive:
-      return OAuthConfiguration(
-        clientID: value("ONEDRIVE_CLIENT_ID"),
-        clientSecret: "",
-        authorizationURL: URL(
-          string: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize")!,
-        tokenURL: URL(string: "https://login.microsoftonline.com/common/oauth2/v2.0/token")!,
-        redirectURI: value("ONEDRIVE_REDIRECT_URI"),
-        scopes: ["offline_access", "User.Read", "Files.ReadWrite"], usesPKCE: true)
-    case .googleDrive:
-      return OAuthConfiguration(
-        clientID: value("GOOGLE_CLIENT_ID"),
-        clientSecret: "",
-        authorizationURL: URL(string: "https://accounts.google.com/o/oauth2/v2/auth")!,
-        tokenURL: URL(string: "https://oauth2.googleapis.com/token")!,
-        redirectURI: GoogleDesktopOAuth.redirectURI(clientID: value("GOOGLE_CLIENT_ID")),
-        scopes: [
-          "openid", "email", "profile", "https://www.googleapis.com/auth/drive",
-        ],
-        additionalAuthorizationItems: ["access_type": "offline", "prompt": "consent"],
-        usesPKCE: true)
-    case .dropbox:
-      return OAuthConfiguration(
-        clientID: value("DROPBOX_CLIENT_ID"),
-        clientSecret: "",
-        authorizationURL: URL(string: "https://www.dropbox.com/oauth2/authorize")!,
-        tokenURL: URL(string: "https://api.dropboxapi.com/oauth2/token")!,
-        redirectURI: value("DROPBOX_REDIRECT_URI"),
-        scopes: [
-          "account_info.read", "files.content.read", "files.content.write",
-          "files.metadata.read", "files.metadata.write",
-        ],
-        additionalAuthorizationItems: ["token_access_type": "offline"], usesPKCE: true)
-    default:
-      return nil
-    }
-  }
-  func oauthIsConfigured(for kind: ConnectionKind) -> Bool {
-    guard let configuration = oauthConfiguration(for: kind), configuration.isConfigured else {
-      return false
-    }
-    return true
-  }
-  func oauthSession(for connection: Connection) throws -> OAuthSession {
-    guard oauthIsConfigured(for: connection.kind),
-      let configuration = oauthConfiguration(for: connection.kind)
-    else { throw OAuthDriveError.configuration }
-    return sessionCache.value(for: connection, configuration: configuration) {
-      OAuthSession(
-        configuration: configuration,
-        secretKey: "\(connection.id.uuidString).oauth.\(connection.kind.rawValue)",
-        secrets: secrets,
-        transport: makeHTTPTransport()
-      )
-    }
-  }
   func remoteProvider(for connection: Connection) async throws -> any RemoteFileProvider {
     if let factory = dependencies?.providerFactory { return try await factory(connection) }
     guard !options.isDemo else { throw ConnectionError.notImplemented }
     switch connection.kind {
     case .androidUSB, .androidWiFi:
       return try await ADBProviderFactory.make(for: connection)
-    case .ricohGR:
-      return try await RicohProvider.make(
-        identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")
     case .cameraUSB:
       return try await CameraUSBProvider.make(
         identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")
-    case .aliyunDrive:
-      return AliyunProvider(session: aliyunSession(for: connection))
     case .quark, .ucDrive:
       return QuarkProvider(session: quarkSession(for: connection))
-    case .baiduDrive:
-      let root = info["BAIDU_ROOT_PATH"] as? String ?? "apps/Diskit"
-      let appID = info["BAIDU_APP_ID"] as? String ?? ""
-      return BaiduDriveProvider(
-        configuration: BaiduDriveConfiguration(rootPath: root, appID: appID),
-        session: try oauthSession(for: connection))
-    case .drive115:
-      return Drive115Provider(session: try oauthSession(for: connection))
-    case .drive123:
-      return Drive123Provider(session: try oauthSession(for: connection))
-    case .oneDrive:
-      return OneDriveProvider(session: try oauthSession(for: connection))
-    case .googleDrive:
-      return GoogleDriveProvider(session: try oauthSession(for: connection))
-    case .dropbox:
-      return DropboxProvider(session: try oauthSession(for: connection))
     case .pikPak:
       return PikPakProvider(session: pikPakSession(for: connection))
     case .tianyiDrive:
@@ -882,25 +745,6 @@ import UserNotifications
     try RecoverableSecretStore(base: secrets).read(connection.passwordKey).map {
       String(decoding: $0, as: UTF8.self)
     } ?? ""
-  }
-  func oauthProfile(for connection: Connection) async throws -> OAuthProfile {
-    if options.isDemo {
-      return OAuthProfile(userID: "demo", nickname: "Demo", avatarURL: nil)
-    }
-    let provider = try await remoteProvider(for: connection)
-    guard let oauth = provider as? any OAuthProfileProviding else {
-      throw ConnectionError.notImplemented
-    }
-    do {
-      try await provider.connect()
-      providerAccess[connection.id] = (connection, provider.capabilities)
-      let profile = try await oauth.profile()
-      await provider.disconnect()
-      return profile
-    } catch {
-      await provider.disconnect()
-      throw error
-    }
   }
   private func loginExpired(_ id: UUID) {
     guard let connection = connections.connections.first(where: { $0.id == id }),

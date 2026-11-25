@@ -398,20 +398,6 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(f.smb.calls == ["mount", "mount"])
 }
 
-@Test @MainActor func cameraRemovalClearsConnectionTestResult() async throws {
-  let f = Fixture()
-  defer { f.clean() }
-  let manager = f.manager()
-  let connection = Connection(kind: .ricohGR, name: "GR IV", params: ["serial": "camera"])
-  manager.ricohDevicesChanged(serials: ["camera"])
-  manager.testRemote = { _ in SpaceInfo(total: 100, used: 20) }
-  try await manager.save(connection, password: "")
-  manager.ricohDevicesChanged(serials: [])
-  #expect(manager.states[connection.id] == .disconnected)
-  #expect(f.smb.calls.isEmpty)
-  #expect(try manager.savedPassword(connection) == "")
-}
-
 @Test @MainActor func genericCameraRemovalClearsConnectionTestResult() async throws {
   let f = Fixture()
   defer { f.clean() }
@@ -458,8 +444,9 @@ private func sample(_ name: String = "Windows") -> Connection {
   defer { f.clean() }
   let manager = f.manager()
   let connection = Connection(
-    kind: .aliyunDrive, name: "网盘", params: ["nickname": "测试账号", "userID": "user"])
-  try f.secrets.write(Data("authorization".utf8), for: "\(connection.id.uuidString).oauth")
+    kind: .pikPak, name: "网盘", params: ["nickname": "测试账号", "userID": "user"])
+  let tokenKey = "\(connection.id.uuidString).oauth.pikPak"
+  try f.secrets.write(Data("authorization".utf8), for: tokenKey)
   try f.secrets.write(Data("global-key".utf8), for: "adb.private-key")
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
   try await manager.save(connection, password: "")
@@ -468,7 +455,7 @@ private func sample(_ name: String = "Windows") -> Connection {
   await manager.toggle(connection)
   #expect(manager.states[connection.id] == .needsLogin)
   try await manager.remove(connection)
-  #expect(try f.secrets.read("\(connection.id.uuidString).oauth") == nil)
+  #expect(try f.secrets.read(tokenKey) == nil)
   #expect(try f.secrets.read("adb.private-key") == Data("global-key".utf8))
 }
 
@@ -487,20 +474,20 @@ private func sample(_ name: String = "Windows") -> Connection {
   #expect(try f.secrets.read("another.cookie") == Data("other-account".utf8))
 }
 
-@Test @MainActor func deletingOfficialCloudRemovesItsOAuthToken() async throws {
+@Test @MainActor func deletingTianyiRemovesItsOAuthToken() async throws {
   let f = Fixture()
   defer { f.clean() }
   let manager = f.manager()
   let connection = Connection(
-    kind: .oneDrive, name: "OneDrive", params: ["nickname": "测试账号"])
-  let tokenKey = "\(connection.id.uuidString).oauth.oneDrive"
+    kind: .tianyiDrive, name: "天翼云盘", params: ["nickname": "测试账号"])
+  let tokenKey = "\(connection.id.uuidString).oauth.tianyiDrive"
   try f.secrets.write(Data("token".utf8), for: tokenKey)
-  try f.secrets.write(Data("other-token".utf8), for: "another.oauth.oneDrive")
+  try f.secrets.write(Data("other-token".utf8), for: "another.oauth.tianyiDrive")
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
   try await manager.save(connection, password: "")
   try await manager.remove(connection)
   #expect(try f.secrets.read(tokenKey) == nil)
-  #expect(try f.secrets.read("another.oauth.oneDrive") == Data("other-token".utf8))
+  #expect(try f.secrets.read("another.oauth.tianyiDrive") == Data("other-token".utf8))
 }
 
 @Test @MainActor func connectionFailuresLogOnceAndOnlyMountAttemptsNotify() async throws {
@@ -638,7 +625,7 @@ private struct ActionableMountFailure: Error, LocalizedError {
   #expect(expired == [connection.id])
 }
 
-@Test(arguments: [ConnectionKind.aliyunDrive, .oneDrive])
+@Test(arguments: [ConnectionKind.pikPak, .tianyiDrive])
 @MainActor func deletingConnectionClearsPendingRefreshedCredentials(kind: ConnectionKind)
   async throws
 {
@@ -649,7 +636,7 @@ private struct ActionableMountFailure: Error, LocalizedError {
     kind: kind, name: "网盘", params: ["nickname": "测试账号", "userID": "user"])
   manager.testRemote = { _ in SpaceInfo(total: 100, used: 10) }
   try await manager.save(connection, password: "")
-  let key = connection.id.uuidString + (kind == .aliyunDrive ? ".oauth" : ".oauth.\(kind.rawValue)")
+  let key = connection.id.uuidString + ".oauth.\(kind.rawValue)"
   let sessionStore = RecoverableSecretStore(base: f.secrets)
   f.secrets.failWrites.withLock { $0 = true }
   #expect(throws: CocoaError.self) { try sessionStore.write(Data("rotated".utf8), for: key) }
@@ -660,8 +647,7 @@ private struct ActionableMountFailure: Error, LocalizedError {
 }
 
 @Test(arguments: [
-  ConnectionKind.smb, .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
-  .googleDrive, .dropbox, .pikPak, .tianyiDrive,
+  ConnectionKind.smb, .quark, .ucDrive, .pikPak, .tianyiDrive,
 ])
 @MainActor func removalSaveFailurePreservesCredentialsAndCache(kind: ConnectionKind) async throws {
   let f = Fixture()
@@ -1034,7 +1020,7 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   #expect(notices == 1)
 }
 
-@Test(arguments: [ConnectionKind.androidUSB, .androidWiFi, .ricohGR, .cameraUSB], [false, true])
+@Test(arguments: [ConnectionKind.androidUSB, .androidWiFi, .cameraUSB], [false, true])
 @MainActor func testedOrConnectingDeviceDisconnectNotifiesOnce(
   kind: ConnectionKind, connecting: Bool
 ) async throws {
@@ -1050,7 +1036,6 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
     switch kind {
     case .androidUSB: manager.usbDevicesChanged(serials: ids)
     case .androidWiFi: manager.wirelessGUIDsChanged(ids)
-    case .ricohGR: manager.ricohDevicesChanged(serials: ids)
     default: manager.cameraUSBDevicesChanged(serials: ids)
     }
   }
@@ -1226,7 +1211,7 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   #expect(f.smb.calls.isEmpty)
 }
 
-@Test(arguments: [ConnectionKind.androidUSB, .ricohGR, .cameraUSB])
+@Test(arguments: [ConnectionKind.androidUSB, .cameraUSB])
 @MainActor func devicePresenceUsesSavedIdentityInsteadOfDuplicateSerial(kind: ConnectionKind)
   async throws
 {
@@ -1243,7 +1228,6 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   func update(_ identities: Set<String>) {
     switch kind {
     case .androidUSB: manager.usbDevicesChanged(serials: identities)
-    case .ricohGR: manager.ricohDevicesChanged(serials: identities)
     default: manager.cameraUSBDevicesChanged(serials: identities)
     }
   }
@@ -1406,20 +1390,18 @@ private struct ExplicitLoginFailure: LoginRequiredFailure {
   defer { f.clean() }
   let usb = Connection(kind: .androidUSB, autoMount: true, params: ["deviceID": "usb"])
   let wifi = Connection(kind: .androidWiFi, autoMount: true, params: ["guid": "wifi"])
-  let ricoh = Connection(kind: .ricohGR, autoMount: true, params: ["serial": "ricoh"])
   let camera = Connection(kind: .cameraUSB, autoMount: true, params: ["serial": "camera"])
   let manual = Connection(kind: .androidUSB, autoMount: false, params: ["deviceID": "usb"])
   let absent = Connection(kind: .androidUSB, autoMount: true, params: ["deviceID": "absent"])
   let cloud = Connection(kind: .quark, autoMount: true)
   let system = Connection(kind: .smb, autoMount: true)
-  try ConnectionRepository(location: f.location).save([usb, wifi, ricoh, camera, manual, absent, cloud, system])
+  try ConnectionRepository(location: f.location).save([usb, wifi, camera, manual, absent, cloud, system])
   let manager = f.manager()
   #expect(manager.availableAutoMountDevices.isEmpty)
   manager.usbDevicesChanged(serials: ["usb"])
   manager.wirelessGUIDsChanged(["wifi"])
-  manager.ricohDevicesChanged(serials: ["ricoh"])
   manager.cameraUSBDevicesChanged(serials: ["camera"])
-  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([usb.id, wifi.id, ricoh.id, camera.id]))
+  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([usb.id, wifi.id, camera.id]))
   manager.usbDevicesChanged(serials: [])
-  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([wifi.id, ricoh.id, camera.id]))
+  #expect(Set(manager.availableAutoMountDevices.map(\.id)) == Set([wifi.id, camera.id]))
 }

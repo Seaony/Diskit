@@ -39,7 +39,7 @@ func nativeErrorWrappersShowTheUnderlyingOriginalText(code: Int32) {
 @Test func occupiedAndInternalWorkRemainDistinct() {
   let expected = L("还有程序在使用这个位置")
   #expect(RemoteError.occupied.localizedDescription == expected)
-  #expect(HumanError.remote(.occupied, kind: .ricohGR) == expected)
+  #expect(HumanError.remote(.occupied, kind: .cameraUSB) == expected)
   #expect(HumanError.remote(.occupied, kind: .androidUSB).contains("Android Studio"))
   #expect(HumanError.message(ConnectionError.system(EBUSY)) == expected)
   #expect(HumanError.message(ConnectionError.busy) == L("连接正在处理，请稍后重试"))
@@ -95,9 +95,9 @@ private final class CyclicHumanError: NSError, @unchecked Sendable {
 
 // 错误原因里的数量走复数变体，错误码按字符串原样显示，不加千位分隔符
 @Test func failureReasonsFormatCountsAndCodesLiterally() {
-  #expect(LF("OneDrive 上传分片重试 %lld 次仍失败：%@", Int64(3), "timeout").hasSuffix("timeout"))
-  #expect(LF("OneDrive 上传分片重试 %lld 次仍失败：%@", Int64(3), "timeout").contains("3"))
-  #expect(LF("%@返回错误：%@（错误码 %@）", "百度网盘", "param error", String(31023)).contains("31023"))
+  #expect(LF("天翼云盘的 %@ 任务有 %lld 项失败（任务号 %@）", "删除", Int64(3), "31023").contains("31023"))
+  #expect(LF("天翼云盘的 %@ 任务有 %lld 项失败（任务号 %@）", "删除", Int64(3), "31023").contains("3"))
+  #expect(LF("推出失败：%@（错误码 %@）", "param error", String(31023)).contains("31023"))
 }
 
 private struct OwnReasonEIO: Error, LocalizedError, CustomNSError {

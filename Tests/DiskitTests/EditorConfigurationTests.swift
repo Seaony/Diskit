@@ -39,7 +39,7 @@ import Testing
 @MainActor @Test func editorDeviceSelectionPreservesExplicitNamesAndClearsOldIdentity() {
   let app = AppModel(options: RuntimeOptions(environment: ["DISKIT_DEMO": "1"]))
   let editor = ConnectionEditorModel(model: app)
-  for kind in [ConnectionKind.androidUSB, .ricohGR, .cameraUSB] {
+  for kind in [ConnectionKind.androidUSB, .cameraUSB] {
     editor.choose(kind)
     editor.draft.params = [:]
     editor.draft.name = kind.defaultName
@@ -55,7 +55,7 @@ import Testing
     editor.autoSelectDevice()
     #expect(editor.selectedDeviceID == id)
     editor.draft.params = [
-      "serial": kind == .androidUSB ? "demo-usb" : kind == .ricohGR ? "demo-gr" : "demo-camera"
+      "serial": kind == .androidUSB ? "demo-usb" : "demo-camera"
     ]
     #expect(editor.selectedDeviceID == id)
     editor.selectDevice("missing-device")

@@ -28,14 +28,13 @@ enum EditorPreparation {
         L("Microsoft 账户请填写*邮箱和账户密码*，~~不是登录电脑时使用的 PIN~~。"),
         L("Mac 或 NAS 请先开启 **SMB 文件共享**。"),
       ]
-    case .ricohGR, .cameraUSB:
+    case .cameraUSB:
       [L("用*支持数据传输的 USB 线*连接相机，并在相机上**允许访问存储卡**。"), L("退出**图像捕捉**或其他正在占用相机的应用。")]
     case .webdav, .webdavHTTPS:
       [L("复制服务提供商给出的*完整 WebDAV 地址*；它通常包含文件夹路径。"), L("如果服务提供应用密码，请使用**应用密码**而不是网页登录密码。")]
     case .nfs: [L("确认服务器的*导出路径*，并允许这台 Mac 访问。")]
     case .s3, .cloudflareR2, .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2:
       [L("准备*存储桶、区域和完整服务地址*。"), L("创建只允许访问目标存储桶的密钥，~~不要使用主账号密钥~~。")]
-    case .baiduDrive: [L("登录后*仅能访问此应用的专属目录*。"), L("~~非会员账号可能受到服务商的下载速度和文件大小限制~~。")]
     case .lanzou: [L("可登录账号，或填写*公开分享链接*；有分享密码时一并填写。"), L("~~蓝奏云在当前版本中只读~~。")]
     default: [L("准备服务商账号，在*服务商自己的登录页面*完成授权。")]
     }

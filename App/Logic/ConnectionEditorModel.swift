@@ -1,8 +1,6 @@
 import ADB
-import AliyunDrive
 import AppKit
 import ChinaWebDrive
-import CloudDrive
 import Core
 import Foundation
 import LanzouDrive
@@ -31,9 +29,7 @@ import TianyiDrive
   var chosen = false
   var pairingCode = ""
   var pairingID = ""
-  var webAuthorization: (any OAuthAuthorizing)?
   var webLogin: (any WebLoginAuthorizing)?
-  let oauthFactory: (@MainActor (NSWindow) -> any OAuthAuthorizing)?
   let webFactory: (@MainActor () -> any WebLoginAuthorizing)?
   let demoWait: @MainActor () async throws -> Void
   var manualLogin = false
@@ -63,14 +59,12 @@ import TianyiDrive
 
   init(
     model: AppModel,
-    oauthFactory: (@MainActor (NSWindow) -> any OAuthAuthorizing)? = nil,
     webFactory: (@MainActor () -> any WebLoginAuthorizing)? = nil,
     demoWait: @escaping @MainActor () async throws -> Void = {
       try await Task.sleep(for: .milliseconds(600))
     }
   ) {
     self.model = model
-    self.oauthFactory = oauthFactory
     self.webFactory = webFactory
     self.demoWait = demoWait
   }
@@ -123,8 +117,8 @@ import TianyiDrive
     }
   }
   var requiresLogin: Bool {
-    (draft.kind.usesOAuthCloud
-      || [.pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou].contains(draft.kind))
+    [.quark, .ucDrive, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou].contains(
+      draft.kind)
       && !(draft.kind == .lanzou && draft.params["authMode"] == "share")
   }
   var hasRequiredLogin: Bool { !requiresLogin || draft.params["accountReady"] == "true" }
@@ -256,7 +250,6 @@ import TianyiDrive
     let serial = draft.params["serial"] ?? ""
     switch draft.kind {
     case .androidUSB: return model.usbDevices.first { $0.serial == serial }?.id ?? ""
-    case .ricohGR: return model.ricohDevices.first { $0.serial == serial }?.id ?? ""
     case .cameraUSB: return model.cameraUSBDevices.first { $0.serial == serial }?.id ?? ""
     default: return ""
     }
@@ -268,11 +261,6 @@ import TianyiDrive
     case .androidUSB:
       if let device = model.usbDevices.first(where: { $0.id == id }) {
         draft.params.merge(device.connectionParameters(in: model.usbDevices)) { _, new in new }
-        if rename { draft.name = device.name }
-      }
-    case .ricohGR:
-      if let device = model.ricohDevices.first(where: { $0.id == id }) {
-        draft.params["deviceID"] = device.id
         if rename { draft.name = device.name }
       }
     case .cameraUSB:
@@ -289,7 +277,6 @@ import TianyiDrive
     }
     switch draft.kind {
     case .androidUSB: if let device = model.usbDevices.first { selectDevice(device.id) }
-    case .ricohGR: if let device = model.ricohDevices.first { selectDevice(device.id) }
     case .cameraUSB: if let device = model.cameraUSBDevices.first { selectDevice(device.id) }
     case .androidWiFi where pairingID.isEmpty:
       // 只发现一台等待配对的手机时直接选上，有好几台让用户自己选
@@ -428,86 +415,6 @@ import TianyiDrive
           pairingCode = ""
         }
         try Task.checkCancellation()
-        if draft.kind == .aliyunDrive {
-          stage = model.forceLogin ? L("等待浏览器授权…") : L("正在验证账号…")
-          let session = model.aliyunSession(for: draft)
-          guard model.aliyunConfiguration.isConfigured else {
-            throw AliyunError.missingConfiguration
-          }
-          let hasToken = try await session.hasToken()
-          if model.forceLogin || !hasToken {
-            stage = L("等待浏览器授权…")
-            try rememberSecretsBeforeLogin()
-            let state = UUID().uuidString
-            let url = try await session.authorizationURL(state: state)
-            guard
-              let redirect = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
-                .first(where: { $0.name == "redirect_uri" })?.value,
-              let window = anchorWindow
-            else { throw OAuthCallbackError.invalid }
-            guard let oauthFactory else { throw ConnectionError.notImplemented }
-            let authorization = oauthFactory(window)
-            webAuthorization = authorization
-            let callback = try await authorization.authorize(url)
-            try Task.checkCancellation()
-            let code = try OAuthCallback.code(
-              from: callback, redirectURI: redirect, state: state)
-            try await session.exchange(code: code)
-          }
-          let account = try await session.account()
-          draft.params["nickname"] = account.nickname
-          draft.params["userID"] = account.userID
-          accountSpace = SpaceInfo(total: account.total, used: account.used)
-          if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            draft.name = account.nickname
-          }
-        }
-        if draft.kind.usesCloudDriveOAuth {
-          stage = model.forceLogin ? L("等待浏览器授权…") : L("正在验证账号…")
-          guard model.oauthIsConfigured(for: draft.kind) else {
-            throw OAuthDriveError.configuration
-          }
-          let session = try model.oauthSession(for: draft)
-          let hasToken = try await session.hasToken()
-          if model.forceLogin || !hasToken {
-            stage = L("等待浏览器授权…")
-            try rememberSecretsBeforeLogin()
-            let state = UUID().uuidString
-            let url = try await session.authorizationURL(state: state)
-            guard
-              let redirect = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
-                .first(where: { $0.name == "redirect_uri" })?.value,
-              let window = anchorWindow
-            else { throw OAuthCallbackError.invalid }
-            guard let oauthFactory else { throw ConnectionError.notImplemented }
-            let authorization = oauthFactory(window)
-            webAuthorization = authorization
-            let callback = try await authorization.authorize(url)
-            try Task.checkCancellation()
-            let code = try OAuthCallback.code(
-              from: callback, redirectURI: redirect, state: state)
-            try await session.exchange(code: code)
-          }
-          let profile = try await model.oauthProfile(for: draft)
-          draft.params["nickname"] = profile.nickname
-          draft.params["userID"] = profile.userID
-          draft.params["avatarURL"] = profile.avatarURL
-          let provider = try await model.remoteProvider(for: draft)
-          do {
-            try await provider.connect()
-            accountSpace = try await provider.spaceInfo()
-            await provider.disconnect()
-          } catch {
-            await provider.disconnect()
-            try Task.checkCancellation()
-            accountSpace = nil
-          }
-          if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || draft.name == draft.kind.defaultName
-          {
-            draft.name = profile.nickname
-          }
-        }
         if draft.kind == .quark || draft.kind == .ucDrive {
           let session = model.quarkSession(for: draft)
           let hasCookie = try await session.hasCookie()
@@ -517,7 +424,6 @@ import TianyiDrive
             let account = try await session.account()
             draft.params["nickname"] = account.nickname
             draft.params["userID"] = account.userID
-            accountSpace = SpaceInfo(total: account.total, used: account.used)
             accountSpace = SpaceInfo(total: account.total, used: account.used)
           }
         }
@@ -589,7 +495,7 @@ import TianyiDrive
         switch draft.kind {
         case .androidUSB, .androidWiFi:
           stage = L("等待手机授权…")
-        case .ricohGR, .cameraUSB:
+        case .cameraUSB:
           stage = L("等待相机响应…")
         default:
           stage = L("正在测试连接…")
@@ -640,11 +546,9 @@ import TianyiDrive
     saving?.cancel()
     pairingTask?.cancel()
     shareTask?.cancel()
-    webAuthorization?.cancel()
     webLogin?.cancel()
     model.forceLogin = false
     tianyiFamilySpaces = []
-    webAuthorization = nil
     webLogin = nil
     busy = false
     stage = nil

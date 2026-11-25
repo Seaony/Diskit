@@ -1,5 +1,4 @@
 import AppKit
-import CloudDrive
 import Core
 import CoreTestSupport
 import Foundation
@@ -55,37 +54,6 @@ import UserNotifications
   }
 }
 
-@MainActor @Test func productionConfigurationsUseInjectedValuesAndPublicClientRules() throws {
-  let harness = ModelHarness()
-  var info: [String: Any] = [:]
-  for prefix in ["ALIYUN", "BAIDU", "DRIVE115", "DRIVE123", "ONEDRIVE", "DROPBOX"] {
-    info[prefix + "_CLIENT_ID"] = "client"
-    info[prefix + "_CLIENT_SECRET"] = "secret"
-    info[prefix + "_REDIRECT_URI"] = "diskit://callback"
-  }
-  info["GOOGLE_CLIENT_ID"] = "local.apps.googleusercontent.com"
-  let model = harness.model(info: info)
-  #expect(model.aliyunConfiguration.isConfigured)
-  for kind: ConnectionKind in [
-    .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive, .dropbox,
-  ] {
-    #expect(model.oauthIsConfigured(for: kind))
-    let configuration = try #require(model.oauthConfiguration(for: kind))
-    if [.oneDrive, .googleDrive, .dropbox].contains(kind) {
-      #expect(configuration.clientSecret.isEmpty)
-      #expect(configuration.usesPKCE)
-    }
-    let connection = Connection(kind: kind)
-    let session = try model.oauthSession(for: connection)
-    #expect(session === (try model.oauthSession(for: connection)))
-    model.discardUnsavedSessions(for: connection)
-    #expect(session !== (try model.oauthSession(for: connection)))
-  }
-  #expect(model.oauthConfiguration(for: .smb) == nil)
-  #expect(!model.oauthIsConfigured(for: .smb))
-  #expect(throws: OAuthDriveError.self) { try model.oauthSession(for: Connection(kind: .smb)) }
-}
-
 @MainActor @Test(arguments: [ConnectionKind.lanzou, .cameraUSB, .quark])
 func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownSpace(
   kind: ConnectionKind
@@ -104,32 +72,22 @@ func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownS
   #expect(await provider.disconnects == 1)
 }
 
-@MainActor @Test func productionRemoteProfileAndCapacityUseProviderAndReleaseIt() async throws {
+@MainActor @Test func productionRemoteCapacityUsesProviderAndReleasesIt() async throws {
   let provider = EditorLoginProvider()
   let model = ModelHarness().model(provider: provider)
-  let connection = Connection(kind: .googleDrive)
-  let profile = try await model.oauthProfile(for: connection)
-  #expect(profile.userID == "fixture-user")
+  let connection = Connection(kind: .quark)
   let test = try #require(model.connections.testRemote)
   #expect(try await test(connection).available == 600)
-  #expect(await provider.connects == 2)
-  #expect(await provider.disconnects == 2)
+  #expect(await provider.connects == 1)
+  #expect(await provider.disconnects == 1)
 }
 
 @MainActor @Test func productionProviderFactoriesBuildWithIsolatedDependencies() async throws {
   let harness = ModelHarness()
-  var info: [String: Any] = [:]
-  for prefix in ["BAIDU", "DRIVE115", "DRIVE123", "ONEDRIVE", "DROPBOX"] {
-    info[prefix + "_CLIENT_ID"] = "client"
-    info[prefix + "_CLIENT_SECRET"] = "secret"
-    info[prefix + "_REDIRECT_URI"] = "diskit://callback"
-  }
-  info["GOOGLE_CLIENT_ID"] = "local.apps.googleusercontent.com"
-  let model = harness.model(info: info)
+  let model = harness.model()
   for kind: ConnectionKind in [
-    .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive, .googleDrive,
-    .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .s3, .cloudflareR2, .aliyunOSS,
-    .tencentCOS, .qiniuKodo, .minIO, .backblazeB2,
+    .quark, .ucDrive, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .s3, .cloudflareR2,
+    .aliyunOSS, .tencentCOS, .qiniuKodo, .minIO, .backblazeB2,
   ] {
     let connection = Connection(
       kind: kind,
@@ -212,10 +170,10 @@ func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownS
 @MainActor @Test func productionExpiredLoginUpdatesOnlySavedConnectionOnce() async throws {
   let harness = ModelHarness()
   harness.status = .authorized
-  let connection = Connection(kind: .googleDrive, name: "saved")
+  let connection = Connection(kind: .quark, name: "saved")
   try ConnectionRepository(location: harness.location).save([connection])
   let model = harness.model()
-  model.connections.loginExpired?(Connection(kind: .googleDrive))
+  model.connections.loginExpired?(Connection(kind: .quark))
   #expect(harness.notifications.isEmpty)
   model.connections.loginExpired?(connection)
   try await harness.notified.wait()
@@ -239,17 +197,14 @@ func productionRemoteTestAlwaysDisconnectsAndOnlyKnownReadOnlyTypesAllowUnknownS
   #expect(transient !== model.pikPakSession(for: draft))
 }
 
-private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
-  enum Stage: Sendable { case connect, profile }
-  let stage: Stage
+private struct FailingModelProvider: RemoteFileProvider {
   let base = EditorLoginProvider()
   var capabilities: ProviderCapabilities { base.capabilities }
   func connect() async throws {
     try await base.connect()
-    if stage == .connect { throw RemoteError.unauthorized }
+    throw RemoteError.unauthorized
   }
   func disconnect() async { await base.disconnect() }
-  func profile() async throws -> OAuthProfile { throw RemoteError.unauthorized }
   func spaceInfo() async throws -> SpaceInfo { try await base.spaceInfo() }
   func list(_ path: RemotePath) async throws -> [RemoteItem] { throw RemoteError.unsupported }
   func stat(_ path: RemotePath) async throws -> RemoteItem { throw RemoteError.unsupported }
@@ -262,20 +217,12 @@ private struct FailingModelProvider: RemoteFileProvider, OAuthProfileProviding {
   func move(_ from: RemotePath, to: RemotePath) async throws { throw RemoteError.unsupported }
 }
 
-@MainActor @Test func productionProfileAndConnectionFailureAlwaysReleaseProvider() async throws {
-  for stage in [FailingModelProvider.Stage.connect, .profile] {
-    let provider = FailingModelProvider(stage: stage)
-    let model = ModelHarness().model(provider: provider)
-    await #expect(throws: RemoteError.self) {
-      try await model.oauthProfile(for: Connection(kind: .googleDrive))
-    }
-    #expect(await provider.base.disconnects == 1)
-    if stage == .connect {
-      let test = try #require(model.connections.testRemote)
-      await #expect(throws: RemoteError.self) { try await test(Connection(kind: .googleDrive)) }
-      #expect(await provider.base.disconnects == 2)
-    }
-  }
+@MainActor @Test func productionConnectionFailureAlwaysReleasesProvider() async throws {
+  let provider = FailingModelProvider()
+  let model = ModelHarness().model(provider: provider)
+  let test = try #require(model.connections.testRemote)
+  await #expect(throws: RemoteError.self) { try await test(Connection(kind: .quark)) }
+  #expect(await provider.base.disconnects == 1)
 }
 
 @MainActor @Test func productionLogPresentationUsesInjectedWorkspaceAndReportsDirectoryFailure()

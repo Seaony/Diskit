@@ -26,10 +26,9 @@ struct TypeIcon: View {
     "blue", "green", "orange", "red", "purple", "pink", "teal", "gray",
   ]
   private static let defaults: [ConnectionKind: String] = [
-    .androidUSB: "green", .androidWiFi: "teal", .smb: "blue", .ricohGR: "gray",
+    .androidUSB: "green", .androidWiFi: "teal", .smb: "blue",
     .cameraUSB: "gray", .webdav: "teal", .webdavHTTPS: "teal", .nfs: "blue",
-    .aliyunDrive: "orange", .quark: "purple", .baiduDrive: "red", .drive115: "blue",
-    .drive123: "teal", .oneDrive: "blue", .googleDrive: "green", .dropbox: "blue",
+    .quark: "purple",
     .ucDrive: "orange", .tianyiDrive: "orange", .mobileCloud: "pink",
     .thunderDrive: "purple", .pikPak: "pink", .lanzou: "teal", .s3: "orange",
     .cloudflareR2: "orange", .aliyunOSS: "orange", .tencentCOS: "blue",

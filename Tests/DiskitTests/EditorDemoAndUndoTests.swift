@@ -4,7 +4,7 @@ import Testing
 
 @Test func editorDemoSwitchesAreIgnoredOutsideDemo() {
   let options = RuntimeOptions(environment: [
-    "DISKIT_DEMO_EDITOR_TYPE": "googleDrive", "DISKIT_DEMO_EDITOR_STATE": "testing",
+    "DISKIT_DEMO_EDITOR_TYPE": "quark", "DISKIT_DEMO_EDITOR_STATE": "testing",
     "DISKIT_DEMO_WEB_SERVICE": "mobile",
   ])
   #expect(options.demoEditorKind == nil)
@@ -39,7 +39,6 @@ import Testing
       #expect(editor.saving == nil)
       #expect(editor.pairingTask == nil)
       #expect(editor.shareTask == nil)
-      #expect(editor.webAuthorization == nil)
       #expect(editor.webLogin == nil)
     }
   }

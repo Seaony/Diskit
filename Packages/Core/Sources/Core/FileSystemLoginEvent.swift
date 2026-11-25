@@ -5,8 +5,7 @@ public enum FileSystemLoginEvent {
 
   public static func supports(kind: ConnectionKind) -> Bool {
     switch kind {
-    case .aliyunDrive, .quark, .ucDrive, .baiduDrive, .drive115, .drive123, .oneDrive,
-      .googleDrive, .dropbox, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou:
+    case .quark, .ucDrive, .pikPak, .tianyiDrive, .mobileCloud, .thunderDrive, .lanzou:
       true
     default: false
     }

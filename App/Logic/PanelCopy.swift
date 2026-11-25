@@ -14,7 +14,7 @@ enum PanelCopy {
     case .unavailable:
       switch kind {
       case .androidUSB, .androidWiFi: L("手机未连接")
-      case .ricohGR, .cameraUSB: L("相机未连接")
+      case .cameraUSB: L("相机未连接")
       default: L("设备或服务已断开")
       }
     case .awaitingAuthorization: L("请在手机上点“允许 USB 调试”")

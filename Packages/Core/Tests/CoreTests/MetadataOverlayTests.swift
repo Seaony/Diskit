@@ -194,7 +194,7 @@ private actor MetadataRemoteProvider: RemoteFileProvider {
 }
 
 private func metadataBackend(_ fixture: MetadataFixture, provider: MetadataRemoteProvider) -> RemoteVolumeBackend {
-  RemoteVolumeBackend(provider: provider, connectionID: fixture.connectionID, kind: .aliyunDrive,
+  RemoteVolumeBackend(provider: provider, connectionID: fixture.connectionID, kind: .quark,
                       cacheRoot: fixture.root, replacesExisting: true)
 }
 
