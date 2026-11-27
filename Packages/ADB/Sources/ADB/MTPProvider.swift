@@ -127,6 +127,7 @@ public actor MTPProvider: RemoteFileProvider {
         }
         _ = try? await session.raw(.closeSession)
         await session.close()
+        Self.logger.notice("MTP 设备答话了但没开放存储")
         guard ContinuousClock.now < deadline else {
           throw RemoteError.failed(
             EACCES, L("设备没有提供可访问的存储。请解锁设备，并在设备的 USB 选项里选“文件传输”后重试"))

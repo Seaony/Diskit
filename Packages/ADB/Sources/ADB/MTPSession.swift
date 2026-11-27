@@ -1,5 +1,6 @@
 import Core
 import Foundation
+import OSLog
 
 // MTP 走 USB 批量端点，还要能在出错时让设备放弃当前事务
 protocol MTPChannel: USBChannel {
@@ -23,6 +24,7 @@ actor MTPSession {
     var data: Data
   }
 
+  private static let logger = Logger(subsystem: "com.seaony.Diskit", category: "MTP")
   private let channel: any MTPChannel
   private var nextTransaction: UInt32 = 0
   private var pending = Data()
@@ -60,9 +62,12 @@ actor MTPSession {
   }
 
   func drain() async {
+    var drained = 0
+    defer { if drained > 0 { Self.logger.notice("连接前读空了设备残留的 \(drained) 字节") } }
     for _ in 0..<64 {
       guard let data = try? await channel.read(count: Self.block, timeout: 0.2), !data.isEmpty
       else { return }
+      drained += data.count
     }
   }
 
@@ -148,6 +153,9 @@ actor MTPSession {
         }
       }
     } catch {
+      let failure = error as NSError
+      Self.logger.error(
+        "MTP \(operation.name, privacy: .public) 事务 \(transaction) 失败于\(inTransaction ? "收发数据或响应" : "发命令", privacy: .public)：\(failure.domain, privacy: .public) \(failure.code) \(String(describing: error), privacy: .public)")
       broken = true
       pending = Data()
       if inTransaction { await channel.cancel(transactionID: transaction) }
