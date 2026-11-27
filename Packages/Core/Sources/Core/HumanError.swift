@@ -30,6 +30,7 @@ public enum HumanError {
   public static func timeout(kind: ConnectionKind) -> String {
     switch kind {
     case .androidUSB: L("连接超时，请检查 USB 线缆并解锁手机后重试")
+    case .androidMTP: L("连接超时，请检查 USB 线缆并解锁设备后重试")
     case .cameraUSB: L("连接超时，请检查 USB 线缆并打开相机后重试")
     default: L("连接超时，请检查网络后重试")
     }
@@ -55,6 +56,8 @@ public enum HumanError {
       }
     case .occupied where kind == .androidUSB || kind == .androidWiFi:
       L("手机的 USB 调试接口被电脑上的其它程序占用（比如 Android Studio、scrcpy），关掉它们后重试")
+    case .occupied where kind == .androidMTP:
+      L("设备的 USB 文件传输接口被电脑上的其它程序占用（比如 Android File Transfer），退出它后重试")
     case .posix(ETIMEDOUT): timeout(kind: kind)
     case .http(let status): http(status)
     default:

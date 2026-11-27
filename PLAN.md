@@ -16,7 +16,7 @@ macOS 菜单栏 App：点菜单栏图标弹出面板，里面是已保存的「�
 - 菜单栏常驻，无 Dock 图标；面板 UI 风格参考 SideMount（深色、圆角卡片、底部版本号 + 设置/退出，不做帮助页面）。
 - 已保存连接的增、删、改、排序；每个连接一键「挂载 / 推出」。
 - 支持的位置类型：
-  1. 安卓手机：USB 数据线（ADB），局域网 Wi‑Fi（Android 11+ 无线调试）。
+  1. 安卓手机：USB 数据线（开了 USB 调试走 ADB；没开时走 MTP 文件传输，插上就能用），局域网 Wi‑Fi（Android 11+ 无线调试）。
   2. Windows 电脑（局域网 SMB 共享）。
   3. 理光 GR IV：USB 数据线；Wi‑Fi 只做技术验证（见 §6.4）。
   4. 阿里云盘（官方开放平台 OAuth）。
@@ -25,7 +25,6 @@ macOS 菜单栏 App：点菜单栏图标弹出面板，里面是已保存的「�
 
 ### 非目标（本期不做）
 
-- MTP 方式连接安卓（ADB 对路径、大文件、速度都更好，SideMount 也只做 ADB）。
 - 双向同步、自动备份、版本历史。
 - 百度网盘、115、OneDrive 等其它网盘（架构要允许以后加，但不预先写）。
 - iOS 设备、Windows/Linux 客户端。
@@ -37,6 +36,7 @@ macOS 菜单栏 App：点菜单栏图标弹出面板，里面是已保存的「�
 | 位置 | 接入方式 | 可行性 | 主要风险 |
 | --- | --- | --- | --- |
 | 安卓 USB | 自己用 Swift 实现 ADB 协议，通过 IOKit/IOUSBHost 直接和手机的 ADB USB 接口通信（不依赖 adb 可执行文件） | 高，SideMount 已证明可行 | 同一时刻只能一个进程占用手机 ADB 接口，用户自己的 adb server 会冲突 |
+| 安卓 USB（MTP） | 没开 USB 调试的设备（手机、平板、阅读器，如文石 Leaf5 的接口是 0xFF/0xFF、名为 MTP）走 MTP：IOKit/IOUSBHost 直接和 MTP 接口通信，自己实现 PTP/MTP 事务；同一设备开了 USB 调试时优先 ADB | 高，2026-11-26 Leaf5 实测列目录、读取可用（84.5 MB/s） | Android File Transfer 的登录项 Agent 在插上设备时会打开它并独占接口：连接被它挡住时自动让它退出再连。设备睡眠、锁屏或没选“文件传输”时 MTP 服务不收命令：连接时最多等 60 秒，用户一解锁就连上，等不到报具体该做什么；发现阶段问不到型号先显示 USB 产品名，每 10 秒再问，连上后改用设备报的型号 |
 | 安卓 Wi‑Fi | Android 11+ 无线调试：mDNS 发现 → 配对码配对（SPAKE2）→ TLS 连接 → 跑同一套 ADB 协议 | 中高 | SPAKE2 配对要用 BoringSSL；首次需要在手机上输入配对码 |
 | Windows SMB | 直接用系统 NetFS 挂载 `smb://` | 高，系统原生 | Windows 默认不广播 Bonjour，主要靠手动填 IP/主机名；微软账户要用账户密码而不是 PIN |
 | 理光 GR IV USB | 相机走 MTP（零售商规格表写的是 `Data Transfer: MTP`）。用系统 ImageCaptureCore 读取 | 中高 | 能不能被 ImageCaptureCore 识别、能不能删除，要真机验证 |

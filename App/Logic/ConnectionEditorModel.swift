@@ -152,7 +152,7 @@ import TianyiDrive
   }
   func showTypes() {
     chosen = false
-    selectedKind = draft.kind == .androidWiFi ? .androidUSB : draft.kind
+    selectedKind = draft.kind == .androidWiFi || draft.kind == .androidMTP ? .androidUSB : draft.kind
     error = nil
   }
   func fieldError(_ key: String) -> String? {
@@ -225,7 +225,7 @@ import TianyiDrive
     discovered.id = draft.id
     draft = discovered
     pairingID = pairing ?? ""
-    if discovered.kind == .androidUSB { autoSelectDevice() }
+    if discovered.kind == .androidUSB || discovered.kind == .androidMTP { autoSelectDevice() }
     chosen = true
     error = nil
     touchedFields.removeAll()
@@ -245,11 +245,15 @@ import TianyiDrive
       if draft.kind == .androidUSB {
         return model.usbDevices.first { $0.id == id || $0.serial == id }?.id ?? id
       }
+      if draft.kind == .androidMTP {
+        return model.mtpDevices.first { $0.id == id || $0.serial == id }?.id ?? id
+      }
       return id
     }
     let serial = draft.params["serial"] ?? ""
     switch draft.kind {
     case .androidUSB: return model.usbDevices.first { $0.serial == serial }?.id ?? ""
+    case .androidMTP: return model.mtpDevices.first { $0.serial == serial }?.id ?? ""
     case .cameraUSB: return model.cameraUSBDevices.first { $0.serial == serial }?.id ?? ""
     default: return ""
     }
@@ -258,9 +262,15 @@ import TianyiDrive
     let rename = draft.name.isEmpty || draft.name == draft.kind.defaultName
     for key in ["deviceID", "usbLocationID", "serial"] { draft.params[key] = nil }
     switch draft.kind {
-    case .androidUSB:
+    case .androidUSB, .androidMTP:
+      // 同一个列表里既有开了 USB 调试的（走 ADB），也有只开文件传输的（走 MTP），按选中的设备定连接方式
       if let device = model.usbDevices.first(where: { $0.id == id }) {
+        draft.kind = .androidUSB
         draft.params.merge(device.connectionParameters(in: model.usbDevices)) { _, new in new }
+        if rename { draft.name = device.name }
+      } else if let device = model.transferOnlyDevices.first(where: { $0.id == id }) {
+        draft.kind = .androidMTP
+        draft.params.merge(device.connectionParameters(in: model.mtpDevices)) { _, new in new }
         if rename { draft.name = device.name }
       }
     case .cameraUSB:
@@ -276,7 +286,8 @@ import TianyiDrive
       return
     }
     switch draft.kind {
-    case .androidUSB: if let device = model.usbDevices.first { selectDevice(device.id) }
+    case .androidUSB, .androidMTP:
+      if let id = model.usbDevices.first?.id ?? model.transferOnlyDevices.first?.id { selectDevice(id) }
     case .cameraUSB: if let device = model.cameraUSBDevices.first { selectDevice(device.id) }
     case .androidWiFi where pairingID.isEmpty:
       // 只发现一台等待配对的手机时直接选上，有好几台让用户自己选
@@ -495,6 +506,8 @@ import TianyiDrive
         switch draft.kind {
         case .androidUSB, .androidWiFi:
           stage = L("等待手机授权…")
+        case .androidMTP:
+          stage = PanelCopy.subtitle(.connecting, kind: .androidMTP)
         case .cameraUSB:
           stage = L("等待相机响应…")
         default:
@@ -503,6 +516,7 @@ import TianyiDrive
         try await model.connections.save(
           draft, password: guestLogin && draft.kind == .smb ? "" : password,
           clearPassword: clearsSharePassword)
+        try model.adoptDeviceModelName(&draft)
         model.forceLogin = false
         ConnectionPresentationUndo.register(
           previous: previous, current: draft, manager: model.connections, undo: model.undoManager)

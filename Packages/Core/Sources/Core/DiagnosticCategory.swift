@@ -1,6 +1,7 @@
 public enum DiagnosticCategory: String, CaseIterable, Sendable {
   case core = "Core"
   case adb = "ADB"
+  case mtp = "MTP"
   case cameraUSB = "CameraUSB"
   case quark = "Quark"
   case s3Drive = "S3Drive"

@@ -4,14 +4,24 @@ import SwiftUI
 struct AndroidConnectionForm: View {
   @Bindable var editor: ConnectionEditorModel
   var body: some View {
-    Picker(L("连接方式"), selection: Binding(get: { editor.draft.kind }, set: { editor.choose($0) })) {
+    // 只开了文件传输的设备（MTP）也算“USB 数据线”，用户不用分辨两种协议
+    let usb = editor.draft.kind == .androidUSB || editor.draft.kind == .androidMTP
+    Picker(
+      L("连接方式"),
+      selection: Binding(
+        get: { usb ? ConnectionKind.androidUSB : editor.draft.kind },
+        set: { if !($0 == .androidUSB && usb) { editor.choose($0) } })
+    ) {
       Text(L("USB 数据线")).tag(ConnectionKind.androidUSB)
       Text(L("无线调试")).tag(ConnectionKind.androidWiFi)
     }.pickerStyle(.segmented).fixedSize().formRow(L("连接方式"))
-    if editor.draft.kind == .androidUSB {
-      if editor.model.usbDevices.isEmpty {
+    if usb {
+      let debugging = editor.model.usbDevices
+      let transfer = editor.model.transferOnlyDevices
+      if debugging.isEmpty && transfer.isEmpty {
         EditorEmptyState(
-          title: L("没有发现 Android 设备"), detail: L("请使用支持数据传输的线缆，解锁手机并开启 USB 调试。首次连接时，请在手机上允许这台电脑。"),
+          title: L("没有发现 Android 设备"),
+          detail: L("请使用支持数据传输的线缆连接，解锁设备，并在设备的 USB 选项里选“文件传输”。"),
           symbol: "cable.connector")
       } else {
         Picker(
@@ -20,15 +30,19 @@ struct AndroidConnectionForm: View {
         ) {
           Text(L("选择设备")).tag("")
           if !editor.selectedDeviceID.isEmpty,
-            !editor.model.usbDevices.contains(where: { $0.id == editor.selectedDeviceID })
+            !debugging.contains(where: { $0.id == editor.selectedDeviceID }),
+            !transfer.contains(where: { $0.id == editor.selectedDeviceID })
           {
             Text(L("已保存的设备（当前未发现）")).tag(editor.selectedDeviceID)
           }
-          ForEach(editor.model.usbDevices) { device in
+          ForEach(debugging) { device in
             Text(
               device.serial.isEmpty
                 ? device.name : LF("%@（%@）", device.name, String(device.serial.suffix(4)))
             ).tag(device.id)
+          }
+          ForEach(transfer) { device in
+            Text(LF("%@ · 文件传输", device.name)).tag(device.id)
           }
         }.formRow(L("设备"))
       }

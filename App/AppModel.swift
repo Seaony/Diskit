@@ -125,6 +125,9 @@ import UserNotifications
             name: "adb-discovered-DEF456", type: .pairing, host: "demo.invalid", port: 12345)
         ] : []) : wirelessDiscovery.devices
   }
+  var mtpDevices: [MTPDevice] { options.isDemo ? [] : mtpDiscovery.devices }
+  // 只开了文件传输、没开 USB 调试的设备；开了 USB 调试的在 usbDevices 里按 ADB 列出
+  var transferOnlyDevices: [MTPDevice] { mtpDevices.filter { !$0.hasADB } }
   var cameraUSBDevices: [CameraUSBDevice] {
     options.isDemo
       ? (showsDemoDiscovery
@@ -141,6 +144,7 @@ import UserNotifications
   }
   let discovery = SMBDiscovery()
   let usbDiscovery = USBDiscovery()
+  let mtpDiscovery = MTPDiscovery()
   let wirelessDiscovery = WirelessDiscovery()
   let cameraUSBDiscovery = CameraUSBDiscovery()
   var pairingSelection: String?
@@ -200,6 +204,11 @@ import UserNotifications
     wirelessDiscovery.changed = { [weak self] _ in self?.refreshWirelessAvailability() }
     wirelessDiscovery.start()
     usbDiscovery.start()
+    mtpDiscovery.changed = { [weak self] devices in
+      self?.connections.mtpDevicesChanged(serials: MTPUSB.availableIdentifiers(in: devices))
+      self?.refreshDevicePrompts()
+    }
+    mtpDiscovery.start()
     cameraUSBDiscovery.changed = { [weak self] devices in
       self?.connections.cameraUSBDevicesChanged(
         serials: Self.deviceIdentifiers(devices.map { ($0.id, $0.serial) }))
@@ -538,7 +547,15 @@ import UserNotifications
       guard let self else { throw ConnectionError.notImplemented }
       let provider = try await self.remoteProvider(for: connection)
       do {
-        try await provider.connect()
+        if connection.kind == .androidMTP {
+          try await AndroidFileTransfer.connecting { try await provider.connect() }
+          // 设备睡着时发现阶段问不到型号，连上了补上，列表和提醒改用设备自己的名字
+          if let model = await (provider as? MTPProvider)?.deviceModel {
+            self.mtpDiscovery.learn(model: model, for: connection.params)
+          }
+        } else {
+          try await provider.connect()
+        }
         self.providerAccess[connection.id] = (connection, provider.capabilities)
         let space: SpaceInfo
         do {
@@ -664,6 +681,8 @@ import UserNotifications
     switch connection.kind {
     case .androidUSB, .androidWiFi:
       return try await ADBProviderFactory.make(for: connection)
+    case .androidMTP:
+      return MTPProvider.make(for: connection)
     case .cameraUSB:
       return try await CameraUSBProvider.make(
         identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")

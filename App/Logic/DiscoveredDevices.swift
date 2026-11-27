@@ -58,13 +58,18 @@ extension AppModel {
           pairingSelection: nil))
     }
 
-    // 插着但没开 USB 调试的安卓手机：先列出来，点进去看连接指南打开 USB 调试
-    for phone in phonesWithoutDebugging
-    where !usbDevices.contains(where: { !phone.serial.isEmpty && $0.serial == phone.serial }) {
+    // 开着文件传输、没开 USB 调试的安卓设备：直接走 MTP。开了 USB 调试的已在上面按 ADB 列出
+    // 只和已保存的文件传输位置比：按 USB 调试保存过、后来关了调试的设备也要能用文件传输再加一次
+    for device in transferOnlyDevices
+    where !PanelDiscoveryIdentity.isSavedDevice(connections.connections, kinds: [.androidMTP], id: device.id, serial: device.serial, serialIsUnique: mtpDevices.filter { $0.serial == device.serial }.count == 1) {
       items.append(
         DiscoveredItem(
-          id: "phone-setup:" + phone.id, kind: .androidUSB, title: phone.name,
-          subtitle: L("需要打开 USB 调试"), connection: nil, pairingSelection: nil))
+          id: "mtp:" + device.id, kind: .androidMTP, title: device.name,
+          subtitle: L("USB 文件传输"),
+          connection: Connection(
+            kind: .androidMTP, name: device.name,
+            params: device.connectionParameters(in: mtpDevices)),
+          pairingSelection: nil))
     }
 
     for device in mergedWirelessDevices where !isSaved(device) {
@@ -121,7 +126,7 @@ extension ConnectionKind {
   // 已发现设备按类型排序：手机、局域网、相机、网盘、对象存储
   var sortOrder: Int {
     switch self {
-    case .androidUSB, .androidWiFi: 0
+    case .androidUSB, .androidWiFi, .androidMTP: 0
     case .smb, .webdav, .webdavHTTPS, .nfs: 1
     case .cameraUSB: 2
     case .quark, .ucDrive, .tianyiDrive, .mobileCloud, .thunderDrive, .pikPak, .lanzou:

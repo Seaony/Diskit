@@ -25,7 +25,13 @@ import Foundation
   }
 
   func mount(_ connection: Connection, password: String) async throws -> URL {
-    try await service(connection).mount(connection, password: password)
+    let service = try service(connection)
+    guard connection.kind == .androidMTP else {
+      return try await service.mount(connection, password: password)
+    }
+    return try await AndroidFileTransfer.connecting {
+      try await service.mount(connection, password: password)
+    }
   }
 
   func unmount(_ url: URL) async throws {

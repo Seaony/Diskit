@@ -5,7 +5,7 @@ import Testing
 
 @Test func fileSystemSchemeDeclarationsFitSystemLengthLimitAndMatchCore() throws {
   let schemes = FileSystemAddress.supportedSchemes
-  #expect(schemes.count == 16)
+  #expect(schemes.count == 17)
   let oversized = schemes.filter { $0.utf8.count >= 16 }
   #expect(oversized == [])
 

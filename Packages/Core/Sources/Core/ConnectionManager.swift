@@ -26,6 +26,7 @@ public enum ConnectionState: Equatable, Sendable {
   private var usbSerials: Set<String>?
   private var wifiGUIDs: Set<String>?
   private var cameraUSBSerials: Set<String>?
+  private var mtpSerials: Set<String>?
   public var operationFailed: ((String) -> Void)?
   public var mountFailed: ((String) -> Void)?
   public var mountFinished: ((Connection, Error?) -> Void)?
@@ -64,6 +65,7 @@ public enum ConnectionState: Equatable, Sendable {
       case .androidUSB: return usbSerials?.contains(key) == true
       case .androidWiFi: return wifiGUIDs?.contains(key) == true
       case .cameraUSB: return cameraUSBSerials?.contains(key) == true
+      case .androidMTP: return mtpSerials?.contains(key) == true
       default: return false
       }
     }
@@ -546,12 +548,22 @@ public enum ConnectionState: Equatable, Sendable {
     {
       return .disconnected
     }
+    if connection.kind == .androidMTP, let mtpSerials,
+      !mtpSerials.contains(connection.params["deviceID"] ?? connection.params["serial"] ?? "")
+    {
+      return .disconnected
+    }
     return result
   }
   public func cameraUSBDevicesChanged(serials: Set<String>) {
     let previous = cameraUSBSerials
     cameraUSBSerials = serials
     updateDevices(kind: .cameraUSB, previous: previous, current: serials)
+  }
+  public func mtpDevicesChanged(serials: Set<String>) {
+    let previous = mtpSerials
+    mtpSerials = serials
+    updateDevices(kind: .androidMTP, previous: previous, current: serials)
   }
   public func wirelessGUIDsChanged(_ guids: Set<String>) {
     let previous = wifiGUIDs

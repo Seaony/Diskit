@@ -844,22 +844,6 @@
         }
       }
     },
-    "使用*能传输数据的数据线*，并在手机上**允许**这台 Mac；无线连接需输入手机当前显示的*配对码*。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use *a cable that supports data transfer* and **Allow** this Mac on your phone. For a wireless connection, enter the *pairing code* currently shown on the phone."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "使用*能传输数据的数据线*，并在手机上**允许**这台 Mac；无线连接需输入手机当前显示的*配对码*。"
-          }
-        }
-      }
-    },
     "使用路径形式访问存储桶": {
       "localizations": {
         "en": {
@@ -1650,22 +1634,6 @@
         }
       }
     },
-    "在手机设置中开启**开发者选项**，再打开 **USB 调试**或**无线调试**。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on **Developer Options** in your phone’s settings, then enable **USB debugging** or **Wireless Debugging**."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在手机设置中开启**开发者选项**，再打开 **USB 调试**或**无线调试**。"
-          }
-        }
-      }
-    },
     "在移动云盘网页完成登录后，从浏览器开发者工具的网络请求中复制 Authorization 请求头，保留 Basic 前缀或只粘贴后面的内容。": {
       "localizations": {
         "en": {
@@ -2192,22 +2160,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "导出路径"
-          }
-        }
-      }
-    },
-    "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索**开发者选项**和 **USB 调试**。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The settings may be in different places on Xiaomi, OPPO, vivo, and Samsung phones. Search your phone’s settings for **Developer Options** and **USB debugging**."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索**开发者选项**和 **USB 调试**。"
           }
         }
       }
@@ -5749,22 +5701,6 @@
         }
       }
     },
-    "~~鸿蒙 NEXT 不支持 ADB~~，不能通过此方式连接。": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~~HarmonyOS NEXT does not support ADB~~ and cannot connect this way."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "~~鸿蒙 NEXT 不支持 ADB~~，不能通过此方式连接。"
-          }
-        }
-      }
-    },
     "选择设备": {
       "localizations": {
         "en": {
@@ -6529,23 +6465,6 @@
         }
       }
     },
-    "需要打开 USB 调试": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on USB debugging"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "需要打开 USB 调试"
-          }
-        }
-      }
-    },
     "无法迁移数据": {
       "extractionState": "manual",
       "localizations": {
@@ -6946,6 +6865,193 @@
           "stringUnit": {
             "state": "translated",
             "value": "仍然退出后，这个位置可能留在 Finder 里，需要手动推出。"
+          }
+        }
+      }
+    },
+    "%@ · 文件传输": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · File Transfer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · 文件传输"
+          }
+        }
+      }
+    },
+    "Android 手机（文件传输）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Android Phone (File Transfer)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Android 手机（文件传输）"
+          }
+        }
+      }
+    },
+    "USB 文件传输": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB File Transfer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USB 文件传输"
+          }
+        }
+      }
+    },
+    "~~Android File Transfer 开着时会占住设备~~，请先退出它。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~~Android File Transfer locks the device while it is open~~; quit it first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "~~Android File Transfer 开着时会占住设备~~，请先退出它。"
+          }
+        }
+      }
+    },
+    "想要更快的速度，可在设置中开启**开发者选项**，再打开 **USB 调试**，并在设备上**允许**这台 Mac。小米、OPPO、vivo、三星的入口可能不同，可在设置中搜索**开发者选项**。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For faster transfers, turn on **Developer options** in Settings, then **USB debugging**, and **Allow** this Mac on the device. Xiaomi, OPPO, vivo and Samsung may place it elsewhere; search Settings for **Developer options**."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "想要更快的速度，可在设置中开启**开发者选项**，再打开 **USB 调试**，并在设备上**允许**这台 Mac。小米、OPPO、vivo、三星的入口可能不同，可在设置中搜索**开发者选项**。"
+          }
+        }
+      }
+    },
+    "无线连接需打开**无线调试**，并输入设备当前显示的*配对码*；~~鸿蒙 NEXT 不支持 ADB~~，不能用无线调试和 USB 调试。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wireless connections need **Wireless debugging** and the *pairing code* shown on the device. ~~HarmonyOS NEXT does not support ADB~~, so wireless and USB debugging are unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无线连接需打开**无线调试**，并输入设备当前显示的*配对码*；~~鸿蒙 NEXT 不支持 ADB~~，不能用无线调试和 USB 调试。"
+          }
+        }
+      }
+    },
+    "用*能传输数据的数据线*连接，解锁设备，在设备弹出的 USB 选项里选**文件传输**，插上就能读写。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect with a *data-capable cable*, unlock the device, and choose **File Transfer** in its USB options. Files are then ready to read and write."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用*能传输数据的数据线*连接，解锁设备，在设备弹出的 USB 选项里选**文件传输**，插上就能读写。"
+          }
+        }
+      }
+    },
+    "请使用支持数据传输的线缆连接，解锁设备，并在设备的 USB 选项里选“文件传输”。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect with a data-capable cable, unlock the device, and choose “File Transfer” in its USB options."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请使用支持数据传输的线缆连接，解锁设备，并在设备的 USB 选项里选“文件传输”。"
+          }
+        }
+      }
+    },
+    "请使用支持数据传输的线缆，解锁设备，并在设备的 USB 选项里选“文件传输”。Android File Transfer 开着时会占住设备，请先退出它。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a data-capable cable, unlock the device, and choose “File Transfer” in its USB options. Android File Transfer locks the device while it is open; quit it first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请使用支持数据传输的线缆，解锁设备，并在设备的 USB 选项里选“文件传输”。Android File Transfer 开着时会占住设备，请先退出它。"
+          }
+        }
+      }
+    },
+    "正在连接，请解锁设备…": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecting — unlock the device…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接，请解锁设备…"
+          }
+        }
+      }
+    },
+    "请解锁设备": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock device"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请解锁设备"
           }
         }
       }

@@ -54,7 +54,7 @@ Diskit 把它们都放进菜单栏的一个面板里：
 ## 支持的位置
 
 <table>
-<tr><td><b>设备</b></td><td>安卓手机（USB） · 安卓手机（无线调试） · USB 相机</td></tr>
+<tr><td><b>设备</b></td><td>安卓手机、平板和阅读器（USB，文件传输或 USB 调试） · 安卓手机（无线调试） · USB 相机</td></tr>
 <tr><td><b>共享</b></td><td>SMB · WebDAV（HTTP 和 HTTPS，内置坚果云、Nextcloud、ownCloud、群晖、威联通和 OpenList 预设） · NFS</td></tr>
 <tr><td><b>实验性网盘</b></td><td>夸克网盘 · UC 网盘 · 天翼云盘 · 移动云盘 · 迅雷云盘 · PikPak · 蓝奏云（只读）</td></tr>
 <tr><td><b>对象存储</b></td><td>Amazon S3 · Cloudflare R2 · 阿里云 OSS · 腾讯云 COS · 七牛 Kodo · MinIO · Backblaze B2</td></tr>
@@ -74,7 +74,7 @@ SMB、WebDAV、NFS 共享通过 macOS 挂载，Finder 和其他 App 都把它们
 
 ### 手机和相机
 
-安卓手机通过 USB 调试连接，Android 11 及以上也可以用配对码走无线调试。Diskit 自己实现了 ADB 协议，不用安装 `adb`，手机上也不用装任何东西。USB 相机通过 macOS 的图像捕捉读取；除非相机允许删除，否则不会改动照片。
+安卓设备插上 USB、在设备上选“文件传输”就能用，不用开 USB 调试；开了 USB 调试时改走 ADB，Android 11 及以上也可以用配对码走无线调试。Diskit 自己实现了 MTP 和 ADB 协议，不用安装 `adb` 或 Android File Transfer，设备上也不用装任何东西。USB 相机通过 macOS 的图像捕捉读取；除非相机允许删除，否则不会改动照片。
 
 ### 为 macOS 而做
 

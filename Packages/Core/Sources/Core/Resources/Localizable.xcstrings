@@ -3535,6 +3535,278 @@
           }
         }
       }
+    },
+    "存储 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储 %@"
+          }
+        }
+      }
+    },
+    "打不开设备的 USB 文件传输接口：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t open the device’s USB file transfer interface: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打不开设备的 USB 文件传输接口：%@"
+          }
+        }
+      }
+    },
+    "要上传的本地文件在上传途中变短了": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The local file became shorter while it was being uploaded"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "要上传的本地文件在上传途中变短了"
+          }
+        }
+      }
+    },
+    "设备在 %@ 中返回了未知的 MTP 容器类型 %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device returned unknown MTP container type %2$@ during %1$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备在 %@ 中返回了未知的 MTP 容器类型 %@"
+          }
+        }
+      }
+    },
+    "设备在 SendObjectInfo 的响应里没有给出新对象的句柄": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device did not return the new object’s handle in its SendObjectInfo response"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备在 SendObjectInfo 的响应里没有给出新对象的句柄"
+          }
+        }
+      }
+    },
+    "设备拒绝了 %@ 操作：响应码 0x%@（%@）": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device rejected %1$@: response code 0x%2$@ (%3$@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备拒绝了 %@ 操作：响应码 0x%@（%@）"
+          }
+        }
+      }
+    },
+    "设备正被 Android File Transfer 占用，请退出它后重试。插上设备时登录项“Android File Transfer Agent”会自动打开它，可在“系统设置 > 通用 > 登录项与扩展”里关掉。": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device is in use by Android File Transfer. Quit it and try again. The login item “Android File Transfer Agent” reopens it whenever a device is plugged in; you can turn it off in System Settings > General > Login Items & Extensions."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备正被 Android File Transfer 占用，请退出它后重试。插上设备时登录项“Android File Transfer Agent”会自动打开它，可在“系统设置 > 通用 > 登录项与扩展”里关掉。"
+          }
+        }
+      }
+    },
+    "设备没有提供可访问的存储。请解锁设备，并在设备的 USB 选项里选“文件传输”后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device isn’t offering any accessible storage. Unlock it, choose “File Transfer” in its USB options, and try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备没有提供可访问的存储。请解锁设备，并在设备的 USB 选项里选“文件传输”后重试"
+          }
+        }
+      }
+    },
+    "设备的 USB 文件传输接口正被电脑上的“%@”占用，关掉它后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device’s USB file transfer interface is in use by “%@” on this Mac. Quit it and try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备的 USB 文件传输接口正被电脑上的“%@”占用，关掉它后重试"
+          }
+        }
+      }
+    },
+    "设备的 USB 文件传输接口正被电脑上的“%@”（进程 %@）占用，关掉它后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device’s USB file transfer interface is in use by “%1$@” (process %2$@) on this Mac. Quit it and try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备的 USB 文件传输接口正被电脑上的“%@”（进程 %@）占用，关掉它后重试"
+          }
+        }
+      }
+    },
+    "设备的 USB 文件传输接口被电脑上的其它程序占用（比如 Android File Transfer），退出它后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device’s USB file transfer interface is in use by another app on this Mac (such as Android File Transfer). Quit it and try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备的 USB 文件传输接口被电脑上的其它程序占用（比如 Android File Transfer），退出它后重试"
+          }
+        }
+      }
+    },
+    "设备返回的 MTP 容器长度不对：%@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device returned an invalid MTP container length: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备返回的 MTP 容器长度不对：%@"
+          }
+        }
+      }
+    },
+    "设备返回的 MTP 数据比声明的短": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The MTP data from the device is shorter than declared"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备返回的 MTP 数据比声明的短"
+          }
+        }
+      }
+    },
+    "设备返回的事务号 %@ 和当前事务 %@ 对不上": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The device returned transaction %1$@, which doesn’t match the current transaction %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设备返回的事务号 %@ 和当前事务 %@ 对不上"
+          }
+        }
+      }
+    },
+    "连接超时，请检查 USB 线缆并解锁设备后重试": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection timed out. Check the USB cable, unlock the device, and try again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接超时，请检查 USB 线缆并解锁设备后重试"
+          }
+        }
+      }
+    },
+    "“%@”没有回应。请唤醒并解锁设备，设备上弹出 USB 用途选择时选“文件传输”；已经解锁还不行就重新插拔数据线": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” isn't responding. Wake and unlock it, and choose “File transfer” if it asks how to use USB. If it's already unlocked, unplug the cable and plug it back in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@”没有回应。请唤醒并解锁设备，设备上弹出 USB 用途选择时选“文件传输”；已经解锁还不行就重新插拔数据线"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

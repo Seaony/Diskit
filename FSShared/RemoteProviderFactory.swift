@@ -22,6 +22,8 @@ enum RemoteProviderFactory {
     case .androidUSB, .androidWiFi:
       return try await ADBProviderFactory.make(
         for: connection, identity: ADBIdentity(store: secrets))
+    case .androidMTP:
+      return MTPProvider.make(for: connection)
     case .cameraUSB:
       return try await CameraUSBProvider.make(
         identifier: connection.params["deviceID"] ?? connection.params["serial"] ?? "")

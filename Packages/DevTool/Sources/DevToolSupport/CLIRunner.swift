@@ -15,6 +15,9 @@ public enum CLIRunner {
       return
     case "devices":
       for device in ADBUSB.devices() { print("androidUSB\t\(device.serial)\t\(device.name)") }
+      for device in MTPUSB.devices() where !device.hasADB {
+        print("androidMTP\t\(device.serial)\t\(device.name)")
+      }
       for device in try await CameraUSBDiscovery.available() {
         print("cameraUSB\t\(device.serial)\t\(device.name)")
       }

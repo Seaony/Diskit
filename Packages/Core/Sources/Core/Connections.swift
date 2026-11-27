@@ -2,6 +2,8 @@ import Foundation
 
 public enum ConnectionKind: String, Codable, CaseIterable, Sendable {
   case androidUSB, androidWiFi, smb, quark
+  // 开着“文件传输（MTP）”、没开 USB 调试的安卓设备
+  case androidMTP
   case cameraUSB
   case webdav, webdavHTTPS, nfs
   case s3, cloudflareR2, aliyunOSS, tencentCOS, qiniuKodo, minIO, backblazeB2
@@ -49,7 +51,7 @@ public struct Connection: Codable, Identifiable, Equatable, Sendable {
   public var passwordKey: String { "\(id.uuidString).password" }
   public var usesFileSystemCache: Bool {
     switch kind {
-    case .androidUSB, .androidWiFi, .cameraUSB, .quark, .ucDrive, .tianyiDrive,
+    case .androidUSB, .androidWiFi, .androidMTP, .cameraUSB, .quark, .ucDrive, .tianyiDrive,
       .mobileCloud, .thunderDrive, .pikPak, .lanzou:
       true
     case .smb, .webdav, .webdavHTTPS, .nfs, .s3, .cloudflareR2, .aliyunOSS, .tencentCOS,

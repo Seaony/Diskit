@@ -54,7 +54,7 @@ It's for you if you move files between several devices and services. If everythi
 ## Supported locations
 
 <table>
-<tr><td><b>Devices</b></td><td>Android phone (USB) · Android phone (wireless debugging) · USB cameras</td></tr>
+<tr><td><b>Devices</b></td><td>Android phones, tablets and e-readers (USB, file transfer or USB debugging) · Android phone (wireless debugging) · USB cameras</td></tr>
 <tr><td><b>Shares</b></td><td>SMB · WebDAV (HTTP and HTTPS, with presets for Jianguoyun, Nextcloud, ownCloud, Synology, QNAP and OpenList) · NFS</td></tr>
 <tr><td><b>Experimental drives</b></td><td>Quark Drive · UC Drive · Tianyi Cloud · Mobile Cloud · Xunlei Drive · PikPak · Lanzou Cloud (read-only)</td></tr>
 <tr><td><b>Object storage</b></td><td>Amazon S3 · Cloudflare R2 · Alibaba Cloud OSS · Tencent Cloud COS · Qiniu Kodo · MinIO · Backblaze B2</td></tr>
@@ -74,7 +74,7 @@ SMB, WebDAV and NFS shares mount through macOS, so Finder and every other app se
 
 ### Phones and cameras
 
-Android phones connect over USB debugging or Android 11+ wireless debugging with a pairing code. Diskit implements the ADB protocol itself, so there's no `adb` to install and nothing to add to the phone. USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
+Android devices work over USB as soon as you pick File transfer on the device, no USB debugging needed. With USB debugging on, Diskit uses ADB instead, and Android 11+ can also pair over wireless debugging. Diskit implements MTP and ADB itself, so there's no `adb` or Android File Transfer to install and nothing to add to the device. USB cameras are read through macOS Image Capture; their photos stay untouched unless the camera allows deleting.
 
 ### Built for macOS
 

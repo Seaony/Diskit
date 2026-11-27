@@ -17,7 +17,13 @@ struct TypeIcon: View {
   }
 
   static func assetName(kind: ConnectionKind, color: String?) -> String {
-    let type = kind == .webdavHTTPS ? ConnectionKind.webdav.rawValue : kind.rawValue
+    // 同一种设备不同连接方式共用一套图标
+    let type =
+      switch kind {
+      case .webdavHTTPS: ConnectionKind.webdav.rawValue
+      case .androidMTP: ConnectionKind.androidUSB.rawValue
+      default: kind.rawValue
+      }
     let palette = color.flatMap { colors.contains($0) ? $0 : nil } ?? defaults[kind] ?? "blue"
     return "TypeIcon-\(type)-\(palette)"
   }
@@ -26,7 +32,7 @@ struct TypeIcon: View {
     "blue", "green", "orange", "red", "purple", "pink", "teal", "gray",
   ]
   private static let defaults: [ConnectionKind: String] = [
-    .androidUSB: "green", .androidWiFi: "teal", .smb: "blue",
+    .androidUSB: "green", .androidWiFi: "teal", .androidMTP: "green", .smb: "blue",
     .cameraUSB: "gray", .webdav: "teal", .webdavHTTPS: "teal", .nfs: "blue",
     .quark: "purple",
     .ucDrive: "orange", .tianyiDrive: "orange", .mobileCloud: "pink",

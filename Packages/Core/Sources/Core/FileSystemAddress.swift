@@ -7,6 +7,7 @@ extension ConnectionKind {
     switch self {
     case .smb, .webdav, .webdavHTTPS, .nfs: nil
     case .androidUSB, .androidWiFi: "diskit-adb"
+    case .androidMTP: "diskit-mtp"
     case .cameraUSB: "diskit-camera"
     case .quark: "diskit-quark"
     case .tencentCOS: "diskit-cos"

@@ -7,7 +7,10 @@ import IOKit
   private var added: io_iterator_t = 0
   private var removed: io_iterator_t = 0
   private var changed: (@MainActor () -> Void)?
-  public init() {}
+  // 盯哪类 USB 接口的插拔：默认只盯 ADB 接口，MTP 发现要盯全部接口
+  private let match: () -> NSMutableDictionary
+  public init() { match = { ADBUSB.adbInterfaceMatch() } }
+  init(match: @escaping () -> NSMutableDictionary) { self.match = match }
   isolated deinit { stop() }
   func start(changed: @escaping @MainActor () -> Void) throws {
     self.changed = changed
@@ -29,11 +32,10 @@ import IOKit
       }
     }
     let pointer = Unmanaged.passUnretained(self).toOpaque()
-    func match() -> CFMutableDictionary { ADBUSB.adbInterfaceMatch() }
     let first = IOServiceAddMatchingNotification(
-      port, kIOFirstMatchNotification, match(), callback, pointer, &added)
+      port, kIOFirstMatchNotification, match() as CFDictionary, callback, pointer, &added)
     let second = IOServiceAddMatchingNotification(
-      port, kIOTerminatedNotification, match(), callback, pointer, &removed)
+      port, kIOTerminatedNotification, match() as CFDictionary, callback, pointer, &removed)
     guard first == KERN_SUCCESS, second == KERN_SUCCESS else {
       let failure = first == KERN_SUCCESS ? second : first
       stop()

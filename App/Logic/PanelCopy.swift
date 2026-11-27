@@ -13,13 +13,14 @@ enum PanelCopy {
     case .disconnected: L("未连接")
     case .unavailable:
       switch kind {
-      case .androidUSB, .androidWiFi: L("手机未连接")
+      case .androidUSB, .androidWiFi, .androidMTP: L("手机未连接")
       case .cameraUSB: L("相机未连接")
       default: L("设备或服务已断开")
       }
     case .awaitingAuthorization: L("请在手机上点“允许 USB 调试”")
     case .ejecting: L("正在推出…")
-    case .connecting: L("正在连接…")
+    // 文件传输设备锁屏时不回应，连接会一直等到解锁
+    case .connecting: kind == .androidMTP ? L("正在连接，请解锁设备…") : L("正在连接…")
     case .failed(let error): LF("无法连接：%@", error)
     case .tested(let space): SpaceSummary.subtitle(space)
     case .mounted(let mount): SpaceSummary.mounted(mount.availableBytes)
@@ -32,6 +33,8 @@ enum PanelCopy {
     case .failed: return L("出错")
     case .awaitingAuthorization: return L("等待手机授权")
     case .tested: return L("已连接")
+    // 卡片放不下整句；文件传输设备锁屏时会一直等，直接写要做什么
+    case .connecting: return kind == .androidMTP ? L("请解锁设备") : L("正在连接…")
     default: return subtitle(state, kind: kind)
     }
   }

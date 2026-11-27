@@ -6,7 +6,10 @@ struct USBBulkEndpoints: Equatable {
   let output: Int
   let packetSize: Int
 
-  static func parse(_ data: Data, interface: UInt8, alternate: UInt8) throws -> Self {
+  // checksADB：ADB 接口要核对类别；MTP 接口有厂商自定义和相机类两种写法，由调用方先认好
+  static func parse(
+    _ data: Data, interface: UInt8, alternate: UInt8, checksADB: Bool = true
+  ) throws -> Self {
     let bytes = Array(data)
     guard bytes.count >= 9, bytes[0] >= 9, bytes[1] == 2 else { throw RemoteError.protocolError }
     let length = Int(bytes[2]) | Int(bytes[3]) << 8
@@ -24,7 +27,7 @@ struct USBBulkEndpoints: Equatable {
       if type == 4 {
         guard size >= 9 else { throw RemoteError.protocolError }
         selected = bytes[position + 2] == interface && bytes[position + 3] == alternate
-        if selected {
+        if selected, checksADB {
           guard bytes[position + 5] == 0xff, bytes[position + 6] == 0x42,
             bytes[position + 7] == 1
           else { throw RemoteError.protocolError }

@@ -28,7 +28,7 @@ struct ConnectionCardStyle: ButtonStyle {
 extension ConnectionKind {
   var symbol: String {
     switch self {
-    case .androidUSB, .androidWiFi: "smartphone"
+    case .androidUSB, .androidWiFi, .androidMTP: "smartphone"
     case .smb: "desktopcomputer"
     case .webdav, .webdavHTTPS: "externaldrive.connected.to.line.below"
     case .nfs: "network"
@@ -44,7 +44,7 @@ extension ConnectionKind {
   var iconColor: Color {
     let name: String
     switch self {
-    case .androidUSB, .androidWiFi: name = "green"
+    case .androidUSB, .androidWiFi, .androidMTP: name = "green"
     case .smb: name = "blue"
     case .cameraUSB: name = "gray"
     case .webdav, .webdavHTTPS, .nfs: name = "teal"
@@ -57,6 +57,7 @@ extension ConnectionKind {
   var connectionCaption: String {
     switch self {
     case .androidUSB, .androidWiFi: L("USB / Wi-Fi")
+    case .androidMTP: L("USB 文件传输")
     case .smb: L("局域网共享")
     case .cameraUSB: L("相机的 USB 连接")
     case .webdav: L("HTTP WebDAV")

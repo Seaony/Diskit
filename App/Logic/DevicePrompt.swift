@@ -1,4 +1,4 @@
-import CameraUSB
+import ADB
 import Core
 import Foundation
 import UserNotifications
@@ -10,7 +10,7 @@ enum DevicePrompt {
   static let mountAction = "mount"
   static let declineAction = "decline"
   static let keyInfo = "deviceKey"
-  static let kinds: Set<ConnectionKind> = [.androidUSB, .cameraUSB]
+  static let kinds: Set<ConnectionKind> = [.androidUSB, .androidMTP, .cameraUSB]
 
   // 优先用序列号，换个 USB 口也认得出是同一台
   static func key(_ item: DiscoveredItem) -> String {
@@ -22,10 +22,6 @@ enum DevicePrompt {
 }
 
 extension AppModel {
-  var phonesWithoutDebugging: [CameraUSBDevice] {
-    options.isDemo ? [] : cameraUSBDiscovery.phonesWithoutDebugging
-  }
-
   // 插着、还没保存、能直接连接的设备
   private var pluggedDevices: [DiscoveredItem] {
     discoveredItems.filter { DevicePrompt.kinds.contains($0.kind) && $0.connection != nil }
@@ -72,6 +68,8 @@ extension AppModel {
     operations.start(connectionID: connection.id) { [self] in
       do {
         try await connections.save(connection, password: "")
+        // 在挂载前改名，盘名也跟着用设备的型号
+        try adoptDeviceModelName(&connection)
         if connection.kind.usesMount { await toggleConnection(connection) }
       } catch is CancellationError {
       } catch {
@@ -79,6 +77,17 @@ extension AppModel {
       }
       if mountingPromptDevice == key { mountingPromptDevice = nil }
     }
+  }
+
+  // 设备睡着时发现阶段问不到型号，位置名会自动填成 USB 产品名（如“LAGOON-MTP _SN:…”）。
+  // 保存时试连上了、问到了型号，就把这种自动填的名字改成型号；用户自己起的名字不动
+  func adoptDeviceModelName(_ connection: inout Connection) throws {
+    guard connection.kind == .androidMTP,
+      let device = try? MTPUSB.select(params: connection.params, devices: mtpDevices),
+      connection.name == device.productName, device.name != device.productName
+    else { return }
+    try connections.setPresentation(id: connection.id, name: device.name, color: connection.color)
+    connection.name = device.name
   }
 
   // 不添加：这次插着时不再问

@@ -20,6 +20,7 @@ enum CLIProviderFactory {
     let provider: any RemoteFileProvider
     switch connection.kind {
     case .androidUSB, .androidWiFi: provider = try await ADBProviderFactory.make(for: connection)
+    case .androidMTP: provider = MTPProvider.make(for: connection)
     case .cameraUSB:
       provider = try await CameraUSBProvider.make(identifier: connection.params["serial"] ?? "")
     case .quark:

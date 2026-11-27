@@ -6,6 +6,7 @@ extension ConnectionKind {
     switch self {
     case .androidUSB: L("Android 手机")
     case .androidWiFi: L("Android 手机（无线）")
+    case .androidMTP: L("Android 手机（文件传输）")
     case .smb: L("SMB 共享")
     case .cameraUSB: L("相机（USB）")
     case .webdav: L("WebDAV")
@@ -29,7 +30,7 @@ extension ConnectionKind {
   }
   var defaultName: String {
     switch self {
-    case .androidUSB, .androidWiFi: L("我的 Android 手机")
+    case .androidUSB, .androidWiFi, .androidMTP: L("我的 Android 手机")
     case .smb: L("我的 SMB 共享")
     case .cameraUSB: L("我的相机")
     default: title

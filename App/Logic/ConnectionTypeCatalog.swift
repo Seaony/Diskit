@@ -47,7 +47,7 @@ enum ConnectionTypeCatalog {
     switch kind {
     case .smb: L("Windows、Mac、NAS")
     case .webdav, .webdavHTTPS: L("网页文件服务")
-    case .androidUSB, .androidWiFi: L("数据线或无线调试")
+    case .androidUSB, .androidWiFi, .androidMTP: L("数据线或无线调试")
     case .cameraUSB: L("通过 USB 读取相机")
     case .nfs: L("网络文件共享")
     case .lanzou: L("浏览账号或分享链接")

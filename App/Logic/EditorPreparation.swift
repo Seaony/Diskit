@@ -15,12 +15,12 @@ enum EditorPreparation {
 
   static func steps(for kind: ConnectionKind) -> [String] {
     switch kind {
-    case .androidUSB, .androidWiFi:
+    case .androidUSB, .androidWiFi, .androidMTP:
       [
-        L("在手机设置中开启**开发者选项**，再打开 **USB 调试**或**无线调试**。"),
-        L("小米、OPPO、vivo、三星的入口可能不同，可在手机设置中搜索**开发者选项**和 **USB 调试**。"),
-        L("使用*能传输数据的数据线*，并在手机上**允许**这台 Mac；无线连接需输入手机当前显示的*配对码*。"),
-        L("~~鸿蒙 NEXT 不支持 ADB~~，不能通过此方式连接。"),
+        L("用*能传输数据的数据线*连接，解锁设备，在设备弹出的 USB 选项里选**文件传输**，插上就能读写。"),
+        L("~~Android File Transfer 开着时会占住设备~~，请先退出它。"),
+        L("想要更快的速度，可在设置中开启**开发者选项**，再打开 **USB 调试**，并在设备上**允许**这台 Mac。小米、OPPO、vivo、三星的入口可能不同，可在设置中搜索**开发者选项**。"),
+        L("无线连接需打开**无线调试**，并输入设备当前显示的*配对码*；~~鸿蒙 NEXT 不支持 ADB~~，不能用无线调试和 USB 调试。"),
       ]
     case .smb:
       [

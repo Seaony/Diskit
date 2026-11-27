@@ -52,7 +52,9 @@ struct PanelView: View {
     return [
       model.discovery.error.map { ($0, model.discovery.issue == .permissionDenied) },
       model.wirelessDiscovery.error.map { ($0, model.wirelessDiscovery.issue == .permissionDenied) },
-      model.usbDiscovery.issue.map { _ in (L("暂时无法发现 USB 手机，请重新插拔设备"), false) },
+      (model.usbDiscovery.issue ?? model.mtpDiscovery.issue).map { _ in
+        (L("暂时无法发现 USB 手机，请重新插拔设备"), false)
+      },
       model.cameraUSBDiscovery.issue.map { _ in (L("暂时无法发现相机，请检查 USB 连接"), false) }
     ].compactMap { $0 }
   }

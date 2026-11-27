@@ -7,7 +7,7 @@ enum EditorValidation {
     -> [String]
   {
     switch draft.kind {
-    case .androidUSB, .cameraUSB: ["name", "device"]
+    case .androidUSB, .androidMTP, .cameraUSB: ["name", "device"]
     case .androidWiFi:
       draft.params["guid"] == nil ? ["name", "pairingID", "pairingCode"] : ["name"]
     case .smb: guest ? ["name", "host", "share"] : ["name", "host", "username", "share"]

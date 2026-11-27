@@ -107,7 +107,7 @@ struct DevicePromptBanner: View {
         VStack(alignment: .leading, spacing: 2) { // grid: ok 标题和说明贴近
           Text(LF("发现“%@”", item.title)).font(.subheadline.weight(.semibold))
             .foregroundStyle(DiskitTheme.primaryText)
-          Text(error ?? L("要添加吗？添加后，以后插上会自动连接。")).font(.caption)
+          Text(error ?? (mounting ? PanelCopy.subtitle(.connecting, kind: item.kind) : L("要添加吗？添加后，以后插上会自动连接。"))).font(.caption)
             .foregroundStyle(error == nil ? DiskitTheme.secondaryText : DiskitTheme.error)
             .fixedSize(horizontal: false, vertical: true)
         }

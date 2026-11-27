@@ -54,7 +54,7 @@ struct ConnectionFormView: View {
         }
         DiskitFormSection(title: L("连接")) {
           switch editor.draft.kind {
-          case .androidUSB, .androidWiFi: AndroidConnectionForm(editor: editor)
+          case .androidUSB, .androidWiFi, .androidMTP: AndroidConnectionForm(editor: editor)
           case .cameraUSB: CameraConnectionForm(editor: editor)
           case .smb: SMBConnectionForm(editor: editor)
           case .webdav, .webdavHTTPS: WebDAVConnectionForm(editor: editor)
