@@ -71,6 +71,10 @@ private func elapsed(_ start: ContinuousClock.Instant) -> String {
     // 只删本轮建的文件夹；上次中断留下的只提示，不按名字前缀去删设备上的东西
     for leftover in try await mtp.list(top) where leftover.isDirectory && leftover.name.hasPrefix("Diskit 测试 ") {
       print("设备上有上次留下的测试文件夹，请手动确认后删除：", leftover.name)
+      if let name = ProcessInfo.processInfo.environment["DISKIT_MTP_LIVE_REMOVE"], name == leftover.name {
+        try await mtp.remove(leftover.path, recursive: true)
+        print("按指定删掉了", name)
+      }
     }
     let folder = try top.appending("Diskit 测试 " + UUID().uuidString.prefix(8))
     try await mtp.makeDirectory(folder)
@@ -106,6 +110,21 @@ private func elapsed(_ start: ContinuousClock.Instant) -> String {
     #expect(downloaded == big)
     print("读回 30 MB 用时", elapsed(start))
     try await mtp.remove(try folder.appending("30MB.bin"), recursive: false)
+    // 上传到一半取消：事务中途要发 Cancel 让设备放弃，之后重新连接还能正常用
+    let huge = FileManager.default.temporaryDirectory.appending(path: "diskit-mtp-live-huge")
+    FileManager.default.createFile(atPath: huge.path, contents: nil)
+    let handle = try FileHandle(forWritingTo: huge)
+    try handle.truncate(atOffset: 300_000_000)
+    try handle.close()
+    defer { try? FileManager.default.removeItem(at: huge) }
+    let cancelled = Task { try await mtp.write(try folder.appending("取消.bin"), from: huge) }
+    try await Task.sleep(for: .milliseconds(300))
+    cancelled.cancel()
+    print("取消上传：", await cancelled.result)
+    try await mtp.connect()
+    let afterCancel = try await mtp.list(folder).map(\.name)
+    print("取消后重新连接，文件夹里：", afterCancel)
+    if afterCancel.contains("取消.bin") { try await mtp.remove(try folder.appending("取消.bin"), recursive: false) }
     // 改名、建子文件夹、移动
     let renamed = try folder.appending("改名.txt")
     try await mtp.move(file, to: renamed)

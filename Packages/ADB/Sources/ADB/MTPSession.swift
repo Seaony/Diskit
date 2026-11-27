@@ -46,10 +46,9 @@ actor MTPSession {
 
   func close() async { await channel.close() }
 
-  // 新连接开始前让设备放弃上一个程序没做完的事务（Android 的 MTP 驱动收到 Cancel 类请求就回到等命令的状态），
-  // 再把它还没发完的旧数据读空。不做这一步，Android File Transfer 刚退出时设备会不收新命令
+  // 新连接开始前把上一个程序没读完的数据读空。不能发 Cancel：文石 Leaf5 实测空闲时收到 Cancel 后
+  // 再也不收命令，只有重新插拔才恢复（之前所有“设备没回应”都是它造成的）
   func reset() async {
-    await channel.cancel(transactionID: 0)
     await drain()
   }
 
@@ -119,8 +118,11 @@ actor MTPSession {
       transaction = nextTransaction
       nextTransaction &+= 1
     }
+    // 命令已经发出、还没收到响应时出错，设备停在这个事务中间，要让它放弃；命令都没发出去时设备是空闲的，不能发 Cancel
+    var inTransaction = false
     do {
       try await writeCommand(operation, params, transaction: transaction)
+      inTransaction = true
       if let send { try await writeData(send, operation: operation, transaction: transaction) }
       var data = Data()
       while true {
@@ -148,7 +150,7 @@ actor MTPSession {
     } catch {
       broken = true
       pending = Data()
-      await channel.cancel(transactionID: transaction)
+      if inTransaction { await channel.cancel(transactionID: transaction) }
       if error is CancellationError { throw error }
       throw USBTransport.mappedError(error)
     }

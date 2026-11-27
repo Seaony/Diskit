@@ -36,7 +36,7 @@ macOS 菜单栏 App：点菜单栏图标弹出面板，里面是已保存的「�
 | 位置 | 接入方式 | 可行性 | 主要风险 |
 | --- | --- | --- | --- |
 | 安卓 USB | 自己用 Swift 实现 ADB 协议，通过 IOKit/IOUSBHost 直接和手机的 ADB USB 接口通信（不依赖 adb 可执行文件） | 高，SideMount 已证明可行 | 同一时刻只能一个进程占用手机 ADB 接口，用户自己的 adb server 会冲突 |
-| 安卓 USB（MTP） | 没开 USB 调试的设备（手机、平板、阅读器，如文石 Leaf5 的接口是 0xFF/0xFF、名为 MTP）走 MTP：IOKit/IOUSBHost 直接和 MTP 接口通信，自己实现 PTP/MTP 事务；同一设备开了 USB 调试时优先 ADB | 高，2026-11-26 Leaf5 实测列目录、读取可用（84.5 MB/s） | Android File Transfer 的登录项 Agent 在插上设备时会打开它并独占接口：连接被它挡住时自动让它退出再连。设备睡眠、锁屏或没选“文件传输”时 MTP 服务不收命令：连接时最多等 60 秒，用户一解锁就连上，等不到报具体该做什么；发现阶段问不到型号先显示 USB 产品名，每 10 秒再问，连上后改用设备报的型号 |
+| 安卓 USB（MTP） | 没开 USB 调试的设备（手机、平板、阅读器，如文石 Leaf5 的接口是 0xFF/0xFF、名为 MTP）走 MTP：IOKit/IOUSBHost 直接和 MTP 接口通信，自己实现 PTP/MTP 事务；同一设备开了 USB 调试时优先 ADB | 高，2026-11-26 Leaf5 实测列目录、读取可用（84.5 MB/s） | Android File Transfer 的登录项 Agent 在插上设备时会打开它并独占接口：连接被它挡住时自动让它退出再连。设备空闲时绝不发 MTP Cancel（Leaf5 实测收到后再也不收命令，只能重插；libmtp 也只在传输中途取消时才发）。设备的 MTP 服务还没起来或锁屏时没开放存储：连接时最多等 60 秒，就绪就连上，等不到报具体该做什么；发现阶段问不到型号先显示 USB 产品名，每 10 秒再问，连上后改用设备报的型号 |
 | 安卓 Wi‑Fi | Android 11+ 无线调试：mDNS 发现 → 配对码配对（SPAKE2）→ TLS 连接 → 跑同一套 ADB 协议 | 中高 | SPAKE2 配对要用 BoringSSL；首次需要在手机上输入配对码 |
 | Windows SMB | 直接用系统 NetFS 挂载 `smb://` | 高，系统原生 | Windows 默认不广播 Bonjour，主要靠手动填 IP/主机名；微软账户要用账户密码而不是 PIN |
 | 理光 GR IV USB | 相机走 MTP（零售商规格表写的是 `Data Transfer: MTP`）。用系统 ImageCaptureCore 读取 | 中高 | 能不能被 ImageCaptureCore 识别、能不能删除，要真机验证 |
@@ -446,6 +446,7 @@ M0–M6 不需要付费开发者账号；M7 需要。M0–M6 里「挂载 / 在 
 - FSKit 需要付费团队的说明：https://github.com/The-Alchemist/FSKitSample ，https://github.com/ntfstool/ntfstool ，https://github.com/cryptomator/fskit-nio-adapter
 - DroidMount：https://github.com/Ludovienne974/DroidMount ；adbdav：https://github.com/olragon/adbdav
 - mtp-mount（MTP 按需读取思路）：https://docs.rs/crate/mtp-mount/0.3.1
+- libmtp（MTP 的事实标准实现，LGPL C；USB 收发细节和各设备已知问题以它为对照）：https://github.com/libmtp/libmtp
 - AOSP adb：https://android.googlesource.com/platform/packages/modules/adb/
 - GR III Wi‑Fi 接口：https://github.com/aspyct/grit ，https://github.com/sotashimozono/gr3sync
 - GR WORLD 分析笔记：https://github.com/sky18Dragon/grCameraAnalysis

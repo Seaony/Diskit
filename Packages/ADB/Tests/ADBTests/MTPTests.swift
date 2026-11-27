@@ -610,12 +610,14 @@ private func localFile(_ data: Data) throws -> URL {
   #expect(try await mtp.list(path("/")).map(\.name) == ["a.txt"])
 }
 
-// 新连接先让设备放弃上一个程序没做完的事务
-@Test func mtpResetsTheDeviceWhenConnecting() async throws {
+// 设备空闲时不能发 Cancel：Leaf5 实测收到后再也不收命令。连接时、命令没发出去时都不发
+@Test func mtpNeverCancelsAnIdleDevice() async throws {
   let device = FakeMTPDevice()
-  let mtp = provider(device)
+  await device.ignoreWrites(2)
+  let mtp = MTPProvider(retryInterval: .milliseconds(10)) { MTPSession(channel: device) }
   try await mtp.connect()
-  #expect(await device.cancels == 1)
+  _ = try await mtp.list(path("/"))
+  #expect(await device.cancels == 0)
 }
 
 @Test func mtpSendsTheLocalModificationTime() async throws {
